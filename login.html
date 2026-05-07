@@ -35,43 +35,41 @@
 <p>Pi Browser Login Test</p>
 
 <button onclick="login()">
-Login With Pi
+  Login With Pi
 </button>
 
-<script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<script>
 Pi.init({
-  version:"2.0",
-  sandbox:true
+  version: "2.0",
+  sandbox: true
 });
 
-async function login(){
+async function login() {
 
-  try{
+  try {
 
-    const user = await Pi.authenticate(
-      ["username","payments","wallet_address"],
-      function(payment){
-        console.log(payment);
-      }
-    );
+    const scopes = ['username', 'payments'];
 
-    console.log(user);
+    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
 
-    alert(
-      "Welcome " + user.username
-    );
+    console.log(auth);
 
-  }catch(e){
+    alert("Welcome " + auth.user.username);
 
-    console.error(e);
+  } catch (err) {
 
+    console.error(err);
     alert("Login failed");
 
   }
 
 }
 
+function onIncompletePaymentFound(payment) {
+  console.log(payment);
+}
 </script>
 
 </body>
