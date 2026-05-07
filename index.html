@@ -143,18 +143,18 @@ async function pay() {
 
           // COMPLETE
           await fetch(
-            "https://YOUR-RAILWAY-URL/complete-payment",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                paymentId,
-                txid
-              })
-            }
-          );
+  "https://albukhr-api-production.up.railway.app/complete-payment",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      paymentId,
+      txid
+    })
+  }
+);
 
           alert("Payment Success");
 
