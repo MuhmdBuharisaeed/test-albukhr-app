@@ -91,7 +91,7 @@ if (!user) {
 }
 
 // LOGOUT
-function logout() {
+window.logout = function () {
 
   localStorage.removeItem("pi_user");
 
@@ -102,8 +102,7 @@ function logout() {
 
 <script>
 
-async function pay() {
-
+window.pay = async function () {
   try {
 
     const paymentData = {
