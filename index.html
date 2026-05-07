@@ -172,7 +172,7 @@ async function pay() {
 
           console.error(error);
 
-          alert("Payment Failed");
+          alert(err.message);
 
         }
 
@@ -183,7 +183,7 @@ async function pay() {
 
     console.error(err);
 
-    alert("Payment Error");
+    alert(error.message);
 
   }
 
