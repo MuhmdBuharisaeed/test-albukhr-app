@@ -169,9 +169,9 @@ window.pay = async function () {
 
         onError: function(error, payment) {
 
-          console.error(error);
+  console.error(error);
 
-          alert(err.message);
+  alert(error.message);
 
         }
 
@@ -180,9 +180,9 @@ window.pay = async function () {
 
   } catch (err) {
 
-    console.error(err);
+  console.error(err);
 
-    alert(error.message);
+  alert(err.message);
 
   }
 
