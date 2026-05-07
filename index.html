@@ -1,3 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>ALBUKHR</title>
+
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+
 <script>
-window.location.href = "/login.html";
+
+Pi.init({
+  version: "2.0",
+  sandbox: true
+});
+
+// CHECK LOGIN
+const user = JSON.parse(
+  localStorage.getItem("pi_user")
+);
+
+// IF NOT LOGGED IN
+if (!user) {
+
+  window.location.href = "login.html";
+
+} else {
+
+  console.log("USER:", user);
+
+  // USER EXISTS
+  document.body.innerHTML = `
+    <div style="
+      background:#020617;
+      color:white;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      font-family:Arial;
+      text-align:center;
+      padding:20px;
+    ">
+
+      <h1 style="font-size:40px;margin-bottom:15px;">
+        Welcome ${user.username}
+      </h1>
+
+      <p style="color:#aaa;font-size:18px;margin-bottom:30px;">
+        ALBUKHR Pi Dashboard
+      </p>
+
+      <button
+        onclick="logout()"
+        style="
+          padding:15px 30px;
+          border:none;
+          border-radius:12px;
+          background:#6d28d9;
+          color:white;
+          font-size:18px;
+          cursor:pointer;
+        "
+      >
+        Logout
+      </button>
+
+    </div>
+  `;
+}
+
+// LOGOUT
+function logout() {
+
+  localStorage.removeItem("pi_user");
+
+  window.location.href = "login.html";
+}
+
 </script>
+
+</body>
+</html>
