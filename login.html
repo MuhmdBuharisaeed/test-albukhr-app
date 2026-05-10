@@ -86,24 +86,27 @@
 
   <script>
 
-    Pi.init({
-      version: "2.0",
-      sandbox: true
-    });
+Pi.init({
+  version: "2.0",
+  sandbox: true
+});
 
-  async function login() {
+async function login() {
 
   try {
 
     document.getElementById("loading").style.display = "block";
 
-    // CLEAR OLD SESSION
-    localStorage.clear();
-    sessionStorage.clear();
+    // REMOVE OLD SESSION
+    localStorage.removeItem("pi_user");
+
+    const scopes = ['username', 'payments'];
 
     const auth = await Pi.authenticate(
-      ['username', 'payments'],
-      onIncompletePaymentFound
+      scopes,
+      function(payment) {
+        console.log(payment);
+      }
     );
 
     console.log(auth);
@@ -123,11 +126,8 @@
 
     document.getElementById("loading").style.display = "none";
   }
-  }
 
-    function onIncompletePaymentFound(payment) {
-      console.log(payment);
-    }
+}
 
   </script>
 
