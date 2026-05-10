@@ -91,39 +91,39 @@
       sandbox: true
     });
 
-    async function login() {
+  async function login() {
 
-      try {
+  try {
 
-        document.getElementById("loading").style.display = "block";
+    document.getElementById("loading").style.display = "block";
 
-        const scopes = ['username', 'payments'];
+    // CLEAR OLD SESSION
+    localStorage.clear();
+    sessionStorage.clear();
 
-        const auth = await Pi.authenticate(
-          scopes,
-          onIncompletePaymentFound
-        );
+    const auth = await Pi.authenticate(
+      ['username', 'payments'],
+      onIncompletePaymentFound
+    );
 
-        console.log(auth);
+    console.log(auth);
 
-        // SAVE USER
-        localStorage.setItem(
-          "pi_user",
-          JSON.stringify(auth.user)
-        );
+    localStorage.setItem(
+      "pi_user",
+      JSON.stringify(auth.user)
+    );
 
-        // REDIRECT
-        window.location.href = "index.html";
+    window.location.href = "index.html";
 
-      } catch (err) {
+  } catch (err) {
 
-        console.error(err);
+    console.error(err);
 
-        alert("Login failed");
+    alert(err.message);
 
-        document.getElementById("loading").style.display = "none";
-      }
-    }
+    document.getElementById("loading").style.display = "none";
+  }
+  }
 
     function onIncompletePaymentFound(payment) {
       console.log(payment);
