@@ -1,194 +1,926 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR Projects</title>
 
-  <title>ALBUKHR</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/albukhr-ui.css">
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/global-buttons.css">
 
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+.header-right{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* USER BOX */
+.user-box{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;   /* 👈 KEY FIX */
+  justify-content: center;
+  max-width: 80px;
+}
+
+/* USERNAME */
+#piUser{
+  font-size: 10px;
+  margin-top: 2px;
+  color: #fff;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  text-align: right;   /* 👈 KEY FIX */
+}
+</style>
+
 </head>
-<body>
+
+<body data-page="home">
+
+<script>
+(function(){
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+  if(!user || !user.uid){
+    window.location.replace("login.html");
+  }
+})();
+</script>
+
+  <header class="header">
+
+  <div class="header-left">
+  <span class="brand">ALBUKHR</span>
+  </div>
+
+  <div class="header-right">
+
+  <div class="header-btn user-box" id="userBox">
+  <div class="user-icon">👤</div>
+  <div id="piUser"></div>
+  </div>
+  
+  <div class="header-btn notification-btn" onclick="openNotifications()">
+    🔔
+    <span id="notifBadge" class="notification-badge"></span>
+  </div>
+
+  <div class="header-btn menu-icon">
+    ☰
+  </div>
+
+ </div>
+
+  </header>
+
+<div class="welcome-bar">
+  <div id="welcomeScroll" class="welcome-track">
+    Welcome to Albukhr Investment Limited — Building sustainable industries & empowering communities through investment.
+  </div>
+</div>
+
+<section class="stats">
+  <div class="stat-card">
+    <span>Total Staking</span>
+    <strong id="homeStake">0.00 Pi</strong>
+  </div>
+  <div class="stat-card">
+    <span>Total Rewards</span>
+    <strong id="homeReward">0.00 Pi</strong>
+  </div>
+</section>
+
+<div class="popular-section">
+  <div class="popular-title">📊 Popular Projects</div>
+  <div class="popular-scroll" id="popularProjects"></div>
+</div>
+
+<!-- ===== ASSETS ===== -->
+<section class="section">
+  <div class="assets-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <h3 style="margin:0;">Assets</h3>
+      <span id="toggleAssets" style="cursor:pointer;font-size:16px;">👁</span>
+    </div>
+<span class="assets-search" onclick="location.href='projects.html'">🔍</span>
+  </div>
+
+  <div id="assetsContainer"></div>
+</section>
+
+<!-- ===============================
+ALBUKHR AI FLOATING BUTTON
+================================ -->
+
+<div 
+class="albukhr-ai-btn"
+id="albukhrAI"
+onclick="openAlbukhrAI()"
+>
+
+<img 
+src="ALBUKHR_Logo_Optimized_1024x1024.png"
+class="albukhr-ai-logo"
+/>
+
+</div>
+
+<div 
+id="aiDevNote"
+class="ai-dev-note"
+>
+Albukhr AI is under development
+</div>
+
+<!-- ===== ALBUKHR DOCK NAV ===== -->
+
+<div class="dock-nav">
+
+  <!-- HOME -->
+  <a href="index.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
+    </svg>
+    <span>Home</span>
+  </a>
+
+
+  <!-- INVESTORS -->
+  <a href="investor-dashboard.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
+    </svg>
+    <span>Investors</span>
+  </a>
+
+
+  <!-- TRANSPARENCY HUB -->
+  <a href="wallet.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      
+      <!-- Document -->
+      <path d="M6 3h8l4 4v14H6z"/>
+      
+      <!-- Fold -->
+      <path d="M14 3v4h4"/>
+      
+      <!-- Lines -->
+      <path d="M8 11h8"/>
+      <path d="M8 14h8"/>
+      
+      <!-- Eye -->
+      <ellipse cx="12" cy="18" rx="4" ry="2"/>
+      <circle cx="12" cy="18" r="0.8"/>
+      
+    </svg>
+    <span>Transparency</span>
+  </a>
+
+
+  <!-- SERVICES -->
+  <a href="services.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
+    </svg>
+    <span>Services</span>
+  </a>
+
+         </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
+  
+<script>
+async function getAllStakesMerged(){
+
+  try{
+
+    const { data, error } = await supabase
+      .from("stakes")
+      .select("*");
+
+    if(error){
+      console.error("Supabase error:", error);
+      return [];
+    }
+
+    return data || [];
+
+  }catch(err){
+    console.error("Fetch failed:", err);
+    return [];
+  }
+
+}
+  </script>
+  
+<script>
+
+let lastScroll = 0;
+let threshold = 10;
+
+const dock = document.querySelector(".dock-nav");
+
+if(dock){
+  window.addEventListener("scroll",()=>{
+    let current = window.pageYOffset;
+
+    if(Math.abs(current-lastScroll)<=threshold) return;
+
+    if(current > lastScroll){
+      dock.classList.add("hide");
+    }else{
+      dock.classList.remove("hide");
+    }
+
+    lastScroll = current;
+  });
+}
+
+window.addEventListener("scroll",()=>{
+
+const current =
+window.pageYOffset;
+
+if(Math.abs(current-lastScroll)<=threshold)
+return;
+
+if(current > lastScroll){
+
+/* scroll down */
+dock.classList.add("hide");
+
+}else{
+
+/* scroll up */
+dock.classList.remove("hide");
+
+}
+
+lastScroll = current;
+
+});
+
+</script>
+
+<script>
+const current = location.pathname.split("/").pop() || "index.html";
+
+document.querySelectorAll(".dock-item").forEach(link=>{
+  if(link.getAttribute("href") === current){
+    link.classList.add("active");
+  }
+});
+</script>
+   
+<!-- SIDE DRAWER -->
+<div id="sideDrawer" class="side-drawer">
+
+  <div class="drawer-header">
+    <h3>Settings</h3>
+    <span class="close-drawer" onclick="closeDrawer()">✖️</span>
+  </div>
+
+  <!-- ORIGINAL LINKS (UNCHANGED) -->
+  <div class="drawer-body">
+    <a href="profile.html">Profile</a>
+    <a href="preferences.html">Preferences</a>
+    <a href="security.html">Security</a>
+    <a href="help.html">Help</a>
+  </div>
+
+<hr style="margin:12px 0">
+
+<div class="drawer-title">🔐 Security</div>
+
+<div class="security-item">
+  <label>
+    <input type="checkbox" id="enable2fa">
+    Enable 2FA (PIN)
+  </label>
+</div>
+
+<div class="security-item">
+  <label>
+    <input type="checkbox" id="enableBio">
+    Biometric Login
+  </label>
+</div>
+
+<div class="security-item">
+  <label>
+    <input type="checkbox" id="encryptData">
+    Encrypt Sensitive Data
+  </label>
+</div>
+
+<p style="font-size:11px;color:#777;margin-top:8px">
+Security is enforced to protect your assets and projects.
+</p>   
+   
+  <!-- ===============================
+       EXTENDED DRAWER CONTENT
+  ================================ -->
+  <div class="drawer-extra">
+
+    <!-- POLICIES -->
+    <div class="drawer-title">📜 Legal & Policies</div>
+
+    <div class="drawer-policy">
+
+      <a href="privacy-policy.html">
+        <div class="policy-icon">🔐</div>
+        Privacy Policy
+      </a>
+
+      <a href="terms-of-service.html">
+        <div class="policy-icon">📄</div>
+        Terms of Service
+      </a>
+
+      <a href="whitepaper.html">
+        <div class="policy-icon">📘</div>
+        Whitepaper
+      </a>
+
+    </div>
+
+    <div class="drawer-note">
+      All users must comply with ALBUKHR governance rules.
+    </div>
+
+<!-- SOCIAL / MEDIA -->
+<div class="drawer-title">🌐 Media & Channels</div>
+
+<div class="drawer-social">
+
+<a class="social-item"
+href="https://t.me/albukhrinvestmentlimited"
+target="_blank">
+
+<div class="social-icon">
+<img src="images/images (2).jpeg" alt="Telegram">
+</div>
+
+Telegram
+
+</a>
+
+
+<a class="social-item"
+href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C"
+target="_blank">
+
+<div class="social-icon">
+<img src="images/images.png" alt="WhatsApp">
+</div>
+
+WhatsApp
+
+</a>
+
+
+<a class="social-item"
+href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz"
+target="_blank">
+
+<div class="social-icon">
+<img src="images/images (1).jpeg" alt="Facebook">
+</div>
+
+Facebook
+
+</a>
+
+
+<a class="social-item"
+href="https://www.youtube.com/@Albukhrinvestmentlimited"
+target="_blank">
+
+<div class="social-icon">
+<img src="images/images.jpeg" alt="YouTube">
+</div>
+
+YouTube
+
+</a>
+
+
+<a class="social-item"
+href="#"
+target="_blank">
+
+<div class="social-icon">
+<img src="images/images (1).png" alt="X">
+</div>
+
+X
+
+</a>
+
+</div>
+
+    <div class="drawer-note">
+      Official public channels of ALBUKHR ecosystem
+    </div>
+     
+  </div>
+
+</div>
+
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+
+<script src="js/project-config.js"></script>   
+<script src="js/staking.js"></script>
 
 <script>
 
-Pi.init({
-  version: "2.0",
-  sandbox: true
-});
+async function loadHome(){
 
-// CHECK LOGIN
-const user = JSON.parse(
-  localStorage.getItem("pi_user")
-);
+  try{
 
-// IF NOT LOGGED IN
-if (!user) {
+    // ===== DEPENDENCY CHECK =====
+    if(typeof getAllStakesMerged !== "function"){
+      console.warn("getAllStakesMerged missing");
+      return;
+    }
 
-  window.location.href = "login.html";
+    const stakes = await getAllStakesMerged();
 
-} else {
+    if(!Array.isArray(stakes)){
+      console.warn("Invalid stakes data");
+      return;
+    }
 
-  console.log("USER:", user);
+    // ===== MAPS =====
+    const userMap = {};
+    const globalMap = {};
+    const countMap = {}; // ✅ FIX performance
 
-  // USER EXISTS
-  document.body.innerHTML = `
-    <div style="
-      background:#020617;
-      color:white;
-      min-height:100vh;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      flex-direction:column;
-      font-family:Arial;
-      text-align:center;
-      padding:20px;
-    ">
+    let totalStake = 0;
+    let totalReward = 0;
 
-      <h1 style="font-size:40px;margin-bottom:15px;">
-        Welcome ${user.username}
-      </h1>
+    // ===== MAIN LOOP =====
+    stakes.forEach(s=>{
 
-      <p style="color:#aaa;font-size:18px;margin-bottom:30px;">
-        ALBUKHR Pi Dashboard
-      </p>
+      if(!s || s.type === "withdraw") return;
 
-      <button
-        onclick="logout()"
-        style="
-          padding:15px 30px;
-          border:none;
-          border-radius:12px;
-          background:#6d28d9;
-          color:white;
-          font-size:18px;
-          cursor:pointer;
-        "
-      >
-        Logout
-      </button>
+      const amount = Number(s.amount) || 0;
 
-      <button
-  onclick="pay()"
-  style="
-    padding:15px 30px;
-    border:none;
-    border-radius:12px;
-    background:#16a34a;
-    color:white;
-    font-size:18px;
-    cursor:pointer;
-    margin-top:15px;
-  "
->
-  Test Payment
-</button>
+      const total = Number(s.reward) || 0;
+      const withdrawn = Number(s.withdrawnReward) || 0;
 
+      const reward = Math.max(0, total - withdrawn);
 
-    </div>
-  `;
+      totalStake += amount;
+      totalReward += reward;
+
+      // ===== USER MAP =====
+      userMap[s.project] =
+        (userMap[s.project] || 0) + amount;
+
+      // ===== GLOBAL MAP =====
+      if(!globalMap[s.project]){
+        globalMap[s.project] = {
+          total:0,
+          investors:0
+        };
+      }
+
+      globalMap[s.project].total += amount;
+
+      // ===== INVESTOR COUNT (FAST) =====
+      countMap[s.project] =
+        (countMap[s.project] || 0) + 1;
+
+    });
+
+    // ===== ASSIGN COUNTS =====
+    Object.keys(globalMap).forEach(project=>{
+      globalMap[project].investors =
+        countMap[project] || 0;
+    });
+
+    // ===== SAFE DOM UPDATE =====
+    const stakeEl = document.getElementById("homeStake");
+    const rewardEl = document.getElementById("homeReward");
+
+    if(stakeEl){
+      stakeEl.innerText = totalStake.toFixed(2)+" Pi";
+    }
+
+    if(rewardEl){
+      rewardEl.innerText = totalReward.toFixed(2)+" Pi";
+    }
+
+    // ===== RENDER =====
+    if(typeof renderPopular === "function"){
+      renderPopular(globalMap);
+    }
+
+    if(typeof renderAssets === "function"){
+      renderAssets(userMap, globalMap);
+    }
+
+  }catch(err){
+    console.error("loadHome error:", err);
+  }
+
 }
 
-// LOGOUT
-window.logout = function () {
+function renderPopular(globalMap){
 
-  localStorage.removeItem("pi_user");
+if(typeof PROJECT_CONFIG === "undefined"){
+  console.warn("PROJECT_CONFIG missing");
+  return;
+}
 
-  window.location.href = "login.html";
+  const container = document.getElementById("popularProjects");
+  container.innerHTML = "";
+
+  const sorted = Object.entries(globalMap)
+    .sort((a,b)=>b[1].total - a[1].total)
+    .slice(0,10);
+
+  sorted.forEach(([project,data],index)=>{
+
+    const config = PROJECT_CONFIG[project];
+
+    if(!config) return;
+
+    const div = document.createElement("div");
+    div.className="popular-card";
+
+    div.setAttribute("data-rank","#"+(index+1));
+
+    div.onclick = () =>
+      location.href = `project.html?project=${project}`;
+
+    div.innerHTML = `
+      <div class="popular-icon">${config.icon}</div>
+      <div class="popular-name">${config.title}</div>
+      <div class="popular-amount">${data.total.toFixed(2)} Pi</div>
+    `;
+
+    container.appendChild(div);
+
+  });
+
+}
+
+function renderAssets(userMap, globalMap){
+
+if(typeof PROJECT_CONFIG === "undefined"){
+  console.warn("PROJECT_CONFIG missing");
+  return;
+}
+
+  const container = document.getElementById("assetsContainer");
+  container.innerHTML = "";
+
+  const merged = Object.keys(PROJECT_CONFIG).map(project => ({
+
+    name: project,
+    config: PROJECT_CONFIG[project],
+
+    globalTotal: globalMap[project]?.total || 0,
+    userAmount: userMap[project] || 0
+
+  }));
+
+  /* SORT LOGIC */
+  merged.sort((a,b)=>{
+
+    if(a.userAmount > 0 && b.userAmount === 0) return -1;
+    if(a.userAmount === 0 && b.userAmount > 0) return 1;
+
+    if(a.userAmount !== b.userAmount)
+      return b.userAmount - a.userAmount;
+
+    return b.globalTotal - a.globalTotal;
+
+  });
+
+  merged.forEach(item => {
+
+    const div = document.createElement("div");
+    div.className = "asset-item";
+
+    div.onclick = () =>
+      location.href = `project.html?project=${item.name}`;
+
+    div.innerHTML = `
+      <div class="asset-icon">
+        ${item.config.icon}
+      </div>
+
+      <div class="asset-left">
+
+        <div class="asset-name">
+          ${item.config.title}
+        </div>
+
+        <div class="asset-stake">
+          ${
+            item.userAmount > 0
+            ? item.userAmount.toFixed(2) + " Pi Staked"
+            : "Not Staked"
+          }
+        </div>
+
+        <div class="asset-progress-row">
+          <div class="asset-progress">
+            <div class="asset-progress-bar"
+              style="width:${Math.min(item.userAmount,100)}%">
+            </div>
+          </div>
+          <div class="asset-percent">
+            ${item.userAmount > 0 ? "Active" : "0%"}
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    container.appendChild(div);
+
+  });
+
+   }
+
+/* ASSETS VISIBILITY */
+const VISIBILITY_KEY="albukhr_assets_visibility";
+function isAssetsHidden(){return localStorage.getItem(VISIBILITY_KEY)==="hidden";}
+function setAssetsHidden(hidden){localStorage.setItem(VISIBILITY_KEY,hidden?"hidden":"visible");}
+function applyVisibility(){
+  const hidden=isAssetsHidden();
+  document.getElementById("homeStake")?.classList.toggle("hidden-amount",hidden);
+  document.getElementById("homeReward")?.classList.toggle("hidden-amount",hidden);
+  document.querySelectorAll(".asset-stake").forEach(el=>el.classList.toggle("hidden-amount",hidden));
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  applyVisibility();
+});
+
+/* SIDE DRAWER */
+function openDrawer(){
+  document.getElementById("sideDrawer").classList.add("open");
+  document.getElementById("drawerOverlay").classList.add("show");
+}
+function closeDrawer(){
+  document.getElementById("sideDrawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("show");
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  const menu = document.querySelector(".menu-icon");
+  if(menu){
+    menu.addEventListener("click", openDrawer);
+  }
+});
+</script>
+
+<script src="js/notifications.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<script>
+
+/* ===============================
+   ALBUKHR AI ACCESS CONTROL
+================================ */
+
+function openAlbukhrAI(){
+
+/* ADMIN BYPASS */
+
+const admin =
+localStorage.getItem("albukhr_ai_dev");
+
+if(admin === "true"){
+
+window.location.href =
+"albukhr-ai.html";
+
+return;
+
+}
+
+/* SHOW UNDER DEVELOPMENT */
+
+const note =
+document.getElementById("aiDevNote");
+
+note.classList.add("show");
+
+setTimeout(()=>{
+
+note.classList.remove("show");
+
+},2500);
+
 }
 
 </script>
 
 <script>
 
-window.pay = async function () {
-  try {
+const ai =
+document.getElementById("albukhrAI");
 
-    const paymentData = {
-      amount: 1,
-      memo: "ALBUKHR TEST PAYMENT",
-      metadata: {
-        user: user.username
-      }
-    };
+let isDragging = false;
+let offsetX, offsetY;
 
-    const payment = await Pi.createPayment(
-      paymentData,
-      {
-        onReadyForServerApproval: async function(paymentId) {
+/* LOAD SAVED POSITION */
 
-          console.log("READY:", paymentId);
-
-          // APPROVE
-          await fetch(
-            "https://albukhr-api-production.up.railway.app/approve-payment",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                paymentId
-              })
-            }
-          );
-
-        },
-
-        onReadyForServerCompletion: async function(paymentId, txid) {
-
-          console.log("COMPLETE:", paymentId, txid);
-
-          // COMPLETE
-          await fetch(
-  "https://albukhr-api-production.up.railway.app/complete-payment",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      paymentId,
-      txid
-    })
-  }
+const saved =
+JSON.parse(
+localStorage.getItem("albukhr_ai_position")
 );
 
-          alert("Payment Success");
+if(saved){
 
-        },
+ai.style.left = saved.left;
+ai.style.top = saved.top;
 
-        onCancel: function(paymentId) {
-
-          console.log("Cancelled");
-
-          alert("Payment Cancelled");
-
-        },
-
-        onError: function(error, payment) {
-
-  console.error(error);
-
-  alert(error.message);
-
-        }
-
-      }
-    );
-
-  } catch (err) {
-
-  console.error(err);
-
-  alert(err.message);
-
-  }
+ai.style.right = "auto";
+ai.style.bottom = "auto";
 
 }
 
-  </script>
-  
+/* START DRAG */
+
+ai.addEventListener("touchstart",startDrag);
+ai.addEventListener("mousedown",startDrag);
+
+function startDrag(e){
+
+isDragging = true;
+
+const rect =
+ai.getBoundingClientRect();
+
+offsetX =
+(e.touches ? e.touches[0].clientX : e.clientX)
+- rect.left;
+
+offsetY =
+(e.touches ? e.touches[0].clientY : e.clientY)
+- rect.top;
+
+}
+
+/* DRAG */
+
+document.addEventListener("touchmove",drag);
+document.addEventListener("mousemove",drag);
+
+function drag(e){
+
+if(!isDragging) return;
+
+const x =
+(e.touches ? e.touches[0].clientX : e.clientX)
+- offsetX;
+
+const y =
+(e.touches ? e.touches[0].clientY : e.clientY)
+- offsetY;
+
+ai.style.left = x + "px";
+ai.style.top = y + "px";
+
+ai.style.right = "auto";
+ai.style.bottom = "auto";
+
+}
+
+/* STOP DRAG */
+
+document.addEventListener("touchend",stopDrag);
+document.addEventListener("mouseup",stopDrag);
+
+function stopDrag(){
+
+if(!isDragging) return;
+
+isDragging = false;
+
+/* SNAP TO EDGE */
+
+const rect =
+ai.getBoundingClientRect();
+
+const screenWidth =
+window.innerWidth;
+
+let snapX;
+
+if(rect.left < screenWidth/2){
+
+snapX = 10;
+
+}else{
+
+snapX = screenWidth - rect.width - 10;
+
+}
+
+ai.style.left = snapX + "px";
+
+/* SAVE POSITION */
+
+localStorage.setItem(
+"albukhr_ai_position",
+JSON.stringify({
+
+left: ai.style.left,
+top: ai.style.top
+
+})
+
+);
+
+/* AUTO MINIMIZE */
+
+setTimeout(()=>{
+
+ai.classList.add("minimized");
+
+},2000);
+
+}
+
+/* EXPAND ON TOUCH */
+
+ai.addEventListener("click",()=>{
+
+ai.classList.remove("minimized");
+
+});
+
+function showUser(user){
+
+  const header = document.querySelector(".header-right");
+
+  let box = document.getElementById("userBox");
+
+  if(!box){
+    box = document.createElement("div");
+    box.id = "userBox";
+    box.className = "user-box";
+    header.prepend(box);
+  }
+
+  box.innerHTML = `
+    <div>👤</div>
+    <div id="piUser">${user.username}</div>
+  `;
+}
+
+function loadUser(){
+
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+
+  const box = document.getElementById("userBox");
+
+  if(!box || !user) return;
+
+  box.innerText = "👤 " + user.username;
+
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+
+  // 🔐 CHECK LOGIN
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+
+  if(!user || !user.uid){
+    window.location.href = "login.html";
+    return;
+  }
+
+  // 🚀 LOAD DATA
+  loadUser();   // 👈 NEW
+  loadHome();
+
+});
+</script>
+
 </body>
-</html>
+  </html>
