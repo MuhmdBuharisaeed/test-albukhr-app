@@ -1,0 +1,28 @@
+.stat-card{
+  flex:1;
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,0.04);
+}
+
+.short-info{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  font-size:13px;
+  color:#555;
+  line-height:1.5;
+}
+
+.project-tx{
+  background:#fff;
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.04);
+}
