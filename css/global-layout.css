@@ -1,0 +1,84 @@
+/* ===============================
+   GLOBAL LAYOUT SYSTEM v2
+   (ALBUKHR CORE)
+=============================== */
+
+/* BODY RESET */
+body{
+  margin:0;
+  font-family:system-ui, Arial;
+  background:var(--bg, #f4f7f6);
+  overflow:auto;
+}
+
+/* ===============================
+   HEADER (ONLY FIXED ELEMENT)
+=============================== */
+.header{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:60px;
+  background:var(--albukhr-green);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
+  z-index:1000;
+  font-weight:600;
+}
+
+/* ===============================
+   MAIN CONTENT WRAPPER
+=============================== */
+.container{
+  padding:16px;
+  padding-top:80px; /* pushes below header */
+}
+
+/* ===============================
+   TOP SECTION (NO MORE FIXED)
+=============================== */
+.fixed-section{
+  position:relative;
+  top:60px;
+  background:var(--bg);
+  z-index:900;
+  padding:14px;
+
+  margin-bottom:20px; /* 🔥 THIS FIXES EVERYTHING */
+}
+/* ===============================
+   SCROLL AREA (NORMAL FLOW)
+=============================== */
+.scroll-area{
+  position:relative;
+  padding:14px;
+
+  margin-top:100px;  /* 🔥 THIS IS THE REAL FIX */
+}
+.scroll-area h3{
+  margin-top:15;
+  margin-bottom:10px;
+}
+/* ===============================
+   FLEX UTIL
+=============================== */
+.flex{
+  display:flex;
+  gap:10px;
+}
+
+.stats{
+  margin-top:10px;
+}
+
+.short-info{
+  margin-top:12px;
+}
+
+.btns{
+  margin-top:12px;
+}
