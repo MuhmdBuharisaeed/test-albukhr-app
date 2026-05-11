@@ -1,135 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR Login</title>
 
-  <title>ALBUKHR Login</title>
+<!-- PI SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:#f5f5f5;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  flex-direction:column;
+}
 
-  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:Arial, sans-serif;
-    }
+/* HEADER STYLE */
+.header{
+  position:absolute;
+  top:0;
+  width:100%;
+  background:#0f7a3d;
+  color:#fff;
+  padding:14px;
+  text-align:center;
+  font-weight:700;
+  font-size:18px;
+}
 
-    body{
-      background:#020617;
-      color:white;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-      text-align:center;
-      padding:20px;
-    }
+/* CARD */
+.card{
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1);
+  text-align:center;
+  width:90%;
+  max-width:320px;
+}
 
-    .container{
-      width:100%;
-      max-width:400px;
-    }
+button{
+  padding:12px 20px;
+  font-size:16px;
+  border:none;
+  background:#0f7a3d;
+  color:#fff;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:15px;
+}
 
-    h1{
-      font-size:40px;
-      margin-bottom:15px;
-    }
+button:active{
+  transform:scale(0.97);
+}
 
-    p{
-      color:#aaa;
-      margin-bottom:35px;
-      font-size:18px;
-    }
+.status{
+  margin-top:15px;
+  font-size:14px;
+  color:#333;
+}
+</style>
 
-    button{
-      width:100%;
-      padding:18px;
-      border:none;
-      border-radius:14px;
-      background:#6d28d9;
-      color:white;
-      font-size:20px;
-      cursor:pointer;
-      transition:0.3s;
-    }
-
-    button:hover{
-      opacity:0.9;
-    }
-
-    .loading{
-      margin-top:20px;
-      color:#aaa;
-      display:none;
-    }
-  </style>
 </head>
+
 <body>
 
-  <div class="container">
+<div class="header">ALBUKHR INVESTMENT LIMITED</div>
 
-    <h1>ALBUKHR</h1>
+<div class="card">
 
-    <p>Pi Browser Secure Login</p>
+  <h2>Login with Pi</h2>
 
-    <button onclick="login()">
-      Login With Pi
-    </button>
+  <div id="status" class="status">Initializing...</div>
 
-    <div class="loading" id="loading">
-      Authenticating...
-    </div>
+  <button onclick="login()">Login with Pi</button>
 
-  </div>
+</div>
 
-  <script>
+<script>
 
-Pi.init({
-  version: "2.0",
-  sandbox: true
-});
+// ✅ STATUS UPDATE
+function setStatus(msg){
+  document.getElementById("status").innerText = msg;
+  console.log(msg);
+}
 
-async function login() {
+// 🔐 LOGIN FUNCTION
+async function login(){
 
-  try {
+  try{
 
-    document.getElementById("loading").style.display = "block";
+    if(typeof window.Pi === "undefined"){
+      setStatus("❌ Open inside Pi Browser");
+      return;
+    }
 
-    // REMOVE OLD SESSION
-    localStorage.removeItem("pi_user");
+    setStatus("🔄 Initializing Pi...");
 
-    const scopes = ['username', 'payments'];
+    Pi.init({
+      version:"2.0",
+      sandbox: false
+    });
 
-    const auth = await Pi.authenticate(
-      scopes,
-      function(payment) {
-        console.log(payment);
-      }
-    );
+    setStatus("🔐 Authenticating...");
 
-    console.log(auth);
+    const auth = await Pi.authenticate(['username']);
 
-    localStorage.setItem(
-      "pi_user",
-      JSON.stringify(auth.user)
-    );
+    console.log("AUTH:", auth);
 
-    window.location.href = "index.html";
+    const user = {
+      uid: auth.user?.uid || auth.uid,
+      username: auth.user?.username || auth.username
+    };
 
-  } catch (err) {
+    if(!user.uid){
+      throw new Error("Invalid user");
+    }
 
-    console.error(err);
+    // ✅ SAVE USER
+    localStorage.setItem("pi_user", JSON.stringify(user));
 
-    alert(err.message);
+    setStatus("✅ Login success: " + user.username);
 
-    document.getElementById("loading").style.display = "none";
+    // 🚀 REDIRECT AFTER 1s
+    setTimeout(()=>{
+      window.location.href = "index.html";
+    },1000);
+
+  }catch(err){
+
+    console.error("LOGIN ERROR:", err);
+
+    setStatus("❌ Login failed");
+
   }
 
 }
 
-  </script>
+// 🔁 AUTO LOGIN CHECK
+document.addEventListener("DOMContentLoaded", ()=>{
+
+  const saved = JSON.parse(localStorage.getItem("pi_user"));
+
+  if(saved && saved.uid){
+    window.location.href = "index.html";
+  }
+
+});
+</script>
 
 </body>
 </html>
