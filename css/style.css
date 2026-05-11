@@ -1,0 +1,668 @@
+/* =================================================
+   ALBUKHR – GLOBAL STABLE STYLE.CSS
+   Compatible with all browsers & devices
+================================================= */
+
+/* ================= RESET ================= */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, sans-serif;
+}
+
+html, body{
+  width:100%;
+  height:100%;
+}
+
+/* ================= BODY ================= */
+body{
+  background:#f5f7f6;
+  color:#111;
+  overflow-x:hidden;
+  padding-bottom:120px; /* kare content daga bottom-nav */
+}
+
+/* ================= WELCOME BAR ================= */
+.welcome-bar{
+  background:#e6f4ec;
+  height:32px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+}
+
+.welcome-track{
+  white-space:nowrap;
+  padding-left:100%;
+  font-size:14px;
+  color:#0f7a3d;
+  animation:welcomeMove 18s linear infinite;
+}
+
+@keyframes welcomeMove{
+  from{transform:translateX(0)}
+  to{transform:translateX(-100%)}
+}
+
+/* ================= STATS (HOME) ================= */
+.stats{
+  display:flex;
+  gap:12px;
+  padding:16px;
+}
+
+.stat-card{
+  flex:1;
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  text-align:center;
+}
+
+.stat-card span{
+  font-size:13px;
+  color:#666;
+}
+
+.stat-card strong{
+  display:block;
+  margin-top:6px;
+  font-size:18px;
+  color:#0f7a3d;
+}
+
+/* ================= PROJECTS LIST ================= */
+.projects{
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.projects h2{
+  font-size:18px;
+  margin-bottom:6px;
+}
+
+.project-item{
+  background:#fff;
+  border-left:5px solid #cfded6;
+  padding:16px;
+  border-radius:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  text-decoration:none;
+  color:#0f7a3d;
+}
+
+.project-item span{
+  font-size:16px;
+}
+
+.project-item small{
+  font-size:12px;
+  color:#777;
+}
+
+.project-item.active{
+  border-left-color:#0f7a3d;
+  background:#e8f5e9;
+}
+
+/* ================= HOME – RECENT TRANSACTIONS ================= */
+.section{
+  padding:16px;
+}
+
+.tx-title{
+  font-size:14px;
+  font-weight:600;
+}
+
+.home-tx{
+  background:#fff;
+  border-radius:12px;
+  padding:10px 12px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+}
+
+.home-icon{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:#e6f6ec;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  flex-shrink:0;
+}
+
+.home-body{
+  flex:1;
+}
+
+.home-title{
+  font-size:13px;
+  font-weight:600;
+}
+
+.home-date{
+  font-size:11px;
+  color:#777;
+  margin-top:2px;
+}
+
+.home-right{
+  text-align:right;
+}
+
+.home-amount{
+  font-size:13px;
+  font-weight:600;
+}
+
+.home-status{
+  font-size:10px;
+  padding:3px 8px;
+  border-radius:10px;
+  background:#e6f6ec;
+  color:#0f7a3d;
+  display:inline-block;
+  margin-top:4px;
+}
+
+/* ================= GLOBAL TRANSACTIONS ================= */
+.project-tx{
+  background:#fff;
+  border-radius:12px;
+  padding:10px 12px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.project-icon{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:#e6f6ec;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+}
+
+.project-body{flex:1}
+
+.project-title{
+  font-size:13px;
+  font-weight:600;
+}
+
+.project-date{
+  font-size:11px;
+  color:#777;
+}
+
+.project-right{text-align:right}
+
+.project-amount{
+  font-size:13px;
+  font-weight:600;
+}
+
+.project-status{
+  font-size:11px;
+  color:#0f7a3d;
+}
+
+/* ================= MODALS ================= */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+
+.modal-box{
+  background:#fff;
+  width:90%;
+  max-width:420px;
+  padding:20px;
+  border-radius:16px;
+  animation:pop .25s ease;
+}
+
+@keyframes pop{
+  from{transform:scale(.9);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+
+.modal-box h3{
+  color:#0f7a3d;
+  margin-bottom:12px;
+}
+
+.modal-box label{
+  font-size:14px;
+  display:block;
+  margin-top:10px;
+}
+
+.modal-box input,
+.modal-box select{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:10px;
+  border:1px solid #ccc;
+}
+
+/* ================= BUTTONS ================= */
+.btns{
+  display:flex;
+  gap:12px;
+  margin-top:16px;
+}
+
+.btn{
+  flex:1;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  font-weight:bold;
+  font-size:16px;
+}
+
+.primary{
+  background:#0f7a3d;
+  color:#fff;
+}
+
+.secondary{
+  background:#fff;
+  border:1px solid #0f7a3d;
+  color:#0f7a3d;
+}
+
+.btn.primary:active{
+  transform:scale(.97);
+}
+
+/* ===== SEARCH INPUT ===== */
+.search-input{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #cceedd;
+  font-size:15px;
+}
+
+.welcome-track{
+  transition: opacity .5s ease;
+}
+
+.project-card.internal{
+  border-left:4px solid #0f7a3d;
+}
+
+.mini-btn{
+  font-size:11px;
+  padding:6px 10px;
+  border-radius:10px;
+  border:1px solid #0f7a3d;
+  background:#fff;
+  color:#0f7a3d;
+  font-weight:600;
+}
+
+.copy-box{
+  display:flex;
+  gap:6px;
+}
+
+.copy-box button{
+  padding:0 12px;
+  border:none;
+  border-radius:8px;
+  background:#0f7a3d;
+  color:#fff;
+  font-size:12px;
+}
+
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px;
+}
+
+.meta{
+  font-size:12px;
+  color:#555;
+  margin-top:6px;
+}
+
+.desc{
+  margin-top:8px;
+  font-size:12px;
+  background:#f7f9f8;
+  padding:8px;
+  border-radius:8px;
+     }
+
+.status-badge{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  margin-top:6px;
+}
+
+.status-approved{
+  background:#0f7a3d;
+  color:#fff;
+  box-shadow:0 0 8px rgba(15,122,61,.6);
+}
+
+.status-rejected{
+  background:#b02a37;
+  color:#fff;
+  box-shadow:0 0 8px rgba(176,42,55,.6);
+}
+
+.status-pending{
+  background:#e5e7eb;
+  color:#555;
+   }
+
+.notify{
+  position:fixed;
+  top:16px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:12px 16px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  color:#fff;
+  z-index:9999;
+  animation:slideDown .4s ease;
+}
+
+.notify.approved{
+  background:#0f7a3d;
+  box-shadow:0 6px 18px rgba(15,122,61,.35);
+}
+
+.notify.rejected{
+  background:#b02a37;
+  box-shadow:0 6px 18px rgba(176,42,55,.35);
+}
+
+@keyframes slideDown{
+  from{opacity:0;transform:translate(-50%,-10px)}
+  to{opacity:1;transform:translate(-50%,0)}
+}
+
+.popular-section{
+  margin:16px;
+}
+
+.popular-title{
+  font-weight:700;
+  margin-bottom:10px;
+  font-size:15px;
+}
+
+.popular-scroll{
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  padding-bottom:6px;
+}
+
+.popular-scroll::-webkit-scrollbar{
+  display:none;
+}
+
+.popular-card{
+  flex:0 0 calc(33.33% - 8px);
+  background:#fff;
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 6px 18px rgba(15,122,61,0.08);
+  text-align:center;
+  scroll-snap-align:start;
+  cursor:pointer;
+  transition:.25s ease;
+}
+
+.popular-card:hover{
+  transform:translateY(-3px);
+}
+
+.popular-icon{
+  font-size:22px;
+  margin-bottom:6px;
+}
+
+.popular-name{
+  font-weight:600;
+  font-size:13px;
+}
+
+.popular-amount{
+  font-size:12px;
+  color:#0f7a3d;
+  margin-top:4px;
+}
+
+/* ===== NEWS BADGE ===== */
+.nav-icon{
+  position:relative;
+  font-size:18px;
+}
+
+.news-badge{
+  position:absolute;
+  top:-6px;
+  right:-10px;
+  background:#e74c3c;
+  color:#fff;
+  font-size:8px;
+  padding:2px 5px;
+  border-radius:10px;
+  font-weight:700;
+  letter-spacing:.3px;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  display:none; /* controlled by JS */
+}
+
+/* ===== NEWS CARD ===== */
+
+.news-card{
+  background:#fff;
+  border-radius:14px;
+  overflow:hidden;
+  margin-bottom:14px;
+  box-shadow:0 3px 10px rgba(0,0,0,.05);
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.news-card:hover{
+  transform:translateY(-3px);
+}
+
+.news-image{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+}
+
+.news-body{
+  padding:12px;
+}
+
+.news-title{
+  font-size:15px;
+  font-weight:700;
+  margin-bottom:6px;
+  line-height:1.3;
+}
+
+.news-meta{
+  font-size:11px;
+  color:#777;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px;
+  background:#0f7a3d;
+  color:#fff;
+}
+
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.main-logo{
+  height:36px;
+  width:auto;
+}
+
+.brand{
+  margin:0;
+  font-size:18px;
+  font-weight:700;
+}
+
+/* =================================
+   ALBUKHR GLOBAL HEADER SYSTEM
+================================= */
+
+.header{
+  background:#0f7a3d;
+  height:60px;
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.main-logo{
+  height:54px;
+  width:auto;
+  object-fit:contain;
+}
+
+.brand{
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:.5px;
+  color:#fff;
+}
+
+/* Hamburger – only used on index */
+.menu-icon{
+  width:20px;
+  height:14px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  cursor:pointer;
+}
+
+.menu-icon div{
+  height:2px;
+  background:#fff;
+  border-radius:2px;
+}
+
+/* ===============================
+   ASSET PROGRESS BAR
+================================ */
+
+.asset-progress{
+  margin-top:6px;
+  height:5px;
+  background:#e9f5ef;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.asset-progress-fill{
+  height:100%;
+  background:#0f7a3d;
+  width:0%;
+  transition:width .4s ease;
+}
+
+.asset-progress-faint{
+  background:#cfe9db;
+}
+
+:root{
+  --albukhr-gold:#d4af37;
+}
+
+body{
+margin:0;
+font-family:system-ui;
+background:#f4f7f6;
+padding-bottom:100px; /* <-- ADD THIS */
+}
+
+.capital-btn{
+
+width:100%;
+margin-top:12px;
+padding:16px;
+
+background:#0f7a3d;
+color:#fff;
+
+border:none;
+border-radius:14px;
+
+font-size:16px;
+font-weight:600;
+
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+
+}
+
+/* AUTO HIDE */
+
+.dock-nav.hide{
+
+transform:translate(-50%,120%);
+opacity:.98;
+
+  }
