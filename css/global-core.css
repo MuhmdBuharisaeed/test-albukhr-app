@@ -1,0 +1,39 @@
+:root{
+
+  /* PRIMARY BRAND */
+  --albukhr-green:#0f7a3d;
+  --albukhr-green-soft:#eaf7ef;
+
+  /* GOLD IDENTITY */
+  --albukhr-gold:#d4af37;
+
+  /* BACKGROUND */
+  --bg:#f4f7f6;
+  --card:#ffffff;
+
+  /* TEXT */
+  --text:#222;
+  --subtext:#666;
+
+  /* STATUS */
+  --success:#0f7a3d;
+  --danger:#c0392b;
+
+  /* SHADOW */
+  --shadow:0 6px 18px rgba(0,0,0,0.05);
+
+  /* RADIUS */
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:8px;
+
+}
+
+/* RESET */
+
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+}
