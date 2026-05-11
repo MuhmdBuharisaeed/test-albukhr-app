@@ -1,0 +1,194 @@
+/* ======================================
+   ALBUKHR GLOBAL HEADER
+====================================== */
+:root{
+  --albukhr-gold:#d4af37;
+  --albukhr-gold-light:#f6d776;
+  --albukhr-gold-dark:#b8962e;
+}
+
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.15);
+
+  z-index:900;
+}
+
+/* left area */
+
+.header-left{
+display:flex;
+align-items:center;
+gap:6px;
+  }
+
+/* logo */
+
+.main-logo{
+height:58px;
+width:auto;
+display:block;
+object-fit:contain;
+
+filter:
+drop-shadow(0 0 0.8px #000)
+drop-shadow(0 0 1px #000);
+}
+
+.main-logo{
+
+  filter:
+    drop-shadow(0 0 0.8px #000)
+    drop-shadow(0 0 1px #000);
+}
+
+/* brand name */
+
+.brand{
+font-size:18px;
+font-weight:800;
+letter-spacing:1px;
+
+color:#ffffff;
+
+display:flex;
+align-items:center;
+
+filter:
+drop-shadow(0 0 0.8px #000)
+drop-shadow(0 0 1px #000);
+
+text-shadow:
+0 0 4px rgba(212,175,55,.35),
+0 0 6px rgba(212,175,55,.25);
+}
+
+/* right actions */
+
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+/* icon buttons */
+
+.header-btn{
+  width:34px;
+  height:34px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:10px;
+
+  background:rgba(255,255,255,0.12);
+
+  cursor:pointer;
+
+  transition:.2s ease;
+}
+
+.header-btn:hover{
+  background:rgba(255,255,255,0.22);
+}
+
+/* header icons */
+
+.header-icon{
+  width:20px;
+  height:20px;
+
+  stroke:#ffffff;
+  stroke-width:2;
+}
+
+/* notification wrapper */
+
+.notification-btn{
+  position:relative;
+}
+
+/* red badge */
+
+.notification-badge{
+  position:absolute;
+
+  top:4px;      /* ya sauko kasa kadan */
+  right:-2px;
+
+  min-width:14px;
+  height:14px;
+
+  background:#ff3b30;
+  color:#fff;
+
+  font-size:9px;
+  font-weight:700;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:50%;
+
+.header{
+display:flex;
+align-items:center;
+justify-content:space-between;
+
+padding:0 16px;
+height:64px;
+
+box-shadow:
+0 4px 14px rgba(0,0,0,.15);
+
+z-index:900;
+   }
+   
+@keyframes notifPulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.25)}
+  100%{transform:scale(1)}
+}
+
+.notification-badge{
+  animation:notifPulse 1.5s infinite;
+}
+
+.header-right{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-box{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.user-icon{
+  font-size: 14px;
+}
+
+#piUser{
+  font-size: 10px;
+  margin-top: 3px; /* 👈 ka iya ƙara/ rage */
+  white-space: nowrap;
+  color: #fff;
+}
