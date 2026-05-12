@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albukhr Projects</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+.section{padding:16px}
+.search-box{
+  background:#fff;
+  border-radius:14px;
+  padding:12px 14px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:14px
+}
+.search-box input{
+  border:none;
+  outline:none;
+  flex:1;
+  font-size:15px
+}
+.project-card{
+  background:#fff;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  display:flex;
+  gap:12px;
+  align-items:center
+}
+.project-icon{font-size:22px}
+.project-body{flex:1}
+.project-title{font-size:15px;font-weight:600}
+.project-desc{font-size:12px;color:#666;margin-top:2px}
+.project-meta{font-size:12px;color:#0f7a3d;margin-top:6px}
+.project-tag{
+  font-size:10px;
+  padding:3px 8px;
+  border-radius:20px;
+  background:#e6f5ec;
+  color:#0f7a3d;
+  display:inline-block;
+  margin-top:6px
+}
+.project-tag.external{
+  background:#fff3cd;
+  color:#856404
+}
+.project-action a{
+  font-size:13px;
+  color:#0f7a3d;
+  text-decoration:none;
+  font-weight:600
+}
+.section-title{
+  font-size:14px;
+  font-weight:700;
+  color:#0f7a3d;
+  margin:16px 0 10px
+}
+.empty{
+  text-align:center;
+  font-size:13px;
+  color:#777;
+  margin-top:20px
+}
+
+.brand-name{
+  font-size: 28px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+
+<body data-page="projects">
+
+<header class="header">
+
+  <div class="header-left">
+  <span class="brand">ALBUKHR</span>
+  </div>
+  
+</header>
+
+<section class="section">
+
+  <div class="search-box">
+    🔍
+    <input id="searchInput" placeholder="Search projects...">
+  </div>
+
+  <div class="section-title">Albukhr Internal Projects</div>
+  <div id="internalList"></div>
+
+  <div class="section-title">Verified External Projects</div>
+  <div id="externalList"></div>
+
+</section>
+
+<script src="js/project-config.js"></script>
+<script src="staking.js"></script>
+<script src="staking-external.js"></script>
+<script src="js/settings/settings-core.js"></script>
+<script src="js/core/albukhr-core.js"></script>
+<script src="js/external/external-engine.js"></script>
+
+<script>
+/* ===============================
+   RENDER INTERNAL
+================================ */
+function renderInternal(q){
+
+  internalList.innerHTML = "";
+
+  const list = Object.keys(PROJECT_CONFIG)
+    .map(name => ({
+      name,
+      ...PROJECT_CONFIG[name]
+    }))
+    .filter(p =>
+      p.title.toLowerCase().includes(q)
+    );
+
+  if(list.length === 0){
+    internalList.innerHTML =
+      "<div class='empty'>No internal projects found</div>";
+    return;
+  }
+
+  list.forEach(p=>{
+
+    internalList.innerHTML += `
+      <div class="project-card"
+           onclick="window.location.href='project.html?project=${p.name}'"
+           style="cursor:pointer;">
+
+        <div class="project-icon">${p.icon}</div>
+
+        <div class="project-body">
+
+          <div class="project-title">${p.title}</div>
+
+          <div class="project-desc">${p.desc}</div>
+
+          <div class="project-meta">
+            Minimum stake: ${
+              typeof getMinStake === "function"
+              ? getMinStake(p.name)
+              : "--"
+            } Pi
+          </div>
+
+          <span class="project-tag">Internal</span>
+
+        </div>
+
+      </div>
+    `;
+
+  });
+
+}
+/* ===============================
+   RENDER EXTERNAL
+================================ */
+function renderExternal(q){
+  externalList.innerHTML = "";
+
+  if(typeof getApprovedExternalProjects !== "function"){
+    externalList.innerHTML =
+      "<div class='empty'>External projects unavailable</div>";
+    return;
+  }
+
+  const projects = getApprovedExternalProjects()
+    .filter(p =>
+      (p.title || "").toLowerCase().includes(q)
+    );
+
+  if(projects.length === 0){
+    externalList.innerHTML =
+      "<div class='empty'>No verified external projects</div>";
+    return;
+  }
+
+  projects.forEach(p=>{
+    externalList.innerHTML += `
+      <div class="project-card"
+           onclick="window.location.href='external-project.html?id=${p.projectId}'"
+           style="cursor:pointer;">
+        <div class="project-icon">🌍</div>
+        <div class="project-body">
+          <div class="project-title">${p.title}</div>
+          <div class="project-desc">
+            ${p.description || "Verified external project under escrow."}
+          </div>
+          <div class="project-meta">
+            Escrow status: Locked
+          </div>
+          <span class="project-tag external">External</span>
+        </div>
+      </div>
+    `;
+  });
+              }
+
+function renderAll(){
+  const q = searchInput.value.toLowerCase();
+  renderInternal(q);
+  renderExternal(q);
+}
+
+searchInput.addEventListener("input", renderAll);
+renderAll();
+</script>
+
+</body>
+</html>
