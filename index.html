@@ -895,13 +895,16 @@ function showUser(user){
 
 function loadUser(){
 
-  const user = JSON.parse(localStorage.getItem("pi_user"));
+  const user = JSON.parse(
+    localStorage.getItem("pi_user")
+  );
 
-  const box = document.getElementById("userBox");
+  const el =
+    document.getElementById("piUser");
 
-  if(!box || !user) return;
+  if(!el || !user) return;
 
-  box.innerText = "👤 " + user.username;
+  el.innerText = user.username;
 
 }
 
