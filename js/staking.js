@@ -291,7 +291,7 @@ if(!user?.uid){
   try{
 
     const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&user_id=eq.${user.uid}`,
+  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
@@ -375,7 +375,7 @@ async function getUserStakes(){
   const user = getCurrentUser();
 
   const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&user_id=eq.${user.uid}`,
+  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
@@ -408,7 +408,7 @@ if(!user?.uid){
   }
 
   const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&user_id=eq.${user.uid}`,
+  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
@@ -525,7 +525,7 @@ if(!user?.uid){
   }
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stakes?project=eq.${project}&user_id=eq.${user.uid}&order=created_at.asc`,
+    `${SUPABASE_URL}/rest/v1/stakes?project=eq.${project}&userid=eq.${user.uid}&order=created_at.asc`,
     {
       headers:{
         "apikey": SUPABASE_KEY,
