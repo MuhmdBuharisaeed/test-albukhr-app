@@ -449,7 +449,7 @@ async function loadHome(){
     // ===== MAPS =====
     const userMap = {};
     const globalMap = {};
-    const countMap = {}; // ✅ FIX performance
+    const countMap = {};
 
     let totalStake = 0;
     let totalReward = 0;
@@ -459,31 +459,56 @@ async function loadHome(){
 
       if(!s) return;
 
+      // 🔥 SAFE PROJECT CHECK
+      if(!s.project) return;
+
+      // 🔥 SAFE TYPE CHECK
+      if(
+        s.type !== "stake" &&
+        s.type !== "withdraw"
+      ){
+        return;
+      }
+
       const amount = Number(s.amount) || 0;
 
-      const total = Number(s.reward) || 0;
-      const withdrawn = Number(s.withdrawnReward) || 0;
+      // 🔥 NEGATIVE WITHDRAW SAFE
+      const safeAmount =
+        s.type === "withdraw"
+        ? 0
+        : amount;
 
-      const reward = Math.max(0, total - withdrawn);
+      const total =
+        Number(s.reward) || 0;
 
-      totalStake += amount;
+      const withdrawn =
+        Number(s.withdrawnReward) || 0;
+
+      const reward =
+        Math.max(0, total - withdrawn);
+
+      // ===== TOTALS =====
+      totalStake += safeAmount;
       totalReward += reward;
 
       // ===== USER MAP =====
       userMap[s.project] =
-        (userMap[s.project] || 0) + amount;
+        (userMap[s.project] || 0)
+        + safeAmount;
 
       // ===== GLOBAL MAP =====
       if(!globalMap[s.project]){
+
         globalMap[s.project] = {
           total:0,
           investors:0
         };
+
       }
 
-      globalMap[s.project].total += amount;
+      globalMap[s.project].total += safeAmount;
 
-      // ===== INVESTOR COUNT (FAST) =====
+      // ===== INVESTOR COUNT =====
       countMap[s.project] =
         (countMap[s.project] || 0) + 1;
 
@@ -491,20 +516,31 @@ async function loadHome(){
 
     // ===== ASSIGN COUNTS =====
     Object.keys(globalMap).forEach(project=>{
+
       globalMap[project].investors =
         countMap[project] || 0;
+
     });
 
     // ===== SAFE DOM UPDATE =====
-    const stakeEl = document.getElementById("homeStake");
-    const rewardEl = document.getElementById("homeReward");
+    const stakeEl =
+      document.getElementById("homeStake");
+
+    const rewardEl =
+      document.getElementById("homeReward");
 
     if(stakeEl){
-      stakeEl.innerText = totalStake.toFixed(2)+" Pi";
+
+      stakeEl.innerText =
+        totalStake.toFixed(2)+" Pi";
+
     }
 
     if(rewardEl){
-      rewardEl.innerText = totalReward.toFixed(2)+" Pi";
+
+      rewardEl.innerText =
+        totalReward.toFixed(2)+" Pi";
+
     }
 
     // ===== RENDER =====
@@ -517,7 +553,12 @@ async function loadHome(){
     }
 
   }catch(err){
-    console.error("loadHome error:", err);
+
+    console.error(
+      "loadHome error:",
+      err
+    );
+
   }
 
 }
@@ -577,9 +618,11 @@ if(typeof PROJECT_CONFIG === "undefined"){
     name: project,
     config: PROJECT_CONFIG[project],
 
-    globalTotal: globalMap[project]?.total || 0,
-    userAmount: userMap[project] || 0
-
+    globalTotal: Number(globalMap[project]?.total) || 0,
+userAmount: Math.max(
+  0,
+  Number(userMap[project]) || 0
+)
   }));
 
   /* SORT LOGIC */
@@ -596,6 +639,8 @@ if(typeof PROJECT_CONFIG === "undefined"){
   });
 
   merged.forEach(item => {
+
+    if(!item.config) return;
 
     const div = document.createElement("div");
     div.className = "asset-item";
@@ -625,7 +670,12 @@ if(typeof PROJECT_CONFIG === "undefined"){
         <div class="asset-progress-row">
           <div class="asset-progress">
             <div class="asset-progress-bar"
-              style="width:${Math.min(item.userAmount,100)}%">
+              style="width:${
+  Math.max(
+    0,
+    Math.min(item.userAmount,100)
+  )
+}%">
             </div>
           </div>
           <div class="asset-percent">
