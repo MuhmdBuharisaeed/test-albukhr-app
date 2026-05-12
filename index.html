@@ -206,29 +206,7 @@ const supabase = window.supabase.createClient(
 );
 </script>
   
-<script>
-async function getAllStakesMerged(){
 
-  try{
-
-    const { data, error } = await supabase
-      .from("stakes")
-      .select("*");
-
-    if(error){
-      console.error("Supabase error:", error);
-      return [];
-    }
-
-    return data || [];
-
-  }catch(err){
-    console.error("Fetch failed:", err);
-    return [];
-  }
-
-}
-  </script>
   
 <script>
 
@@ -479,7 +457,7 @@ async function loadHome(){
     // ===== MAIN LOOP =====
     stakes.forEach(s=>{
 
-      if(!s || s.type === "withdraw") return;
+      if(!s) return;
 
       const amount = Number(s.amount) || 0;
 
