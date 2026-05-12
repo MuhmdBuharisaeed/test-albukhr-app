@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Project</title>
+  
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/global-core.css">
+<link rel="stylesheet" href="css/global-layout.css">
+<link rel="stylesheet" href="css/global-components.css">
+<link rel="stylesheet" href="css/global-style.css">
+</head>
+
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <span id="projectTitle"></span>
+  </div>
+  <div class="header-right" onclick="openInfo()">ℹ️</div>
+</header>
+
+<div class="fixed-section">
+
+  <div class="stats">
+
+<div class="stat-card">
+<span>Your Stake</span>
+<strong id="aStake">0.00 Pi</strong>
+
+<div id="stakeStatus"
+style="font-size:12px;color:#666;margin-top:4px">
+</div>
+
+</div>
+
+<div class="stat-card">
+<span>Your Reward</span>
+<strong id="aReward">0.00 Pi</strong>
+</div>
+
+  </div>
+
+  <div class="short-info" id="projectDescription"></div>
+
+  <div class="btns">
+<button class="btn primary" onclick="openModal()">
+Stake
+</button>
+
+<button class="btn secondary" onclick="openWithdrawModal()">
+💸 Withdraw Rewards
+</button>
+</div>
+
+<div class="capital-wrapper">
+<button class="btn capital-btn" onclick="openCapitalModal()">
+🏦 Withdraw Capital
+</button>
+</div>
+
+<div class="scroll-area">
+
+  <div class="scroll-area">
+    <h3 id="txTitle" style="margin-bottom:10px;font-size:15px">
+Transaction History
+    </h3>
+    <div id="projectHistory"></div>
+  </div>
+
+</div>
+
+<!-- STAKE MODAL -->
+<div class="modal" id="stakeModal">
+  <div class="modal-box">
+    <h3 id="stakeTitle"></h3>
+
+    <label>Amount (Pi)</label>
+    <input type="number" id="amountInput">
+
+    <small id="minHint"></small>
+
+    <label>Duration</label>
+    <select id="durationSelect"></select>
+
+    <div class="btns">
+      <button class="btn primary" onclick="confirmStake()">Confirm</button>
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="modal" id="successModal">
+  <div class="modal-box success">
+    <h3>Stake Successful</h3>
+    <p id="successText"></p>
+    <button class="btn primary" onclick="closeSuccess()">OK</button>
+  </div>
+</div>
+
+<!-- INFO MODAL -->
+<div class="modal" id="infoModal">
+  <div class="modal-box">
+    <h3 id="infoTitle"></h3>
+    <p id="infoText"></p>
+    <button class="btn secondary" onclick="closeInfo()">Close</button>
+  </div>
+</div>
+
+<!-- WITHDRAW MODAL -->
+<div class="modal" id="withdrawModal">
+  <div class="modal-box">
+    <h3>Withdraw Rewards</h3>
+
+    <label>Amount</label>
+    <input type="number" id="withdrawAmount">
+
+    <small id="availableBalance"></small>
+
+    <div style="font-size:12px;color:#666;margin-top:6px">
+Fee (1%): 
+<strong id="withdrawFee">0.00 Pi</strong>
+</div>
+
+<div style="font-size:12px;color:#666">
+You Receive: 
+<strong id="withdrawReceive">0.00 Pi</strong>
+</div>
+    
+    <label>Wallet Address</label>
+    <input type="text" id="walletAddress">
+
+    <div class="btns">
+      <button class="btn primary" onclick="confirmWithdraw()">Confirm</button>
+      <button class="btn secondary" onclick="closeWithdraw()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAPITAL WITHDRAW MODAL -->
+<div class="modal" id="capitalModal">
+<div class="modal-box">
+
+<h3>Withdraw Capital</h3>
+
+<label>Amount</label>
+<input type="number" id="capitalWithdrawAmount">
+
+<small id="capitalAvailable"></small>
+
+<div style="font-size:12px;color:#666;margin-top:6px">
+Fee (1%): 
+<strong id="capitalWithdrawFee">0.00 Pi</strong>
+</div>
+
+<div style="font-size:12px;color:#666">
+You Receive: 
+<strong id="capitalWithdrawReceive">0.00 Pi</strong>
+</div>
+
+<label>Wallet Address</label>
+<input type="text" id="capitalWallet">
+
+<div class="btns">
+<button class="btn primary"
+onclick="confirmCapitalWithdraw()">
+Confirm
+</button>
+
+<button class="btn secondary"
+onclick="closeCapitalModal()">
+Cancel
+</button>
+</div>
+
+</div>
+</div>
+  
+<!-- 1. PI SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- 2. AUTH ENGINE -->
+<script src="js/pi-auth.js"></script>
+
+<!-- 3. WAIT + INIT -->
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+  if(typeof initPi === "function"){
+    initPi();
+  }
+
+  if(typeof ensurePiAuth === "function"){
+    await ensurePiAuth();
+  }
+
+});
+</script>
+
+<!-- 4. OTHER FILES -->
+<script src="js/project-config.js"></script>
+<script src="js/unified-transactions.js"></script>
+<script src="js/albukhr-transaction-engine.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+<script src="js/staking.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
+
+
+<script>
+
+/* ===============================
+   CONFIG LOAD
+=============================== */
+const params = new URLSearchParams(window.location.search);
+const PROJECT_NAME = params.get("project") || "Azman";
+const CONFIG = getProjectConfig(PROJECT_NAME);
+
+// ✅ ADD THIS LINE
+const txTitle = document.getElementById("txTitle");
+
+txTitle.innerText =
+`${CONFIG.title} Transactions`;
+
+/* ===============================
+   INIT UI
+=============================== */
+document.title =
+`${CONFIG.title} • ALBUKHR`;
+
+projectTitle.innerText =
+  `${CONFIG.icon} ${CONFIG.title}`;
+
+projectDescription.innerText = CONFIG.desc;
+
+infoTitle.innerText = `About ${CONFIG.title}`;
+infoText.innerText = CONFIG.info;
+
+stakeTitle.innerText = `Stake in ${CONFIG.title}`;
+
+/* ===============================
+   DOM
+=============================== */
+const projectHistory = document.getElementById("projectHistory");
+
+/* ===============================
+   MODALS
+=============================== */
+function openModal(){
+
+  amountInput.value = "";
+
+  minHint.innerText =
+    `Minimum stake: ${getMinStake(PROJECT_NAME)} Pi`;
+
+  durationSelect.innerHTML = "";
+
+  CONFIG.durations.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.innerText = d + " Days";
+    durationSelect.appendChild(opt);
+  });
+
+  stakeModal.style.display="flex";
+}
+
+function closeModal(){ stakeModal.style.display="none"; }
+function closeSuccess(){ successModal.style.display="none"; }
+function openInfo(){ infoModal.style.display="flex"; }
+function closeInfo(){ infoModal.style.display="none"; }
+
+async function openWithdrawModal(){
+
+  const data = await getProjectTotals(PROJECT_NAME);
+
+  let total = 0;
+  data.stakes.forEach(s=>{
+    const remaining =
+  (Number(s.reward) || 0) -
+  (Number(s.withdrawnReward) || 0);
+
+total += Math.max(0, remaining);
+  });
+
+  availableBalance.innerText =
+    "Available: " + total.toFixed(2) + " Pi";
+
+  withdrawModal.style.display="flex";
+}
+
+function closeWithdraw(){
+  withdrawModal.style.display="none";
+}
+
+/* ===============================
+     CONFORM STAKE
+=============================== */
+
+async function confirmStake(){
+
+  if(typeof Pi === "undefined"){
+    alert("Open inside Pi Browser");
+    return;
+  }
+
+  const amount = Number(amountInput.value);
+  const duration = Number(durationSelect.value);
+  const min = getMinStake(PROJECT_NAME);
+
+  if(!amount || amount < min){
+    alert("Minimum stake is " + min + " Pi");
+    return;
+  }
+
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+
+  if(!user){
+    alert("Login required");
+    return;
+  }
+
+  const btn = document.querySelector("#stakeModal .primary");
+  btn.innerText = "Processing...";
+  btn.disabled = true;
+
+  try{
+
+     // 🔥 WAKE SERVER FAST
+await fetch("https://albukhr-api-production.up.railway.app/ping");
+await fetch("https://albukhr-api-production.up.railway.app/ping");
+    
+    await new Promise((resolve, reject) => {
+
+     console.log("START PAYMENT");
+alert("START PAYMENT");
+
+Pi.createPayment({
+
+  amount: Number(amount),
+
+  memo: `Stake in ${CONFIG.title}`,
+
+  metadata: {
+    project: PROJECT_NAME,
+    user: user.uid,
+    duration
+  }
+
+}, {
+        onReadyForServerApproval: async function(paymentId){
+
+  try{
+
+    const res = await fetch("https://albukhr-api-production.up.railway.app/approve-payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ paymentId })
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      throw new Error("Approval failed");
+    }
+
+    console.log("✅ Approved");
+
+  }catch(e){
+    console.error("APPROVE ERROR:", e);
+    throw e;
+  }
+
+},
+
+        onReadyForServerCompletion: async function(paymentId, txid){
+
+  try{
+
+    const res = await fetch("https://albukhr-api-production.up.railway.app/complete-payment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        paymentId,
+        txid
+      })
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      throw new Error("Completion failed");
+    }
+
+    console.log("🎉 Completed");
+
+    resolve();
+
+  }catch(e){
+    console.error("COMPLETE ERROR:", e);
+    reject(e);
+  }
+
+},
+
+        onCancel: () => reject("User cancelled"),
+        onError: reject
+
+      });
+
+    });
+
+    successText.innerText =
+      `You staked ${amount} Pi in ${CONFIG.title}`;
+
+    closeModal();
+    successModal.style.display = "flex";
+
+    await load();
+
+  }catch(e){
+
+    console.error("REAL ERROR:", e);
+    alert(e || "Payment failed");
+
+  }
+
+  btn.innerText = "Confirm";
+  btn.disabled = false;
+
+}
+  
+/* ===============================
+   LOAD
+=============================== */
+async function load(){
+
+  let data;
+
+try{
+  data = await getProjectTotals(PROJECT_NAME);
+}catch(e){
+  console.error("LOAD ERROR:", e);
+
+  alert(
+    "Load failed:\n" +
+    (e.message || JSON.stringify(e))
+  );
+
+  return;
+}
+
+/* ===============================
+CALCULATE TOTAL STAKE
+=============================== */
+
+let totalStake = 0;
+
+data.stakes.forEach(s=>{
+
+totalStake += Number(s.amount) || 0;
+
+});
+
+/* ===============================
+CALCULATE REWARD
+=============================== */
+
+let reward = 0;
+
+data.stakes.forEach(s=>{
+
+const remaining =
+(Number(s.reward) || 0) -
+(Number(s.withdrawnReward) || 0);
+
+reward += Math.max(0, remaining);
+
+});
+
+/* ===============================
+UPDATE UI
+=============================== */
+
+aStake.innerText =
+totalStake.toFixed(2) + " Pi";
+
+aReward.innerText =
+reward.toFixed(2) + " Pi";
+
+renderHistory();
+
+/* LOCK STATUS */
+updateStakeStatus();
+
+  }
+
+/* ===============================
+SHORT WALLET
+=============================== */
+function shortWallet(address){
+
+if(!address) return "";
+
+return address.slice(0,6)
++ "..."
++ address.slice(-4);
+
+ }
+
+/* ===============================
+   HISTORY (UNIFIED)
+=============================== */
+function renderHistory(){
+
+  projectHistory.innerHTML = "";
+
+  const txs = getTransactions()
+    .filter(tx => tx.project === PROJECT_NAME)
+    .sort((a,b)=>
+      (b.timestamp || 0) - (a.timestamp || 0)
+    );
+
+  if(!txs.length){
+    projectHistory.innerHTML = `
+      <div style="text-align:center;padding:20px;color:#777">
+        ${CONFIG.icon}
+        <br><br>
+        No transactions yet
+      </div>
+    `;
+    return;
+  }
+
+  txs.forEach(tx=>{
+
+    let icon = CONFIG.icon;
+    let label = "Stake";
+    let sign = "+";
+    let color = "success-status";
+
+    if(tx.type === "withdraw"){
+      icon = "💸";
+      label = "Withdraw";
+      sign = "-";
+      color = "withdraw-status";
+    }
+
+    if(tx.type === "reward"){
+      icon = "🎁";
+      label = "Reward";
+    }
+    
+    if(tx.type === "capital"){
+      icon = "🏦";
+      label = "Capital";
+      sign = "-";
+      color = "withdraw-status";
+    }
+
+    const div = document.createElement("div");
+div.className="project-tx";
+
+div.innerHTML = `
+<div class="project-icon">${icon}</div>
+
+<div class="project-body">
+
+<div class="project-title">${label}</div>
+
+${tx.meta?.wallet ? `
+<div style="font-size:11px;color:#666">
+Wallet: ${shortWallet(tx.meta.wallet)}
+</div>
+` : ""}
+
+<div class="project-date">
+${new Date(tx.timestamp).toLocaleString()}
+</div>
+
+</div>
+
+<div class="project-right">
+<div class="project-amount ${color}">
+${sign}${Number(tx.amount).toFixed(2)} Pi
+</div>
+</div>
+`;
+
+projectHistory.appendChild(div);
+
+  });
+
+  }
+
+/* ===============================
+   WITHDRAW
+=============================== */
+  let __withdrawLock = false;
+  
+async function confirmWithdraw(){
+
+  // 🔒 PREVENT DOUBLE CLICK
+  if(__withdrawLock) return;
+  __withdrawLock = true;
+
+  const amount = Number(withdrawAmount.value);
+
+  // 🔥 VALIDATION
+  if(!Number.isFinite(amount)){
+    alert("Invalid number");
+    __withdrawLock = false;
+    return;
+  }
+
+  if(amount <= 0){
+    alert("Invalid amount");
+    __withdrawLock = false;
+    return;
+  }
+
+  const wallet = walletAddress.value;
+
+  if(!wallet){
+    alert("Enter wallet address");
+    __withdrawLock = false;
+    return;
+  }
+
+  // 🔥 CALL ENGINE
+  const res = await withdrawProjectReward(
+    PROJECT_NAME,
+    amount
+  );
+
+  if(!res?.success){
+    alert(res?.error || "Withdraw failed");
+    __withdrawLock = false;
+    return;
+  }
+
+  const fee = amount * 0.01;
+  const receive = amount - fee;
+
+  // 🔥 RECORD TX
+  recordTx({
+    type:"withdraw",
+    project:PROJECT_NAME,
+    amount: receive,
+    meta:{
+      wallet: wallet,
+      fee: fee
+    }
+  });
+
+  // 🔥 RESET UI
+  withdrawAmount.value = "";
+  walletAddress.value = "";
+
+  closeWithdraw();
+  await load();
+
+  // 🔓 UNLOCK
+  __withdrawLock = false;
+}
+
+/* ===============================
+REWARDS WITHDRAW FEE
+=============================== */
+  const withdrawAmount =
+document.getElementById("withdrawAmount");
+
+if(withdrawAmount){
+
+withdrawAmount.addEventListener("input", function(){
+
+const amount =
+Number(this.value)||0;
+
+const fee =
+amount * 0.01;
+
+const receive =
+amount - fee;
+
+document.getElementById("withdrawFee")
+.innerText =
+fee.toFixed(2) + " Pi";
+
+document.getElementById("withdrawReceive")
+.innerText =
+receive.toFixed(2) + " Pi";
+
+});
+
+}
+
+/* ===============================
+CAPITAL WITHDRAW FEE
+=============================== */
+
+const capitalWithdrawAmount =
+document.getElementById("capitalWithdrawAmount");
+
+if(capitalWithdrawAmount){
+
+capitalWithdrawAmount.addEventListener("input", function(){
+
+const amount =
+Number(this.value)||0;
+
+const fee =
+amount * 0.01;
+
+const receive =
+amount - fee;
+
+document.getElementById("capitalWithdrawFee")
+.innerText =
+fee.toFixed(2) + " Pi";
+
+document.getElementById("capitalWithdrawReceive")
+.innerText =
+receive.toFixed(2) + " Pi";
+
+});
+
+}
+
+/* ===============================
+SAVE PROJECT STAKE 
+=============================== */
+function saveProjectStakes(project, stakes){
+
+  if(!Array.isArray(stakes)) return;
+
+  const all =
+    JSON.parse(localStorage.getItem("albukhr_stakes")) || [];
+
+  const updated = all.map(s => {
+
+    if(s.project === project){
+
+      const found = stakes.find(x => x.id === s.id);
+
+      return found || s;
+
+    }
+
+    return s;
+
+  });
+
+  localStorage.setItem(
+    "albukhr_stakes",
+    JSON.stringify(updated)
+  );
+
+  }
+
+/* ===============================
+  OPEN CAPITAL MODAL
+=============================== */
+function openCapitalModal(){
+
+updateCapitalAvailable();
+
+capitalModal.style.display="flex";
+
+}
+
+/* ===============================
+UPDATE CAPITAL AVAILABLE
+=============================== */
+async function updateCapitalAvailable(){
+const el =
+document.getElementById("capitalAvailable");
+
+if(!el) return;
+
+const data = await getProjectTotals(PROJECT_NAME);
+let total = 0;
+
+const now = Date.now();
+
+data. forEach(s=>{
+
+if(now >= (s.unlockTime||0)){
+total += Number(s.amount)||0;
+}
+
+});
+
+el.innerText =
+"Available: " + total.toFixed(2) + " Pi";
+
+  }
+
+/* ===============================
+CLOSE CAPITAL MODAL
+=============================== */
+function closeCapitalModal(){
+
+capitalModal.style.display="none";
+
+  }
+
+/* ===============================
+COMFORM CAPITAL WITHDRAW
+=============================== */
+let __capitalLock = false;
+
+async function confirmCapitalWithdraw(){
+
+  // 🔒 PREVENT DOUBLE CLICK
+  if(__capitalLock) return;
+  __capitalLock = true;
+
+  const amount = Number(capitalWithdrawAmount.value);
+  const wallet = capitalWallet.value;
+
+  // 🔥 VALIDATION
+  if(!Number.isFinite(amount) || amount <= 0){
+    alert("Invalid amount");
+    __capitalLock = false;
+    return;
+  }
+
+  if(!wallet){
+    alert("Enter wallet address");
+    __capitalLock = false;
+    return;
+  }
+
+  // 🔥 CALL SUPABASE ENGINE
+  const res = await withdrawCapital({
+    project: PROJECT_NAME,
+    amount: amount
+  });
+
+  if(res?.error){
+    alert(res.error);
+    __capitalLock = false;
+    return;
+  }
+
+  const fee = amount * 0.01;
+  const receive = amount - fee;
+
+  // 🔥 RECORD TX
+  recordTx({
+    type:"capital",
+    project:PROJECT_NAME,
+    amount:receive,
+    meta:{
+      wallet:wallet,
+      fee:fee
+    }
+  });
+
+  // 🔥 RESET UI
+  capitalWithdrawAmount.value = "";
+  capitalWallet.value = "";
+
+  closeCapitalModal();
+  await load();
+
+  // 🔓 UNLOCK
+  __capitalLock = false;
+}
+
+/* ===============================
+UPDATE STAKE STATUS 
+=============================== */
+async function updateStakeStatus(){
+
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+
+const { data, error } = await supabase
+  .from("stakes")
+  .select("*")
+  .eq("project", PROJECT_NAME)
+  .eq("user_id", user.uid);
+  
+if(error){
+  console.error(error);
+  return;
+}
+
+let locked = 0;
+let unlocked = 0;
+
+const now = Date.now();
+
+data.forEach(s=>{
+const amount =
+Number(s.amount)||0;
+
+if(now >= (s.unlockTime||0)){
+unlocked += amount;
+}else{
+locked += amount;
+}
+
+});
+
+let text = "";
+
+if(locked > 0){
+
+text +=
+"Locked: " +
+locked.toFixed(2) +
+" Pi";
+
+}
+
+if(unlocked > 0){
+
+text +=
+" • Unlocked: " +
+unlocked.toFixed(2) +
+" Pi";
+
+}
+
+document.getElementById("stakeStatus")
+.innerText = text;
+
+  }
+
+/* ===============================
+   INIT
+=============================== */
+load();
+
+/* AUTO UPDATE LOCK STATUS */
+  setInterval(()=>{
+  updateStakeStatus();
+},5000);
+
+/* AUTO UPDATE CAPITAL */
+setInterval(updateCapitalAvailable, 5000);
+</script>
+
+</body>
+  </html>
