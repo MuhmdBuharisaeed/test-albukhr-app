@@ -359,7 +359,29 @@ async function confirmStake(){
   btn.disabled = false;
 
 }
-  
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+
+  try{
+
+    if(typeof initPi === "function"){
+      await initPi();
+    }
+
+    if(typeof ensurePiAuth === "function"){
+      await ensurePiAuth();
+    }
+
+  }catch(e){
+
+    console.error("INIT ERROR:", e);
+
+  }
+
+  load();
+
+});
+
 /* ===============================
    LOAD
 =============================== */
