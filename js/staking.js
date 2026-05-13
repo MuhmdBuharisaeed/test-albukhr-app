@@ -239,11 +239,38 @@ async function addStake({project,amount,duration}){
 
   __stakingLock = true;
 
-  const user = await ensurePiAuth();
+  let user = null;
+
+try{
+
+  user = await ensurePiAuth();
+
+}catch(e){
+
+  console.error("AUTH ERROR:", e);
+
+}
 
 if(!user?.uid){
+
+  user = JSON.parse(
+    localStorage.getItem("pi_user")
+  );
+
+}
+
+if(!user?.uid){
+
   __stakingLock = false;
-  return {error:"Login required"};
+
+  alert(
+    "Pi login required. Please reopen inside Pi Browser."
+  );
+
+  return {
+    error:"Login required"
+  };
+
 }
 
   if(!user?.uid){
