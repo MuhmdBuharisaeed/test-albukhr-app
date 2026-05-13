@@ -308,11 +308,6 @@ function closeWithdraw(){
 
 async function confirmStake(){
 
-  if(typeof Pi === "undefined"){
-    alert("Open inside Pi Browser");
-    return;
-  }
-
   const amount = Number(amountInput.value);
   const duration = Number(durationSelect.value);
   const min = getMinStake(PROJECT_NAME);
@@ -322,119 +317,41 @@ async function confirmStake(){
     return;
   }
 
-  const user = JSON.parse(localStorage.getItem("pi_user"));
+  const btn =
+    document.querySelector("#stakeModal .primary");
 
-  if(!user){
-    alert("Login required");
-    return;
-  }
-
-  const btn = document.querySelector("#stakeModal .primary");
   btn.innerText = "Processing...";
   btn.disabled = true;
 
   try{
 
-     // 🔥 WAKE SERVER FAST
-await fetch("https://albukhr-api-production.up.railway.app/ping");
-await fetch("https://albukhr-api-production.up.railway.app/ping");
-    
-    await new Promise((resolve, reject) => {
-
-     console.log("START PAYMENT");
-alert("START PAYMENT");
-
-Pi.createPayment({
-
-  amount: Number(amount),
-
-  memo: `Stake in ${CONFIG.title}`,
-
-  metadata: {
-    project: PROJECT_NAME,
-    user: user.uid,
-    duration
-  }
-
-}, {
-        onReadyForServerApproval: async function(paymentId){
-
-  try{
-
-    const res = await fetch("https://albukhr-api-production.up.railway.app/approve-payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ paymentId })
+    const result = await addStake({
+      project: PROJECT_NAME,
+      amount,
+      duration
     });
 
-    const data = await res.json();
-
-    if(!data.success){
-      throw new Error("Approval failed");
+    if(result?.error){
+      throw new Error(result.error);
     }
-
-    console.log("✅ Approved");
-
-  }catch(e){
-    console.error("APPROVE ERROR:", e);
-    throw e;
-  }
-
-},
-
-        onReadyForServerCompletion: async function(paymentId, txid){
-
-  try{
-
-    const res = await fetch("https://albukhr-api-production.up.railway.app/complete-payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        paymentId,
-        txid
-      })
-    });
-
-    const data = await res.json();
-
-    if(!data.success){
-      throw new Error("Completion failed");
-    }
-
-    console.log("🎉 Completed");
-
-    resolve();
-
-  }catch(e){
-    console.error("COMPLETE ERROR:", e);
-    reject(e);
-  }
-
-},
-
-        onCancel: () => reject("User cancelled"),
-        onError: reject
-
-      });
-
-    });
 
     successText.innerText =
       `You staked ${amount} Pi in ${CONFIG.title}`;
 
     closeModal();
+
     successModal.style.display = "flex";
 
     await load();
 
   }catch(e){
 
-    console.error("REAL ERROR:", e);
-    alert(e || "Payment failed");
+    console.error(e);
+
+    alert(
+      e.message ||
+      "Payment failed"
+    );
 
   }
 
@@ -796,7 +713,7 @@ let total = 0;
 
 const now = Date.now();
 
-data. forEach(s=>{
+data.stakes.forEach(s=>{
 
 if(now >= (s.unlockTime||0)){
 total += Number(s.amount)||0;
@@ -893,7 +810,7 @@ const { data, error } = await supabase
   .from("stakes")
   .select("*")
   .eq("project", PROJECT_NAME)
-  .eq("user_id", user.uid);
+  .eq("userid", user.uid);
   
 if(error){
   console.error(error);
