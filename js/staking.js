@@ -90,44 +90,135 @@ return table?.[project]?.[Number(duration)] || 0;
 async function payWithPi({amount, memo, metadata}){
 
   if(typeof Pi === "undefined"){
-    throw new Error("❌ Open inside Pi Browser");
+    throw new Error("Open inside Pi Browser");
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject)=>{
 
     Pi.createPayment({
+
       amount,
       memo,
       metadata
+
     },{
 
-      onReadyForServerApproval: function(paymentId){
-        console.log("✅ Ready:", paymentId);
+      /* ===============================
+         SERVER APPROVAL
+      =============================== */
+      onReadyForServerApproval: async function(paymentId){
+
+        try{
+
+          console.log("APPROVING:", paymentId);
+
+          const res = await fetch(
+            "https://albukhr-api-production.up.railway.app/approve-payment",
+            {
+              method:"POST",
+              headers:{
+                "Content-Type":"application/json"
+              },
+              body: JSON.stringify({
+                paymentId
+              })
+            }
+          );
+
+          const data = await res.json();
+
+          if(!data.success){
+            throw new Error("Approval failed");
+          }
+
+          console.log("✅ APPROVED");
+
+        }catch(err){
+
+          console.error("❌ APPROVE ERROR:", err);
+
+          reject(
+            new Error("Payment approval failed")
+          );
+
+        }
+
       },
 
-      onReadyForServerCompletion: function(paymentId, txid){
-        console.log("🎉 Completed:", txid);
+      /* ===============================
+         SERVER COMPLETE
+      =============================== */
+      onReadyForServerCompletion: async function(paymentId, txid){
 
-         // 🔥 VALIDATION
-         if(!paymentId || !txid){
-  reject(new Error("Invalid Pi transaction"));
-  return;
-         }
+        try{
 
-        resolve({
-          paymentId,
-          txid
-        });
+          console.log("COMPLETING:", paymentId);
+
+          if(!paymentId || !txid){
+            throw new Error("Invalid transaction");
+          }
+
+          const res = await fetch(
+            "https://albukhr-api-production.up.railway.app/complete-payment",
+            {
+              method:"POST",
+              headers:{
+                "Content-Type":"application/json"
+              },
+              body: JSON.stringify({
+                paymentId,
+                txid
+              })
+            }
+          );
+
+          const data = await res.json();
+
+          if(!data.success){
+            throw new Error("Completion failed");
+          }
+
+          console.log("🎉 PAYMENT COMPLETED");
+
+          resolve({
+            paymentId,
+            txid
+          });
+
+        }catch(err){
+
+          console.error("❌ COMPLETE ERROR:", err);
+
+          reject(
+            new Error("Payment completion failed")
+          );
+
+        }
+
       },
 
+      /* ===============================
+         CANCEL
+      =============================== */
       onCancel: function(paymentId){
-        console.warn("❌ Cancelled:", paymentId);
-        reject(new Error("User cancelled"));
+
+        console.warn("❌ CANCELLED:", paymentId);
+
+        reject(
+          new Error("User cancelled payment")
+        );
+
       },
 
+      /* ===============================
+         ERROR
+      =============================== */
       onError: function(error){
-        console.error("❌ Pi Error:", error);
+
+        console.error("❌ PI ERROR:", error);
+
         reject(error);
+
       }
 
     });
