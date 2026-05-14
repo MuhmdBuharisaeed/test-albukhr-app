@@ -106,71 +106,70 @@ async function payWithPi({amount, memo, metadata}){
       /* ===============================
          SERVER APPROVAL
       =============================== */
-      onReadyForServerApproval: function(paymentId){
+      onReadyForServerApproval: async function(paymentId){
 
-console.log("APPROVAL ID:", paymentId);
+  console.log("✅ Ready:", paymentId);
 
-console.log("TYPE:", typeof paymentId);
+  try{
 
-console.log(
-"STRING:",
-JSON.stringify(paymentId)
-);
+    const res = await fetch(
+      "https://YOUR-RAILWAY-DOMAIN/approve-payment",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          paymentId
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("APPROVE RESPONSE:", data);
+
+  }catch(e){
+
+    console.error("APPROVE FAILED:", e);
+
+  }
 
 },
-
       /* ===============================
          SERVER COMPLETE
       =============================== */
       onReadyForServerCompletion: async function(paymentId, txid){
 
-        try{
+  console.log("🎉 Completed:", txid);
 
-          console.log("COMPLETING:", paymentId);
+  try{
 
-          if(!paymentId || !txid){
-            throw new Error("Invalid transaction");
-          }
+    await fetch(
+      "https://YOUR-RAILWAY-DOMAIN/complete-payment",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          paymentId,
+          txid
+        })
+      }
+    );
 
-          const res = await fetch(
-            "https://albukhr-api-production.up.railway.app/complete-payment",
-            {
-              method:"POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({
-                paymentId,
-                txid
-              })
-            }
-          );
+  }catch(e){
 
-          const data = await res.json();
+    console.error("COMPLETE FAILED:", e);
+  }
 
-          if(!data.success){
-            throw new Error("Completion failed");
-          }
+  resolve({
+    paymentId,
+    txid
+  });
 
-          console.log("🎉 PAYMENT COMPLETED");
-
-          resolve({
-            paymentId,
-            txid
-          });
-
-        }catch(err){
-
-          console.error("❌ COMPLETE ERROR:", err);
-
-          reject(
-            new Error("Payment completion failed")
-          );
-
-        }
-
-      },
-
+},
       /* ===============================
          CANCEL
       =============================== */
