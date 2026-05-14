@@ -106,44 +106,18 @@ async function payWithPi({amount, memo, metadata}){
       /* ===============================
          SERVER APPROVAL
       =============================== */
-      onReadyForServerApproval: async function(paymentId){
+      onReadyForServerApproval: function(paymentId){
 
-        try{
+console.log("APPROVAL ID:", paymentId);
 
-          console.log("APPROVING:", paymentId);
+console.log("TYPE:", typeof paymentId);
 
-          const res = await fetch(
-            "https://albukhr-api-production.up.railway.app/approve-payment",
-            {
-              method:"POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({
-                paymentId
-              })
-            }
-          );
+console.log(
+"STRING:",
+JSON.stringify(paymentId)
+);
 
-          const data = await res.json();
-
-          if(!data.success){
-            throw new Error("Approval failed");
-          }
-
-          console.log("✅ APPROVED");
-
-        }catch(err){
-
-          console.error("❌ APPROVE ERROR:", err);
-
-          reject(
-            new Error("Payment approval failed")
-          );
-
-        }
-
-      },
+},
 
       /* ===============================
          SERVER COMPLETE
