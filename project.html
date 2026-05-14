@@ -317,6 +317,13 @@ async function confirmStake(){
     return;
   }
 
+  const user = await ensurePiAuth();
+
+if(!user?.uid){
+  alert("Pi login failed");
+  return;
+}
+
   const btn =
     document.querySelector("#stakeModal .primary");
 
