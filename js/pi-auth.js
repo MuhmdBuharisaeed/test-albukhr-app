@@ -29,66 +29,39 @@ async function initPi(){
 =============================== */
 async function ensurePiAuth(){
 
-  /* 🔥 RETURN CACHED USER */
-  if(__pi_user?.uid){
-    return __pi_user;
+try{
+
+// 🔥 CLEAR OLD SESSION
+localStorage.removeItem("pi_user");
+
+const scopes = [
+  "username",
+  "payments",
+  "wallet_address"
+];
+
+const user = await Pi.authenticate(
+  scopes,
+  function(payment){
+    console.log("Payment callback:", payment);
   }
+);
 
-  /* 🔥 RETURN LOCAL USER */
-  try{
+console.log("AUTH USER:", user);
 
-    const saved =
-      JSON.parse(localStorage.getItem("pi_user"));
+localStorage.setItem(
+  "pi_user",
+  JSON.stringify(user)
+);
 
-    if(saved?.uid){
+return user;
 
-      __pi_user = saved;
+}catch(e){
 
-      return saved;
-    }
+console.error("❌ Auth failed:", e);
 
-  }catch(e){
-    console.warn("Local user parse failed");
-  }
+return null;
 
-  /* 🔥 SDK CHECK */
-  if(typeof Pi === "undefined"){
-    console.error("❌ Pi SDK not loaded");
-    return null;
-  }
-
-  try{
-
-    const user = await Pi.authenticate(
-      ["username","payments","wallet_address"],
-      function(payment){
-        console.log("Payment callback:", payment);
-      }
-    );
-
-    if(user?.uid){
-
-      __pi_user = user;
-
-      localStorage.setItem(
-        "pi_user",
-        JSON.stringify(user)
-      );
-
-      console.log("✅ AUTH SUCCESS");
-
-      return user;
-
-    }
-
-    return null;
-
-  }catch(e){
-
-    console.error("❌ AUTH FAILED:", e);
-
-    return null;
-
-  }
+}
 
 }
