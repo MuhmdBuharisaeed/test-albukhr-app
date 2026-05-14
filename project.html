@@ -371,21 +371,17 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   try{
 
-    if(typeof initPi === "function"){
-      await initPi();
-    }
+    await initPi();
 
-    if(typeof ensurePiAuth === "function"){
-      await ensurePiAuth();
-    }
+    await ensurePiAuth();
+
+    await load();
 
   }catch(e){
 
     console.error("INIT ERROR:", e);
 
   }
-
-  load();
 
 });
 
