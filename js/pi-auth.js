@@ -31,23 +31,39 @@ async function ensurePiAuth(){
 
 try{
 
-// 🔥 CLEAR OLD SESSION
-localStorage.removeItem("pi_user");
-
 const scopes = [
   "username",
   "payments",
   "wallet_address"
 ];
 
-const user = await Pi.authenticate(
+const auth = await Pi.authenticate(
   scopes,
   function(payment){
     console.log("Payment callback:", payment);
   }
 );
 
-console.log("AUTH USER:", user);
+console.log("FULL AUTH:", auth);
+
+// ✅ NORMALIZE USER
+const user = {
+  uid:
+    auth?.uid ||
+    auth?.user?.uid,
+
+  username:
+    auth?.username ||
+    auth?.user?.username,
+
+  wallet_address:
+    auth?.wallet_address ||
+    auth?.user?.wallet_address
+};
+
+if(!user.uid){
+  throw new Error("UID missing");
+}
 
 localStorage.setItem(
   "pi_user",
