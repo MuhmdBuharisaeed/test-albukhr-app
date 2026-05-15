@@ -113,7 +113,7 @@ async function payWithPi({amount, memo, metadata}){
   try{
 
     const res = await fetch(
-      "https://YOUR-RAILWAY-URL.up.railway.app/approve-payment",
+      "https://albukhr-api-production.up.railway.app/approve-payment",
       {
         method:"POST",
         headers:{
@@ -146,7 +146,7 @@ async function payWithPi({amount, memo, metadata}){
   try{
 
     await fetch(
-      "https://YOUR-RAILWAY-URL.up.railway.app/complete-payment",
+      "https://albukhr-api-production.up.railway.app/complete-payment",
       {
         method:"POST",
         headers:{
