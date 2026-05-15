@@ -84,6 +84,7 @@ Azman:{30:0.04,60:0.07,90:0.12}
 
 return table?.[project]?.[Number(duration)] || 0;
 }
+
 /* ======================================
    PI PAYMENT
 ====================================== */
@@ -93,7 +94,7 @@ async function payWithPi({amount, memo, metadata}){
     throw new Error("Open inside Pi Browser");
   }
 
-  return new Promise((resolve, reject)=>{
+  return new Promise((resolve, reject) => {
 
     Pi.createPayment({
 
@@ -101,95 +102,98 @@ async function payWithPi({amount, memo, metadata}){
       memo,
       metadata
 
-    },{
+    }, {
 
-      /* ===============================
-         SERVER APPROVAL
-      =============================== */
       onReadyForServerApproval: async function(paymentId){
 
-  console.log("✅ Ready:", paymentId);
+        try{
 
-  try{
+          console.log("APPROVING:", paymentId);
 
-    const res = await fetch(
-      "https://albukhr-api-production.up.railway.app/approve-payment",
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body: JSON.stringify({
-          paymentId
-        })
-      }
-    );
+          const res = await fetch(
+            "https://albukhr-api-production.up.railway.app/approve-payment",
+            {
+              method: "POST",
+              headers:{
+                "Content-Type":"application/json"
+              },
+              body: JSON.stringify({
+                paymentId
+              })
+            }
+          );
 
-    const data = await res.json();
+          const data = await res.json();
 
-    console.log("APPROVE RESPONSE:", data);
+          console.log("APPROVE RESULT:", data);
 
-  }catch(e){
+          if(!data.success){
+            reject(new Error("Approval failed"));
+          }
 
-    console.error("APPROVE FAILED:", e);
+        }catch(e){
 
-  }
+          console.error("APPROVE ERROR:", e);
 
-},
-      /* ===============================
-         SERVER COMPLETE
-      =============================== */
-      onReadyForServerCompletion: async function(paymentId, txid){
-
-  console.log("🎉 Completed:", txid);
-
-  try{
-
-    await fetch(
-      "https://albukhr-api-production.up.railway.app/complete-payment",
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body: JSON.stringify({
-          paymentId,
-          txid
-        })
-      }
-    );
-
-  }catch(e){
-
-    console.error("COMPLETE FAILED:", e);
-
-  }
-
-  resolve({
-    paymentId,
-    txid
-  });
-
-},
-      /* ===============================
-         CANCEL
-      =============================== */
-      onCancel: function(paymentId){
-
-        console.warn("❌ CANCELLED:", paymentId);
-
-        reject(
-          new Error("User cancelled payment")
-        );
+          reject(e);
+        }
 
       },
 
-      /* ===============================
-         ERROR
-      =============================== */
+      onReadyForServerCompletion: async function(paymentId, txid){
+
+        try{
+
+          console.log("COMPLETING:", paymentId, txid);
+
+          const res = await fetch(
+            "https://albukhr-api-production.up.railway.app/complete-payment",
+            {
+              method: "POST",
+              headers:{
+                "Content-Type":"application/json"
+              },
+              body: JSON.stringify({
+                paymentId,
+                txid
+              })
+            }
+          );
+
+          const data = await res.json();
+
+          console.log("COMPLETE RESULT:", data);
+
+          if(!data.success){
+            reject(new Error("Completion failed"));
+            return;
+          }
+
+          resolve({
+            paymentId,
+            txid
+          });
+
+        }catch(e){
+
+          console.error("COMPLETE ERROR:", e);
+
+          reject(e);
+        }
+
+      },
+
+      onCancel: function(paymentId){
+
+        console.warn("User cancelled:", paymentId);
+
+        reject(new Error("User cancelled"));
+
+      },
+
       onError: function(error){
 
-        console.error("❌ PI ERROR:", error);
+        console.error("PI ERROR:", error);
 
         reject(error);
 
@@ -200,6 +204,7 @@ async function payWithPi({amount, memo, metadata}){
   });
 
 }
+
 /* ======================================
    ADD STAKE
 ====================================== */
