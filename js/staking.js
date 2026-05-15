@@ -106,83 +106,81 @@ async function payWithPi({amount, memo, metadata}){
 
       onReadyForServerApproval: async function(paymentId){
 
-        try{
+  try{
 
-          console.log("APPROVING:", paymentId);
+    console.log("APPROVE PAYMENT:", paymentId);
 
-          const res = await fetch(
-            "https://albukhr-api-production.up.railway.app/approve-payment",
-            {
-              method: "POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({
-                paymentId
-              })
-            }
-          );
+    const res = await fetch(
+      "https://albukhr-api-production.up.railway.app/approve-payment",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          paymentId: paymentId
+        })
+      }
+    );
 
-          const data = await res.json();
+    const data = await res.json();
 
-          console.log("APPROVE RESULT:", data);
+    console.log("APPROVE RESPONSE:", data);
 
-          if(!data.success){
-            reject(new Error("Approval failed"));
-          }
+    if(!data.success){
+      throw new Error(data.error || "Approval failed");
+    }
 
-        }catch(e){
+  }catch(err){
 
-          console.error("APPROVE ERROR:", e);
+    console.error("APPROVAL FAILED:", err);
 
-          reject(e);
-        }
+  }
 
-      },
+},
 
       onReadyForServerCompletion: async function(paymentId, txid){
 
-        try{
+  try{
 
-          console.log("COMPLETING:", paymentId, txid);
+    console.log("COMPLETE PAYMENT:", paymentId);
 
-          const res = await fetch(
-            "https://albukhr-api-production.up.railway.app/complete-payment",
-            {
-              method: "POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({
-                paymentId,
-                txid
-              })
-            }
-          );
+    const res = await fetch(
+      "https://albukhr-api-production.up.railway.app/complete-payment",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          paymentId,
+          txid
+        })
+      }
+    );
 
-          const data = await res.json();
+    const data = await res.json();
 
-          console.log("COMPLETE RESULT:", data);
+    console.log("COMPLETE RESPONSE:", data);
 
-          if(!data.success){
-            reject(new Error("Completion failed"));
-            return;
-          }
+    if(!data.success){
+      throw new Error(data.error || "Completion failed");
+    }
 
-          resolve({
-            paymentId,
-            txid
-          });
+    resolve({
+      paymentId,
+      txid
+    });
 
-        }catch(e){
+  }catch(err){
 
-          console.error("COMPLETE ERROR:", e);
+    console.error("COMPLETE FAILED:", err);
 
-          reject(e);
-        }
+    reject(err);
 
-      },
+  }
 
+},
       onCancel: function(paymentId){
 
         console.warn("User cancelled:", paymentId);
