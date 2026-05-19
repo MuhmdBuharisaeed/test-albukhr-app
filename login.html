@@ -109,7 +109,16 @@ async function login(){
 
     setStatus("🔐 Authenticating...");
 
-    const auth = await Pi.authenticate(['username']);
+    const scopes = ['username', 'payments'];
+
+function onIncompletePaymentFound(payment){
+  console.log(payment);
+}
+
+const auth = await Pi.authenticate(
+  scopes,
+  onIncompletePaymentFound
+);
 
     console.log("AUTH:", auth);
 
