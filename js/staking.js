@@ -163,11 +163,10 @@ if(!user?.uid){
 
   try{
 
-    payment = await payWithPi({
-      amount: safeAmount,
-      memo:`Stake in ${project}`,
-      metadata:{project,duration}
-    });
+    payment = await startPiPayment({
+  amount: safeAmount,
+  memo: `Stake in ${project}`
+});
 
   }catch(err){
 
@@ -181,7 +180,7 @@ if(!user?.uid){
 
   }
 
-  if(!payment?.txid){
+  if(!payment || !payment.txid){
     __stakingLock = false;
     return {error:"Invalid payment"};
   }
