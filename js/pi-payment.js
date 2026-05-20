@@ -1,98 +1,127 @@
-/* ======================================
-   PI PAYMENT ENGINE (SEPARATED)
-====================================== */
+// js/pi-payment.js
 
-async function payWithPi({amount, memo, metadata}){
+async function startPiPayment({ amount, memo }) {
 
-  if(typeof Pi === "undefined"){
-    throw new Error("Open inside Pi Browser");
+  const user = await ensurePiAuth();
+
+  if (!user?.uid) {
+    alert("Pi login required");
+    return;
   }
 
   return new Promise((resolve, reject) => {
 
-    Pi.createPayment({
+    Pi.createPayment(
+      {
+        amount: amount,
+        memo: memo,
+        metadata: {
+          userId: user.uid
+        }
+      },
 
-      amount,
-      memo,
-      metadata
+      // 🔥 PAYMENT CALLBACKS
+      {
 
-    }, {
+        // ===============================
+        // SERVER APPROVAL
+        // ===============================
+        onReadyForServerApproval: async function (paymentId) {
 
-      onReadyForServerApproval: async function(paymentId){
+          try {
 
-        try{
+            console.log("APPROVING:", paymentId);
 
-          console.log("APPROVE:", paymentId);
+            const res = await fetch(
+              "https://test-albukhr-api.onrender.com/approve",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ paymentId })
+              }
+            );
 
-          const res = await fetch(
-            "https://test-albukhr-api.onrender.com/approve",
-            {
-              method:"POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({ paymentId })
+            const data = await res.json();
+
+            if (!data.success) {
+              throw new Error(data.error || "Approval failed");
             }
-          );
 
-          const data = await res.json();
+            console.log("APPROVED");
 
-          if(!data.success){
-            throw new Error(data.error || "Approval failed");
+          } catch (err) {
+
+            console.error("APPROVE ERROR:", err);
+            reject(err);
+
           }
+        },
 
-        }catch(err){
+        // ===============================
+        // SERVER COMPLETE
+        // ===============================
+        onReadyForServerCompletion: async function (paymentId, txid) {
 
-          console.error("❌ APPROVAL ERROR:", err);
+          try {
+
+            console.log("COMPLETING:", paymentId);
+
+            const res = await fetch(
+              "https://test-albukhr-api.onrender.com/complete",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ paymentId, txid })
+              }
+            );
+
+            const data = await res.json();
+
+            if (!data.success) {
+              throw new Error(data.error || "Completion failed");
+            }
+
+            console.log("COMPLETED");
+
+            resolve({
+              paymentId,
+              txid
+            });
+
+          } catch (err) {
+
+            console.error("COMPLETE ERROR:", err);
+            reject(err);
+
+          }
+        },
+
+        // ===============================
+        // CANCELLED
+        // ===============================
+        onCancel: function () {
+
+          console.warn("User cancelled payment");
+          reject(new Error("User cancelled"));
+
+        },
+
+        // ===============================
+        // ERROR
+        // ===============================
+        onError: function (error) {
+
+          console.error("Payment error:", error);
+          reject(error);
+
         }
 
-      },
-
-      onReadyForServerCompletion: async function(paymentId, txid){
-
-        try{
-
-          console.log("COMPLETE:", paymentId);
-
-          const res = await fetch(
-            "https://test-albukhr-api.onrender.com/complete",
-            {
-              method:"POST",
-              headers:{
-                "Content-Type":"application/json"
-              },
-              body: JSON.stringify({ paymentId, txid })
-            }
-          );
-
-          const data = await res.json();
-
-          if(!data.success){
-            throw new Error(data.error || "Completion failed");
-          }
-
-          resolve({ paymentId, txid });
-
-        }catch(err){
-
-          console.error("❌ COMPLETE ERROR:", err);
-          reject(err);
-
-        }
-
-      },
-
-      onCancel: function(paymentId){
-        console.warn("User cancelled:", paymentId);
-        reject(new Error("User cancelled"));
-      },
-
-      onError: function(error){
-        console.error("PI ERROR:", error);
-        reject(error);
       }
-
-    });
+    );
 
   });
 
