@@ -52,37 +52,76 @@ function getCurrentUser(){
 }
 
 /* ======================================
-PROJECT RULES
+   PROJECT RULES
 ====================================== */
 const PROJECT_RULES = {
-Raheem:{minStake:10},
-Hauwal:{minStake:10},
-Barsh:{minStake:10},
-Khairat:{minStake:10},
-Urban:{minStake:10},
-Labbaika:{minStake:10},
-Azman:{minStake:10}
+  Raheem:{minStake:0.1},
+  Hauwal:{minStake:0.1},
+  Barsh:{minStake:0.1},
+  Khairat:{minStake:0.1},
+  Urban:{minStake:0.1},
+  Labbaika:{minStake:0.1},
+  Azman:{minStake:0.1}
 };
 
 function getMinStake(project){
-return PROJECT_RULES?.[project]?.minStake || 0;
+  return PROJECT_RULES?.[project]?.minStake || 0;
 }
 
 /* ======================================
-REWARD RATES
+   REWARD RATES
+   SAFE MAINNET VERSION
 ====================================== */
-function getRate(project,duration){
-const table = {
-Raheem:{30:0.01,60:0.025,90:0.05},
-Hauwal:{30:0.02,60:0.04,90:0.08},
-Khairat:{30:0.025,60:0.05,90:0.09},
-Barsh:{30:0.03,60:0.06,90:0.10},
-Labbaika:{30:0.02,60:0.045,90:0.075},
-Urban:{30:0.12,60:0.12,90:0.12},
-Azman:{30:0.04,60:0.07,90:0.12}
-};
 
-return table?.[project]?.[Number(duration)] || 0;
+function getRate(project,duration){
+
+  const table = {
+
+    Raheem:{
+      30:0.005,
+      60:0.010,
+      90:0.015
+    },
+
+    Hauwal:{
+      30:0.006,
+      60:0.012,
+      90:0.018
+    },
+
+    Khairat:{
+      30:0.007,
+      60:0.013,
+      90:0.020
+    },
+
+    Barsh:{
+      30:0.008,
+      60:0.015,
+      90:0.022
+    },
+
+    Labbaika:{
+      30:0.006,
+      60:0.011,
+      90:0.017
+    },
+
+    Urban:{
+      30:0.005,
+      60:0.010,
+      90:0.015
+    },
+
+    Azman:{
+      30:0.009,
+      60:0.016,
+      90:0.025
+    }
+
+  };
+
+  return table?.[project]?.[Number(duration)] || 0;
 }
 
 /* ======================================
