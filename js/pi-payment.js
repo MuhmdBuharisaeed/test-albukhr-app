@@ -25,7 +25,7 @@ async function payWithPi({amount, memo, metadata}){
           console.log("APPROVE:", paymentId);
 
           const res = await fetch(
-            "https://test-albukhr-api.onrender.com/approve-payment",
+            "https://test-albukhr-api.onrender.com/approve",
             {
               method:"POST",
               headers:{
@@ -55,7 +55,7 @@ async function payWithPi({amount, memo, metadata}){
           console.log("COMPLETE:", paymentId);
 
           const res = await fetch(
-            "https://test-albukhr-api.onrender.com/complete-payment",
+            "https://test-albukhr-api.onrender.com/complete",
             {
               method:"POST",
               headers:{
