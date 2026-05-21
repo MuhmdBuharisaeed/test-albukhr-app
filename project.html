@@ -458,7 +458,9 @@ updateStakeStatus();
 
   }
   
-setTimeout(load, 2000);
+setTimeout(()=>{
+  load();
+}, 2000);
   
 /* ===============================
 SHORT WALLET
