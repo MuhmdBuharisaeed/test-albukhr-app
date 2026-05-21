@@ -1,27 +1,74 @@
 // js/pi-payment.js
 
-async function startPiPayment({ amount, memo }) {
+async function startPiPayment({amount, memo}){
 
-  const user = await ensurePiAuth();
+  return new Promise((resolve, reject)=>{
 
-  if (!user?.uid) {
-    alert("Pi login required");
-    return;
-  }
+    Pi.createPayment({
+      amount: amount,
+      memo: memo,
+      metadata: {}
+    }, {
 
-  return new Promise((resolve, reject) => {
+      onReadyForServerApproval: async function(paymentId){
 
-    Pi.createPayment(
-      {
-        amount: amount,
-        memo: memo,
-        metadata: {
-          userId: user.uid
+        console.log("APPROVING:", paymentId);
+
+        try{
+          await fetch("https://test-albukhr-api.onrender.com/approve",{
+            method:"POST",
+            headers:{
+              "Content-Type":"application/json"
+            },
+            body: JSON.stringify({ paymentId })
+          });
+        }catch(e){
+          console.error("APPROVE ERROR:", e);
+          reject(e);
         }
+
       },
 
-      // 🔥 PAYMENT CALLBACKS
-      {
+      onReadyForServerCompletion: async function(paymentId, txid){
+
+        console.log("COMPLETING:", paymentId, txid);
+
+        try{
+          await fetch("https://test-albukhr-api.onrender.com/complete",{
+            method:"POST",
+            headers:{
+              "Content-Type":"application/json"
+            },
+            body: JSON.stringify({ paymentId, txid })
+          });
+
+          // ✅ ONLY RETURN AFTER COMPLETE
+          resolve({
+            txid: txid,
+            paymentId: paymentId
+          });
+
+        }catch(e){
+          console.error("COMPLETE ERROR:", e);
+          reject(e);
+        }
+
+      },
+
+      onCancel: function(){
+        reject("User cancelled");
+      },
+
+      onError: function(error){
+        console.error("PI ERROR:", error);
+        reject(error);
+      }
+
+    });
+
+  });
+
+}
 
         // ===============================
         // SERVER APPROVAL
