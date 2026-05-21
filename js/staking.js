@@ -264,11 +264,7 @@ return {
 ====================================== */
 async function getAllStakesMerged(){
 
-  let user = await ensurePiAuth();
-
-if(!user?.uid){
-  user = JSON.parse(localStorage.getItem("pi_user"));
-}
+  const user = await ensurePiAuth();
 
 if(!user?.uid){
   console.warn("No UID");
