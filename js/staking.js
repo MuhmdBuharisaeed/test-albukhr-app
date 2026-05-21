@@ -214,8 +214,11 @@ console.log("SAVING TO SUPABASE...");
 
   if(!res.ok){
   const err = await res.text();
-  console.error("❌ Insert failed:", err);
 
+console.error("❌ FULL SUPABASE ERROR:");
+console.error(err);
+
+alert(err);
   __stakingLock = false; // 🔥 VERY IMPORTANT
 
   return {error:"Database error"};
