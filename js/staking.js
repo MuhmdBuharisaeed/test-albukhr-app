@@ -174,11 +174,11 @@ if(!user?.uid){
 
   __stakingLock = false;
 
-  alert(err.message || err);
-
-  return {error:"Payment failed"};
-
-  }
+  alert(
+  typeof e === "string"
+    ? e
+    : (e?.message || JSON.stringify(e))
+);
 
   console.log("PAYMENT RESULT:", payment);
 
