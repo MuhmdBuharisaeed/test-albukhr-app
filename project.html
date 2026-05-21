@@ -393,20 +393,25 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 =============================== */
 async function load(){
 
+  console.log("LOADING DATA..."); // ✅ ADD NAN
+
   let data;
 
-try{
-  data = await getProjectTotals(PROJECT_NAME);
-}catch(e){
-  console.error("LOAD ERROR:", e);
+  try{
+    data = await getProjectTotals(PROJECT_NAME);
 
-  alert(
-    "Load failed:\n" +
-    (e.message || JSON.stringify(e))
-  );
+    console.log("DATA:", data); // ✅ ADD NAN
 
-  return;
-}
+  }catch(e){
+    console.error("LOAD ERROR:", e);
+
+    alert(
+      "Load failed:\n" +
+      (e.message || JSON.stringify(e))
+    );
+
+    return;
+  }
 
 /* ===============================
 CALCULATE TOTAL STAKE
@@ -452,7 +457,9 @@ renderHistory();
 updateStakeStatus();
 
   }
-
+  
+setTimeout(load, 2000);
+  
 /* ===============================
 SHORT WALLET
 =============================== */
