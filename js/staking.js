@@ -219,14 +219,18 @@ if(!user?.uid){
 
   }
 
-  if(!payment || !payment.txid){
-    __stakingLock = false;
-    return {error:"Invalid payment"};
-  }
+  console.log("PAYMENT RESULT:", payment);
+
+if(!payment){
+  __stakingLock = false;
+  return {error:"Invalid payment"};
+}
 
    /* SEND TO BACKEND */
 try{
 
+console.log("SAVING TO SUPABASE...");
+   
   const res = await fetch("https://qexmnghilahsvethlxem.supabase.co/rest/v1/stakes",{
   method:"POST",
   headers:{
@@ -239,7 +243,7 @@ try{
   project: project,
   amount:safeAmount,
   duration:safeDuration,
-  txid: payment.txid,
+  txid: payment.txid || payment.paymentId || ("PI-"+Date.now()),
   reward: safeAmount * getRate(project, safeDuration),
   withdrawnReward:0,
   unlockTime: Date.now() + (safeDuration * 86400000),
