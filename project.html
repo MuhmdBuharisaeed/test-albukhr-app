@@ -451,7 +451,7 @@ totalStake.toFixed(2) + " Pi";
 aReward.innerText =
 reward.toFixed(2) + " Pi";
 
-renderHistory();
+await renderHistory();
 
 /* LOCK STATUS */
 updateStakeStatus();
@@ -478,7 +478,7 @@ return address.slice(0,6)
 /* ===============================
    HISTORY (UNIFIED)
 =============================== */
-function renderHistory(){
+async function renderHistory(){
 
   projectHistory.innerHTML = "";
 
