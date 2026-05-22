@@ -482,11 +482,14 @@ async function renderHistory(){
 
   projectHistory.innerHTML = "";
 
-  const txs = getTransactions()
-    .filter(tx => tx.project === PROJECT_NAME)
-    .sort((a,b)=>
-      (b.timestamp || 0) - (a.timestamp || 0)
-    );
+  const stakes = await getAllStakesMerged();
+
+const txs = stakes
+  .filter(tx => tx.project === PROJECT_NAME)
+  .sort((a,b)=>
+    new Date(b.created_at || 0) -
+    new Date(a.created_at || 0)
+  );
 
   if(!txs.length){
     projectHistory.innerHTML = `
@@ -501,24 +504,26 @@ async function renderHistory(){
 
   txs.forEach(tx=>{
 
+    const txType = tx.type || "stake";
+
     let icon = CONFIG.icon;
     let label = "Stake";
     let sign = "+";
     let color = "success-status";
 
-    if(tx.type === "withdraw"){
+    if(txType === "withdraw"){
       icon = "💸";
       label = "Withdraw";
       sign = "-";
       color = "withdraw-status";
     }
 
-    if(tx.type === "reward"){
+    if(txType === "reward"){
       icon = "🎁";
       label = "Reward";
     }
     
-    if(tx.type === "capital"){
+    if(txType === "capital"){
       icon = "🏦";
       label = "Capital";
       sign = "-";
@@ -542,7 +547,7 @@ Wallet: ${shortWallet(tx.meta.wallet)}
 ` : ""}
 
 <div class="project-date">
-${new Date(tx.timestamp).toLocaleString()}
+${new Date(tx.created_at || Date.now()).toLocaleString()}
 </div>
 
 </div>
