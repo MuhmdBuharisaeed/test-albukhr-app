@@ -420,7 +420,15 @@ let totalStake = 0;
 
 data.stakes.forEach(s=>{
 
-totalStake += Number(s.amount) || 0;
+const amount = Number(s.amount) || 0;
+
+if(s.type === "stake"){
+  totalStake += amount;
+}
+
+if(s.type === "capital"){
+  totalStake -= Math.abs(amount);
+}
 
 });
 
