@@ -356,11 +356,10 @@ if(!user?.uid){
 
   }catch(e){
 
-    console.error(e);
+    console.error("FULL ERROR:", e);
 
     alert(
-      e.message ||
-      "Payment failed"
+      JSON.stringify(e, null, 2)
     );
 
   }
