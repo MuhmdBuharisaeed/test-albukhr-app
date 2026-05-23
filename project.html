@@ -503,7 +503,8 @@ const txs = stakes
 
   txs.forEach(tx=>{
 
-    const txType = tx.type || "stake";
+    const txType =
+  (tx.type || "stake").toLowerCase();
 
     let icon = CONFIG.icon;
     let label = "Stake";
@@ -546,7 +547,11 @@ Wallet: ${shortWallet(tx.meta.wallet)}
 ` : ""}
 
 <div class="project-date">
-${new Date(tx.created_at || Date.now()).toLocaleString()}
+${new Date(
+  tx.created_at ||
+  tx.timestamp ||
+  Date.now()
+).toLocaleString()}
 </div>
 
 </div>
