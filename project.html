@@ -566,7 +566,7 @@ ${new Date(
 
 <div class="project-right">
 <div class="project-amount ${color}">
-${sign}${Number(tx.amount).toFixed(2)} Pi
+${sign}${Math.abs(Number(tx.amount)).toFixed(2)} Pi
 </div>
 </div>
 `;
