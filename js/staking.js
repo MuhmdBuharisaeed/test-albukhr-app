@@ -571,14 +571,15 @@ if(!user?.uid){
           "Authorization": `Bearer ${SUPABASE_KEY}`
         },
         body: JSON.stringify({
-  userid: user.uid,
-  project: project,
-  amount: -take,
-  duration: 0,
-  txid: "CAP-"+Date.now(),
-  reward: 0,
-  withdrawnReward: 0,
-  type:"withdraw"   // ✅ FIX
+  userid:user.uid,
+  project:project,
+  amount:-amount,
+  duration:0,
+  txid:"CAPITAL-"+Date.now(),
+  reward:0,
+  withdrawnReward:0,
+  unlockTime:0,
+  type:"capital"
 })
  }
  );
