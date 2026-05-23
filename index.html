@@ -455,73 +455,70 @@ async function loadHome(){
     let totalReward = 0;
 
     // ===== MAIN LOOP =====
-    stakes.forEach(s=>{
+stakes.forEach(s=>{
 
-      if(!s) return;
+  if(!s) return;
+  if(!s.project) return;
 
-      // 🔥 SAFE PROJECT CHECK
-      if(!s.project) return;
+  const type = s.type || "stake";
+  const amount = Number(s.amount) || 0;
 
-      // 🔥 SAFE TYPE CHECK
-      if(
-  s.type !== "stake" &&
-  s.type !== "withdraw" &&
-  s.type !== "capital"
-){
-  return;
-      }
+  // =========================
+  // STAKE
+  // =========================
+  if(type === "stake"){
 
-      const amount = Number(s.amount) || 0;
+    totalStake += amount;
 
-      // 🔥 NEGATIVE WITHDRAW SAFE
-      let safeAmount = amount;
+    userMap[s.project] =
+      (userMap[s.project] || 0)
+      + amount;
 
-if(s.type === "withdraw"){
-  safeAmount = 0;
-}
+    if(!globalMap[s.project]){
+      globalMap[s.project] = {
+        total:0,
+        investors:0
+      };
+    }
 
-if(s.type === "capital"){
-  safeAmount = -Math.abs(amount);
-}
+    globalMap[s.project].total += amount;
 
-      const total =
-        Number(s.reward) || 0;
+    const total =
+      Number(s.reward) || 0;
 
-      const withdrawn =
-        Number(s.withdrawnReward) || 0;
+    const withdrawn =
+      Number(s.withdrawnReward) || 0;
 
-      let reward = 0;
+    totalReward +=
+      Math.max(0, total - withdrawn);
 
-if(s.type === "stake"){
-  reward = Math.max(0, total - withdrawn);
-}
+  }
 
-      // ===== TOTALS =====
-      totalStake += safeAmount;
-      totalReward += reward;
+  // =========================
+  // CAPITAL WITHDRAW
+  // =========================
+  if(type === "capital"){
 
-      // ===== USER MAP =====
-      userMap[s.project] =
-        (userMap[s.project] || 0)
-        + safeAmount;
+    totalStake -= Math.abs(amount);
 
-      // ===== GLOBAL MAP =====
-      if(!globalMap[s.project]){
+    userMap[s.project] =
+      (userMap[s.project] || 0)
+      - Math.abs(amount);
 
-        globalMap[s.project] = {
-          total:0,
-          investors:0
-        };
+    if(globalMap[s.project]){
+      globalMap[s.project].total -=
+        Math.abs(amount);
+    }
 
-      }
+  }
 
-      globalMap[s.project].total += safeAmount;
+  // =========================
+  // INVESTOR COUNT
+  // =========================
+  countMap[s.project] =
+    (countMap[s.project] || 0) + 1;
 
-      // ===== INVESTOR COUNT =====
-      countMap[s.project] =
-        (countMap[s.project] || 0) + 1;
-
-    });
+});
 
     // ===== ASSIGN COUNTS =====
     Object.keys(globalMap).forEach(project=>{
@@ -680,15 +677,14 @@ userAmount: Math.max(
           <div class="asset-progress">
             <div class="asset-progress-bar"
               style="width:${
-  Math.max(
-    0,
-    Math.min(item.userAmount,100)
-  )
-}%">
+  item.userAmount > 0
+    ? Math.min(item.userAmount,100)
+    : 0
+}%"
             </div>
           </div>
           <div class="asset-percent">
-            ${item.userAmount > 0 ? "Active" : "0%"}
+            ${item.userAmount > 0 ? "Active" : "Inactive"}
           </div>
         </div>
 
