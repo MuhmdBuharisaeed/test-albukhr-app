@@ -458,6 +458,29 @@ if(!user?.uid){
     return {error:"Insufficient reward"};
   }
 
+   await fetch(
+  `${SUPABASE_URL}/rest/v1/stakes`,
+  {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    },
+    body: JSON.stringify({
+      userid:user.uid,
+      project:project,
+      amount:-amount,
+      duration:0,
+      txid:"REWARD-"+Date.now(),
+      reward:0,
+      withdrawnReward:0,
+      unlockTime:0,
+      type:"reward"
+    })
+  }
+);
+
   return {success:true, amount};
   }
 
