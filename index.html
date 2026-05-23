@@ -464,19 +464,25 @@ async function loadHome(){
 
       // 🔥 SAFE TYPE CHECK
       if(
-        s.type !== "stake" &&
-        s.type !== "withdraw"
-      ){
-        return;
+  s.type !== "stake" &&
+  s.type !== "withdraw" &&
+  s.type !== "capital"
+){
+  return;
       }
 
       const amount = Number(s.amount) || 0;
 
       // 🔥 NEGATIVE WITHDRAW SAFE
-      const safeAmount =
-        s.type === "withdraw"
-        ? 0
-        : amount;
+      let safeAmount = amount;
+
+if(s.type === "withdraw"){
+  safeAmount = 0;
+}
+
+if(s.type === "capital"){
+  safeAmount = -Math.abs(amount);
+}
 
       const total =
         Number(s.reward) || 0;
@@ -484,8 +490,11 @@ async function loadHome(){
       const withdrawn =
         Number(s.withdrawnReward) || 0;
 
-      const reward =
-        Math.max(0, total - withdrawn);
+      let reward = 0;
+
+if(s.type === "stake"){
+  reward = Math.max(0, total - withdrawn);
+}
 
       // ===== TOTALS =====
       totalStake += safeAmount;
