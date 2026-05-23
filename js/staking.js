@@ -312,10 +312,13 @@ async function getProjectTotals(project){
   const stakes = await getAllStakesMerged();
 
   const projectData = stakes.filter(s =>
-    s.project === project &&
-    (s.type === "stake" || s.type === "withdraw")
-  );
-
+  s.project === project &&
+  (
+    s.type === "stake" ||
+    s.type === "withdraw" ||
+    s.type === "capital"
+  )
+);
   let stake = 0;
   let reward = 0;
 
@@ -325,8 +328,15 @@ async function getProjectTotals(project){
 
     if(!Number.isFinite(amount)) return;
 
-    // ✅ CAPITAL (stake + negative withdraw)
-    stake += amount;
+    // ✅ STAKE TOTAL
+if(s.type === "stake"){
+  stake += amount;
+}
+
+// ✅ CAPITAL WITHDRAW
+if(s.type === "capital"){
+  stake -= Math.abs(amount);
+}
 
     // ✅ ONLY REAL STAKES FOR REWARD
     if(s.type === "stake"){
@@ -573,7 +583,7 @@ if(!user?.uid){
         body: JSON.stringify({
   userid:user.uid,
   project:project,
-  amount:-amount,
+  amount:amount,
   duration:0,
   txid:"CAPITAL-"+Date.now(),
   reward:0,
