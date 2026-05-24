@@ -264,25 +264,25 @@ return {
 ====================================== */
 async function getAllStakesMerged(){
 
-  const user = await ensurePiAuth();
+  const user = JSON.parse(localStorage.getItem("pi_user"));
 
-if(!user?.uid){
-  console.warn("No UID");
-  return [];
-}
+  if(!user?.uid){
+    console.warn("No UID");
+    return [];
+  }
 
   try{
 
     const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
-  {
-    headers:{
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`
-    }
-  }
-);
-     
+      `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
+      {
+        headers:{
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
     if(!res.ok){
       const err = await res.text();
       console.error("❌ Fetch error:", err);
@@ -303,7 +303,6 @@ if(!user?.uid){
   }
 
 }
-
 /* ======================================
    PROJECT TOTALS
 ====================================== */
@@ -312,7 +311,8 @@ async function getProjectTotals(project){
   const stakes = await getAllStakesMerged();
 
   const projectData = stakes.filter(s =>
-  s.project === project &&
+  String(s.project).trim().toLowerCase() ===
+String(project).trim().toLowerCase() &&
   (
     s.type === "stake" ||
     s.type === "withdraw" ||
@@ -583,7 +583,7 @@ if(!user?.uid){
         body: JSON.stringify({
   userid:user.uid,
   project:project,
-  amount:amount,
+  amount: take,
   duration:0,
   txid:"CAPITAL-"+Date.now(),
   reward:0,
