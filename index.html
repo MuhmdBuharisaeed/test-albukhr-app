@@ -402,6 +402,20 @@ X
 
 <script>
 
+async function getGlobalStakes(){
+
+  const { data, error } = await supabase
+    .from("stakes")
+    .select("*");
+
+  if(error){
+    console.error("Supabase error:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
 async function loadHome(){
 
   try{
@@ -412,8 +426,8 @@ async function loadHome(){
       return;
     }
 
-    let stakes = await getAllStakesMerged();
-
+    let stakes = await getGlobalStakes();
+    
 /* ✅ FALLBACK FOR NEW USERS */
 if(!Array.isArray(stakes) || stakes.length === 0){
 
