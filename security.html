@@ -16,12 +16,23 @@ background:#f6fbf8;
 color:#333;
 }
 
-/* HEADER */
+/* 🔥 ALBUKHR HEADER */
 .header{
 background:#0f7a3d;
 color:#fff;
-padding:25px;
+padding:20px;
 text-align:center;
+}
+
+.header h1{
+margin:0;
+font-size:20px;
+}
+
+.header p{
+margin:5px 0 0;
+font-size:12px;
+opacity:.9;
 }
 
 /* LAYOUT */
@@ -59,7 +70,7 @@ background:#0f7a3d;
 color:#fff;
 }
 
-/* TOGGLE SWITCH */
+/* TOGGLE */
 .switch{
 position:relative;
 width:42px;
@@ -72,7 +83,6 @@ display:none;
 
 .slider{
 position:absolute;
-cursor:pointer;
 top:0;
 left:0;
 right:0;
@@ -83,8 +93,8 @@ transition:.3s;
 }
 
 .slider:before{
-position:absolute;
 content:"";
+position:absolute;
 height:16px;
 width:16px;
 left:3px;
@@ -94,7 +104,6 @@ border-radius:50%;
 transition:.3s;
 }
 
-/* ON STATE */
 input:checked + .slider{
 background:#0f7a3d;
 }
@@ -131,73 +140,23 @@ width:100%;
 
 <body>
 
+<!-- 🔥 HEADER -->
 <div class="header">
-<h1>ALBUKHR Security System</h1>
+<h1>ALBUKHR Investment Limited</h1>
+<p>Advanced Security System</p>
 </div>
 
 <div class="security-container">
 
 <!-- LEFT -->
-<div class="left">
-
-<div class="security-item active" onclick="showContent(0)">
-<span>🔐 2FA (PIN)</span>
-
-<label class="switch">
-<input type="checkbox" onchange="toggle(this, '2FA (PIN)')">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="security-item" onclick="showContent(1)">
-<span>👆 Biometric</span>
-
-<label class="switch">
-<input type="checkbox" onchange="toggle(this, 'Biometric Login')">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="security-item" onclick="showContent(2)">
-<span>🔒 Encryption</span>
-
-<label class="switch">
-<input type="checkbox" onchange="toggle(this, 'Encryption')">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="security-item" onclick="showContent(3)">
-<span>🛡️ Protection</span>
-
-<label class="switch">
-<input type="checkbox" onchange="toggle(this, 'Transaction Protection')">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="security-item" onclick="showContent(4)">
-<span>📊 Monitoring</span>
-
-<label class="switch">
-<input type="checkbox" onchange="toggle(this, 'Activity Monitoring')">
-<span class="slider"></span>
-</label>
-</div>
+<div class="left" id="leftMenu">
 
 </div>
 
 <!-- RIGHT -->
 <div class="right">
 
-<div class="security-content" id="content">
-
-<h2>Enable 2FA (PIN)</h2>
-<p>
-Add an extra layer of protection using a PIN before performing sensitive actions.
-</p>
-
-</div>
+<div class="security-content" id="content"></div>
 
 </div>
 
@@ -205,35 +164,72 @@ Add an extra layer of protection using a PIN before performing sensitive actions
 
 <script>
 
-const data = [
+const features = [
 
 {
-title:"Enable 2FA (PIN)",
-text:"Add an extra layer of protection by requiring a secure PIN before sensitive actions."
+key:"2fa",
+title:"🔐 2FA (PIN)",
+desc:"Add an extra layer of protection by requiring a secure PIN before sensitive actions."
 },
 
 {
-title:"Biometric Login",
-text:"Use fingerprint or face ID for secure and fast login."
+key:"bio",
+title:"👆 Biometric Login",
+desc:"Use fingerprint or face ID for secure and fast login."
 },
 
 {
-title:"Encrypt Sensitive Data",
-text:"All sensitive data is protected using advanced encryption."
+key:"enc",
+title:"🔒 Data Encryption",
+desc:"All sensitive data is protected using advanced encryption."
 },
 
 {
-title:"Transaction Protection",
-text:"Transactions are monitored to prevent fraud."
+key:"tx",
+title:"🛡️ Transaction Protection",
+desc:"Transactions are verified to prevent fraud and unauthorized actions."
 },
 
 {
-title:"Activity Monitoring",
-text:"Real-time monitoring detects suspicious behavior."
+key:"monitor",
+title:"📊 Activity Monitoring",
+desc:"Real-time monitoring detects suspicious behavior and threats."
 }
 
 ];
 
+/* LOAD UI */
+function loadUI(){
+
+const menu = document.getElementById("leftMenu");
+
+menu.innerHTML = "";
+
+features.forEach((f, i) => {
+
+const state = localStorage.getItem(f.key) === "true";
+
+menu.innerHTML += `
+<div class="security-item ${i===0 ? 'active':''}" onclick="showContent(${i})">
+
+<span>${f.title}</span>
+
+<label class="switch" onclick="event.stopPropagation()">
+<input type="checkbox" ${state ? "checked":""} onchange="toggle('${f.key}', this)">
+<span class="slider"></span>
+</label>
+
+</div>
+`;
+
+});
+
+/* default content */
+showContent(0);
+
+}
+
+/* SHOW CONTENT */
 function showContent(index){
 
 const items = document.querySelectorAll(".security-item");
@@ -242,22 +238,23 @@ items.forEach(i => i.classList.remove("active"));
 items[index].classList.add("active");
 
 document.getElementById("content").innerHTML = `
-<h2>${data[index].title}</h2>
-<p>${data[index].text}</p>
+<h2>${features[index].title}</h2>
+<p>${features[index].desc}</p>
 `;
 
 }
 
-/* TOGGLE ACTION */
-function toggle(el, name){
+/* SAVE TOGGLE */
+function toggle(key, el){
 
-if(el.checked){
-console.log(name + " ENABLED");
-}else{
-console.log(name + " DISABLED");
-}
+localStorage.setItem(key, el.checked);
+
+console.log(key, el.checked ? "ON" : "OFF");
 
 }
+
+/* INIT */
+loadUI();
 
 </script>
 
