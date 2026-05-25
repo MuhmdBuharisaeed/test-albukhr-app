@@ -7,256 +7,49 @@
 
 <title>ALBUKHR Security</title>
 
-<style>
-
-body{
-margin:0;
-font-family:system-ui,-apple-system,sans-serif;
-background:#f6fbf8;
-color:#333;
-}
-
-/* 🔥 ALBUKHR HEADER */
-.header{
-background:#0f7a3d;
-color:#fff;
-padding:20px;
-text-align:center;
-}
-
-.header h1{
-margin:0;
-font-size:20px;
-}
-
-.header p{
-margin:5px 0 0;
-font-size:12px;
-opacity:.9;
-}
-
-/* LAYOUT */
-.security-container{
-display:flex;
-min-height:100vh;
-}
-
-/* LEFT */
-.left{
-width:40%;
-background:#fff;
-border-right:1px solid #eee;
-padding:20px;
-}
-
-.security-item{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:14px;
-margin-bottom:10px;
-border-radius:10px;
-background:#f1f8f4;
-cursor:pointer;
-transition:.3s;
-}
-
-.security-item:hover{
-background:#dff3e8;
-}
-
-.security-item.active{
-background:#0f7a3d;
-color:#fff;
-}
-
-/* TOGGLE */
-.switch{
-position:relative;
-width:42px;
-height:22px;
-}
-
-.switch input{
-display:none;
-}
-
-.slider{
-position:absolute;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:#ccc;
-border-radius:20px;
-transition:.3s;
-}
-
-.slider:before{
-content:"";
-position:absolute;
-height:16px;
-width:16px;
-left:3px;
-top:3px;
-background:white;
-border-radius:50%;
-transition:.3s;
-}
-
-input:checked + .slider{
-background:#0f7a3d;
-}
-
-input:checked + .slider:before{
-transform:translateX(20px);
-}
-
-/* RIGHT */
-.right{
-width:60%;
-padding:30px;
-display:flex;
-align-items:center;
-}
-
-.security-content h2{
-color:#0f7a3d;
-}
-
-/* MOBILE */
-@media(max-width:768px){
-.security-container{
-flex-direction:column;
-}
-.left,.right{
-width:100%;
-}
-}
-
-</style>
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/security.css">
 
 </head>
 
 <body>
 
-<!-- 🔥 HEADER -->
-<div class="header">
-<h1>ALBUKHR Investment Limited</h1>
-<p>Advanced Security System</p>
+<!-- GLOBAL HEADER -->
+<header class="header">
+
+<div class="header-left">
+<span class="brand">ALBUKHR</span>
 </div>
 
-<div class="security-container">
+<div class="header-right">
 
-<!-- LEFT -->
-<div class="left" id="leftMenu">
-
-</div>
-
-<!-- RIGHT -->
-<div class="right">
-
-<div class="security-content" id="content"></div>
-
+<div class="header-btn" onclick="history.back()">
+←
 </div>
 
 </div>
 
-<script>
+</header>
 
-const features = [
+<!-- PAGE -->
+<div class="security-page">
 
-{
-key:"2fa",
-title:"🔐 2FA (PIN)",
-desc:"Add an extra layer of protection by requiring a secure PIN before sensitive actions."
-},
+<div class="security-top">
 
-{
-key:"bio",
-title:"👆 Biometric Login",
-desc:"Use fingerprint or face ID for secure and fast login."
-},
+<h1>Security Settings</h1>
 
-{
-key:"enc",
-title:"🔒 Data Encryption",
-desc:"All sensitive data is protected using advanced encryption."
-},
-
-{
-key:"tx",
-title:"🛡️ Transaction Protection",
-desc:"Transactions are verified to prevent fraud and unauthorized actions."
-},
-
-{
-key:"monitor",
-title:"📊 Activity Monitoring",
-desc:"Real-time monitoring detects suspicious behavior and threats."
-}
-
-];
-
-/* LOAD UI */
-function loadUI(){
-
-const menu = document.getElementById("leftMenu");
-
-menu.innerHTML = "";
-
-features.forEach((f, i) => {
-
-const state = localStorage.getItem(f.key) === "true";
-
-menu.innerHTML += `
-<div class="security-item ${i===0 ? 'active':''}" onclick="showContent(${i})">
-
-<span>${f.title}</span>
-
-<label class="switch" onclick="event.stopPropagation()">
-<input type="checkbox" ${state ? "checked":""} onchange="toggle('${f.key}', this)">
-<span class="slider"></span>
-</label>
+<p>
+Protect your account, assets and transactions.
+</p>
 
 </div>
-`;
 
-});
+<!-- SECURITY LIST -->
+<div id="securityList" class="security-list"></div>
 
-/* default content */
-showContent(0);
+</div>
 
-}
-
-/* SHOW CONTENT */
-function showContent(index){
-
-const items = document.querySelectorAll(".security-item");
-
-items.forEach(i => i.classList.remove("active"));
-items[index].classList.add("active");
-
-document.getElementById("content").innerHTML = `
-<h2>${features[index].title}</h2>
-<p>${features[index].desc}</p>
-`;
-
-}
-
-/* SAVE TOGGLE */
-function toggle(key, el){
-
-localStorage.setItem(key, el.checked);
-
-console.log(key, el.checked ? "ON" : "OFF");
-
-}
-
-/* INIT */
-loadUI();
-
-</script>
+<script src="js/security.js"></script>
 
 </body>
 </html>
