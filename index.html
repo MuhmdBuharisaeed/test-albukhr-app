@@ -402,36 +402,18 @@ X
 
 <script>
 
-async function getGlobalStakes(){
-
-  const { data, error } = await supabase
-    .from("stakes")
-    .select("*");
-
-  if(error){
-    console.error("Supabase error:", error);
-    return [];
-  }
-
-  return data || [];
-}
-
 async function loadHome(){
 
   try{
 
     // ===== DEPENDENCY CHECK =====
-    if(typeof getGlobalStakes !== "function"){
-  console.warn("getGlobalStakes missing");
-  return;
+    if(typeof getAllStakesMerged !== "function"){
+      console.warn("getAllStakesMerged missing");
+      return;
     }
 
-  let stakes = await getGlobalStakes();
+    let stakes = await getAllStakesMerged();
 
-console.log("GLOBAL STAKES:", stakes);
-
-    let stakes = await getGlobalStakes();
-    
 /* ✅ FALLBACK FOR NEW USERS */
 if(!Array.isArray(stakes) || stakes.length === 0){
 
