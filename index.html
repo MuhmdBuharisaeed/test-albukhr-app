@@ -412,12 +412,29 @@ async function loadHome(){
       return;
     }
 
-    const stakes = await getAllStakesMerged();
+    let stakes = await getAllStakesMerged();
 
-    if(!Array.isArray(stakes)){
-      console.warn("Invalid stakes data");
-      return;
-    }
+/* ✅ FALLBACK FOR NEW USERS */
+if(!Array.isArray(stakes) || stakes.length === 0){
+
+  console.warn("No staking data, using default projects");
+
+  const globalMap = {};
+
+  /* 👇 fill from PROJECT_CONFIG */
+  Object.keys(PROJECT_CONFIG).forEach(p=>{
+    globalMap[p] = {
+      total: 0,
+      investors: 0
+    };
+  });
+
+  /* 👇 render immediately */
+  renderPopular(globalMap);
+  renderAssets({}, globalMap);
+
+  return; // ⛔ stop rest
+}
 
     // ===== MAPS =====
     const userMap = {};
@@ -552,9 +569,21 @@ if(typeof PROJECT_CONFIG === "undefined"){
   const container = document.getElementById("popularProjects");
   container.innerHTML = "";
 
-  const sorted = Object.entries(globalMap)
-    .sort((a,b)=>b[1].total - a[1].total)
-    .slice(0,10);
+  let entries = Object.entries(globalMap);
+
+/* ✅ idan babu staking data */
+if(entries.length === 0){
+
+  entries = Object.keys(PROJECT_CONFIG).map(p=>[
+    p,
+    { total: 0, investors: 0 }
+  ]);
+
+}
+
+const sorted = entries
+  .sort((a,b)=>b[1].total - a[1].total)
+  .slice(0,10);
 
   sorted.forEach(([project,data],index)=>{
 
