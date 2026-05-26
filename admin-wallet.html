@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ALBUKHR – Admin Wallet Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:system-ui;background:#f4f6f8;margin:0}
+.header{background:#111;color:#fff;padding:14px;font-weight:700;text-align:center}
+.card{
+  background:#fff;
+  margin:16px;
+  padding:16px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06)
+}
+.stat{font-size:22px;font-weight:800}
+.btn{
+  padding:10px;border:none;border-radius:10px;
+  font-weight:700;margin-top:10px;width:100%;cursor:pointer
+}
+.lock{background:#c0392b;color:#fff}
+.unlock{background:#27ae60;color:#fff}
+.tx{font-size:13px;border-bottom:1px solid #eee;padding:10px 0}
+.tx-large{
+  background:#fff5f5;
+  border-left:4px solid #c0392b;
+  padding-left:8px
+}
+small{color:#666}
+.threshold-box{margin-top:10px}
+.threshold-box input{
+  width:100%;padding:8px;border-radius:8px;border:1px solid #ddd
+}
+.tx{
+  font-size:13px;
+  border-bottom:1px solid #eee;
+  padding:10px 0;
+  word-break:break-all;
+  overflow-wrap:anywhere;
+}
+</style>
+
+<!-- LOAD ORDER IMPORTANT -->
+<script src="admin-auth.js"></script>
+<script src="js/staking.js"></script>
+<script src="wallet-core.js"></script>
+
+<script src="js/unified-transactions.js"></script>
+<script src="js/albukhr-transaction-engine.js"></script>
+
+<script src="capital-protection-engine.js"></script>
+
+</head>
+
+<!-- AUTO LIQUIDITY WARNING -->
+<div id="liquidityWarning"
+style="
+display:none;
+background:#f39c12;
+color:white;
+padding:12px;
+text-align:center;
+font-weight:700;
+">
+
+⚠️ Low Project Liquidity Detected
+
+</div>
+
+<body>
+
+<div class="header">
+  🔐 ALBUKHR – Admin Wallet Monitor
+</div>
+
+<div class="card">
+  <small>Admin Treasury</small>
+  <div class="stat" id="adminBalance">0.00 Pi</div>
+
+  <small>Status</small>
+  <div id="walletStatus">ACTIVE</div>
+
+  <button class="btn lock" onclick="lockWalletAdmin()">Lock Wallet</button>
+  <button class="btn unlock" onclick="unlockWalletAdmin()">Unlock Wallet</button>
+
+  <div class="threshold-box">
+    <small>Large Withdrawal Alert Threshold (Pi)</small>
+    <input type="number" id="thresholdInput" placeholder="Default: 100">
+  </div>
+</div>
+
+<div class="card">
+<h4>Admin Wallet Control</h4>
+
+<select id="adminProject">
+<option value="">Select Project</option>
+</select>
+
+<input 
+type="number" 
+id="adminAmount"
+placeholder="Amount (Pi)"
+style="width:100%;padding:10px;margin-top:8px;border-radius:10px;border:1px solid #ddd">
+
+<select id="adminType" style="width:100%;padding:10px;margin-top:8px;border-radius:10px">
+<option value="reward">Add Reward</option>
+<option value="capital">Add Capital</option>
+<option value="stake">Add Stake</option>
+</select>
+
+<button class="btn unlock" onclick="adminAddWallet()">
+Add to Wallet
+</button>
+
+</div>
+
+<div class="card">
+  <h4>Recent Withdrawals</h4>
+  <div id="adminTxList"></div>
+</div>
+
+<audio id="alertSound">
+  <source src="alert.mp3" type="audio/mpeg">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
+
+<script>
+
+/* ===============================
+   AUTH GUARD (SAFE)
+================================ */
+document.addEventListener("DOMContentLoaded", function(){
+
+  if(typeof requireRole === "function"){
+    requireRole(["super_admin","finance_admin"]);
+  }
+
+  if(typeof getAdmin === "function" && !getAdmin()){
+    window.location.href = "admin-login.html";
+    return;
+  }
+
+  if(typeof getTransactions !== "function"){
+document.getElementById("adminTxList").innerHTML =
+"<small style='color:red'>Wallet engine not loaded</small>";
+return;
+  }
+
+  initAdminWallet();
+});
+
+/* ===============================
+   CONFIG
+================================ */
+const DEFAULT_THRESHOLD = 100;
+let lastAlertedTxId = null;
+
+/* ===============================
+ADMIN TREASURY ENGINE
+=============================== */
+async function getAdminTreasury(){
+
+  const { data: txs, error } = await supabase
+    .from("transactions")   // 👈 ko sunan table ɗinka
+    .select("*");
+
+  if(error){
+    console.error("Treasury load error:", error);
+    return null;
+  }
+
+  let totalStake = 0;
+  let totalFees = 0;
+  let totalRewardWithdraw = 0;
+  let totalCapitalWithdraw = 0;
+  let adminLiquidity = 0;
+
+  txs.forEach(tx => {
+
+    const amount = Number(tx.amount) || 0;
+    const fee = Number(tx.fee || 0); // 👈 yanzu kai tsaye column
+
+    if(tx.type === "stake"){
+      totalStake += amount;
+    }
+
+    if(tx.type === "admin-credit"){
+      adminLiquidity += amount;
+    }
+
+    if(tx.type === "withdraw"){
+      totalRewardWithdraw += amount;
+      totalFees += fee;
+    }
+
+    if(tx.type === "capital"){
+      totalCapitalWithdraw += amount;
+      totalFees += fee;
+    }
+
+  });
+
+  const treasury =
+    totalStake +
+    adminLiquidity +
+    totalFees -
+    totalRewardWithdraw -
+    totalCapitalWithdraw;
+
+  return {
+    treasury,
+    totalStake,
+    totalFees,
+    totalRewardWithdraw,
+    totalCapitalWithdraw,
+    adminLiquidity
+  };
+}
+
+/* ===============================
+   INIT
+================================ */
+function initAdminWallet(){
+refreshAdminWallet();
+loadProjectsAdmin();
+window.addEventListener("walletUpdated", refreshAdminWallet);
+setInterval(refreshAdminWallet, 5000);
+  }
+
+/* ===============================
+   SUMMARY
+================================ */
+function renderSummary(){
+
+const t = getAdminTreasury();
+
+const summary = getWalletSummary() || {};
+const projects = getProjectWalletBreakdown() || [];
+const history = getWithdrawHistory() || [];
+
+let totalFees = 0;
+let rewardWithdrawals = 0;
+let capitalWithdrawals = 0;
+let totalStake = 0;
+let grossRewards = 0;
+let available = 0;
+
+projects.forEach(p=>{
+
+totalStake += Number(p.stake)||0;
+grossRewards += Number(p.grossReward)||0;
+rewardWithdrawals += Number(p.withdrawnReward)||0;
+capitalWithdrawals += Number(p.withdrawnCapital)||0;
+available += Number(p.withdrawableCapital)||0;
+
+});
+
+history.forEach(tx=>{
+
+const fee = Number(tx.fee || 0);
+
+if(!isNaN(fee)){
+totalFees += fee;
+}
+
+});
+
+const totalWithdrawn =
+rewardWithdrawals + capitalWithdrawals;
+
+const health = getTreasuryHealth();
+
+document.getElementById("walletStatus")
+.innerText = health;
+
+document.getElementById("adminBalance").innerHTML = `
+
+<!-- TREASURY -->
+
+<div style="margin-bottom:14px;">
+<div style="font-size:13px;color:#666;">
+Treasury Balance
+</div>
+
+<div style="
+font-size:28px;
+font-weight:800;
+color:#2c3e50;
+">
+${t.treasury.toFixed(2)} Pi
+</div>
+</div>
+
+<!-- AVAILABLE -->
+
+<div style="margin-bottom:14px;">
+<div style="font-size:13px;color:#666;">
+Available Capital
+</div>
+
+<div style="
+font-size:22px;
+font-weight:700;
+color:#0f7a3d;
+">
+${available.toFixed(2)} Pi
+</div>
+</div>
+
+<!-- GRID -->
+
+<div style="
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+font-size:12px;
+">
+
+<div>
+<div style="color:#666;">Total Stake</div>
+<b>${t.totalStake.toFixed(2)} Pi</b>
+</div>
+
+<div>
+<div style="color:#666;">Fees Collected</div>
+<b>${t.totalFees.toFixed(2)} Pi</b>
+</div>
+
+<div>
+<div style="color:#666;">Reward Withdraw</div>
+<b>${t.totalRewardWithdraw.toFixed(2)} Pi</b>
+</div>
+
+<div>
+<div style="color:#666;">Capital Withdraw</div>
+<b>${t.totalCapitalWithdraw.toFixed(2)} Pi</b>
+</div>
+
+<div>
+<div style="color:#666;">Admin Liquidity</div>
+<b>${t.adminLiquidity.toFixed(2)} Pi</b>
+</div>
+
+<div>
+<div style="color:#666;">Total Withdrawn</div>
+<b>${totalWithdrawn.toFixed(2)} Pi</b>
+</div>
+
+</div>
+`;
+
+ }
+
+/* ===============================
+   LOCK SYSTEM
+================================ */
+function lockWalletAdmin(){
+  localStorage.setItem("albukhr_wallet_locked","true");
+  alert("Wallet locked by Admin");
+  refreshAdminWallet();
+}
+
+function unlockWalletAdmin(){
+  localStorage.removeItem("albukhr_wallet_locked");
+  alert("Wallet unlocked");
+  refreshAdminWallet();
+}
+
+/* ===============================
+   TRANSACTIONS
+================================ */
+function renderTransactions(){
+
+const txList =
+document.getElementById("adminTxList");
+
+txList.innerHTML="";
+
+const history =
+getTransactions()
+.filter(tx =>
+tx.type === "withdraw" ||
+tx.type === "capital"
+)
+.sort((a,b)=>b.timestamp - a.timestamp);
+
+if(!history.length){
+txList.innerHTML =
+"<small>No withdrawals yet</small>";
+return;
+}
+
+const threshold =
+Number(
+document.getElementById("thresholdInput").value
+) || DEFAULT_THRESHOLD;
+
+history.forEach(tx=>{
+
+const gross =
+Number(tx.amount || 0);
+
+const fee =
+Number(tx.meta?.fee || 0);
+
+const received =
+gross;
+
+const isLarge =
+gross >= threshold;
+
+if(isLarge && lastAlertedTxId !== tx.id){
+playAlert();
+lastAlertedTxId = tx.id;
+}
+
+txList.innerHTML += `
+<div class="tx ${isLarge ? "tx-large" : ""}">
+<strong>${tx.project}</strong><br>
+
+Type: ${tx.type}<br>
+
+Amount: -${gross.toFixed(2)} Pi<br>
+
+Fee: ${fee.toFixed(2)} Pi<br>
+
+Received: ${received.toFixed(2)} Pi<br>
+
+Wallet Address:
+${tx.meta?.wallet || "internal"}<br>
+
+<small>
+${new Date(tx.timestamp).toLocaleString()}
+</small>
+
+</div>
+`;
+
+});
+
+}
+
+/* ===============================
+   ALERT
+================================ */
+function playAlert(){
+  const audio = document.getElementById("alertSound");
+  if(audio){
+    audio.play().catch(()=>{});
+  }
+}
+
+/* ===============================
+   MASTER REFRESH
+================================ */
+function refreshAdminWallet(){
+  renderSummary();
+  renderTransactions();
+}
+
+/* ===============================
+   ADMIN ADD WALLET
+================================ */
+
+function loadProjectsAdmin(){
+
+if(typeof getProjectWalletBreakdown !== "function") return;
+
+const select =
+document.getElementById("adminProject");
+
+select.innerHTML =
+'<option value="">Select Project</option>';
+
+const projects =
+getProjectWalletBreakdown();
+
+projects.forEach(p=>{
+
+select.innerHTML +=
+`<option value="${p.project}">
+${p.project}
+</option>`;
+
+});
+
+}
+
+/* ===============================
+   GET TREASURY HEALTH
+================================ */
+function getTreasuryHealth(){
+
+const t = getAdminTreasury();
+
+if(t.treasury <= 0){
+return "CRITICAL";
+}
+
+if(t.treasury < 100){
+return "LOW";
+}
+
+return "HEALTHY";
+
+  }
+
+/* ===============================
+AUTO LIQUIDITY WARNING
+=============================== */
+
+function checkLiquidityWarning(){
+
+const projects = [
+"Barsh",
+"Labbaika",
+"Raheem",
+"Urban",
+"Khairat",
+"Azman",
+"Hauwal"
+];
+
+let lowProjects = [];
+
+projects.forEach(p=>{
+
+if(typeof getProjectTreasuryStatus !== "function")
+return;
+
+const status =
+getProjectTreasuryStatus(p);
+
+if(status.liquidity < 100){
+lowProjects.push(p);
+}
+
+});
+
+const el =
+document.getElementById("liquidityWarning");
+
+if(!el) return;
+
+if(lowProjects.length){
+
+el.style.display="block";
+
+el.innerText =
+"⚠️ Low Liquidity: " +
+lowProjects.join(", ");
+
+}else{
+
+el.style.display="none";
+
+}
+
+}
+  
+function adminAddWallet(){
+
+const project =
+document.getElementById("adminProject").value;
+
+const amount =
+Number(document.getElementById("adminAmount").value);
+
+const type =
+document.getElementById("adminType").value;
+
+if(!project){
+alert("Select project");
+return;
+}
+
+if(!amount || amount <= 0){
+alert("Invalid amount");
+return;
+}
+
+/* Load Stakes */
+
+const stakes =
+getAllStakesMerged();
+
+if(type === "reward"){
+
+stakes.forEach(s=>{
+if(s.project === project){
+s.reward = (Number(s.reward)||0) + amount;
+}
+});
+
+}
+
+if(type === "capital"){
+
+stakes.push({
+id:"ADM-"+Date.now(),
+project,
+amount,
+reward:0,
+timestamp:Date.now(),
+admin:true
+});
+
+}
+
+if(type === "stake"){
+
+stakes.push({
+id:"ADM-"+Date.now(),
+project,
+amount,
+reward:0,
+timestamp:Date.now(),
+admin:true
+});
+
+}
+
+_saveMergedStakes(stakes);
+
+recordTx({
+type:"admin-credit",
+project,
+amount
+});
+
+window.dispatchEvent(
+new CustomEvent("walletUpdated")
+);
+
+alert("Wallet updated successfully");
+
+refreshAdminWallet();
+
+  }
+  
+setInterval(refreshAdminWallet, 3000);
+
+setInterval(checkLiquidityWarning, 4000);
+checkLiquidityWarning();
+
+</script>
+
+</body>
+</html>
