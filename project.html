@@ -578,6 +578,41 @@ projectHistory.appendChild(div);
   }
 
 /* ===============================
+   CREATE WITHDRAW REQUEST
+=============================== */
+async function createWithdrawRequest({
+  project,
+  amount,
+  wallet,
+  type
+}){
+
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+
+  if(!user?.uid){
+    return { error: "User not logged in" };
+  }
+
+  const { error } = await supabase
+    .from("withdraw_requests")
+    .insert([{
+      userid: user.uid,
+      project: project,
+      amount: amount,
+      wallet: wallet,
+      type: type,
+      status: "pending"
+    }]);
+
+  if(error){
+    console.error("Withdraw insert error:", error);
+    return { error };
+  }
+
+  return { success: true };
+}
+
+/* ===============================
    WITHDRAW
 =============================== */
   let __withdrawLock = false;
@@ -612,10 +647,12 @@ async function confirmWithdraw(){
   }
 
   // 🔥 CALL ENGINE
-  const res = await withdrawProjectReward(
-    PROJECT_NAME,
-    amount
-  );
+  const res = await createWithdrawRequest({
+  project: PROJECT_NAME,
+  amount: amount,
+  wallet: wallet,
+  type: "reward"
+});
 
   if(!res?.success){
     alert(res?.error || "Withdraw failed");
@@ -817,10 +854,12 @@ async function confirmCapitalWithdraw(){
   }
 
   // 🔥 CALL SUPABASE ENGINE
-  const res = await withdrawCapital({
-    project: PROJECT_NAME,
-    amount: amount
-  });
+  const res = await createWithdrawRequest({
+  project: PROJECT_NAME,
+  amount: amount,
+  wallet: wallet,
+  type: "capital"
+});
 
   if(res?.error){
     alert(res.error);
