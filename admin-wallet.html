@@ -131,10 +131,11 @@ const supabase = window.supabase.createClient(
    INIT
 =============================== */
 document.addEventListener("DOMContentLoaded", () => {
+  loadProjects(); // ✅ NAN zaka saka
   refreshAdminWallet();
   setInterval(refreshAdminWallet, 5000);
 });
-
+  
 /* ===============================
    FETCH TRANSACTIONS
 =============================== */
@@ -151,6 +152,35 @@ async function fetchTransactions(){
   }
 
   return data || [];
+}
+
+/* ===============================
+   LOAD PROJECTS
+=============================== */
+async function loadProjects(){
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select("name");
+
+  if(error){
+    console.error(error);
+    return;
+  }
+
+  const select = document.getElementById("adminProject");
+
+  select.innerHTML =
+    '<option value="">Select Project</option>';
+
+  data.forEach(p=>{
+    select.innerHTML += `
+      <option value="${p.name}">
+        ${p.name}
+      </option>
+    `;
+  });
+
 }
 
 /* ===============================
@@ -278,6 +308,11 @@ function renderTransactions(txs){
 =============================== */
 async function adminAddWallet(){
 
+  if(isWalletLocked()){
+    alert("Wallet is locked");
+    return;
+  }
+  
   const project =
     document.getElementById("adminProject").value;
 
@@ -307,7 +342,7 @@ async function adminAddWallet(){
         : type,
       fee: 0,
       wallet: "admin",
-      created_at: new Date()
+      created_at: new Date().toISOString()
     }]);
 
   if(error){
@@ -318,6 +353,23 @@ async function adminAddWallet(){
 
   alert("Wallet updated");
   refreshAdminWallet();
+}
+
+/* ===============================
+   WALLET LOCK SYSTEM
+=============================== */
+function isWalletLocked(){
+  return localStorage.getItem("wallet_locked") === "true";
+}
+
+function lockWalletAdmin(){
+  localStorage.setItem("wallet_locked","true");
+  alert("Wallet locked");
+}
+
+function unlockWalletAdmin(){
+  localStorage.removeItem("wallet_locked");
+  alert("Wallet unlocked");
 }
 
 /* ===============================
