@@ -137,74 +137,57 @@ const supabase = window.supabase.createClient(
 <script>
 
 /* ===============================
-   AUTH GUARD (SAFE)
-================================ */
-document.addEventListener("DOMContentLoaded", function(){
-
-  if(typeof requireRole === "function"){
-    requireRole(["super_admin","finance_admin"]);
-  }
-
-  if(typeof getAdmin === "function" && !getAdmin()){
-    window.location.href = "admin-login.html";
-    return;
-  }
-
-  if(typeof getTransactions !== "function"){
-document.getElementById("adminTxList").innerHTML =
-"<small style='color:red'>Wallet engine not loaded</small>";
-return;
-  }
-
-  initAdminWallet();
+   INIT
+=============================== */
+document.addEventListener("DOMContentLoaded", () => {
+  refreshAdminWallet();
+  setInterval(refreshAdminWallet, 5000);
 });
 
 /* ===============================
-   CONFIG
-================================ */
-const DEFAULT_THRESHOLD = 100;
-let lastAlertedTxId = null;
-
-/* ===============================
-ADMIN TREASURY ENGINE
+   FETCH TRANSACTIONS
 =============================== */
-async function getAdminTreasury(){
+async function fetchTransactions(){
 
-  const { data: txs, error } = await supabase
-    .from("transactions")   // 👈 ko sunan table ɗinka
-    .select("*");
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .order("created_at", { ascending:false });
 
   if(error){
-    console.error("Treasury load error:", error);
-    return null;
+    console.error(error);
+    return [];
   }
+
+  return data || [];
+}
+
+/* ===============================
+   TREASURY ENGINE
+=============================== */
+function calculateTreasury(txs){
 
   let totalStake = 0;
   let totalFees = 0;
-  let totalRewardWithdraw = 0;
-  let totalCapitalWithdraw = 0;
+  let rewardWithdraw = 0;
+  let capitalWithdraw = 0;
   let adminLiquidity = 0;
 
   txs.forEach(tx => {
 
     const amount = Number(tx.amount) || 0;
-    const fee = Number(tx.fee || 0); // 👈 yanzu kai tsaye column
+    const fee = Number(tx.fee) || 0;
 
-    if(tx.type === "stake"){
-      totalStake += amount;
-    }
-
-    if(tx.type === "admin-credit"){
-      adminLiquidity += amount;
-    }
+    if(tx.type === "stake") totalStake += amount;
+    if(tx.type === "admin-credit") adminLiquidity += amount;
 
     if(tx.type === "withdraw"){
-      totalRewardWithdraw += amount;
+      rewardWithdraw += amount;
       totalFees += fee;
     }
 
     if(tx.type === "capital"){
-      totalCapitalWithdraw += amount;
+      capitalWithdraw += amount;
       totalFees += fee;
     }
 
@@ -214,446 +197,153 @@ async function getAdminTreasury(){
     totalStake +
     adminLiquidity +
     totalFees -
-    totalRewardWithdraw -
-    totalCapitalWithdraw;
+    rewardWithdraw -
+    capitalWithdraw;
 
   return {
     treasury,
     totalStake,
     totalFees,
-    totalRewardWithdraw,
-    totalCapitalWithdraw,
+    rewardWithdraw,
+    capitalWithdraw,
     adminLiquidity
   };
 }
 
 /* ===============================
-   INIT
-================================ */
-function initAdminWallet(){
-refreshAdminWallet();
-loadProjectsAdmin();
-window.addEventListener("walletUpdated", refreshAdminWallet);
-setInterval(refreshAdminWallet, 5000);
-  }
-
-/* ===============================
-   SUMMARY
-================================ */
-function renderSummary(){
-
-const t = getAdminTreasury();
-
-const summary = getWalletSummary() || {};
-const projects = getProjectWalletBreakdown() || [];
-const history = getWithdrawHistory() || [];
-
-let totalFees = 0;
-let rewardWithdrawals = 0;
-let capitalWithdrawals = 0;
-let totalStake = 0;
-let grossRewards = 0;
-let available = 0;
-
-projects.forEach(p=>{
-
-totalStake += Number(p.stake)||0;
-grossRewards += Number(p.grossReward)||0;
-rewardWithdrawals += Number(p.withdrawnReward)||0;
-capitalWithdrawals += Number(p.withdrawnCapital)||0;
-available += Number(p.withdrawableCapital)||0;
-
-});
-
-history.forEach(tx=>{
-
-const fee = Number(tx.fee || 0);
-
-if(!isNaN(fee)){
-totalFees += fee;
-}
-
-});
-
-const totalWithdrawn =
-rewardWithdrawals + capitalWithdrawals;
-
-const health = getTreasuryHealth();
-
-document.getElementById("walletStatus")
-.innerText = health;
-
-document.getElementById("adminBalance").innerHTML = `
-
-<!-- TREASURY -->
-
-<div style="margin-bottom:14px;">
-<div style="font-size:13px;color:#666;">
-Treasury Balance
-</div>
-
-<div style="
-font-size:28px;
-font-weight:800;
-color:#2c3e50;
-">
-${t.treasury.toFixed(2)} Pi
-</div>
-</div>
-
-<!-- AVAILABLE -->
-
-<div style="margin-bottom:14px;">
-<div style="font-size:13px;color:#666;">
-Available Capital
-</div>
-
-<div style="
-font-size:22px;
-font-weight:700;
-color:#0f7a3d;
-">
-${available.toFixed(2)} Pi
-</div>
-</div>
-
-<!-- GRID -->
-
-<div style="
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-font-size:12px;
-">
-
-<div>
-<div style="color:#666;">Total Stake</div>
-<b>${t.totalStake.toFixed(2)} Pi</b>
-</div>
-
-<div>
-<div style="color:#666;">Fees Collected</div>
-<b>${t.totalFees.toFixed(2)} Pi</b>
-</div>
-
-<div>
-<div style="color:#666;">Reward Withdraw</div>
-<b>${t.totalRewardWithdraw.toFixed(2)} Pi</b>
-</div>
-
-<div>
-<div style="color:#666;">Capital Withdraw</div>
-<b>${t.totalCapitalWithdraw.toFixed(2)} Pi</b>
-</div>
-
-<div>
-<div style="color:#666;">Admin Liquidity</div>
-<b>${t.adminLiquidity.toFixed(2)} Pi</b>
-</div>
-
-<div>
-<div style="color:#666;">Total Withdrawn</div>
-<b>${totalWithdrawn.toFixed(2)} Pi</b>
-</div>
-
-</div>
-`;
-
- }
-
-/* ===============================
-   LOCK SYSTEM
-================================ */
-function lockWalletAdmin(){
-  localStorage.setItem("albukhr_wallet_locked","true");
-  alert("Wallet locked by Admin");
-  refreshAdminWallet();
-}
-
-function unlockWalletAdmin(){
-  localStorage.removeItem("albukhr_wallet_locked");
-  alert("Wallet unlocked");
-  refreshAdminWallet();
-}
-
-/* ===============================
-   TRANSACTIONS
-================================ */
-function renderTransactions(){
-
-const txList =
-document.getElementById("adminTxList");
-
-txList.innerHTML="";
-
-const history =
-getTransactions()
-.filter(tx =>
-tx.type === "withdraw" ||
-tx.type === "capital"
-)
-.sort((a,b)=>b.timestamp - a.timestamp);
-
-if(!history.length){
-txList.innerHTML =
-"<small>No withdrawals yet</small>";
-return;
-}
-
-const threshold =
-Number(
-document.getElementById("thresholdInput").value
-) || DEFAULT_THRESHOLD;
-
-history.forEach(tx=>{
-
-const gross =
-Number(tx.amount || 0);
-
-const fee =
-Number(tx.meta?.fee || 0);
-
-const received =
-gross;
-
-const isLarge =
-gross >= threshold;
-
-if(isLarge && lastAlertedTxId !== tx.id){
-playAlert();
-lastAlertedTxId = tx.id;
-}
-
-txList.innerHTML += `
-<div class="tx ${isLarge ? "tx-large" : ""}">
-<strong>${tx.project}</strong><br>
-
-Type: ${tx.type}<br>
-
-Amount: -${gross.toFixed(2)} Pi<br>
-
-Fee: ${fee.toFixed(2)} Pi<br>
-
-Received: ${received.toFixed(2)} Pi<br>
-
-Wallet Address:
-${tx.meta?.wallet || "internal"}<br>
-
-<small>
-${new Date(tx.timestamp).toLocaleString()}
-</small>
-
-</div>
-`;
-
-});
-
-}
-
-/* ===============================
-   ALERT
-================================ */
-function playAlert(){
-  const audio = document.getElementById("alertSound");
-  if(audio){
-    audio.play().catch(()=>{});
-  }
-}
-
-/* ===============================
-   MASTER REFRESH
-================================ */
-function refreshAdminWallet(){
-  renderSummary();
-  renderTransactions();
-}
-
-/* ===============================
-   ADMIN ADD WALLET
-================================ */
-
-function loadProjectsAdmin(){
-
-if(typeof getProjectWalletBreakdown !== "function") return;
-
-const select =
-document.getElementById("adminProject");
-
-select.innerHTML =
-'<option value="">Select Project</option>';
-
-const projects =
-getProjectWalletBreakdown();
-
-projects.forEach(p=>{
-
-select.innerHTML +=
-`<option value="${p.project}">
-${p.project}
-</option>`;
-
-});
-
-}
-
-/* ===============================
-   GET TREASURY HEALTH
-================================ */
-function getTreasuryHealth(){
-
-const t = getAdminTreasury();
-
-if(t.treasury <= 0){
-return "CRITICAL";
-}
-
-if(t.treasury < 100){
-return "LOW";
-}
-
-return "HEALTHY";
-
-  }
-
-/* ===============================
-AUTO LIQUIDITY WARNING
+   HEALTH
 =============================== */
-
-function checkLiquidityWarning(){
-
-const projects = [
-"Barsh",
-"Labbaika",
-"Raheem",
-"Urban",
-"Khairat",
-"Azman",
-"Hauwal"
-];
-
-let lowProjects = [];
-
-projects.forEach(p=>{
-
-if(typeof getProjectTreasuryStatus !== "function")
-return;
-
-const status =
-getProjectTreasuryStatus(p);
-
-if(status.liquidity < 100){
-lowProjects.push(p);
+function getHealth(t){
+  if(t.treasury <= 0) return "CRITICAL";
+  if(t.treasury < 100) return "LOW";
+  return "HEALTHY";
 }
 
-});
+/* ===============================
+   RENDER SUMMARY
+=============================== */
+function renderSummary(t){
 
-const el =
-document.getElementById("liquidityWarning");
+  document.getElementById("walletStatus").innerText =
+    getHealth(t);
 
-if(!el) return;
+  document.getElementById("adminBalance").innerHTML = `
+    <div style="font-size:28px;font-weight:800">
+      ${t.treasury.toFixed(2)} Pi
+    </div>
 
-if(lowProjects.length){
-
-el.style.display="block";
-
-el.innerText =
-"⚠️ Low Liquidity: " +
-lowProjects.join(", ");
-
-}else{
-
-el.style.display="none";
-
+    <div style="margin-top:10px;font-size:12px">
+      Stake: ${t.totalStake.toFixed(2)} Pi<br>
+      Fees: ${t.totalFees.toFixed(2)} Pi<br>
+      Reward Withdraw: ${t.rewardWithdraw.toFixed(2)} Pi<br>
+      Capital Withdraw: ${t.capitalWithdraw.toFixed(2)} Pi<br>
+      Liquidity: ${t.adminLiquidity.toFixed(2)} Pi
+    </div>
+  `;
 }
 
-}
-  
-function adminAddWallet(){
+/* ===============================
+   RENDER TRANSACTIONS
+=============================== */
+function renderTransactions(txs){
 
-const project =
-document.getElementById("adminProject").value;
+  const box = document.getElementById("adminTxList");
+  box.innerHTML = "";
 
-const amount =
-Number(document.getElementById("adminAmount").value);
+  const withdrawals = txs.filter(tx =>
+    tx.type === "withdraw" || tx.type === "capital"
+  );
 
-const type =
-document.getElementById("adminType").value;
-
-if(!project){
-alert("Select project");
-return;
-}
-
-if(!amount || amount <= 0){
-alert("Invalid amount");
-return;
-}
-
-/* Load Stakes */
-
-const stakes =
-getAllStakesMerged();
-
-if(type === "reward"){
-
-stakes.forEach(s=>{
-if(s.project === project){
-s.reward = (Number(s.reward)||0) + amount;
-}
-});
-
-}
-
-if(type === "capital"){
-
-stakes.push({
-id:"ADM-"+Date.now(),
-project,
-amount,
-reward:0,
-timestamp:Date.now(),
-admin:true
-});
-
-}
-
-if(type === "stake"){
-
-stakes.push({
-id:"ADM-"+Date.now(),
-project,
-amount,
-reward:0,
-timestamp:Date.now(),
-admin:true
-});
-
-}
-
-_saveMergedStakes(stakes);
-
-recordTx({
-type:"admin-credit",
-project,
-amount
-});
-
-window.dispatchEvent(
-new CustomEvent("walletUpdated")
-);
-
-alert("Wallet updated successfully");
-
-refreshAdminWallet();
-
+  if(!withdrawals.length){
+    box.innerHTML = "<small>No withdrawals yet</small>";
+    return;
   }
-  
-setInterval(refreshAdminWallet, 3000);
 
-setInterval(checkLiquidityWarning, 4000);
-checkLiquidityWarning();
+  withdrawals.forEach(tx => {
 
-</script>
+    box.innerHTML += `
+      <div class="tx">
+        <strong>${tx.project}</strong><br>
+
+        Type: ${tx.type}<br>
+        Amount: -${Number(tx.amount).toFixed(2)} Pi<br>
+        Fee: ${Number(tx.fee || 0).toFixed(2)} Pi<br>
+
+        Wallet:
+        ${tx.wallet || "internal"}<br>
+
+        <small>
+        ${new Date(tx.created_at).toLocaleString()}
+        </small>
+      </div>
+    `;
+
+  });
+
+}
+
+/* ===============================
+   ADMIN ADD LIQUIDITY
+=============================== */
+async function adminAddWallet(){
+
+  const project =
+    document.getElementById("adminProject").value;
+
+  const amount =
+    Number(document.getElementById("adminAmount").value);
+
+  const type =
+    document.getElementById("adminType").value;
+
+  if(!project){
+    alert("Select project");
+    return;
+  }
+
+  if(!amount || amount <= 0){
+    alert("Invalid amount");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("transactions")
+    .insert([{
+      project,
+      amount,
+      type: type === "reward"
+        ? "admin-credit"
+        : type,
+      fee: 0,
+      wallet: "admin",
+      created_at: new Date()
+    }]);
+
+  if(error){
+    console.error(error);
+    alert("Insert failed");
+    return;
+  }
+
+  alert("Wallet updated");
+  refreshAdminWallet();
+}
+
+/* ===============================
+   REFRESH
+=============================== */
+async function refreshAdminWallet(){
+
+  const txs = await fetchTransactions();
+
+  const treasury = calculateTreasury(txs);
+
+  renderSummary(treasury);
+  renderTransactions(txs);
+
+}
+
+ </script>
 
 </body>
 </html>
