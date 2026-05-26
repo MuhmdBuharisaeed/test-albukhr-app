@@ -112,6 +112,11 @@ Add to Wallet
   <div id="adminTxList"></div>
 </div>
 
+<div class="card">
+  <h4>Pending Withdraw Requests</h4>
+  <div id="pendingRequests"></div>
+</div>
+
 <audio id="alertSound">
   <source src="alert.mp3" type="audio/mpeg">
 </audio>
@@ -131,8 +136,9 @@ const supabase = window.supabase.createClient(
    INIT
 =============================== */
 document.addEventListener("DOMContentLoaded", () => {
-  loadProjects(); // ✅ NAN zaka saka
+  loadProjects();
   refreshAdminWallet();
+  renderPendingRequests(); // ✅ ADD NAN
   setInterval(refreshAdminWallet, 5000);
 });
   
@@ -353,6 +359,136 @@ async function adminAddWallet(){
 
   alert("Wallet updated");
   refreshAdminWallet();
+}
+
+/* ===============================
+   FETCH WITHDRAW REQUESTS
+=============================== */
+async function fetchWithdrawRequests(){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending:false });
+
+  if(error){
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/* ===============================
+   RENDER PENDING REQUESTS
+=============================== */
+async function renderPendingRequests(){
+
+  const box = document.getElementById("pendingRequests");
+  box.innerHTML = "Loading...";
+
+  const requests = await fetchWithdrawRequests();
+
+  if(!requests.length){
+    box.innerHTML = "<small>No pending requests</small>";
+    return;
+  }
+
+  box.innerHTML = "";
+
+  requests.forEach(req => {
+
+    box.innerHTML += `
+      <div class="tx">
+        <strong>${req.project}</strong><br>
+
+        Type: ${req.type}<br>
+        Amount: ${Number(req.amount).toFixed(2)} Pi<br>
+
+        Wallet:
+        ${req.wallet}<br>
+
+        <small>
+        ${new Date(req.created_at).toLocaleString()}
+        </small><br><br>
+
+        <button onclick="approveRequest('${req.id}')">
+          ✅ Approve
+        </button>
+
+        <button onclick="rejectRequest('${req.id}')">
+          ❌ Reject
+        </button>
+      </div>
+    `;
+
+  });
+
+}
+
+/* ===============================
+   APPROVE REQUESTS
+=============================== */
+async function approveRequest(id){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if(error || !data){
+    alert("Request not found");
+    return;
+  }
+
+  const fee = data.amount * 0.01;
+  const receive = data.amount - fee;
+
+  // ✅ INSERT INTO TRANSACTIONS
+  const { error: txError } = await supabase
+    .from("transactions")
+    .insert([{
+      project: data.project,
+      amount: receive,
+      type: data.type === "reward" ? "withdraw" : "capital",
+      fee: fee,
+      wallet: data.wallet,
+      created_at: new Date().toISOString()
+    }]);
+
+  if(txError){
+    console.error(txError);
+    alert("Transaction failed");
+    return;
+  }
+
+  // ✅ UPDATE STATUS
+  await supabase
+    .from("withdraw_requests")
+    .update({ status: "approved" })
+    .eq("id", id);
+
+  alert("Approved successfully");
+
+  refreshAdminWallet();
+  renderPendingRequests();
+}
+
+/* ===============================
+   REJECT REQUEST
+=============================== */
+async function rejectRequest(id){
+
+  await supabase
+    .from("withdraw_requests")
+    .update({ status: "rejected" })
+    .eq("id", id);
+
+  alert("Rejected");
+
+  renderPendingRequests();
 }
 
 /* ===============================
