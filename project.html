@@ -612,6 +612,24 @@ async function confirmWithdraw(){
     return;
   }
 
+  const data = await getProjectTotals(PROJECT_NAME);
+
+let available = 0;
+
+data.stakes.forEach(s=>{
+  const remaining =
+    (Number(s.reward)||0) -
+    (Number(s.withdrawnReward)||0);
+
+  available += Math.max(0, remaining);
+});
+
+if(amount > available){
+  alert("Insufficient reward balance");
+  __withdrawLock = false;
+  return;
+}
+
   // 🔥 CALL ENGINE
   const res = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -630,15 +648,7 @@ async function confirmWithdraw(){
   const receive = amount - fee;
 
   // 🔥 RECORD TX
-  recordTx({
-    type:"withdraw",
-    project:PROJECT_NAME,
-    amount: receive,
-    meta:{
-      wallet: wallet,
-      fee: fee
-    }
-  });
+  
 
   // 🔥 RESET UI
   withdrawAmount.value = "";
@@ -819,6 +829,23 @@ async function confirmCapitalWithdraw(){
     return;
   }
 
+  const data = await getProjectTotals(PROJECT_NAME);
+
+let available = 0;
+const now = Date.now();
+
+data.stakes.forEach(s=>{
+  if(now >= (s.unlockTime||0)){
+    available += Number(s.amount)||0;
+  }
+});
+
+if(amount > available){
+  alert("Insufficient capital");
+  __capitalLock = false;
+  return;
+}
+
   // 🔥 CALL SUPABASE ENGINE
   const res = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -837,15 +864,7 @@ async function confirmCapitalWithdraw(){
   const receive = amount - fee;
 
   // 🔥 RECORD TX
-  recordTx({
-    type:"capital",
-    project:PROJECT_NAME,
-    amount:receive,
-    meta:{
-      wallet:wallet,
-      fee:fee
-    }
-  });
+  
 
   // 🔥 RESET UI
   capitalWithdrawAmount.value = "";
