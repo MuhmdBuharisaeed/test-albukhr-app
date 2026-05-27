@@ -131,7 +131,6 @@ const supabase = window.supabase.createClient(
 </script>
 
 <!-- ✅ ADD HERE -->
-<script src="js/withdraw-approval.js"></script>
 
 <script>
 
@@ -141,8 +140,12 @@ const supabase = window.supabase.createClient(
 document.addEventListener("DOMContentLoaded", () => {
   loadProjects();
   refreshAdminWallet();
-  renderPendingRequests(); // ✅ ADD NAN
-  setInterval(refreshAdminWallet, 5000);
+  renderPendingRequests();
+
+  setInterval(() => {
+    refreshAdminWallet();
+    renderPendingRequests(); // ✅ ADD NAN
+  }, 3000);
 });
   
 /* ===============================
@@ -318,6 +321,11 @@ function renderTransactions(txs){
 async function adminAddWallet(){
 
   if(isWalletLocked()){
+  alert("Wallet locked");
+  return;
+  }
+
+  if(isWalletLocked()){
     alert("Wallet is locked");
     return;
   }
@@ -388,6 +396,11 @@ async function fetchWithdrawRequests(){
 =============================== */
 async function renderPendingRequests(){
 
+  if(isWalletLocked()){
+  alert("Wallet locked");
+  return;
+  }
+
   const box = document.getElementById("pendingRequests");
   box.innerHTML = "Loading...";
 
@@ -446,10 +459,32 @@ async function approveRequest(id){
     return;
   }
 
+  // 🔒 VALIDATION
+  const { data: stakes } = await supabase
+    .from("stakes")
+    .select("*")
+    .eq("userid", data.userid)
+    .eq("project", data.project);
+
+  let totalReward = 0;
+
+  stakes.forEach(s => {
+    const remaining =
+      (Number(s.reward)||0) -
+      (Number(s.withdrawnReward)||0);
+
+    totalReward += Math.max(0, remaining);
+  });
+
+  if(data.type === "reward" && data.amount > totalReward){
+    alert("Fraud detected 🚨");
+    return;
+  }
+
   const fee = data.amount * 0.01;
   const receive = data.amount - fee;
 
-  // ✅ INSERT INTO TRANSACTIONS
+  // ✅ INSERT
   const { error: txError } = await supabase
     .from("transactions")
     .insert([{
@@ -473,7 +508,7 @@ async function approveRequest(id){
     .update({ status: "approved" })
     .eq("id", id);
 
-  alert("Approved successfully");
+  alert("Approved ✅");
 
   refreshAdminWallet();
   renderPendingRequests();
@@ -483,6 +518,11 @@ async function approveRequest(id){
    REJECT REQUEST
 =============================== */
 async function rejectRequest(id){
+
+  if(isWalletLocked()){
+  alert("Wallet locked");
+  return;
+  }
 
   await supabase
     .from("withdraw_requests")
