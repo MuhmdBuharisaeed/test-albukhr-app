@@ -191,24 +191,6 @@ Cancel
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // 🔐 FORCE AUTH
-  if(typeof initPi === "function"){
-    await initPi();
-  }
-
-  const user = await ensurePiAuth();
-
-  if(!user || !user.uid){
-    alert("Authentication required");
-    window.location.href = "index.html"; // ko login page
-    return;
-  }
-
-  // ✅ ONLY AFTER AUTH
-  await load();
-
-});
-
   if(typeof initPi === "function"){
     initPi();
   }
@@ -603,13 +585,6 @@ projectHistory.appendChild(div);
   
 async function confirmWithdraw(){
 
-  const user = await ensurePiAuth();
-
-if(!user?.uid){
-  alert("Unauthorized");
-  return;
-}
-
   // 🔒 PREVENT DOUBLE CLICK
   if(__withdrawLock) return;
   __withdrawLock = true;
@@ -833,13 +808,6 @@ COMFORM CAPITAL WITHDRAW
 let __capitalLock = false;
 
 async function confirmCapitalWithdraw(){
-
-  const user = await ensurePiAuth();
-
-if(!user?.uid){
-  alert("Unauthorized");
-  return;
-}
 
   // 🔒 PREVENT DOUBLE CLICK
   if(__capitalLock) return;
