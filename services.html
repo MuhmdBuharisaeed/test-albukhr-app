@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Albukhr Services</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="global-buttons.css">
+
+<style>
+
+html,body{
+margin:0;
+padding:0;
+background:#f4f7f6;
+font-family:system-ui;
+padding-bottom:110px;
+}
+
+/* SECTION */
+
+.section{
+padding:16px;
+}
+
+/* SERVICE CARD */
+
+.service-card{
+
+background:#fff;
+
+border-radius:18px;
+
+padding:16px;
+
+margin-bottom:16px;
+
+display:flex;
+
+gap:14px;
+
+box-shadow:0 6px 18px rgba(0,0,0,0.06);
+
+cursor:pointer;
+
+transition:.25s;
+}
+
+.service-card:hover{
+
+transform:translateY(-2px);
+
+box-shadow:0 10px 24px rgba(0,0,0,0.08);
+}
+
+/* ICON */
+
+.service-icon{
+
+font-size:24px;
+
+width:44px;
+height:44px;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+border-radius:12px;
+
+background:#f2f7f4;
+}
+
+/* BODY */
+
+.service-body{
+flex:1;
+}
+
+.service-title{
+
+font-weight:700;
+
+font-size:15px;
+
+margin-bottom:4px;
+}
+
+.service-desc{
+
+font-size:13px;
+
+color:#666;
+
+line-height:1.5;
+}
+
+/* FOOTER */
+
+.service-footer{
+
+margin-top:12px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+}
+
+.service-action{
+
+font-size:13px;
+
+font-weight:600;
+
+color:#0f7a3d;
+}
+
+.arrow{
+font-size:14px;
+color:#0f7a3d;
+}
+
+/* BADGES */
+
+.badge{
+
+display:inline-block;
+
+font-size:10px;
+
+padding:4px 9px;
+
+border-radius:20px;
+
+margin-top:6px;
+
+font-weight:600;
+}
+
+.badge.public{
+
+background:#e6f5ec;
+
+color:#0f7a3d;
+}
+
+.badge.paid{
+
+background:#fff3cd;
+
+color:#856404;
+}
+
+.badge.restricted{
+
+background:#f8d7da;
+
+color:#842029;
+}
+
+.badge.coming{
+
+background:#e7f1ff;
+
+color:#084298;
+}
+
+/* LOCKED */
+
+.locked{
+
+opacity:.55;
+
+pointer-events:none;
+}
+
+/* NOTICE */
+
+.notice{
+
+font-size:12px;
+
+color:#777;
+
+line-height:1.6;
+
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body data-page="services">
+
+<!-- ===== ALBUKHR HEADER ===== -->
+
+<header class="header">
+
+  <div class="header-left">
+  <span class="brand">ALBUKHR</span>
+  </div>
+
+<div class="header-right">
+
+<div class="header-btn notification-btn" onclick="openNotifications()">
+
+🔔
+
+<span id="notifBadge" class="notification-badge"></span>
+
+</div>
+
+</div>
+
+</header>
+
+<!-- ===== SERVICES ===== -->
+
+<div class="section">
+
+<!-- CREATE EXTERNAL PROJECT -->
+
+<div class="service-card" onclick="goCreateExternal()">
+
+<div class="service-icon">🚀</div>
+
+<div class="service-body">
+
+<div class="service-title">Create External Project</div>
+
+<div class="service-desc">
+
+Register your independent project under Albukhr escrow protection.
+Projects are reviewed before approval and public listing.
+
+</div>
+
+<span class="badge public">Community</span>
+
+<div class="service-footer">
+
+<span class="service-action">Start</span>
+
+<span class="arrow">→</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- PI DAPP SERVICE -->
+
+<div class="service-card" onclick="goDappService()">
+
+<div class="service-icon">📱</div>
+
+<div class="service-body">
+
+<div class="service-title">Pi dApp Launch Service</div>
+
+<div class="service-desc">
+
+Albukhr assists you to create and launch your own Pi Network dApp
+via Pi Studio or Albukhr developers.
+
+</div>
+
+<span class="badge paid">Paid Service</span>
+
+<div class="service-footer">
+
+<span class="service-action">Apply</span>
+
+<span class="arrow">→</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SIDRA START SERVICE -->
+
+<div class="service-card" onclick="goSidraService()">
+
+<div class="service-icon">🌐</div>
+
+<div class="service-body">
+
+<div class="service-title">Sidra Start App Builder</div>
+
+<div class="service-desc">
+
+Albukhr helps startups and companies launch on Sidra Start.
+We design dashboards, governance systems, and full apps for Sidra ecosystem.
+
+</div>
+
+<span class="badge paid">Professional Service</span>
+
+<div class="service-footer">
+
+<span class="service-action">Apply</span>
+
+<span class="arrow">→</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- INTERNAL PROJECT -->
+
+<div class="service-card" id="internalProjectCard" onclick="openInternalProject()">
+
+<div class="service-icon">🏗️</div>
+
+<div class="service-body">
+
+<div class="service-title">Internal Project Creation</div>
+
+<div class="service-desc">
+
+Private internal project registry for Albukhr core builders
+and authorized ecosystem architects.
+
+</div>
+
+<span class="badge restricted">Core Only</span>
+
+<div class="service-footer">
+
+<span class="service-action">Access</span>
+
+<span class="arrow">→</span>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- AI VERIFICATION -->
+
+<div class="service-card locked">
+
+<div class="service-icon">🤖</div>
+
+<div class="service-body">
+
+<div class="service-title">AI Project Verification</div>
+
+<div class="service-desc">
+
+Automated seriousness and capability analysis
+for projects before escrow approval.
+
+</div>
+
+<span class="badge coming">Coming Soon</span>
+
+<div class="service-footer">
+
+<span class="service-action">Unavailable</span>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="notice">
+
+ℹ️ Services are controlled gateways into the Albukhr ecosystem.
+Each service enforces approval rules, access levels, and admin oversight
+to protect contributors and users.
+
+</div>
+
+</div>
+
+<!-- ===== ALBUKHR DOCK NAV ===== -->
+
+<div class="dock-nav">
+
+  <!-- HOME -->
+  <a href="index.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
+    </svg>
+    <span>Home</span>
+  </a>
+
+
+  <!-- INVESTORS -->
+  <a href="investor-dashboard.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
+    </svg>
+    <span>Investors</span>
+  </a>
+
+
+  <!-- TRANSPARENCY HUB -->
+  <a href="wallet.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      
+      <!-- Document -->
+      <path d="M6 3h8l4 4v14H6z"/>
+      
+      <!-- Fold -->
+      <path d="M14 3v4h4"/>
+      
+      <!-- Lines -->
+      <path d="M8 11h8"/>
+      <path d="M8 14h8"/>
+      
+      <!-- Eye -->
+      <ellipse cx="12" cy="18" rx="4" ry="2"/>
+      <circle cx="12" cy="18" r="0.8"/>
+      
+    </svg>
+    <span>Transparency</span>
+  </a>
+
+
+  <!-- SERVICES -->
+  <a href="services.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
+    </svg>
+    <span>Services</span>
+  </a>
+
+</div>
+
+<script>
+
+let lastScroll = 0;
+let threshold = 10;
+
+const dock =
+document.querySelector(".dock-nav");
+
+window.addEventListener("scroll",()=>{
+
+const current =
+window.pageYOffset;
+
+if(Math.abs(current-lastScroll)<=threshold)
+return;
+
+if(current > lastScroll){
+
+/* scroll down */
+dock.classList.add("hide");
+
+}else{
+
+/* scroll up */
+dock.classList.remove("hide");
+
+}
+
+lastScroll = current;
+
+});
+
+</script>
+
+<script>
+
+const current = location.pathname.split("/").pop();
+
+document.querySelectorAll(".dock-item").forEach(link=>{
+
+if(link.getAttribute("href") === current){
+
+link.classList.add("active");
+
+}
+
+});
+
+</script>
+
+<!-- SERVICE ROUTES -->
+
+<script>
+
+function goCreateExternal(){
+
+window.location.href="external-create.html";
+
+}
+
+function goDappService(){
+
+window.location.href="pi-dapp-service.html";
+
+}
+
+function goSidraService(){
+
+window.location.href =
+"sidra-start-service.html";
+
+}
+
+function hasInternalAccess(){
+
+return localStorage.getItem("albukhr_internal_access")==="granted";
+
+}
+
+function openInternalProject(){
+
+if(!hasInternalAccess()){
+
+alert("⛔ Restricted Access\nThis service is reserved for Albukhr core team.");
+
+return;
+
+}
+
+window.location.href="internal-project-dashboard.html";
+
+}
+
+/* UI Lock */
+
+(function(){
+
+const card=document.getElementById("internalProjectCard");
+
+if(!card) return;
+
+if(!hasInternalAccess()){
+
+card.classList.add("locked");
+
+card.querySelector(".service-action").innerText="Restricted";
+
+}else{
+
+card.classList.remove("locked");
+
+card.querySelector(".service-action").innerText="Open →";
+
+}
+
+})();
+
+</script>
+
+<script src="js/notifications.js"></script>
+
+</body>
+  </html>
