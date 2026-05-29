@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pi dApp Launch Service | ALBUKHR</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+.section{padding:16px}
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px
+}
+.label{font-size:13px;font-weight:600;margin-bottom:6px}
+.input{
+  width:100%;padding:12px;
+  border-radius:10px;border:1px solid #ddd;
+  font-size:14px
+}
+textarea.input{min-height:90px}
+.select{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd}
+.btn{
+  width:100%;padding:14px;
+  border:none;border-radius:14px;
+  background:#0f7a3d;color:#fff;
+  font-size:15px;font-weight:700
+}
+.notice{
+  font-size:12px;
+  background:#f6fbf8;
+  border-left:4px solid #0f7a3d;
+  padding:10px;
+  margin-top:10px;
+  line-height:1.6
+}
+.disabled{
+  opacity:.5;
+  pointer-events:none
+}
+.copy-box{
+  display:flex;
+  gap:6px
+}
+.copy-box button{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  background:#eaf6ee;
+  font-weight:600;
+  cursor:pointer
+}
+</style>
+</head>
+
+<body data-page="services">
+
+<header class="header">
+  <h1 class="brand">ALBUKHR</h1>
+</header>
+
+<section class="section">
+
+<h3>📱 Pi dApp Launch Service</h3>
+<p class="muted">
+  Albukhr will assist you to launch your Pi Network dApp under your ownership.
+  <a href="pi-dapp-policy.html"
+     style="color:#0f7a3d;font-weight:600">
+     View Policy & Terms of Service 📜
+  </a>
+</p>
+
+<!-- FORM -->
+<div class="card">
+
+  <div class="label">Pi Username</div>
+  <input class="input" id="piUser" placeholder="@username">
+
+  <div class="label" style="margin-top:12px">Project Name</div>
+  <input class="input" id="projectName" placeholder="Your dApp name">
+
+  <div class="label" style="margin-top:12px">Service Type</div>
+  <select class="select" id="serviceType">
+    <option value="">Select service</option>
+    <option value="pi_studio">Pi Studio Assistance (₦35,000)</option>
+    <option value="developer">Developer-built dApp (₦500,000)</option>
+  </select>
+
+  <div class="label" style="margin-top:12px">Project Description (English Hausa Français)</div>
+  <textarea class="input" id="description" 
+    placeholder="Explain what your dApp does"></textarea>
+
+</div>
+
+<!-- PAYMENT -->
+<div class="card">
+
+  <strong>💳 Service Fee</strong>
+
+  <p class="notice">
+    • Pi Studio: <b>Flexible service fee</b><br>
+    • Developer-built: <b>Higher professional fee</b>
+  </p>
+
+  <div id="paymentBox" style="display:none;margin-top:10px">
+
+    <div class="label">Pi Wallet Address</div>
+    <div class="copy-box">
+      <input class="input" id="piWallet" readonly
+        value="GDGFTZOSBYPEXBJFMLHG56RSWR23P4L2CJYZUTBFJQOHDI5XJIPBSYTY">
+      <button onclick="copyText('piWallet')">Copy</button>
+    </div>
+
+    <div class="label" style="margin-top:10px">Bank Account: BUHARI SAIDU (OPAY)</div>
+    <div class="copy-box">
+      <input class="input" id="bankAcc" readonly
+        value="6113107463">
+      <button onclick="copyText('bankAcc')">Copy</button>
+    </div>
+
+  </div>
+
+  <div class="label" style="margin-top:12px">
+    Transaction Receipt (ID or Screenshot)
+  </div>
+  <input class="input" id="receiptRef"
+    placeholder="Transaction reference">
+
+  <input type="file" class="input" id="receiptImg"
+    accept="image/*">
+
+</div>
+
+<!-- CONSENT -->
+<div class="card">
+  <label>
+    <input type="checkbox" id="agree">
+    I agree that Albukhr only assists and does not own my dApp.
+  </label>
+</div>
+
+<button class="btn" onclick="submitDappRequest()">
+Submit for Review
+</button>
+
+</section>
+
+<script>
+document.getElementById("serviceType").addEventListener("change", e=>{
+  document.getElementById("paymentBox").style.display =
+    e.target.value ? "block" : "none";
+});
+
+function copyText(id){
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand("copy");
+  alert("Copied successfully");
+}
+
+/* ===== RECEIPT FIX ADDED ONLY HERE ===== */
+function submitDappRequest(){
+
+  if(!agree.checked){
+    alert("You must agree before submitting");
+    return;
+  }
+
+  if(!piUser.value.trim() || !projectName.value.trim() || !serviceType.value){
+    alert("Please complete all required fields");
+    return;
+  }
+
+  const fileInput = document.getElementById("receiptImg");
+
+  if(!fileInput.files.length){
+    alert("Please upload transaction receipt image");
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  if(file.size > 2 * 1024 * 1024){
+    alert("Receipt image too large (max 2MB)");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(){
+
+    const data = {
+      id: "DAPP-"+Date.now(),
+      piUser: piUser.value.trim(),
+      projectName: projectName.value.trim(),
+      serviceType: serviceType.value,
+      description: description.value.trim(),
+      receiptRef: receiptRef.value.trim(),
+      receiptImage: reader.result,
+      status: "pending",
+      createdAt: Date.now()
+    };
+
+    let list = JSON.parse(localStorage.getItem("albukhr_dapp_requests")) || [];
+    list.push(data);
+
+    localStorage.setItem("albukhr_dapp_requests", JSON.stringify(list));
+
+    window.location.href = "my-dapp-requests.html";
+  };
+
+  reader.readAsDataURL(file);
+}
+</script>
+
+<script>
+(function blockIfPending(){
+
+  const list =
+    JSON.parse(localStorage.getItem("albukhr_dapp_requests")) || [];
+
+  const pending = list.find(r => r.status === "pending");
+
+  if(pending){
+    alert(
+      "You already have a pending request.\n" +
+      "Please wait for admin approval or rejection."
+    );
+
+    window.location.href = "my-dapp-requests.html";
+  }
+
+})();
+</script>
+
+</body>
+</html>
