@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR – Admin Control Center</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#f4f7f5;
+}
+
+.header{
+  background:#0f7a3d;
+  color:#fff;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.header h2{
+  margin:0;
+  font-size:16px;
+}
+
+.role-badge{
+  background:#ffffff22;
+  padding:4px 10px;
+  border-radius:20px;
+  font-size:11px;
+}
+
+.container{
+  padding:16px;
+  max-width:500px;
+  margin:auto;
+}
+
+.admin-btn{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border:none;
+  border-radius:14px;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+  background:#fff;
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
+  transition:.2s ease;
+}
+
+.admin-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.logout-btn{
+  width:100%;
+  padding:14px;
+  margin-top:20px;
+  border:none;
+  border-radius:14px;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  background:#c0392b;
+  color:#fff;
+}
+
+.badge{
+background:#e74c3c;
+color:white;
+font-size:10px;
+padding:2px 6px;
+border-radius:10px;
+margin-left:6px;
+font-weight:700;
+}
+
+/* ===============================
+CRITICAL ALERT
+=============================== */
+
+.critical-alert{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+background:#c0392b;
+color:white;
+text-align:center;
+padding:14px;
+font-weight:700;
+display:none;
+z-index:9999;
+animation:flash 1s infinite;
+}
+
+@keyframes flash{
+0%{opacity:1;}
+50%{opacity:.3;}
+100%{opacity:1;}
+  }
+</style>
+  
+</head>
+
+<!-- CRITICAL ALERT -->
+<div id="criticalAlert" class="critical-alert">
+⚠️ CRITICAL SYSTEM RISK DETECTED
+</div>
+
+<audio id="alertSound">
+<source src="alert.mp3" type="audio/mpeg">
+</audio>
+
+<body>
+
+  <header class="header">
+  <h2>ALBUKHR • Admin Center</h2>
+  <div class="role-badge" id="adminRoleBadge"></div>
+</header>
+
+<div class="container">
+
+<button class="admin-btn" onclick="go('Albukhr-core-projects-dashboard.html')">
+🧩 Core Projects Dashboard
+<span id="coreBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-dashboard.html')">
+🏢 Albukhr ecosystem Dashboard
+<span id="ecosystemBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-dapp-requests.html')">
+📥 DApp Requests
+<span id="dappBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-contributors.html')">
+👥 Contributors Management
+<span id="contributorsBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-transactions.html')">
+💳 Transactions Monitor
+<span id="txBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-risk.html')">
+⚠️ Risk Monitor
+<span id="riskBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('internal-admin-panel.html')">
+🏢 Internal Admin Panel
+<span id="internalBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('external-admin-panel.html')">
+🌍 External Admin Panel
+<span id="externalAdminBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('external-admin-dashboard.html')">
+📊 External Dashboard
+<span id="externalDashBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('external-project-view.html')">
+🔍 External Project Reviews
+<span id="externalReviewBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('escrow-admin.html')">
+🔐 Escrow Admin
+<span id="escrowBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('super-admin-dashboard.html')">
+👑 Super Admin Dashboard
+<span id="superBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-permissions.html')">
+👁 Admin Permissions 
+<span id="permissionsBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('admin-wallet.html')">
+💼 Admin Wallet
+<span id="walletBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-control-center.html')">
+🕹 Control Center
+<span id="controlBadge" class="badge" style="display:none"></span>
+</button>
+
+<button class="logout-btn" onclick="adminLogout()">
+🚪 Logout
+</button>
+
+  </div>
+
+<!-- AUTH -->
+<script src="js/admin-auth.js"></script>
+<script src="smart-liquidity-engine.js"></script>
+<script src="js/staking.js"></script>
+<script src="wallet-core.js"></script>
+
+<script>
+
+/* Allow all main admin roles */
+requireRole(["super_admin","finance_admin","review_admin","viewer_admin"]);
+
+/* Get current admin */
+const admin = getAdmin();
+
+/* Show role badge */
+if(admin){
+  document.getElementById("adminRoleBadge").innerText =
+    admin.role.replace("_"," ").toUpperCase();
+
+  /* Show Super Admin button only if role is super_admin */
+  if(admin.role === "super_admin"){
+    document.getElementById("superAdminBtn").style.display = "block";
+  }
+}
+
+function go(page){
+  window.location.href = page;
+}
+
+/* ===============================
+UNIFIED ALERT ENGINE
+=============================== */
+
+function updateAdminAlerts(){
+
+updateRiskBadge();
+updateTxBadge();
+updateWalletBadge();
+updateExternalBadge();
+updateDappBadge();
+
+}
+
+/* ===============================
+TRANSACTION ALERT
+=============================== */
+
+function updateTxBadge(){
+
+const badge =
+document.getElementById("txBadge");
+
+if(!badge) return;
+
+const tx =
+getTransactions
+? getTransactions()
+: [];
+
+const pending =
+tx.filter(t=>t.flag==="risk");
+
+if(pending.length){
+
+badge.style.display="inline-block";
+badge.innerText = pending.length;
+
+}else{
+
+badge.style.display="none";
+
+}
+
+}
+
+/* ===============================
+WALLET ALERT
+=============================== */
+
+function updateWalletBadge(){
+
+const badge =
+document.getElementById("walletBadge");
+
+if(!badge) return;
+
+if(typeof getAdminTreasury !== "function")
+return;
+
+const t = getAdminTreasury();
+
+if(t.treasury < 100){
+
+badge.style.display="inline-block";
+badge.innerText = "!";
+
+}else{
+
+badge.style.display="none";
+
+}
+
+}
+
+/* ===============================
+EXTERNAL PROJECT ALERT
+=============================== */
+
+function updateExternalBadge(){
+
+const badge =
+document.getElementById("externalBadge");
+
+if(!badge) return;
+
+const external =
+JSON.parse(
+localStorage.getItem("albukhr_external_projects")
+)||[];
+
+const pending =
+external.filter(p=>p.status==="pending");
+
+if(pending.length){
+
+badge.style.display="inline-block";
+badge.innerText = pending.length;
+
+}else{
+
+badge.style.display="none";
+
+}
+
+}
+
+/* ===============================
+DAPP ALERT
+=============================== */
+
+function updateDappBadge(){
+
+const badge =
+document.getElementById("dappBadge");
+
+if(!badge) return;
+
+const dapps =
+JSON.parse(
+localStorage.getItem("albukhr_dapp_requests")
+)||[];
+
+const pending =
+dapps.filter(d=>!d.reviewed);
+
+if(pending.length){
+
+badge.style.display="inline-block";
+badge.innerText = pending.length;
+
+}else{
+
+badge.style.display="none";
+
+}
+
+}
+
+/* ===============================
+CRITICAL ALERT ENGINE
+=============================== */
+
+function checkCriticalRisk(){
+
+let critical = false;
+
+/* Treasury */
+
+if(typeof getAdminTreasury === "function"){
+
+const t = getAdminTreasury();
+
+if(t.treasury < 50){
+critical = true;
+}
+
+}
+
+/* Projects */
+
+const projects = [
+"Barsh",
+"Labbaika",
+"Raheem",
+"Urban",
+"Khairat",
+"Azman",
+"Hauwal"
+];
+
+projects.forEach(p=>{
+
+if(typeof getProjectTreasuryStatus !== "function")
+return;
+
+const status =
+getProjectTreasuryStatus(p);
+
+if(status.liquidity < 30){
+critical = true;
+}
+
+});
+
+triggerCriticalAlert(critical);
+
+}
+
+/* ===============================
+TRIGGER ALERT
+=============================== */
+
+function triggerCriticalAlert(active){
+
+const alert =
+document.getElementById("criticalAlert");
+
+const sound =
+document.getElementById("alertSound");
+
+if(!alert) return;
+
+if(active){
+
+alert.style.display="block";
+
+if(sound){
+sound.play().catch(()=>{});
+}
+
+}else{
+
+alert.style.display="none";
+
+}
+
+}
+
+/* INIT */
+
+updateAdminAlerts();
+setInterval(updateAdminAlerts,4000);
+
+</script>
+  
+</body>
+  </html>
