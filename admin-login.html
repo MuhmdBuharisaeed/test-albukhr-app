@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR Admin Access</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui;
+  background:linear-gradient(135deg,#f4fff8,#ffffff);
+}
+
+/* ===== ECOSYSTEM HEADER ===== */
+.header{
+  background:#0f7a3d;
+  height:60px;
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+}
+.main-logo{
+  height:50px;
+}
+
+/* ===== LOGIN SECTION ===== */
+.login-wrap{
+  min-height:calc(100vh - 60px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+
+.login-card{
+  width:100%;
+  max-width:380px;
+  background:#fff;
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.brand{
+  text-align:center;
+  font-size:16px;
+  font-weight:700;
+  color:#0f7a3d;
+  margin-bottom:6px;
+}
+
+.subtitle{
+  text-align:center;
+  font-size:12px;
+  color:#666;
+  margin-bottom:22px;
+}
+
+.form-group{
+  margin-bottom:16px;
+}
+
+.form-group label{
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+.form-group input,
+.form-group select{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #dfeee7;
+  font-size:14px;
+  outline:none;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+  border-color:#0f7a3d;
+}
+
+.login-btn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:14px;
+  background:#0f7a3d;
+  color:#fff;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.login-btn:hover{
+  background:#0c5f2f;
+}
+
+.note{
+  margin-top:14px;
+  font-size:11px;
+  color:#777;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER (Like Unified Admin) ===== -->
+<header class="header">
+  <img src="file_000000007c187246b1c01967ee086dc4.png" class="main-logo">
+</header>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="brand">ALBUKHR • Admin Portal</div>
+    <div class="subtitle">Role-based ecosystem access</div>
+
+    <div class="form-group">
+      <label>Admin Role</label>
+      <select id="role">
+        <option value="super_admin">Super Admin</option>
+        <option value="finance_admin">Finance Admin</option>
+        <option value="review_admin">Review Admin</option>
+        <option value="viewer_admin">Viewer Admin</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Access Key</label>
+      <input id="key" type="password" placeholder="Enter secure access key">
+    </div>
+
+    <button class="login-btn" onclick="login()">Access Control Center</button>
+
+    <div class="note">
+      Unauthorized access is strictly prohibited.
+    </div>
+
+  </div>
+</div>
+
+<script src="js/admin-auth.js"></script>
+
+<script>
+
+/* AUTO SESSION REDIRECT */
+
+const session = getAdmin();
+
+if(session){
+window.location.href =
+"unified-admin-buttons.html";
+}
+
+/* LOGIN */
+
+function login(){
+
+const role =
+document.getElementById("role").value;
+
+const key =
+document.getElementById("key").value.trim();
+
+/* USERNAME MAP */
+
+const USERNAMES = {
+
+super_admin:"admin",
+finance_admin:"finance",
+review_admin:"review",
+viewer_admin:"viewer"
+
+};
+
+const username =
+USERNAMES[role];
+
+const success =
+adminLogin(
+username,
+role,
+key
+);
+
+if(!success){
+alert("❌ Invalid credentials");
+return;
+}
+
+window.location.href =
+"unified-admin-buttons.html";
+
+}
+
+</script>
+
+</body>
+</html>
