@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ALBUKHR Admin – dApp Requests</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.section{padding:16px}
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px
+}
+button{
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+  margin-right:6px;
+  font-size:12px;
+}
+.approve{background:#0f7a3d;color:#fff}
+.reject{background:#eee;color:#333}
+
+.btn.approved{background:#0f7a3d;color:#fff;cursor:default}
+.btn.rejected{background:#b02a37;color:#fff;cursor:default}
+.btn.disabled{opacity:.6;pointer-events:none}
+
+.meta{
+  font-size:12px;
+  color:#555;
+  margin-top:6px;
+}
+.desc{
+  margin-top:8px;
+  font-size:12px;
+  color:#333;
+  line-height:1.6;
+  background:#f7f9f8;
+  padding:8px;
+  border-radius:8px;
+}
+.receipt-box{
+  margin-top:10px;
+  font-size:12px;
+}
+.receipt-box img{
+  max-width:100%;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin-top:6px;
+}
+.note{
+  margin-top:8px;
+  font-size:12px;
+  color:#b02a37;
+  background:#fff5f5;
+  padding:6px;
+  border-radius:6px;
+}
+.empty{
+  font-size:13px;
+  color:#777;
+  text-align:center;
+  padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <h1 class="brand">ALBUKHR • Admin</h1>
+</header>
+
+<section class="section">
+  <h3>🛠 dApp Requests Review</h3>
+  <div id="adminList"></div>
+</section>
+
+<script>
+const listBox = document.getElementById("adminList");
+const KEY = "albukhr_dapp_requests";
+
+let list = JSON.parse(localStorage.getItem(KEY)) || [];
+
+function render(){
+  listBox.innerHTML = "";
+
+  if(list.length === 0){
+    listBox.innerHTML =
+      `<div class="empty">No dApp requests yet</div>`;
+    return;
+  }
+
+  list.forEach((r,i)=>{
+    listBox.innerHTML += `
+      <div class="card">
+
+        <strong>${r.projectName}</strong>
+
+        <div class="meta">
+          👤 ${r.piUser}<br>
+          🛠 ${r.serviceType}
+        </div>
+
+        <div class="desc">
+          <strong>Description:</strong><br>
+          ${r.description || "—"}
+        </div>
+
+        <div class="receipt-box">
+          <strong>💳 Payment Receipt</strong><br>
+          ${
+            r.receiptImage
+            ? `
+              <img src="${r.receiptImage}">
+              <div style="color:#666;margin-top:4px">
+                Ref: ${r.receiptRef || "—"}
+              </div>
+            `
+            : `<em>No receipt uploaded</em>`
+          }
+        </div>
+
+        ${
+          r.adminNote
+          ? `<div class="note"><strong>Admin note:</strong> ${r.adminNote}</div>`
+          : ``
+        }
+
+        <div style="margin-top:12px">
+          ${
+            r.status === "pending"
+            ? `
+              <button class="approve"
+                onclick="approve(${i})">
+                Approve
+              </button>
+              <button class="reject"
+                onclick="rejectReq(${i})">
+                Reject
+              </button>
+            `
+            : r.status === "approved"
+            ? `
+              <button class="btn approved disabled">✓ Approved</button>
+              <button class="btn disabled">Reject</button>
+            `
+            : `
+              <button class="btn disabled">Approve</button>
+              <button class="btn rejected disabled">✗ Rejected</button>
+            `
+          }
+        </div>
+
+      </div>
+    `;
+  });
+}
+
+function approve(i){
+  if(list[i].status !== "pending") return;
+  list[i].status = "approved";
+  list[i].telegramUnlocked = true;
+  list[i].reviewedAt = Date.now();
+  save();
+}
+
+function rejectReq(i){
+  if(list[i].status !== "pending") return;
+  const note = prompt("Reason for rejection (optional):");
+  list[i].status = "rejected";
+  list[i].adminNote = note || "";
+  list[i].reviewedAt = Date.now();
+  save();
+}
+
+function save(){
+  localStorage.setItem(KEY, JSON.stringify(list));
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
