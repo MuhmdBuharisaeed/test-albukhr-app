@@ -612,31 +612,11 @@ async function confirmWithdraw(){
     return;
   }
 
-  const data = await getProjectTotals(PROJECT_NAME);
-
-let available = 0;
-
-data.stakes.forEach(s=>{
-  const remaining =
-    (Number(s.reward)||0) -
-    (Number(s.withdrawnReward)||0);
-
-  available += Math.max(0, remaining);
-});
-
-if(amount > available){
-  alert("Insufficient reward balance");
-  __withdrawLock = false;
-  return;
-}
-
   // 🔥 CALL ENGINE
-  const res = await createWithdrawRequest({
-  project: PROJECT_NAME,
-  amount: amount,
-  wallet: wallet,
-  type: "reward"
-});
+  const res = await withdrawProjectReward(
+    PROJECT_NAME,
+    amount
+  );
 
   if(!res?.success){
     alert(res?.error || "Withdraw failed");
@@ -648,7 +628,15 @@ if(amount > available){
   const receive = amount - fee;
 
   // 🔥 RECORD TX
-  
+  recordTx({
+    type:"withdraw",
+    project:PROJECT_NAME,
+    amount: receive,
+    meta:{
+      wallet: wallet,
+      fee: fee
+    }
+  });
 
   // 🔥 RESET UI
   withdrawAmount.value = "";
