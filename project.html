@@ -817,30 +817,11 @@ async function confirmCapitalWithdraw(){
     return;
   }
 
-  const data = await getProjectTotals(PROJECT_NAME);
-
-let available = 0;
-const now = Date.now();
-
-data.stakes.forEach(s=>{
-  if(now >= (s.unlockTime||0)){
-    available += Number(s.amount)||0;
-  }
-});
-
-if(amount > available){
-  alert("Insufficient capital");
-  __capitalLock = false;
-  return;
-}
-
   // 🔥 CALL SUPABASE ENGINE
-  const res = await createWithdrawRequest({
-  project: PROJECT_NAME,
-  amount: amount,
-  wallet: wallet,
-  type: "capital"
-});
+  const res = await withdrawCapital({
+    project: PROJECT_NAME,
+    amount: amount
+  });
 
   if(res?.error){
     alert(res.error);
@@ -852,7 +833,15 @@ if(amount > available){
   const receive = amount - fee;
 
   // 🔥 RECORD TX
-  
+  recordTx({
+    type:"capital",
+    project:PROJECT_NAME,
+    amount:receive,
+    meta:{
+      wallet:wallet,
+      fee:fee
+    }
+  });
 
   // 🔥 RESET UI
   capitalWithdrawAmount.value = "";
@@ -864,7 +853,7 @@ if(amount > available){
   // 🔓 UNLOCK
   __capitalLock = false;
 }
-
+  
 /* ===============================
 UPDATE STAKE STATUS 
 =============================== */
