@@ -176,6 +176,11 @@ Add to Wallet
   <div id="approvedRequests"></div>
 </div>
 
+<div class="card">
+  <h4>💰 Paid Withdrawals</h4>
+  <div id="paidRequests"></div>
+</div>
+
 <audio id="alertSound">
   <source src="alert.mp3" type="audio/mpeg">
 </audio>
@@ -208,6 +213,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderApprovedRequests();
 
+  renderPaidRequests();
+
   renderTreasuryOverview();
 
   setInterval(() => {
@@ -219,6 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRequestStats();
 
     renderApprovedRequests();
+
+    renderPaidRequests();
 
     renderTreasuryOverview();
 
@@ -846,6 +855,72 @@ async function markPaid(id){
 
   renderApprovedRequests();
   loadRequestStats();
+}
+
+/* ===============================
+   FICH PAID REQUESTS
+=============================== */
+async function fetchPaidRequests(){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("status","paid")
+    .order("paid_at",{ascending:false});
+
+  if(error){
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function renderPaidRequests(){
+
+  const box =
+    document.getElementById("paidRequests");
+
+  box.innerHTML = "Loading...";
+
+  const requests =
+    await fetchPaidRequests();
+
+  if(!requests.length){
+
+    box.innerHTML =
+      "<small>No paid withdrawals</small>";
+
+    return;
+  }
+
+  box.innerHTML = "";
+
+  requests.forEach(req=>{
+
+    box.innerHTML += `
+    <div class="tx">
+
+      <strong>${req.project}</strong><br>
+
+      Type: ${req.type}<br>
+
+      Amount:
+      ${Number(req.amount).toFixed(2)} Pi<br>
+
+      Wallet:
+      ${req.wallet}<br>
+
+      <small>
+      Paid:
+      ${new Date(req.paid_at).toLocaleString()}
+      </small>
+
+    </div>
+    `;
+
+  });
+
 }
 
 /* ===============================
