@@ -171,6 +171,11 @@ Add to Wallet
   <div id="pendingRequests"></div>
 </div>
 
+<div class="card">
+  <h4>🟢 Approved Withdrawals</h4>
+  <div id="approvedRequests"></div>
+</div>
+
 <audio id="alertSound">
   <source src="alert.mp3" type="audio/mpeg">
 </audio>
@@ -747,6 +752,96 @@ async function loadRequestStats(){
 
   document.getElementById("rejectedToday")
     .innerText = rejectedToday;
+}
+
+/* ===============================
+   FETCH APPROVE REQUESTS
+=============================== */
+async function fetchApprovedRequests(){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("status","approved")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    console.error(error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/* ===============================
+   RENDER APPROVED REQUESTS
+=============================== */
+  async function renderApprovedRequests(){
+
+  const box =
+    document.getElementById("approvedRequests");
+
+  box.innerHTML = "Loading...";
+
+  const requests =
+    await fetchApprovedRequests();
+
+  if(!requests.length){
+
+    box.innerHTML =
+      "<small>No approved requests</small>";
+
+    return;
+  }
+
+  box.innerHTML = "";
+
+  requests.forEach(req=>{
+
+    box.innerHTML += `
+    <div class="tx">
+
+      <strong>${req.project}</strong><br>
+
+      Type: ${req.type}<br>
+
+      Amount:
+      ${Number(req.amount).toFixed(2)} Pi<br>
+
+      Wallet:
+      ${req.wallet}<br><br>
+
+      <button
+      onclick="markPaid('${req.id}')">
+
+      💰 Mark Paid
+
+      </button>
+
+    </div>
+    `;
+
+  });
+
+  }
+
+/* ===============================
+   MARK PAID
+=============================== */
+async function markPaid(id){
+
+  await supabase
+    .from("withdraw_requests")
+    .update({
+      status:"paid",
+      paid_at:new Date().toISOString()
+    })
+    .eq("id",id);
+
+  alert("Marked as Paid");
+
+  renderApprovedRequests();
+  loadRequestStats();
 }
 
 /* ===============================
