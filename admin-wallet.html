@@ -76,6 +76,30 @@ font-weight:700;
   <small>Status</small>
   <div id="walletStatus">ACTIVE</div>
 
+  <div style="margin-top:15px">
+
+<div>
+🟡 Pending Requests:
+<strong id="pendingCount">0</strong>
+</div>
+
+<div>
+🟢 Approved Requests:
+<strong id="approvedCount">0</strong>
+</div>
+
+<div>
+🔵 Paid Today:
+<strong id="paidToday">0.00 Pi</strong>
+</div>
+
+<div>
+🔴 Rejected Today:
+<strong id="rejectedToday">0</strong>
+</div>
+
+  </div>
+
   <div class="threshold-box">
     <small>Large Withdrawal Alert Threshold (Pi)</small>
     <input type="number" id="thresholdInput" placeholder="Default: 100">
@@ -175,6 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderPendingRequests();
 
+  loadRequestStats();
+
   renderTreasuryOverview();
 
   setInterval(() => {
@@ -182,6 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshAdminWallet();
 
     renderPendingRequests();
+
+    loadRequestStats();
 
     renderTreasuryOverview();
 
@@ -648,6 +676,77 @@ function lockWalletAdmin(){
 function unlockWalletAdmin(){
   localStorage.removeItem("wallet_locked");
   alert("Wallet unlocked");
+}
+
+/* ===============================
+REQUEST STATS
+=============================== */
+async function loadRequestStats(){
+
+  const today =
+  new Date().toISOString().split("T")[0];
+
+  // Pending
+  const { count: pending } = await supabase
+    .from("withdraw_requests")
+    .select("*",{count:"exact",head:true})
+    .eq("status","pending");
+
+  // Approved
+  const { count: approved } = await supabase
+    .from("withdraw_requests")
+    .select("*",{count:"exact",head:true})
+    .eq("status","approved");
+
+  // Rejected Today
+  const { data: rejectedRows } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("status","rejected");
+
+  let rejectedToday = 0;
+
+  rejectedRows?.forEach(r=>{
+    if(
+      r.updated_at &&
+      r.updated_at.startsWith(today)
+    ){
+      rejectedToday++;
+    }
+  });
+
+  // Paid Today
+  const { data: txs } = await supabase
+    .from("transactions")
+    .select("*");
+
+  let paidToday = 0;
+
+  txs?.forEach(tx=>{
+
+    if(
+      (tx.type==="withdraw" ||
+       tx.type==="capital")
+      &&
+      tx.created_at?.startsWith(today)
+    ){
+      paidToday += Number(tx.amount)||0;
+    }
+
+  });
+
+  document.getElementById("pendingCount")
+    .innerText = pending || 0;
+
+  document.getElementById("approvedCount")
+    .innerText = approved || 0;
+
+  document.getElementById("paidToday")
+    .innerText =
+    paidToday.toFixed(2) + " Pi";
+
+  document.getElementById("rejectedToday")
+    .innerText = rejectedToday;
 }
 
 /* ===============================
