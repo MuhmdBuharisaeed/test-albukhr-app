@@ -206,6 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadRequestStats();
 
+  renderApprovedRequests();
+
   renderTreasuryOverview();
 
   setInterval(() => {
@@ -215,6 +217,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPendingRequests();
 
     loadRequestStats();
+
+    renderApprovedRequests();
 
     renderTreasuryOverview();
 
