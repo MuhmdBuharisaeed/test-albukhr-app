@@ -85,6 +85,36 @@ font-weight:700;
 <div class="card">
 <h4>Admin Wallet Control</h4>
 
+<div class="card">
+
+<h3>📊 Treasury Overview</h3>
+
+<div style="margin-top:10px">
+
+<p>
+<strong>Treasury:</strong>
+<span id="treasuryBalance">0.00 Pi</span>
+</p>
+
+<p>
+<strong>Pending:</strong>
+<span id="pendingTotal">0.00 Pi</span>
+</p>
+
+<p>
+<strong>Approved:</strong>
+<span id="approvedTotal">0.00 Pi</span>
+</p>
+
+<p>
+<strong>Available Liquidity:</strong>
+<span id="availableLiquidity">0.00 Pi</span>
+</p>
+
+</div>
+
+</div>
+
 <select id="adminProject">
 <option value="">Select Project</option>
 </select>
@@ -138,14 +168,25 @@ const supabase = window.supabase.createClient(
    INIT
 =============================== */
 document.addEventListener("DOMContentLoaded", () => {
+
   loadProjects();
+
   refreshAdminWallet();
+
   renderPendingRequests();
 
+  renderTreasuryOverview();
+
   setInterval(() => {
+
     refreshAdminWallet();
-    renderPendingRequests(); // ✅ ADD NAN
+
+    renderPendingRequests();
+
+    renderTreasuryOverview();
+
   }, 3000);
+
 });
   
 /* ===============================
@@ -273,6 +314,64 @@ function renderSummary(t){
       Liquidity: ${t.adminLiquidity.toFixed(2)} Pi
     </div>
   `;
+}
+
+/* ===============================
+TREASURY OVERVIEW
+=============================== */
+async function renderTreasuryOverview(){
+
+  const txs = await fetchTransactions();
+
+  const treasuryData =
+    calculateTreasury(txs);
+
+  const treasury =
+    treasuryData.treasury || 0;
+
+  const { data: pending } = await supabase
+    .from("withdraw_requests")
+    .select("amount")
+    .eq("status","pending");
+
+  let pendingTotal = 0;
+
+  (pending || []).forEach(r=>{
+    pendingTotal += Number(r.amount)||0;
+  });
+
+  const { data: approved } = await supabase
+    .from("withdraw_requests")
+    .select("amount")
+    .eq("status","approved");
+
+  let approvedTotal = 0;
+
+  (approved || []).forEach(r=>{
+    approvedTotal += Number(r.amount)||0;
+  });
+
+  const liquidity =
+    treasury -
+    pendingTotal -
+    approvedTotal;
+
+  document.getElementById("treasuryBalance")
+    .innerText =
+    treasury.toFixed(2) + " Pi";
+
+  document.getElementById("pendingTotal")
+    .innerText =
+    pendingTotal.toFixed(2) + " Pi";
+
+  document.getElementById("approvedTotal")
+    .innerText =
+    approvedTotal.toFixed(2) + " Pi";
+
+  document.getElementById("availableLiquidity")
+    .innerText =
+    liquidity.toFixed(2) + " Pi";
+
 }
 
 /* ===============================
