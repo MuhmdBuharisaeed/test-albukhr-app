@@ -134,12 +134,12 @@ function render(){
     listBox.innerHTML += `
       <div class="card">
 
-        <strong>${r.projectName}</strong>
+        <strong>${r.project_name}</strong>
 
-        <div class="meta">
-          👤 ${r.piUser}<br>
-          🛠 ${r.serviceType}
-        </div>
+<div class="meta">
+  👤 ${r.pi_user}<br>
+  🛠 ${r.service_type}
+</div>
 
         <div class="desc">
           <strong>Description:</strong><br>
@@ -149,11 +149,11 @@ function render(){
         <div class="receipt-box">
           <strong>💳 Payment Receipt</strong><br>
           ${
-            r.receiptImage
+            r.receipt_Image
             ? `
               <img src="${r.receipt_image}">
               <div style="color:#666;margin-top:4px">
-                Ref: ${r.receiptRef || "—"}
+                Ref: ${r.receipt_ref || "—"}
               </div>
             `
             : `<em>No receipt uploaded</em>`
@@ -161,8 +161,8 @@ function render(){
         </div>
 
         ${
-          r.adminNote
-          ? `<div class="note"><strong>Admin note:</strong> ${r.adminNote}</div>`
+          r.admin_note
+          ? `<div class="note"><strong>Admin note:</strong> ${r.admin_note}</div>`
           : ``
         }
 
@@ -254,9 +254,6 @@ async function rejectReq(i){
   }
 
   await loadRequests();
-
-}
-
 
 }
 
