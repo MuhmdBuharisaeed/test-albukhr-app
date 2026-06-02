@@ -71,6 +71,16 @@ button{
   padding:20px;
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
+  
 </head>
 
 <body>
@@ -86,9 +96,30 @@ button{
 
 <script>
 const listBox = document.getElementById("adminList");
-const KEY = "albukhr_dapp_requests";
+let list = [];
 
-let list = JSON.parse(localStorage.getItem(KEY)) || [];
+async function loadRequests(){
+
+  const { data, error } = await supabase
+    .from("dapp_requests")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  if(error){
+
+    console.error(error);
+
+    listBox.innerHTML =
+      `<div class="empty">Failed to load requests</div>`;
+
+    return;
+  }
+
+  list = data || [];
+
+  render();
+
+}
 
 function render(){
   listBox.innerHTML = "";
@@ -120,7 +151,7 @@ function render(){
           ${
             r.receiptImage
             ? `
-              <img src="${r.receiptImage}">
+              <img src="${r.receipt_image}">
               <div style="color:#666;margin-top:4px">
                 Ref: ${r.receiptRef || "—"}
               </div>
@@ -165,29 +196,71 @@ function render(){
   });
 }
 
-function approve(i){
-  if(list[i].status !== "pending") return;
-  list[i].status = "approved";
-  list[i].telegramUnlocked = true;
-  list[i].reviewedAt = Date.now();
-  save();
+async function approve(i){
+
+  const request = list[i];
+
+  if(request.status !== "pending")
+    return;
+
+  const { error } = await supabase
+    .from("dapp_requests")
+    .update({
+      status:"approved",
+      telegram_unlocked:true,
+      reviewed_at:new Date().toISOString()
+    })
+    .eq("id", request.id);
+
+  if(error){
+
+    alert("Approval failed");
+
+    console.error(error);
+
+    return;
+  }
+
+  await loadRequests();
+
 }
 
-function rejectReq(i){
-  if(list[i].status !== "pending") return;
-  const note = prompt("Reason for rejection (optional):");
-  list[i].status = "rejected";
-  list[i].adminNote = note || "";
-  list[i].reviewedAt = Date.now();
-  save();
+async function rejectReq(i){
+
+  const request = list[i];
+
+  if(request.status !== "pending")
+    return;
+
+  const note =
+    prompt("Reason for rejection") || "";
+
+  const { error } = await supabase
+    .from("dapp_requests")
+    .update({
+      status:"rejected",
+      admin_note:note,
+      reviewed_at:new Date().toISOString()
+    })
+    .eq("id", request.id);
+
+  if(error){
+
+    alert("Reject failed");
+
+    console.error(error);
+
+    return;
+  }
+
+  await loadRequests();
+
 }
 
-function save(){
-  localStorage.setItem(KEY, JSON.stringify(list));
-  render();
+
 }
 
-render();
+loadRequests();
 </script>
 
 </body>
