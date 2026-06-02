@@ -144,11 +144,32 @@ textarea.input{min-height:90px}
   </label>
 </div>
 
-<button class="btn" onclick="submitDappRequest()">
+<button
+id="submitBtn"
+class="btn"
+onclick="submitDappRequest()">
 Submit for Review
 </button>
 
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+
+  const user =
+    JSON.parse(localStorage.getItem("pi_user"));
+
+  if(user?.username){
+
+    document.getElementById("piUser").value =
+      user.username;
+
+    document.getElementById("piUser").readOnly = true;
+
+  }
+
+});
+</script>
 
 <script>
 document.getElementById("serviceType").addEventListener("change", e=>{
@@ -163,6 +184,19 @@ function copyText(id){
   alert("Copied successfully");
 }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
+
+<script src="js/pi-auth.js"></script>
+
+<script src="js/pi-dapp-engine.js"></script>
 
 </body>
 </html>
