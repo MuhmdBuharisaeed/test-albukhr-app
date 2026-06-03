@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My dApp Requests | ALBUKHR</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+.section{padding:16px}
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px
+}
+.meta{
+  font-size:12px;
+  color:#555;
+  margin-top:4px
+}
+.status{
+  font-size:12px;
+  font-weight:700;
+  margin-top:8px
+}
+.pending{color:#856404}
+.approved{color:#0f7a3d}
+.rejected{color:#b02a37}
+
+.desc{
+  margin-top:10px;
+  font-size:12px;
+  line-height:1.6;
+  background:#f7f9f8;
+  padding:8px;
+  border-radius:8px
+}
+
+.notice{
+  font-size:12px;
+  background:#f6fbf8;
+  border-left:4px solid #0f7a3d;
+  padding:10px;
+  margin-top:10px
+}
+
+.btn{
+  display:inline-block;
+  margin-top:10px;
+  padding:10px 14px;
+  background:#0f7a3d;
+  color:#fff;
+  border-radius:10px;
+  font-size:13px;
+  text-decoration:none
+}
+
+.receipt img{
+  display:block;
+  width:100%;
+  max-width:320px;      /* kar ya cika screen */
+  max-height:220px;     /* iyakar tsawo */
+  object-fit:cover;     /* ya daidaita crop */
+  margin:8px auto 0;    /* center */
+  border-radius:10px;
+  border:1px solid #e5e5e5;
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
+}
+
+.empty{
+  text-align:center;
+  color:#777;
+  font-size:13px;
+  padding:30px
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body>
+
+<header class="header">
+  <h1 class="brand">ALBUKHR</h1>
+</header>
+
+<section class="section">
+  <h3>📂 My dApp Requests</h3>
+  <div id="list"></div>
+</section>
+
+<script src="js/my-dapp-requests.js"></script>
+
+</body>
+</html>
