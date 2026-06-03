@@ -137,10 +137,14 @@ async function submitDappRequest(){
       );
 
       if(!res.ok){
-        const err = await res.text();
-        console.error(err);
-        alert("Failed to submit request");
-        return;
+
+  const err = await res.text();
+
+  console.error(err);
+
+  alert("Supabase Error:\n" + err);
+
+  return;
       }
 
       alert("✅ Request submitted successfully");
