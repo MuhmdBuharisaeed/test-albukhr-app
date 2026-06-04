@@ -131,6 +131,11 @@ font-weight:700;
 </p>
 
 <p>
+<strong>Liquidity Status:</strong>
+<span id="liquidityStatus">🟢 SAFE</span>
+</p>
+
+<p>
 <strong>Available Liquidity:</strong>
 <span id="availableLiquidity">0.00 Pi</span>
 </p>
@@ -402,6 +407,16 @@ async function renderTreasuryOverview(){
     pendingTotal -
     approvedTotal;
 
+  let status = "🟢 SAFE";
+
+if(liquidity < 100){
+  status = "🟡 WARNING";
+}
+
+if(liquidity < 20){
+  status = "🔴 DANGER";
+}
+
   document.getElementById("treasuryBalance")
     .innerText =
     treasury.toFixed(2) + " Pi";
@@ -417,6 +432,9 @@ async function renderTreasuryOverview(){
   document.getElementById("availableLiquidity")
     .innerText =
     liquidity.toFixed(2) + " Pi";
+
+  document.getElementById("liquidityStatus")
+  .innerText = status;
 
 }
 
