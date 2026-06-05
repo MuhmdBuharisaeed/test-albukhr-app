@@ -45,8 +45,15 @@ small{color:#666}
 <!-- LOAD ORDER IMPORTANT -->
 <script src="js/admin-auth.js"></script>
 <script src="js/staking.js"></script>
+
 <script src="js/wallet-tracker.js"></script>
+
+<script src="js/admin-projects.js"></script>
 <script src="js/admin-treasury.js"></script>
+<script src="js/admin-withdrawals.js"></script>
+<script src="js/admin-stats.js"></script>
+
+<script src="js/admin-main.js"></script>
 
 </head>
 
@@ -196,47 +203,6 @@ Add to Wallet
 
 <script>
 
-/* ===============================
-   INIT
-=============================== */
-document.addEventListener("DOMContentLoaded", () => {
-
-  loadProjects();
-
-  refreshAdminWallet();
-
-  renderPendingRequests();
-
-  loadRequestStats();
-
-  renderApprovedRequests();
-
-  renderPaidRequests();
-
-  renderTreasuryOverview();
-
-  updateWalletBalance(); // 👈 ka kara wannan
-
-  setInterval(() => {
-
-    refreshAdminWallet();
-
-    renderPendingRequests();
-
-    loadRequestStats();
-
-    renderApprovedRequests();
-
-    renderPaidRequests();
-
-    renderTreasuryOverview();
-
-    updateWalletBalance(); // 👈 ka kara wannan
-
-  }, 3000);
-
-});
-  
 /* ===============================
    FETCH TRANSACTIONS
 =============================== */
@@ -468,7 +434,6 @@ async function loadRequestStats(){
   document.getElementById("rejectedToday")
     .innerText = rejectedToday;
 }
-
  </script>
 
 </body>
