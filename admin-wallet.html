@@ -191,15 +191,6 @@ Add to Wallet
   <source src="alert.mp3" type="audio/mpeg">
 </audio>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const supabase = window.supabase.createClient(
-  "https://qexmnghilahsvethlxem.supabase.co",
-  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-);
-</script>
-
 <!-- ✅ ADD HERE -->
 
 <script>
@@ -372,27 +363,6 @@ function renderSummary(t){
   `;
 }
 
-/* ===============================
-   GET WALLET BALANCE
-=============================== */
-  async function getWalletBalance(){
-
-  const { data, error } = await supabase
-    .from("wallet_balance")
-    .select("*")
-    .single();
-
-console.log("Wallet Data:", data);
-console.log("Wallet Error:", error);
-
-  if(error){
-    console.error(error);
-    return 0;
-  }
-
-  return Number(data?.balance || 0);
-  }
-  
 /* ===============================
 TREASURY OVERVIEW
 =============================== */
