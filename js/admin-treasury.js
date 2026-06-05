@@ -169,10 +169,23 @@ async function refreshAdminWallet(){
 
   const txs = await fetchTransactions();
 
-  const treasury =
-    calculateTreasury(txs);
+  const liveBalance =
+    await getWalletBalance();
 
-  renderSummary(treasury);
+  document.getElementById(
+    "adminBalance"
+  ).innerHTML = `
+
+    <div style="font-size:28px;font-weight:800">
+      ${liveBalance.toFixed(2)} Pi
+    </div>
+
+    <div style="margin-top:10px;font-size:12px">
+      Live Testnet Wallet Balance
+    </div>
+
+  `;
+
   renderTransactions(txs);
 
 }
