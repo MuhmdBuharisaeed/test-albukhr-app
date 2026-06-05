@@ -100,43 +100,28 @@ function renderSummary(t){
 =============================== */
 async function renderTreasuryOverview(){
 
+  document.getElementById("debugInfo")
+    .innerText = "Running...";
+
   const treasury =
     await getWalletBalance();
 
-  document.getElementById(
-    "treasuryBalance"
-  ).innerText =
+  document.getElementById("debugInfo")
+    .innerText = "Balance = " + treasury;
+
+  document.getElementById("treasuryBalance")
+    .innerText =
     treasury.toFixed(2) + " Pi";
 
-  document.getElementById(
-    "pendingTotal"
-  ).innerText =
-    "N/A";
+  document.getElementById("pendingTotal")
+    .innerText = "N/A";
 
-  document.getElementById(
-    "approvedTotal"
-  ).innerText =
-    "N/A";
+  document.getElementById("approvedTotal")
+    .innerText = "N/A";
 
-  document.getElementById(
-    "availableLiquidity"
-  ).innerText =
+  document.getElementById("availableLiquidity")
+    .innerText =
     treasury.toFixed(2) + " Pi";
-
-  let status = "🟢 SAFE";
-
-  if(treasury < 100){
-    status = "🟡 WARNING";
-  }
-
-  if(treasury < 20){
-    status = "🔴 DANGER";
-  }
-
-  document.getElementById(
-    "liquidityStatus"
-  ).innerText =
-    status;
 
 }
 
