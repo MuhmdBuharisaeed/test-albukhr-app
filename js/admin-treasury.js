@@ -103,61 +103,39 @@ async function renderTreasuryOverview(){
   const treasury =
     await getWalletBalance();
 
-  const { data: pending } = await supabase
-    .from("withdraw_requests")
-    .select("amount")
-    .eq("status","pending");
+  document.getElementById(
+    "treasuryBalance"
+  ).innerText =
+    treasury.toFixed(2) + " Pi";
 
-  let pendingTotal = 0;
+  document.getElementById(
+    "pendingTotal"
+  ).innerText =
+    "N/A";
 
-  (pending || []).forEach(r=>{
-    pendingTotal += Number(r.amount) || 0;
-  });
+  document.getElementById(
+    "approvedTotal"
+  ).innerText =
+    "N/A";
 
-  const { data: approved } = await supabase
-    .from("withdraw_requests")
-    .select("amount")
-    .eq("status","approved");
-
-  let approvedTotal = 0;
-
-  (approved || []).forEach(r=>{
-    approvedTotal += Number(r.amount) || 0;
-  });
-
-  const liquidity =
-    treasury -
-    pendingTotal -
-    approvedTotal;
+  document.getElementById(
+    "availableLiquidity"
+  ).innerText =
+    treasury.toFixed(2) + " Pi";
 
   let status = "🟢 SAFE";
 
-  if(liquidity < 100){
+  if(treasury < 100){
     status = "🟡 WARNING";
   }
 
-  if(liquidity < 20){
+  if(treasury < 20){
     status = "🔴 DANGER";
   }
 
-  document.getElementById("treasuryBalance")
-    .innerText =
-    treasury.toFixed(2) + " Pi";
-
-  document.getElementById("pendingTotal")
-    .innerText =
-    pendingTotal.toFixed(2) + " Pi";
-
-  document.getElementById("approvedTotal")
-    .innerText =
-    approvedTotal.toFixed(2) + " Pi";
-
-  document.getElementById("availableLiquidity")
-    .innerText =
-    liquidity.toFixed(2) + " Pi";
-
-  document.getElementById("liquidityStatus")
-    .innerText =
+  document.getElementById(
+    "liquidityStatus"
+  ).innerText =
     status;
 
 }
