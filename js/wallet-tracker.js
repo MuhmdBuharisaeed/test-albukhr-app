@@ -6,55 +6,40 @@ const ALBUKHR_WALLET =
 "GA6JI5N5HZIVG3VD5PM7W4U6DXPT73AZ5CHYURU2YJDPLPL77Q5KPCMD";
 
 /* ===============================
-   GET LIVE BALANCE
+   ACCOUNT DATA
 =============================== */
-async function getWalletBalance(){
+async function getWalletInfo(){
 
-  try{
+  const res = await fetch(
+    `https://api.testnet.minepi.com/accounts/${ALBUKHR_WALLET}`
+  );
 
-    const response = await fetch(
-      `https://api.testnet.minepi.com/accounts/${ALBUKHR_WALLET}`
-    );
-
-    const data = await response.json();
-
-    return Number(
-      data?.balances?.[0]?.balance || 0
-    );
-
-  }catch(error){
-
-    console.error(
-      "Wallet Balance Error:",
-      error
-    );
-
-    return 0;
-  }
+  return await res.json();
 
 }
 
 /* ===============================
-   GET ACCOUNT INFO
+   LIVE BALANCE
 =============================== */
-async function getWalletInfo(){
+async function getWalletBalance(){
 
-  try{
+  const data = await getWalletInfo();
 
-    const response = await fetch(
-      `https://api.testnet.minepi.com/accounts/${ALBUKHR_WALLET}`
-    );
+  return Number(
+    data?.balances?.[0]?.balance || 0
+  );
 
-    return await response.json();
+}
 
-  }catch(error){
+/* ===============================
+   TRANSACTIONS
+=============================== */
+async function getTransactions(){
 
-    console.error(
-      "Wallet Info Error:",
-      error
-    );
+  const res = await fetch(
+    `https://api.testnet.minepi.com/accounts/${ALBUKHR_WALLET}/payments?limit=20&order=desc`
+  );
 
-    return null;
-  }
+  return await res.json();
 
 }
