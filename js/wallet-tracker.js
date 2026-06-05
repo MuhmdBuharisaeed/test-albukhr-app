@@ -43,3 +43,28 @@ async function getTransactions(){
   return await res.json();
 
 }
+
+async function getWalletBalance(){
+
+  try{
+
+    const response = await fetch(
+      `https://api.testnet.minepi.com/accounts/${ALBUKHR_WALLET}`
+    );
+
+    const data = await response.json();
+
+    console.log("PI DATA:", data);
+
+    return Number(
+      data?.balances?.[0]?.balance || 0
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    return 0;
+  }
+
+}
