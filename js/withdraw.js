@@ -1,4 +1,6 @@
-export async function createWithdrawRequest({
+alert("createWithdrawRequest running");
+
+window.createWithdrawRequest = async function({
   project,
   amount,
   wallet,
@@ -11,6 +13,19 @@ export async function createWithdrawRequest({
     return { error: "User not logged in" };
   }
 
+  const { error } = await supabase
+  .from("withdraw_requests")
+  .insert([{
+    userid: user.uid,
+    project,
+    amount,
+    wallet,
+    type,
+    status: "pending"
+  }]);
+
+console.log("INSERT ERROR:", error);
+  
   const { error } = await supabase
     .from("withdraw_requests")
     .insert([{
@@ -28,4 +43,5 @@ export async function createWithdrawRequest({
   }
 
   return { success: true };
-}
+};
+
