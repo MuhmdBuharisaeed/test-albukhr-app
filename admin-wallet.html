@@ -64,9 +64,7 @@ padding:12px;
 text-align:center;
 font-weight:700;
 ">
-
 ⚠️ Low Project Liquidity Detected
-
 </div>
 
 <body>
@@ -75,101 +73,83 @@ font-weight:700;
   🔐 ALBUKHR – Admin Wallet Monitor
 </div>
 
+<!-- WALLET SUMMARY -->
 <div class="card">
   <small>Admin Treasury</small>
   <div class="stat" id="adminBalance">0.00 Pi</div>
 
   <small>Status</small>
   <div id="walletStatus">ACTIVE</div>
-
-  <div style="margin-top:15px">
-
 </div>
 
-<div class="card">
-<h4>Admin Wallet Control</h4>
-
+<!-- TREASURY OVERVIEW -->
 <div class="card">
 
-<h3>📊 Treasury Overview</h3>
+  <h3>📊 Treasury Overview</h3>
 
-<div style="margin-top:10px">
+  <p>
+    <strong>Treasury:</strong>
+    <span id="treasuryBalance">0.00 Pi</span>
+  </p>
 
-<p>
-<strong>Treasury:</strong>
-<span id="treasuryBalance">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Pending:</strong>
+    <span id="pendingTotal">0.00 Pi</span>
+  </p>
 
-<p>
-<strong>Pending:</strong>
-<span id="pendingTotal">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Approved:</strong>
+    <span id="approvedTotal">0.00 Pi</span>
+  </p>
 
-<p>
-<strong>Approved:</strong>
-<span id="approvedTotal">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Liquidity Status:</strong>
+    <span id="liquidityStatus">🟢 SAFE</span>
+  </p>
 
-<p>
-<strong>Liquidity Status:</strong>
-<span id="liquidityStatus">🟢 SAFE</span>
-</p>
-
-<p>
-<strong>Available Liquidity:</strong>
-<span id="availableLiquidity">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Available Liquidity:</strong>
+    <span id="availableLiquidity">0.00 Pi</span>
+  </p>
 
 </div>
 
-</div>
-
+<!-- ANALYTICS -->
 <div class="card">
 
-<h3>📈 Wallet Analytics</h3>
+  <h3>📈 Wallet Analytics</h3>
 
-<p>
-<strong>Total Received:</strong>
-<span id="totalReceived">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Total Received:</strong>
+    <span id="totalReceived">0.00 Pi</span>
+  </p>
 
-<p>
-<strong>Total Sent:</strong>
-<span id="totalSent">0.00 Pi</span>
-</p>
+  <p>
+    <strong>Total Sent:</strong>
+    <span id="totalSent">0.00 Pi</span>
+  </p>
 
-<p>
-<strong>Total Transactions:</strong>
-<span id="totalTransactions">0</span>
-</p>
+  <p>
+    <strong>Total Transactions:</strong>
+    <span id="totalTransactions">0</span>
+  </p>
 
-<p>
-<strong>Net Flow:</strong>
-<span id="netFlow">0.00 Pi</span>
-</p>
-
-</div>
-
-<select id="adminProject">
+  <p>
+    <strong>Net Flow:</strong>
+    <span id="netFlow">0.00 Pi</span>
+  </p>
 
 </div>
 
+<!-- TRANSACTIONS -->
 <div class="card">
-  <h4>Recent Withdrawals</h4>
+  <h4>📜 Recent Transactions</h4>
   <div id="adminTxList"></div>
 </div>
 
-<audio id="alertSound">
-  <source src="alert.mp3" type="audio/mpeg">
-</audio>
-
+<!-- WITHDRAWALS -->
 <div class="card">
-  <h4>Recent Withdrawals</h4>
-  <div id="adminTxList"></div>
-</div>
-
-<div class="card">
-  <h4>Pending Withdraw Requests</h4>
+  <h4>🟡 Pending Withdraw Requests</h4>
   <div id="pendingRequests"></div>
 </div>
 
@@ -182,6 +162,12 @@ font-weight:700;
   <h4>💰 Paid Withdrawals</h4>
   <div id="paidRequests"></div>
 </div>
+
+<audio id="alertSound">
+  <source src="alert.mp3" type="audio/mpeg">
+</audio>
+
+</body>
   
 </body>
 </html>
