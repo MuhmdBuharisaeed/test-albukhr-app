@@ -20,7 +20,7 @@ document.addEventListener(
 
       loadAnalytics();
 
-    }, 5000);
+    }, 50000);
 
   }
 );
