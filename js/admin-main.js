@@ -6,11 +6,15 @@ document.addEventListener(
 
     loadRecentTransactions();
 
+    checkLiquidity();
+
     setInterval(() => {
 
       renderTreasuryOverview();
 
       loadRecentTransactions();
+
+      checkLiquidity();
 
     }, 5000);
 
