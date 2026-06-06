@@ -1,5 +1,3 @@
-alert("createWithdrawRequest running");
-
 window.createWithdrawRequest = async function({
   project,
   amount,
@@ -7,13 +5,20 @@ window.createWithdrawRequest = async function({
   type
 }){
 
+  alert("step 1");
+
   const user = JSON.parse(localStorage.getItem("pi_user"));
 
+  alert("step 2");
+
   if(!user?.uid){
+    alert("User not logged in");
     return { error: "User not logged in" };
   }
 
-  const { error } = await supabase
+  alert("step 3");
+
+  const result = await supabase
     .from("withdraw_requests")
     .insert([{
       userid: user.uid,
@@ -24,10 +29,14 @@ window.createWithdrawRequest = async function({
       status: "pending"
     }]);
 
-  if(error){
-    alert(JSON.stringify(error));
-    return { error };
+  alert("step 4");
+
+  if(result.error){
+    alert(JSON.stringify(result.error));
+    return { error: result.error };
   }
+
+  alert("step 5");
 
   return { success: true };
 };
