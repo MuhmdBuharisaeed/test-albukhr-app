@@ -7,9 +7,7 @@ window.createWithdrawRequest = async function({
   type
 }){
 
-  const user = JSON.parse(
-    localStorage.getItem("pi_user")
-  );
+  const user = JSON.parse(localStorage.getItem("pi_user"));
 
   if(!user?.uid){
     return { error: "User not logged in" };
@@ -26,13 +24,8 @@ window.createWithdrawRequest = async function({
       status: "pending"
     }]);
 
-  console.log("INSERT ERROR:", error);
-
   if(error){
-    console.error(
-      "Withdraw insert error:",
-      error
-    );
+    alert(JSON.stringify(error));
     return { error };
   }
 
