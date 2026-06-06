@@ -3,6 +3,13 @@ async function renderTreasuryOverview(){
   const balance =
     await getWalletBalance();
 
+  // Top Card
+  document.getElementById(
+    "adminBalance"
+  ).innerText =
+    balance.toFixed(2) + " Pi";
+
+  // Treasury Card
   document.getElementById(
     "treasuryBalance"
   ).innerText =
