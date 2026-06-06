@@ -3,21 +3,15 @@ document.addEventListener(
   () => {
 
     renderTreasuryOverview();
-
     loadRecentTransactions();
-
     checkLiquidity();
-
     loadAnalytics();
 
     setInterval(() => {
 
       renderTreasuryOverview();
-
       loadRecentTransactions();
-
       checkLiquidity();
-
       loadAnalytics();
 
     }, 60000);
