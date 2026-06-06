@@ -612,6 +612,19 @@ async function confirmWithdraw(){
     return;
   }
 
+  const request = await createWithdrawRequest({
+  project: PROJECT_NAME,
+  amount: amount,
+  wallet: wallet,
+  type: "reward"
+});
+
+if(request?.error){
+  alert("Failed to create withdraw request");
+  __withdrawLock = false;
+  return;
+}
+
   // 🔥 CALL ENGINE
   const res = await withdrawProjectReward(
     PROJECT_NAME,
@@ -816,6 +829,19 @@ async function confirmCapitalWithdraw(){
     __capitalLock = false;
     return;
   }
+
+  const request = await createWithdrawRequest({
+  project: PROJECT_NAME,
+  amount,
+  wallet,
+  type: "capital"
+});
+
+if(request?.error){
+  alert(request.error);
+  __capitalLock = false;
+  return;
+}
 
   // 🔥 CALL SUPABASE ENGINE
   const res = await withdrawCapital({
