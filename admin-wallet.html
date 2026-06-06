@@ -40,6 +40,24 @@ small{color:#666}
   word-break:break-all;
   overflow-wrap:anywhere;
 }
+
+.dashboard-row{
+  display:flex;
+  gap:16px;
+  margin:16px;
+}
+
+.half-card{
+  flex:1;
+  margin:0;
+}
+
+/* Mobile */
+@media(max-width:768px){
+  .dashboard-row{
+    flex-direction:column;
+  }
+}
 </style>
 
 <!-- LOAD ORDER IMPORTANT -->
@@ -82,62 +100,48 @@ font-weight:700;
   <div id="walletStatus">ACTIVE</div>
 </div>
 
-<!-- TREASURY OVERVIEW -->
-<div class="card">
+<div class="dashboard-row">
 
-  <h3>📊 Treasury Overview</h3>
+  <!-- Wallet Analytics -->
+  <div class="card half-card">
 
-  <p>
-    <strong>Treasury:</strong>
-    <span id="treasuryBalance">0.00 Pi</span>
-  </p>
+    <h3>📈 Wallet Analytics</h3>
 
-  <p>
-    <strong>Pending:</strong>
-    <span id="pendingTotal">0.00 Pi</span>
-  </p>
+    <p><strong>Total Received:</strong>
+    <span id="totalReceived">0.00 Pi</span></p>
 
-  <p>
-    <strong>Approved:</strong>
-    <span id="approvedTotal">0.00 Pi</span>
-  </p>
+    <p><strong>Total Sent:</strong>
+    <span id="totalSent">0.00 Pi</span></p>
 
-  <p>
-    <strong>Liquidity Status:</strong>
-    <span id="liquidityStatus">🟢 SAFE</span>
-  </p>
+    <p><strong>Total Transactions:</strong>
+    <span id="totalTransactions">0</span></p>
 
-  <p>
-    <strong>Available Liquidity:</strong>
-    <span id="availableLiquidity">0.00 Pi</span>
-  </p>
+    <p><strong>Net Flow:</strong>
+    <span id="netFlow">0.00 Pi</span></p>
 
-</div>
+  </div>
 
-<!-- ANALYTICS -->
-<div class="card">
+  <!-- Treasury Overview -->
+  <div class="card half-card">
 
-  <h3>📈 Wallet Analytics</h3>
+    <h3>📊 Treasury Overview</h3>
 
-  <p>
-    <strong>Total Received:</strong>
-    <span id="totalReceived">0.00 Pi</span>
-  </p>
+    <p><strong>Treasury:</strong>
+    <span id="treasuryBalance">0.00 Pi</span></p>
 
-  <p>
-    <strong>Total Sent:</strong>
-    <span id="totalSent">0.00 Pi</span>
-  </p>
+    <p><strong>Pending:</strong>
+    <span id="pendingTotal">0.00 Pi</span></p>
 
-  <p>
-    <strong>Total Transactions:</strong>
-    <span id="totalTransactions">0</span>
-  </p>
+    <p><strong>Approved:</strong>
+    <span id="approvedTotal">0.00 Pi</span></p>
 
-  <p>
-    <strong>Net Flow:</strong>
-    <span id="netFlow">0.00 Pi</span>
-  </p>
+    <p><strong>Liquidity Status:</strong>
+    <span id="liquidityStatus">🟢 SAFE</span></p>
+
+    <p><strong>Available Liquidity:</strong>
+    <span id="availableLiquidity">0.00 Pi</span></p>
+
+  </div>
 
 </div>
 
