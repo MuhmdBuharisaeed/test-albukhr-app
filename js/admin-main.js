@@ -10,8 +10,6 @@ document.addEventListener(
 
     loadAnalytics();
 
-    await renderWalletHealth();
-
     setInterval(() => {
 
       renderTreasuryOverview();
@@ -21,8 +19,6 @@ document.addEventListener(
       checkLiquidity();
 
       loadAnalytics();
-
-      await renderWalletHealth();
 
     }, 5000);
 
