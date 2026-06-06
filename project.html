@@ -612,6 +612,8 @@ async function confirmWithdraw(){
     return;
   }
 
+  alert("before createWithdrawRequest");
+  
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
   amount: amount,
@@ -619,6 +621,8 @@ async function confirmWithdraw(){
   type: "reward"
 });
 
+alert("after createWithdrawRequest");
+  
 if(request?.error){
   alert("Failed to create withdraw request");
   __withdrawLock = false;
@@ -830,6 +834,8 @@ async function confirmCapitalWithdraw(){
     return;
   }
 
+  alert("before createWithdrawRequest");
+  
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
   amount,
@@ -837,6 +843,8 @@ async function confirmCapitalWithdraw(){
   type: "capital"
 });
 
+alert("after createWithdrawRequest");
+  
 if(request?.error){
   alert(request.error);
   __capitalLock = false;
