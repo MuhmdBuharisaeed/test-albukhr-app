@@ -21,11 +21,3 @@ async function renderTreasuryOverview(){
       : "🔴 LOW";
 
 }
-
-const debug =
-document.getElementById("debugInfo");
-
-if(debug){
-  debug.innerText =
-    "Wallet Connected ✅";
-}
