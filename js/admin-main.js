@@ -8,6 +8,8 @@ document.addEventListener(
 
     checkLiquidity();
 
+    loadAnalytics();
+
     setInterval(() => {
 
       renderTreasuryOverview();
@@ -15,6 +17,8 @@ document.addEventListener(
       loadRecentTransactions();
 
       checkLiquidity();
+
+      loadAnalytics();
 
     }, 5000);
 
