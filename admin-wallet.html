@@ -84,32 +84,6 @@ font-weight:700;
 
   <div style="margin-top:15px">
 
-<div>
-🟡 Pending Requests:
-<strong id="pendingCount">0</strong>
-</div>
-
-<div>
-🟢 Approved Requests:
-<strong id="approvedCount">0</strong>
-</div>
-
-<div>
-🔵 Paid Today:
-<strong id="paidToday">0.00 Pi</strong>
-</div>
-
-<div>
-🔴 Rejected Today:
-<strong id="rejectedToday">0</strong>
-</div>
-
-  </div>
-
-  <div class="threshold-box">
-    <small>Large Withdrawal Alert Threshold (Pi)</small>
-    <input type="number" id="thresholdInput" placeholder="Default: 100">
-  </div>
 </div>
 
 <div class="card">
@@ -177,45 +151,12 @@ font-weight:700;
 </div>
 
 <select id="adminProject">
-<option value="">Select Project</option>
-</select>
-
-<input 
-type="number" 
-id="adminAmount"
-placeholder="Amount (Pi)"
-style="width:100%;padding:10px;margin-top:8px;border-radius:10px;border:1px solid #ddd">
-
-<select id="adminType" style="width:100%;padding:10px;margin-top:8px;border-radius:10px">
-<option value="reward">Add Reward</option>
-<option value="capital">Add Capital</option>
-<option value="stake">Add Stake</option>
-</select>
-
-<button class="btn unlock" onclick="adminAddWallet()">
-Add to Wallet
-</button>
 
 </div>
 
 <div class="card">
   <h4>Recent Withdrawals</h4>
   <div id="adminTxList"></div>
-</div>
-
-<div class="card">
-  <h4>Pending Withdraw Requests</h4>
-  <div id="pendingRequests"></div>
-</div>
-
-<div class="card">
-  <h4>🟢 Approved Withdrawals</h4>
-  <div id="approvedRequests"></div>
-</div>
-
-<div class="card">
-  <h4>💰 Paid Withdrawals</h4>
-  <div id="paidRequests"></div>
 </div>
 
 <audio id="alertSound">
