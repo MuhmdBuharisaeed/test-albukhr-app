@@ -621,6 +621,8 @@ async function confirmWithdraw(){
   type: "reward"
 });
 
+alert(JSON.stringify(request));
+  
 alert("after createWithdrawRequest");
   
 if(request?.error){
@@ -842,6 +844,8 @@ async function confirmCapitalWithdraw(){
   wallet,
   type: "capital"
 });
+
+alert(JSON.stringify(request));
 
 alert("after createWithdrawRequest");
   
