@@ -1,3 +1,8 @@
+const db = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+
 window.createWithdrawRequest = async function({
   project,
   amount,
@@ -5,51 +10,26 @@ window.createWithdrawRequest = async function({
   type
 }){
 
-  alert("step 1");
-
   const user = JSON.parse(localStorage.getItem("pi_user"));
 
-  alert("step 2");
-
   if(!user?.uid){
-    alert("User not logged in");
     return { error: "User not logged in" };
   }
 
-  alert("step 3");
+  const result = await db
+    .from("withdraw_requests")
+    .insert([{
+      userid: user.uid,
+      project,
+      amount,
+      wallet,
+      type,
+      status: "pending"
+    }]);
 
-  try{
-
-    const result = await supabase
-      .from("withdraw_requests")
-      .insert([{
-        userid: user.uid,
-        project,
-        amount,
-        wallet,
-        type,
-        status: "pending"
-      }]);
-
-    alert("step 4");
-
-    alert(JSON.stringify(result));
-
-    if(result.error){
-      alert(JSON.stringify(result.error));
-      return { error: result.error };
-    }
-
-    alert("step 5");
-
-    return { success: true };
-
-  }catch(e){
-
-    alert("CATCH ERROR");
-    alert(e.message);
-
-    return { error: e.message };
-
+  if(result.error){
+    return { error: result.error };
   }
+
+  return { success: true };
 };
