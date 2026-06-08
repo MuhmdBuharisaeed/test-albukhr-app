@@ -20,7 +20,8 @@ async function loadRequests(){
 
   const { data, error } = await supabase
     .from("dapp_requests")
-    .select("*");
+    .select("*")
+    .order("created_at", { ascending:false });
 
   alert("QUERY FINISHED");
 
@@ -30,6 +31,9 @@ async function loadRequests(){
       "ERROR:\n" +
       JSON.stringify(error)
     );
+
+    listBox.innerHTML =
+      `<div class="empty">Failed to load requests</div>`;
 
     return;
   }
