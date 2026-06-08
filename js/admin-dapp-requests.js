@@ -5,6 +5,8 @@ const supabase = window.supabase.createClient(
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
 );
 
+alert("SUPABASE CREATED");
+
 const listBox = document.getElementById("adminList");
 
 let list = [];
@@ -14,10 +16,13 @@ let list = [];
 ========================= */
 async function loadRequests(){
 
+  alert("LOAD REQUESTS STARTED");
+
   const { data, error } = await supabase
     .from("dapp_requests")
-    .select("*")
-    .order("created_at", { ascending:false });
+    .select("*");
+
+  alert("QUERY FINISHED");
 
   if(error){
 
@@ -26,14 +31,11 @@ async function loadRequests(){
       JSON.stringify(error)
     );
 
-    listBox.innerHTML =
-      `<div class="empty">Failed to load requests</div>`;
-
     return;
   }
 
   alert(
-    "Records found: " +
+    "FOUND: " +
     data.length
   );
 
