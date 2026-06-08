@@ -22,20 +22,40 @@ async function loadRequests(){
 
   if(error){
 
-    console.error(error);
+  alert(
+    "ERROR: " +
+    JSON.stringify(error)
+  );
 
-    listBox.innerHTML =
-      `<div class="empty">Failed to load requests</div>`;
+  listBox.innerHTML =
+    `<div class="empty">Failed to load requests</div>`;
 
-    return;
+  return;
   }
 
-  list = data || [];
+  const { data, error } = await supabase
+  .from("dapp_requests")
+  .select("*")
+  .order("created_at", { ascending:false });
 
-  console.log("LIST =", list);
+if(error){
 
-  render();
+  alert(
+    "ERROR:\n" +
+    JSON.stringify(error)
+  );
+
+  return;
 }
+
+alert(
+  "Records found: " +
+  data.length
+);
+
+list = data || [];
+
+render();
 
 /* =========================
    RENDER
