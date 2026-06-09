@@ -134,10 +134,36 @@ async function approveRequest(id){
   const receive =
     Number(data.amount) - fee;
 
+const { error: txError } =
+  await supabaseClient
+    .from("transactions")
+    .insert([{
 
-// TEMP TEST
-console.log("Skipping transactions insert");
+      userid: data.userid,
 
+      project: data.project,
+
+      amount: receive,
+
+      fee: fee,
+
+      wallet: data.wallet,
+
+      type: data.type,
+
+      status: "approved",
+
+      created_at:
+        new Date().toISOString()
+
+    }]);
+
+if(txError){
+
+  alert(txError.message);
+  return;
+
+}
 
   await supabaseClient
     .from("withdraw_requests")
