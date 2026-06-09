@@ -11,3 +11,8 @@ window.supabase.createClient(
 );
 
 window.supabaseClient = supabaseClient;
+
+document.body.insertAdjacentHTML(
+  "beforeend",
+  `<pre>${JSON.stringify(Object.keys(window.supabase || {}), null, 2)}</pre>`
+);
