@@ -159,10 +159,9 @@ const { error: txError } =
     }]);
 
 if(txError){
-
   alert(txError.message);
+  console.error(txError);
   return;
-
 }
 
   await supabaseClient
