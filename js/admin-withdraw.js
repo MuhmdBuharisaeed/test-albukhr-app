@@ -98,8 +98,8 @@ async function approveRequest(id){
   if(error || !data){
 
     alert("Request not found");
-
     return;
+
   }
 
   const { data: stakes } = await supabaseClient
@@ -124,8 +124,10 @@ async function approveRequest(id){
     data.type === "reward" &&
     data.amount > totalReward
   ){
+
     alert("Fraud detected 🚨");
     return;
+
   }
 
   const fee =
@@ -134,34 +136,66 @@ async function approveRequest(id){
   const receive =
     Number(data.amount) - fee;
 
-alert(JSON.stringify({
-  userid: data.userid,
-  project: data.project,
-  amount: receive,
-  fee: fee,
-  wallet: data.wallet,
-  type: data.type
-}));
+  const { data: txData, error: txError } =
+    await supabaseClient
+      .from("transactions")
+      .insert([{
 
-if(txError){
-  alert(txError.message);
-  console.error(txError);
-  return;
-}
+        userid: data.userid,
 
-  await supabaseClient
-    .from("withdraw_requests")
-    .update({
-      status: "approved"
-    })
-    .eq("id", id);
+        project: data.project,
+
+        amount: receive,
+
+        fee: fee,
+
+        wallet: data.wallet,
+
+        type: data.type,
+
+        status: "approved",
+
+        txid: null,
+
+        created_at:
+          new Date().toISOString()
+
+      }])
+      .select();
+
+  if(txError){
+
+    alert(txError.message);
+
+    console.error(txError);
+
+    return;
+
+  }
+
+  const { error: updateError } =
+    await supabaseClient
+      .from("withdraw_requests")
+      .update({
+        status: "approved"
+      })
+      .eq("id", id);
+
+  if(updateError){
+
+    alert(updateError.message);
+
+    return;
+
+  }
 
   alert("Approved ✅");
 
   renderPendingRequests();
   renderApprovedRequests();
+  renderPaidRequests();
 
-}
+ }
 
 /* ===============================
    REJECT REQUEST
