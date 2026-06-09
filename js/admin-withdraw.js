@@ -3,7 +3,7 @@
 =============================== */
 async function fetchWithdrawRequests(){
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("withdraw_requests")
     .select("*")
     .eq("status", "pending")
@@ -74,7 +74,7 @@ async function renderPendingRequests(){
 =============================== */
 async function approveRequest(id){
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("withdraw_requests")
     .select("*")
     .eq("id", id)
@@ -87,7 +87,7 @@ async function approveRequest(id){
     return;
   }
 
-  const { data: stakes } = await supabase
+  const { data: stakes } = await supabaseClient
     .from("stakes")
     .select("*")
     .eq("userid", data.userid)
@@ -120,7 +120,7 @@ async function approveRequest(id){
     Number(data.amount) - fee;
 
   const { error: txError } =
-    await supabase
+    await supabaseClient
       .from("transactions")
       .insert([{
 
@@ -151,7 +151,7 @@ async function approveRequest(id){
     return;
   }
 
-  await supabase
+  await supabaseClient
     .from("withdraw_requests")
     .update({
       status: "approved"
@@ -170,7 +170,7 @@ async function approveRequest(id){
 =============================== */
 async function rejectRequest(id){
 
-  await supabase
+  await supabaseClient
     .from("withdraw_requests")
     .update({
       status: "rejected"
@@ -188,7 +188,7 @@ async function rejectRequest(id){
 =============================== */
 async function fetchApprovedRequests(){
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("withdraw_requests")
     .select("*")
     .eq("status","approved")
@@ -260,7 +260,7 @@ async function renderApprovedRequests(){
 =============================== */
 async function markPaid(id){
 
-  await supabase
+  await supabaseClient
     .from("withdraw_requests")
     .update({
 
@@ -284,7 +284,7 @@ async function markPaid(id){
 =============================== */
 async function fetchPaidRequests(){
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("withdraw_requests")
     .select("*")
     .eq("status","paid")
