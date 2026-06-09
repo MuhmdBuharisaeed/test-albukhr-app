@@ -134,37 +134,10 @@ async function approveRequest(id){
   const receive =
     Number(data.amount) - fee;
 
-  const { error: txError } =
-    await supabaseClient
-      .from("transactions")
-      .insert([{
 
-        project: data.project,
+// TEMP TEST
+console.log("Skipping transactions insert");
 
-        amount: receive,
-
-        type:
-          data.type === "reward"
-          ? "withdraw"
-          : "capital",
-
-        fee: fee,
-
-        wallet: data.wallet,
-
-        created_at:
-          new Date().toISOString()
-
-      }]);
-
-  if(txError){
-
-    console.error(txError);
-
-    alert("Transaction failed");
-
-    return;
-  }
 
   await supabaseClient
     .from("withdraw_requests")
