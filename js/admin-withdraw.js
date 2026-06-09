@@ -28,44 +28,59 @@ async function renderPendingRequests(){
 
   box.innerHTML = "Loading...";
 
-  try{
+  const requests =
+    await fetchWithdrawRequests();
 
-    const requests =
-      await fetchWithdrawRequests();
-
-    box.innerHTML =
-      "<small>Requests Found: " +
-      requests.length +
-      "</small><hr>";
-
-    if(!requests.length){
-
-      box.innerHTML +=
-        "<small>No pending requests</small>";
-
-      return;
-    }
-
-    requests.forEach(req => {
-
-      box.innerHTML += `
-        <div class="tx">
-          ${req.project}
-          -
-          ${req.amount} Pi
-        </div>
-      `;
-
-    });
-
-  }catch(error){
+  if(!requests.length){
 
     box.innerHTML =
-      `<small style="color:red">
-        ${error.message}
-      </small>`;
+      "<small>No pending requests</small>";
 
+    return;
   }
+
+  box.innerHTML = "";
+
+  requests.forEach(req => {
+
+    box.innerHTML += `
+      <div class="tx">
+
+        <strong>${req.project}</strong><br>
+
+        Type: ${req.type}<br>
+
+        Amount:
+        ${Number(req.amount).toFixed(2)} Pi<br>
+
+        Wallet:
+        ${req.wallet}<br>
+
+        User ID:
+        ${req.userid || "N/A"}<br>
+
+        <small>
+        ${new Date(req.created_at).toLocaleString()}
+        </small><br><br>
+
+        <button
+        onclick="approveRequest('${req.id}')">
+
+        ✅ Approve
+
+        </button>
+
+        <button
+        onclick="rejectRequest('${req.id}')">
+
+        ❌ Reject
+
+        </button>
+
+      </div>
+    `;
+
+  });
 
 }
 
