@@ -134,29 +134,25 @@ async function approveRequest(id){
   const receive =
     Number(data.amount) - fee;
 
-const { error: txError } =
+const { data: txData, error: txError } =
   await supabaseClient
     .from("transactions")
     .insert([{
-
       userid: data.userid,
-
       project: data.project,
-
       amount: receive,
-
       fee: fee,
-
       wallet: data.wallet,
-
       type: data.type,
-
       status: "approved",
+      txid: null
+    }])
+    .select();
 
-      created_at:
-        new Date().toISOString()
-
-    }]);
+alert(JSON.stringify({
+  txData,
+  txError
+}));
 
 if(txError){
   alert(txError.message);
