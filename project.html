@@ -611,8 +611,6 @@ async function confirmWithdraw(){
     __withdrawLock = false;
     return;
   }
-
-  alert("before createWithdrawRequest");
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -620,8 +618,6 @@ async function confirmWithdraw(){
   wallet: wallet,
   type: "reward"
 });
-
-alert(JSON.stringify(request));
   
 alert("after createWithdrawRequest");
   
@@ -835,8 +831,6 @@ async function confirmCapitalWithdraw(){
     __capitalLock = false;
     return;
   }
-
-  alert("before createWithdrawRequest");
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -844,8 +838,6 @@ async function confirmCapitalWithdraw(){
   wallet,
   type: "capital"
 });
-
-alert(JSON.stringify(request));
 
 alert("after createWithdrawRequest");
   
