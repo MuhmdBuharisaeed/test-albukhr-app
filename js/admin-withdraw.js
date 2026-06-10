@@ -299,24 +299,25 @@ async function payRequest(id){
     const response = await fetch(
       "https://test-albukhr-api.onrender.com/pay-withdraw",
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
         },
-        body: JSON.stringify({
-          requestId: id
+        body:JSON.stringify({
+          requestId:id
         })
       }
     );
 
-    const result =
-      await response.json();
+    const result = await response.json();
 
-    if(!result.success){
+    console.log(result);
+
+    if(!response.ok){
 
       alert(
         result.error ||
-        "Payment Failed"
+        JSON.stringify(result)
       );
 
       return;
@@ -327,14 +328,9 @@ async function payRequest(id){
       result.txid
     );
 
-    renderApprovedRequests();
-    renderPaidRequests();
-
   }catch(error){
 
-    console.error(error);
-
-    alert("Server Error");
+    alert(error.message);
 
   }
 
