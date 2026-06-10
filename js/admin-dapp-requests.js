@@ -21,14 +21,14 @@ loadRequests();
 ========================= */
 async function loadRequests(){
 
-  alert("LOAD REQUESTS STARTED");
+  alert("LOAD START");
 
-  const { data, error } = await supabase
-    .from("dapp_requests")
-    .select("*")
-    .order("created_at", { ascending:false });
+  const { data, error } =
+    await supabase
+      .from("dapp_requests")
+      .select("*");
 
-  alert("QUERY FINISHED");
+  alert("QUERY DONE");
 
   if(error){
 
@@ -37,20 +37,13 @@ async function loadRequests(){
       JSON.stringify(error)
     );
 
-    listBox.innerHTML =
-      `<div class="empty">Failed to load requests</div>`;
-
     return;
   }
 
   alert(
-    "FOUND: " +
+    "ROWS = " +
     data.length
   );
-
-  list = data || [];
-
-  render();
 }
 
 /* =========================
