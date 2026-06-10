@@ -5,14 +5,7 @@ const supabase = window.supabase.createClient(
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
 );
 
-alert("SUPABASE CLIENT CREATED");
-
-const listBox = document.getElementById("adminList");
-
-alert(
-  "LISTBOX = " +
-  (listBox ? "FOUND" : "NULL")
-);
+alert("SUPABASE CREATED");
 
 loadRequests();
 
