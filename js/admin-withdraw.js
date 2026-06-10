@@ -87,6 +87,8 @@ async function renderPendingRequests(){
 /* ===============================
    APPROVE REQUEST
 =============================== */
+alert("NEW APPROVE FUNCTION LOADED");
+
 async function approveRequest(id){
 
   const { data, error } = await supabaseClient
