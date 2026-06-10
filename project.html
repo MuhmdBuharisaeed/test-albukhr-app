@@ -619,8 +619,6 @@ async function confirmWithdraw(){
   type: "reward"
 });
   
-alert("after createWithdrawRequest");
-  
 if(request?.error){
   alert("Failed to create withdraw request");
   __withdrawLock = false;
@@ -838,8 +836,6 @@ async function confirmCapitalWithdraw(){
   wallet,
   type: "capital"
 });
-
-alert("after createWithdrawRequest");
   
 if(request?.error){
   alert(request.error);
