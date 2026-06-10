@@ -276,11 +276,11 @@ async function renderApprovedRequests(){
         ${req.wallet}<br><br>
 
         <button
-        onclick="markPaid('${req.id}')">
+onclick="payRequest('${req.id}')">
 
-        💰 Mark Paid
+💸 Pay Now
 
-        </button>
+</button>
 
       </div>
     `;
@@ -290,26 +290,53 @@ async function renderApprovedRequests(){
 }
 
 /* ===============================
-   MARK PAID
+   PAY WITHDRAW
 =============================== */
-async function markPaid(id){
+async function payRequest(id){
 
-  await supabaseClient
-    .from("withdraw_requests")
-    .update({
+  try{
 
-      status: "paid",
+    const response = await fetch(
+      "https://test-albukhr-api.onrender.com/pay-withdraw",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          requestId: id
+        })
+      }
+    );
 
-      paid_at:
-      new Date().toISOString()
+    const result =
+      await response.json();
 
-    })
-    .eq("id", id);
+    if(!result.success){
 
-  alert("Marked as Paid");
+      alert(
+        result.error ||
+        "Payment Failed"
+      );
 
-  renderApprovedRequests();
-  renderPaidRequests();
+      return;
+    }
+
+    alert(
+      "Paid Successfully ✅\n\nTXID:\n" +
+      result.txid
+    );
+
+    renderApprovedRequests();
+    renderPaidRequests();
+
+  }catch(error){
+
+    console.error(error);
+
+    alert("Server Error");
+
+  }
 
 }
 
