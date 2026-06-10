@@ -16,27 +16,14 @@ async function loadRequests(){
 
   alert("LOAD START");
 
-  const { data, error } =
-    await supabase
-      .from("dapp_requests")
-      .select("*");
+  const { data, error } = await supabase
+    .from("dapp_requests")
+    .select("*");
 
   alert("QUERY DONE");
 
-  if(error){
+  alert(JSON.stringify(data));
 
-    alert(
-      "ERROR:\n" +
-      JSON.stringify(error)
-    );
-
-    return;
-  }
-
-  alert(
-    "ROWS = " +
-    data.length
-  );
 }
 
 /* =========================
