@@ -1,16 +1,20 @@
 alert("ADMIN JS LOADED");
 
-alert(
-  "SUPABASE OBJECT = " +
-  typeof window.supabase
-);
-
 const supabase = window.supabase.createClient(
   "https://qexmnghilahsvethlxem.supabase.co",
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
 );
 
-alert("SUPABASE CREATED");
+alert("SUPABASE CLIENT CREATED");
+
+const listBox = document.getElementById("adminList");
+
+alert(
+  "LISTBOX = " +
+  (listBox ? "FOUND" : "NULL")
+);
+
+loadRequests();
 
 /* =========================
    LOAD REQUESTS
