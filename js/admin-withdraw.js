@@ -311,22 +311,7 @@ async function payRequest(id){
 
     const result = await response.json();
 
-    console.log(result);
-
-    if(!response.ok){
-
-      alert(
-        result.error ||
-        JSON.stringify(result)
-      );
-
-      return;
-    }
-
-    alert(
-      "Paid Successfully ✅\n\nTXID:\n" +
-      result.txid
-    );
+    alert(JSON.stringify(result));
 
   }catch(error){
 
