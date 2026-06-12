@@ -1,4 +1,12 @@
 /* ===============================
+   EXPAND / COLLAPSE STATE
+=============================== */
+let pendingExpanded = false;
+let approvedExpanded = false;
+let paidExpanded = false;
+let transactionsExpanded = false;
+
+/* ===============================
    FETCH WITHDRAW REQUESTS
 =============================== */
 async function fetchWithdrawRequests(){
@@ -41,8 +49,27 @@ async function renderPendingRequests(){
 
   box.innerHTML = "";
 
-  requests.forEach(req => {
+  const visible =
+  pendingExpanded
+    ? requests
+    : requests.slice(0,3);
 
+visible.forEach(req => {
+
+if(requests.length > 3){
+
+  box.innerHTML += `
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="
+        pendingExpanded=!pendingExpanded;
+        renderPendingRequests();
+      ">
+        ${pendingExpanded ? "Show Less" : "See More"}
+      </button>
+    </div>
+  `;
+}
+   
     box.innerHTML += `
       <div class="tx">
 
