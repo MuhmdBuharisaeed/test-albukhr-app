@@ -285,7 +285,26 @@ async function renderApprovedRequests(){
 
   box.innerHTML = "";
 
-  requests.forEach(req => {
+  const visible =
+  approvedExpanded
+    ? requests
+    : requests.slice(0,3);
+
+visible.forEach(req => {
+
+   if(requests.length > 3){
+
+  box.innerHTML += `
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="
+        approvedExpanded=!approvedExpanded;
+        renderApprovedRequests();
+      ">
+        ${approvedExpanded ? "Show Less" : "See More"}
+      </button>
+    </div>
+  `;
+   }
 
     box.innerHTML += `
       <div class="tx">
@@ -389,7 +408,26 @@ async function renderPaidRequests(){
 
   box.innerHTML = "";
 
-  requests.forEach(req => {
+  const visible =
+  paidExpanded
+    ? requests
+    : requests.slice(0,3);
+
+visible.forEach(req => {
+
+   if(requests.length > 3){
+
+  box.innerHTML += `
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="
+        paidExpanded=!paidExpanded;
+        renderPaidRequests();
+      ">
+        ${paidExpanded ? "Show Less" : "See More"}
+      </button>
+    </div>
+  `;
+   }
 
     box.innerHTML += `
       <div class="tx">
