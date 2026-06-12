@@ -328,7 +328,7 @@ async function fetchPaidRequests(){
     .from("withdraw_requests")
     .select("*")
     .eq("status","paid")
-    .order("paid_at",{ascending:false});
+    .order("processed_at",{ascending:false});
 
   if(error){
     console.error(error);
@@ -379,7 +379,7 @@ async function renderPaidRequests(){
 
         <small>
         Paid:
-        ${new Date(req.paid_at)
+        ${new Date(req.processed_at)
           .toLocaleString()}
         </small>
 
