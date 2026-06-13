@@ -1,3 +1,6 @@
+document.getElementById("adminList").innerHTML =
+  "<h2 style='color:red'>JS STARTED</h2>";
+
 alert("START");
 
 const supabase = window.supabase.createClient(
