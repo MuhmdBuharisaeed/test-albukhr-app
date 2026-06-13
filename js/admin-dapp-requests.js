@@ -26,19 +26,22 @@ async function loadRequests(){
 function render(data){
 
   alert("RENDER START");
-  alert("ITEMS = " + data.length);
 
-  listBox.innerHTML = `
+  const html = `
     <div style="
       background:red;
       color:white;
       padding:20px;
       margin:20px;
+      border-radius:10px;
     ">
-      RENDER WORKING
+      REQUESTS FOUND: ${data.length}
     </div>
   `;
 
+  document.getElementById("adminList").innerHTML = html;
+
+  alert("RENDER DONE");
 }
 
 loadRequests();
