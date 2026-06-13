@@ -1,10 +1,12 @@
+alert(typeof window.supabaseClient);
+
 const listBox = document.getElementById("adminList");
 
 async function loadRequests() {
 
   try {
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("dapp_requests")
       .select("*")
       .order("created_at", { ascending: false });
