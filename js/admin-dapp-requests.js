@@ -2,28 +2,25 @@ alert(typeof window.supabaseClient);
 
 const listBox = document.getElementById("adminList");
 
-async function loadRequests() {
+async function loadRequests(){
 
-  try {
+  alert("START");
 
-    const { data, error } = await supabaseClient
-      .from("dapp_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
+  const { data, error } =
+  await window.supabaseClient
+    .from("dapp_requests")
+    .select("*");
 
-    if (error) {
-      throw error;
-    }
+  alert(
+    "ERROR = " +
+    JSON.stringify(error)
+  );
 
-    render(data || []);
+  alert(
+    "ROWS = " +
+    (data ? data.length : 0)
+  );
 
-  } catch (err) {
-
-    listBox.innerHTML =
-      `<div class="empty">Failed to load requests</div>`;
-
-    alert(err.message);
-  }
 }
 
 function render(data) {
