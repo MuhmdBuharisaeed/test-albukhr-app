@@ -1,57 +1,52 @@
 const listBox = document.getElementById("adminList");
 
-async function loadRequests(){
+async function loadRequests() {
 
-  try{
+  try {
 
-    const res = await fetch(
-      "https://qexmnghilahsvethlxem.supabase.co/rest/v1/dapp_requests?order=created_at.desc",
-      {
-        headers:{
-          apikey:"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
-          Authorization:"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-        }
-      }
-    );
+    const { data, error } = await supabase
+      .from("dapp_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    const data = await res.json();
-
-    if(!Array.isArray(data)){
-      listBox.innerHTML =
-        "<h3>Invalid response</h3>";
-      return;
+    if (error) {
+      throw error;
     }
 
-    render(data);
+    render(data || []);
 
-  }catch(err){
+  } catch (err) {
 
     listBox.innerHTML =
-      "<h3>Failed to load requests</h3>";
+      `<div class="empty">Failed to load requests</div>`;
 
     alert(err.message);
   }
 }
 
-function render(data){
+function render(data) {
 
   listBox.innerHTML = "";
 
-  if(data.length === 0){
+  if (data.length === 0) {
 
     listBox.innerHTML =
-      "<h3>No requests found</h3>";
+      `<div class="empty">No requests found</div>`;
 
     return;
   }
 
-  data.forEach(r=>{
+  data.forEach((r) => {
 
     const receipt =
       r.receipt_image
-      ? `<img src="${r.receipt_image}"
-           style="max-width:100%;border-radius:10px">`
-      : "No receipt";
+      ? `
+        <img
+          src="${r.receipt_image}"
+          style="max-width:100%;border-radius:10px"
+        >
+      `
+      : `<em>No receipt uploaded</em>`;
 
     listBox.innerHTML += `
 
@@ -59,38 +54,27 @@ function render(data){
 
         <h3>${r.project_name || "-"}</h3>
 
-        <p>
-          <b>User:</b>
-          ${r.pi_user || "-"}
-        </p>
+        <div class="meta">
+          👤 ${r.pi_user || "-"}<br>
+          🛠 ${r.service_type || "-"}<br>
+          📌 ${r.status || "-"}
+        </div>
 
-        <p>
-          <b>Service:</b>
-          ${r.service_type || "-"}
-        </p>
-
-        <p>
-          <b>Status:</b>
-          ${r.status || "-"}
-        </p>
-
-        <p>
-          <b>Description:</b><br>
+        <div class="desc">
           ${r.description || "-"}
-        </p>
+        </div>
 
-        <p>
-          <b>Receipt Ref:</b>
+        <div class="receipt-box">
+          <strong>Receipt Ref:</strong>
           ${r.receipt_ref || "-"}
-        </p>
-
-        ${receipt}
+          <br><br>
+          ${receipt}
+        </div>
 
       </div>
 
     `;
   });
-
 }
 
 loadRequests();
