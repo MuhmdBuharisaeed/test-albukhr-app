@@ -58,7 +58,7 @@ async function loadRecentTransactions(){
   box.innerHTML = "";
 
   records.forEach(tx => {
-   
+
     const amount =
       Number(tx.amount || 0);
 
