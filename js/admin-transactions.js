@@ -57,7 +57,28 @@ async function loadRecentTransactions(){
 
   box.innerHTML = "";
 
-  records.forEach(tx => {
+
+   const visible =
+  transactionsExpanded
+    ? transactions
+    : transactions.slice(0,3);
+
+visible.forEach(tx => {
+
+   if(transactions.length > 3){
+
+  box.innerHTML += `
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="
+        transactionsExpanded=!transactionsExpanded;
+        renderTransactions();
+      ">
+        ${transactionsExpanded ? "Show Less" : "See More"}
+      </button>
+    </div>
+  `;
+   }
+
 
     const amount =
       Number(tx.amount || 0);
