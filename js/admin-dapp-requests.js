@@ -23,57 +23,22 @@ async function loadRequests(){
 
 }
 
-function render(data) {
+function render(data){
 
-  listBox.innerHTML = "";
+  alert("RENDER START");
+  alert("ITEMS = " + data.length);
 
-  if (data.length === 0) {
+  listBox.innerHTML = `
+    <div style="
+      background:red;
+      color:white;
+      padding:20px;
+      margin:20px;
+    ">
+      RENDER WORKING
+    </div>
+  `;
 
-    listBox.innerHTML =
-      `<div class="empty">No requests found</div>`;
-
-    return;
-  }
-
-  data.forEach((r) => {
-
-    const receipt =
-      r.receipt_image
-      ? `
-        <img
-          src="${r.receipt_image}"
-          style="max-width:100%;border-radius:10px"
-        >
-      `
-      : `<em>No receipt uploaded</em>`;
-
-    listBox.innerHTML += `
-
-      <div class="card">
-
-        <h3>${r.project_name || "-"}</h3>
-
-        <div class="meta">
-          👤 ${r.pi_user || "-"}<br>
-          🛠 ${r.service_type || "-"}<br>
-          📌 ${r.status || "-"}
-        </div>
-
-        <div class="desc">
-          ${r.description || "-"}
-        </div>
-
-        <div class="receipt-box">
-          <strong>Receipt Ref:</strong>
-          ${r.receipt_ref || "-"}
-          <br><br>
-          ${receipt}
-        </div>
-
-      </div>
-
-    `;
-  });
 }
 
 loadRequests();
