@@ -118,6 +118,14 @@ try{
 
 }catch(e){
 
-  console.error(e);
+  console.error("Withdraw requests error:", e);
+
+}
+
+/* ========= RETURN ========= */
+return txs.sort((a,b)=>
+  (b.timestamp || 0) -
+  (a.timestamp || 0)
+);
 
 }
