@@ -3,7 +3,7 @@
    SINGLE SOURCE OF TRUTH
 ====================================== */
 
-function getAllTransactionsUnified(){
+async function getAllTransactionsUnified(){
 
   let txs = [];
 
