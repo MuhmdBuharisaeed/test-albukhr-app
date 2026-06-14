@@ -493,7 +493,31 @@ async function renderHistory(){
   const txs = await getAllTransactionsUnified();
 
 const filtered = txs
-  .filter(tx => tx.project === PROJECT_NAME)
+  .filter(tx => {
+
+    const a =
+      (tx.project || "")
+        .toLowerCase()
+        .trim();
+
+    const b =
+      (PROJECT_NAME || "")
+        .toLowerCase()
+        .trim();
+
+    const c =
+      (CONFIG.title || "")
+        .toLowerCase()
+        .trim();
+
+    return (
+      a === b ||
+      a === c ||
+      c.includes(a) ||
+      a.includes(c)
+    );
+
+  })
   .sort((a,b)=>
     (b.timestamp || 0) -
     (a.timestamp || 0)
