@@ -490,13 +490,13 @@ async function renderHistory(){
 
   projectHistory.innerHTML = "";
 
-  const stakes = await getAllStakesMerged();
+  const txs = await getAllTransactionsUnified();
 
-const txs = stakes
+const filtered = txs
   .filter(tx => tx.project === PROJECT_NAME)
   .sort((a,b)=>
-    new Date(b.created_at || 0) -
-    new Date(a.created_at || 0)
+    (b.timestamp || 0) -
+    (a.timestamp || 0)
   );
 
   if(!txs.length){
@@ -510,7 +510,7 @@ const txs = stakes
     return;
   }
 
-  txs.forEach(tx=>{
+  filtered.forEach(tx=>{
 
     const txType =
   (tx.type || "stake").toLowerCase();
@@ -561,6 +561,30 @@ ${new Date(
   tx.timestamp ||
   Date.now()
 ).toLocaleString()}
+</div>
+
+<div style="
+  font-size:11px;
+  margin-top:4px;
+  font-weight:600;
+">
+
+${
+  tx.status === "pending"
+  ? "🟡 Pending"
+
+  : tx.status === "approved"
+  ? "🔵 Approved"
+
+  : tx.status === "paid"
+  ? "🟢 Paid"
+
+  : tx.status === "rejected"
+  ? "🔴 Rejected"
+
+  : "✅ Successful"
+}
+
 </div>
 
 </div>
