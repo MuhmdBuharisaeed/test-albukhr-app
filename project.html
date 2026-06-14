@@ -523,16 +523,23 @@ const filtered = txs
     (a.timestamp || 0)
   );
 
-  if(!txs.length){
-    projectHistory.innerHTML = `
-      <div style="text-align:center;padding:20px;color:#777">
-        ${CONFIG.icon}
-        <br><br>
-        No transactions yet
-      </div>
-    `;
-    return;
-  }
+  if(!filtered.length){
+
+  alert(
+    "TXS = " + txs.length +
+    "\nFILTERED = " + filtered.length
+  );
+
+  projectHistory.innerHTML = `
+    <div style="text-align:center;padding:20px;color:#777">
+      ${CONFIG.icon}
+      <br><br>
+      No transactions yet
+    </div>
+  `;
+
+  return;
+    }
 
   filtered.forEach(tx=>{
 
