@@ -244,3 +244,44 @@ transform:translate(-50%,120%);
 opacity:.98;
 
 }
+
+.app-alert{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
+}
+
+.app-alert-box{
+  width:85%;
+  max-width:340px;
+  background:#fff;
+  border-radius:18px;
+  padding:22px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+.app-alert-box h3{
+  margin:0 0 12px;
+  color:#b02a37;
+}
+
+.app-alert-box p{
+  margin:0 0 18px;
+  color:#444;
+  line-height:1.5;
+}
+
+.app-alert-box button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#0f7a3d;
+  color:#fff;
+  font-weight:600;
+}
