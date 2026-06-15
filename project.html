@@ -16,24 +16,6 @@
   
 </head>
 
-<div id="appAlert" class="app-alert">
-
-  <div class="app-alert-box">
-
-    <h3 id="appAlertTitle">
-      Notice
-    </h3>
-
-    <p id="appAlertText"></p>
-
-    <button onclick="closeAppAlert()">
-      OK
-    </button>
-
-  </div>
-
-</div>
-  
 <body>
 
 <header class="header">
@@ -243,6 +225,24 @@ const supabase = window.supabase.createClient(
 <script src="js/withdraw.js"></script>
 <!-- Custom App Alert -->
 <script src="js/app-alert.js"></script>
+
+<div id="appAlert" class="app-alert">
+
+  <div class="app-alert-box">
+
+    <h3 id="appAlertTitle">
+      Notice
+    </h3>
+
+    <p id="appAlertText"></p>
+
+    <button onclick="closeAppAlert()">
+      OK
+    </button>
+
+  </div>
+
+</div>
   
 <script>
 
@@ -794,7 +794,7 @@ data.stakes.forEach(s=>{
 
 if(amount > availableReward){
 
-  showMessage(
+  showAlert(
   "Insufficient Reward",
   `Available Balance: ${availableReward.toFixed(2)} Pi`
 );
@@ -862,6 +862,12 @@ if(request?.error){
   // 🔥 RESET UI
   withdrawAmount.value = "";
   walletAddress.value = "";
+
+  /* SUCCESS MESSAGE */
+showAlert(
+  "Withdrawal Submitted",
+  "Your reward withdrawal request has been submitted successfully."
+);
 
   closeWithdraw();
   await load();
