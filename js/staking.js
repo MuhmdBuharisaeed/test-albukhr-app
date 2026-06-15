@@ -333,11 +333,6 @@ if(s.type === "stake"){
   stake += amount;
 }
 
-// ✅ CAPITAL WITHDRAW
-if(s.type === "capital"){
-  stake -= Math.abs(amount);
-}
-
     // ✅ ONLY REAL STAKES FOR REWARD
     if(s.type === "stake"){
 
@@ -352,6 +347,38 @@ if(s.type === "capital"){
 
   });
 
+/* ===============================
+   PAID CAPITAL WITHDRAWALS
+=============================== */
+
+const user = JSON.parse(
+  localStorage.getItem("pi_user")
+);
+
+if(user?.uid){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("userid", user.uid)
+    .eq("project", project)
+    .eq("type", "capital")
+    .eq("status", "paid");
+
+  if(!error && data){
+
+    data.forEach(w=>{
+
+      stake -= Math.abs(
+        Number(w.amount) || 0
+      );
+
+    });
+
+  }
+
+}
+   
   return {
     stake,
     reward,
@@ -468,30 +495,6 @@ if(!user?.uid){
     return {error:"Insufficient reward"};
   }
 
-   await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes`,
-  {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`
-    },
-    body: JSON.stringify({
-  userid:user.uid,
-  project:project,
-  amount:amount,
-  duration:0,
-  txid:"WITHDRAW-"+Date.now(),
-  reward:0,
-  withdrawnReward:0,
-  unlockTime:0,
-  type:"withdraw",
-  created_at:new Date().toISOString()
-})
-  }
-);
-
   return {success:true, amount};
   }
 
@@ -571,33 +574,7 @@ if(!user?.uid){
     const take = Math.min(available, remaining);
 
     // 🔥 INSERT NEGATIVE (CAPITAL WITHDRAW)
-    const insertRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/stakes`,
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({
-  userid:user.uid,
-  project:project,
-  amount: take,
-  duration:0,
-  txid:"CAPITAL-"+Date.now(),
-  reward:0,
-  withdrawnReward:0,
-  unlockTime:0,
-  type:"capital"
-})
- }
- );
-
-    if(!insertRes.ok){
-      console.error(await insertRes.text());
-      return {error:"Withdraw failed"};
-    }
+    
 
     remaining -= take;
   }
