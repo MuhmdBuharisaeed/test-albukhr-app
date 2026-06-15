@@ -16,6 +16,24 @@
   
 </head>
 
+<div id="appAlert" class="app-alert">
+
+  <div class="app-alert-box">
+
+    <h3 id="appAlertTitle">
+      Notice
+    </h3>
+
+    <p id="appAlertText"></p>
+
+    <button onclick="closeAppAlert()">
+      OK
+    </button>
+
+  </div>
+
+</div>
+  
 <body>
 
 <header class="header">
@@ -226,20 +244,6 @@ const supabase = window.supabase.createClient(
 <!-- Custom App Alert -->
 <script src="js/app-alert.js"></script>
   
-<div id="messageModal" class="modal" style="display:none;">
-  <div class="modal-content">
-
-    <h3 id="messageTitle"></h3>
-
-    <p id="messageText"></p>
-
-    <button onclick="closeMessageModal()">
-      OK
-    </button>
-
-  </div>
-</div>
-  
 <script>
 
 /* ===============================
@@ -337,24 +341,28 @@ async function confirmStake(){
   const min = getMinStake(PROJECT_NAME);
 
   if(!amount || amount < min){
-    showAlert(
-  "Minimum Stake Required",
-  "The minimum stake for this project is " +
-  min +
-  " Pi."
-);
 
-return;
+  showAlert(
+    "Minimum Stake Required",
+    "The minimum stake for this project is " +
+    min +
+    " Pi."
+  );
 
-  const user = await ensurePiAuth();
+  return;
+}
+
+const user = await ensurePiAuth();
 
 if(!user?.uid){
-  showAlert(
-  "Login Failed",
-  "Unable to verify your Pi account. Please log in again using Pi Browser."
-);
 
-return;
+  showAlert(
+    "Login Failed",
+    "Unable to verify your Pi account. Please log in again using Pi Browser."
+  );
+
+  return;
+}
 
   const btn =
     document.querySelector("#stakeModal .primary");
