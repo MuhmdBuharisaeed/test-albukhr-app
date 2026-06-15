@@ -486,152 +486,94 @@ return address.slice(0,6)
 /* ===============================
    HISTORY (UNIFIED)
 =============================== */
-async function renderHistory(){
+
+      async function renderHistory(){
 
   projectHistory.innerHTML = "";
 
+  /* ===============================
+     STAKES
+  =============================== */
+
   const stakes = await getAllStakesMerged();
 
-const txs = stakes
-  .filter(tx => tx.project === PROJECT_NAME)
-  .sort((a,b)=>
-    new Date(b.created_at || 0) -
-    new Date(a.created_at || 0)
+  const txs = stakes
+    .filter(tx => tx.project === PROJECT_NAME)
+    .sort((a,b)=>
+      new Date(b.created_at || b.timestamp || 0) -
+      new Date(a.created_at || a.timestamp || 0)
+    );
+
+  /* ===============================
+     WITHDRAW REQUESTS
+  =============================== */
+
+  const user = JSON.parse(
+    localStorage.getItem("pi_user")
   );
 
-const user = JSON.parse(
-  localStorage.getItem("pi_user")
-);
+  let withdraws = [];
 
-let withdraws = [];
+  if(user?.uid){
 
-if(user?.uid){
-
-  const res = await fetch(
-    `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
-    {
-      headers:{
-        "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
-        "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+    const res = await fetch(
+      `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
+      {
+        headers:{
+          "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
+          "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+        }
       }
+    );
+
+    if(res.ok){
+
+      const data = await res.json();
+
+      withdraws = data.map(w => ({
+        amount: Number(w.amount) || 0,
+        type: w.type,
+        status: w.status,
+        wallet: w.wallet,
+        txid: w.txid,
+        created_at: w.created_at
+      }));
+
     }
-  );
-
-  if(res.ok){
-
-    const data = await res.json();
-
-    withdraws = data.map(w => ({
-      amount: Number(w.amount) || 0,
-      type: w.type,
-      status: w.status,
-      wallet: w.wallet,
-      txid: w.txid,
-      created_at: w.created_at
-    }));
 
   }
 
-}
-  
-const user =
-  JSON.parse(localStorage.getItem("pi_user"));
+  /* ===============================
+     MERGE & SORT
+  =============================== */
 
-let withdraws = [];
+  const allTx = [
+    ...txs,
+    ...withdraws
+  ].sort((a,b)=>{
 
-if(user?.uid){
-
-  const { data, error } = await supabase
-    .from("withdraw_requests")
-    .select("*")
-    .eq("userid", user.uid)
-    .eq("project", PROJECT_NAME);
-  
-  if(!error && data){
-
-    withdraws = data.map(w => ({
-
-      amount: Number(w.amount) || 0,
-
-      type: w.type,
-
-      status: w.status,
-
-      wallet: w.wallet,
-
-      txid: w.txid,
-
-      created_at: w.created_at
-
-    }));
-
-  }
-
-}
-  
-const allTx = [
-  ...txs,
-  ...withdraws
-].sort((a,b)=>{
-
-alert(
-  "Stakes: " + txs.length +
-  "\nWithdraws: " + withdraws.length +
-  "\nTotal: " + allTx.length
-);
-  
-  const timeA =
-    new Date(
+    const timeA = new Date(
       a.created_at ||
       a.timestamp ||
       0
     ).getTime();
 
-  const timeB =
-    new Date(
+    const timeB = new Date(
       b.created_at ||
       b.timestamp ||
       0
     ).getTime();
 
-  return timeB - timeA;
+    return timeB - timeA;
 
-});
-  
-const user = JSON.parse(
-  localStorage.getItem("pi_user")
-);
+  });
 
-let withdraws = [];
+  /* ===============================
+     EMPTY STATE
+  =============================== */
 
-if(user?.uid){
+  if(!allTx.length){
 
-  const res = await fetch(
-    `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
-    {
-      headers:{
-        "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
-        "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-      }
-    }
-  );
-
-  if(res.ok){
-
-    const data = await res.json();
-
-    withdraws = data.map(w => ({
-      amount: Number(w.amount) || 0,
-      type: w.type,
-      status: w.status,
-      wallet: w.wallet,
-      txid: w.txid,
-      created_at: w.created_at
-    }));
-
-  }
-
-}
     projectHistory.innerHTML = `
       <div style="text-align:center;padding:20px;color:#777">
         ${CONFIG.icon}
@@ -639,13 +581,18 @@ if(user?.uid){
         No transactions yet
       </div>
     `;
+
     return;
   }
+
+  /* ===============================
+     RENDER
+  =============================== */
 
   allTx.forEach(tx=>{
 
     const txType =
-  (tx.type || "stake").toLowerCase();
+      (tx.type || "stake").toLowerCase();
 
     let icon = CONFIG.icon;
     let label = "Stake";
@@ -662,8 +609,10 @@ if(user?.uid){
     if(txType === "reward"){
       icon = "🎁";
       label = "Reward";
+      sign = "-";
+      color = "withdraw-status";
     }
-    
+
     if(txType === "capital"){
       icon = "🏦";
       label = "Capital";
@@ -672,78 +621,87 @@ if(user?.uid){
     }
 
     const div = document.createElement("div");
-div.className="project-tx";
 
-div.innerHTML = `
-<div class="project-icon">${icon}</div>
+    div.className = "project-tx";
 
-<div class="project-body">
+    div.innerHTML = `
+      <div class="project-icon">${icon}</div>
 
-<div class="project-title">${label}</div>
+      <div class="project-body">
 
-${
-  (tx.meta?.wallet || tx.wallet)
-  ? `
-  <div style="font-size:11px;color:#666">
-    Wallet:
-    ${shortWallet(tx.meta?.wallet || tx.wallet)}
-  </div>
-  `
-  : ""
-  }
+        <div class="project-title">
+          ${label}
+        </div>
 
-<div class="project-date">
-${new Date(
-  tx.created_at ||
-  tx.timestamp ||
-  Date.now()
-).toLocaleString()}
-</div>
+        ${
+          (tx.meta?.wallet || tx.wallet)
+          ? `
+          <div style="font-size:11px;color:#666">
+            Wallet:
+            ${shortWallet(
+              tx.meta?.wallet || tx.wallet
+            )}
+          </div>
+          `
+          : ""
+        }
 
-${
-  tx.status
-  ? `
-  <div style="
-    font-size:11px;
-    margin-top:4px;
-    font-weight:600;
-  ">
+        <div class="project-date">
+          ${new Date(
+            tx.created_at ||
+            tx.timestamp ||
+            Date.now()
+          ).toLocaleString()}
+        </div>
 
-    ${
-      tx.status === "pending"
-      ? "🟡 Pending"
+        ${
+          tx.status
+          ? `
+          <div style="
+            font-size:11px;
+            margin-top:4px;
+            font-weight:600;
+          ">
 
-      : tx.status === "approved"
-      ? "🔵 Approved"
+            ${
+              tx.status === "pending"
+              ? "🟡 Pending"
 
-      : tx.status === "paid"
-      ? "🟢 Paid"
+              : tx.status === "approved"
+              ? "🔵 Approved"
 
-      : tx.status === "rejected"
-      ? "🔴 Rejected"
+              : tx.status === "paid"
+              ? "🟢 Paid"
 
-      : "✅ Successful"
-    }
+              : tx.status === "rejected"
+              ? "🔴 Rejected"
 
-  </div>
-  `
-  : ""
-}
+              : "✅ Successful"
+            }
 
-</div>
+          </div>
+          `
+          : ""
+        }
 
-<div class="project-right">
-<div class="project-amount ${color}">
-${sign}${Math.abs(Number(tx.amount)).toFixed(2)} Pi
-</div>
-</div>
-`;
+      </div>
 
-projectHistory.appendChild(div);
+      <div class="project-right">
+
+        <div class="project-amount ${color}">
+          ${sign}${Math.abs(
+            Number(tx.amount)
+          ).toFixed(2)} Pi
+        </div>
+
+      </div>
+    `;
+
+    projectHistory.appendChild(div);
 
   });
 
-  }
+        }
 
 /* ===============================
    WITHDRAW
