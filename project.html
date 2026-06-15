@@ -716,6 +716,45 @@ async function confirmWithdraw(){
 
   const amount = Number(withdrawAmount.value);
 
+  /* ===============================
+   REWARD GUARD
+=============================== */
+
+const data = await getProjectTotals(PROJECT_NAME);
+
+let availableReward = 0;
+
+data.stakes.forEach(s=>{
+
+  if(s.type !== "stake") return;
+
+  const total =
+    Number(s.reward) || 0;
+
+  const withdrawn =
+    Number(s.withdrawnReward) || 0;
+
+  availableReward += Math.max(
+    0,
+    total - withdrawn
+  );
+
+});
+
+if(amount > availableReward){
+
+  alert(
+    "Insufficient reward.\n\n" +
+    "Available Reward: " +
+    availableReward.toFixed(2) +
+    " Pi"
+  );
+
+  __withdrawLock = false;
+
+  return;
+}
+
   // 🔥 VALIDATION
   if(!Number.isFinite(amount)){
     alert("Invalid number");
