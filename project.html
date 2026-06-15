@@ -504,14 +504,18 @@ const user =
 
 let withdraws = [];
 
-if(user?.uid){
+const { data, error } = await supabase
+  .from("withdraw_requests")
+  .select("*")
+  .eq("userid", user.uid)
+  .eq("project", PROJECT_NAME);
 
-  const { data, error } = await supabase
-    .from("withdraw_requests")
-    .select("*")
-    .eq("userid", user.uid)
-    .eq("project", PROJECT_NAME);
+alert("PROJECT = " + PROJECT_NAME);
 
+alert("ERROR = " + JSON.stringify(error));
+
+alert("DATA = " + JSON.stringify(data));
+  
   if(!error && data){
 
     withdraws = data.map(w => ({
