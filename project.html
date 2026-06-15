@@ -539,6 +539,12 @@ const allTx = [
   ...withdraws
 ].sort((a,b)=>{
 
+alert(
+  "Stakes: " + txs.length +
+  "\nWithdraws: " + withdraws.length +
+  "\nTotal: " + allTx.length
+);
+  
   const timeA =
     new Date(
       a.created_at ||
