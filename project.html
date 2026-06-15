@@ -531,7 +531,7 @@ return address.slice(0,6)
   if(user?.uid){
 
     const res = await fetch(
-      `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
+  `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}`,
       {
         headers:{
           "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
@@ -544,7 +544,22 @@ return address.slice(0,6)
 
       const data = await res.json();
 
-      withdraws = data.map(w => ({
+      withdraws = data
+  .filter(w => {
+
+    const a = (w.project || "").trim().toLowerCase();
+    const b = (PROJECT_NAME || "").trim().toLowerCase();
+    const c = (CONFIG.title || "").trim().toLowerCase();
+
+    return (
+      a === b ||
+      a === c ||
+      c.includes(a) ||
+      a.includes(c)
+    );
+
+  })
+  .map(w => ({
         amount: Number(w.amount) || 0,
         type: w.type,
         status: w.status,
@@ -816,17 +831,6 @@ if(request?.error){
   const fee = amount * 0.01;
   const receive = amount - fee;
 
-  // 🔥 RECORD TX
-  recordTx({
-    type:"withdraw",
-    project:PROJECT_NAME,
-    amount: receive,
-    meta:{
-      wallet: wallet,
-      fee: fee
-    }
-  });
-
   // 🔥 RESET UI
   withdrawAmount.value = "";
   walletAddress.value = "";
@@ -1033,17 +1037,6 @@ if(request?.error){
 
   const fee = amount * 0.01;
   const receive = amount - fee;
-
-  // 🔥 RECORD TX
-  recordTx({
-    type:"capital",
-    project:PROJECT_NAME,
-    amount:receive,
-    meta:{
-      wallet:wallet,
-      fee:fee
-    }
-  });
 
   // 🔥 RESET UI
   capitalWithdrawAmount.value = "";
