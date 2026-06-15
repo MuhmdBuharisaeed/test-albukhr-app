@@ -499,7 +499,50 @@ const txs = stakes
     new Date(a.created_at || 0)
   );
 
-  if(!txs.length){
+const user =
+  JSON.parse(localStorage.getItem("pi_user"));
+
+let withdraws = [];
+
+if(user?.uid){
+
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("userid", user.uid)
+    .eq("project", PROJECT_NAME);
+
+  if(!error && data){
+
+    withdraws = data.map(w => ({
+
+      amount: Number(w.amount) || 0,
+
+      type: w.type,
+
+      status: w.status,
+
+      wallet: w.wallet,
+
+      txid: w.txid,
+
+      created_at: w.created_at
+
+    }));
+
+  }
+
+}
+  
+  const allTx = [
+  ...txs,
+  ...withdraws
+].sort((a,b)=>
+  new Date(b.created_at || 0) -
+  new Date(a.created_at || 0)
+);
+
+if(!allTx.length){
     projectHistory.innerHTML = `
       <div style="text-align:center;padding:20px;color:#777">
         ${CONFIG.icon}
@@ -510,7 +553,7 @@ const txs = stakes
     return;
   }
 
-  txs.forEach(tx=>{
+  allTx.forEach(tx=>{
 
     const txType =
   (tx.type || "stake").toLowerCase();
@@ -562,6 +605,36 @@ ${new Date(
   Date.now()
 ).toLocaleString()}
 </div>
+
+${
+  tx.status
+  ? `
+  <div style="
+    font-size:11px;
+    margin-top:4px;
+    font-weight:600;
+  ">
+
+    ${
+      tx.status === "pending"
+      ? "🟡 Pending"
+
+      : tx.status === "approved"
+      ? "🔵 Approved"
+
+      : tx.status === "paid"
+      ? "🟢 Paid"
+
+      : tx.status === "rejected"
+      ? "🔴 Rejected"
+
+      : "✅ Successful"
+    }
+
+  </div>
+  `
+  : ""
+}
 
 </div>
 
