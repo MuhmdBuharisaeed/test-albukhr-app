@@ -220,6 +220,20 @@ const supabase = window.supabase.createClient(
 
 <script src="js/withdraw.js"></script>
 
+<div id="messageModal" class="modal" style="display:none;">
+  <div class="modal-content">
+
+    <h3 id="messageTitle"></h3>
+
+    <p id="messageText"></p>
+
+    <button onclick="closeMessageModal()">
+      OK
+    </button>
+
+  </div>
+</div>
+  
 <script>
 
 /* ===============================
@@ -743,12 +757,10 @@ data.stakes.forEach(s=>{
 
 if(amount > availableReward){
 
-  alert(
-    "Insufficient reward.\n\n" +
-    "Available Reward: " +
-    availableReward.toFixed(2) +
-    " Pi"
-  );
+  showMessage(
+  "Insufficient Reward",
+  `Available Balance: ${availableReward.toFixed(2)} Pi`
+);
 
   __withdrawLock = false;
 
@@ -1103,6 +1115,23 @@ document.getElementById("stakeStatus")
 .innerText = text;
 
   }
+
+/* ===============================
+   SHOW MESSAGE 
+=============================== */
+function showMessage(title, text){
+
+  document.getElementById("messageTitle").innerText = title;
+
+  document.getElementById("messageText").innerText = text;
+
+  document.getElementById("messageModal").style.display = "flex";
+}
+
+function closeMessageModal(){
+
+  document.getElementById("messageModal").style.display = "none";
+}
 
 /* ===============================
    INIT
