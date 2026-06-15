@@ -534,14 +534,29 @@ if(user?.uid){
 
 }
   
-  const allTx = [
+const allTx = [
   ...txs,
   ...withdraws
-].sort((a,b)=>
-  new Date(b.created_at || 0) -
-  new Date(a.created_at || 0)
-);
+].sort((a,b)=>{
 
+  const timeA =
+    new Date(
+      a.created_at ||
+      a.timestamp ||
+      0
+    ).getTime();
+
+  const timeB =
+    new Date(
+      b.created_at ||
+      b.timestamp ||
+      0
+    ).getTime();
+
+  return timeB - timeA;
+
+});
+  
 if(!allTx.length){
     projectHistory.innerHTML = `
       <div style="text-align:center;padding:20px;color:#777">
@@ -592,11 +607,16 @@ div.innerHTML = `
 
 <div class="project-title">${label}</div>
 
-${tx.meta?.wallet ? `
-<div style="font-size:11px;color:#666">
-Wallet: ${shortWallet(tx.meta.wallet)}
-</div>
-` : ""}
+${
+  (tx.meta?.wallet || tx.wallet)
+  ? `
+  <div style="font-size:11px;color:#666">
+    Wallet:
+    ${shortWallet(tx.meta?.wallet || tx.wallet)}
+  </div>
+  `
+  : ""
+  }
 
 <div class="project-date">
 ${new Date(
