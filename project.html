@@ -499,6 +499,41 @@ const txs = stakes
     new Date(a.created_at || 0)
   );
 
+const user = JSON.parse(
+  localStorage.getItem("pi_user")
+);
+
+let withdraws = [];
+
+if(user?.uid){
+
+  const res = await fetch(
+    `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
+    {
+      headers:{
+        "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
+        "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+      }
+    }
+  );
+
+  if(res.ok){
+
+    const data = await res.json();
+
+    withdraws = data.map(w => ({
+      amount: Number(w.amount) || 0,
+      type: w.type,
+      status: w.status,
+      wallet: w.wallet,
+      txid: w.txid,
+      created_at: w.created_at
+    }));
+
+  }
+
+}
+  
 const user =
   JSON.parse(localStorage.getItem("pi_user"));
 
@@ -563,7 +598,40 @@ alert(
 
 });
   
-if(!allTx.length){
+const user = JSON.parse(
+  localStorage.getItem("pi_user")
+);
+
+let withdraws = [];
+
+if(user?.uid){
+
+  const res = await fetch(
+    `https://qexmnghilahsvethlxem.supabase.co/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${PROJECT_NAME}`,
+    {
+      headers:{
+        "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
+        "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+      }
+    }
+  );
+
+  if(res.ok){
+
+    const data = await res.json();
+
+    withdraws = data.map(w => ({
+      amount: Number(w.amount) || 0,
+      type: w.type,
+      status: w.status,
+      wallet: w.wallet,
+      txid: w.txid,
+      created_at: w.created_at
+    }));
+
+  }
+
+}
     projectHistory.innerHTML = `
       <div style="text-align:center;padding:20px;color:#777">
         ${CONFIG.icon}
