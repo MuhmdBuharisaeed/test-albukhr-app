@@ -347,27 +347,27 @@ if(s.type === "stake"){
 
   });
 
-/* ===============================
-   PAID CAPITAL WITHDRAWALS
-=============================== */
-
 const user = JSON.parse(
   localStorage.getItem("pi_user")
 );
 
 if(user?.uid){
 
-  const { data, error } = await supabase
-    .from("withdraw_requests")
-    .select("*")
-    .eq("userid", user.uid)
-    .eq("project", project)
-    .eq("type", "capital")
-    .eq("status", "paid");
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${project}&type=eq.capital&status=eq.paid`,
+    {
+      headers:{
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
 
-  if(!error && data){
+  if(res.ok){
 
-    data.forEach(w=>{
+    const withdrawals = await res.json();
+
+    withdrawals.forEach(w=>{
 
       stake -= Math.abs(
         Number(w.amount) || 0
