@@ -3,7 +3,7 @@
    SINGLE SOURCE OF TRUTH
 ====================================== */
 
-async function getAllTransactionsUnified(){
+function getAllTransactionsUnified(){
 
   let txs = [];
 
@@ -40,92 +40,22 @@ async function getAllTransactionsUnified(){
   });
 
   /* ========= CORE TX ========= */
-if(typeof getTransactions === "function"){
+  if(typeof getTransactions === "function"){
+    getTransactions().forEach(t=>{
 
-  getTransactions().forEach(t=>{
+      // 🔥 PREVENT DUPLICATE STAKE
+      if(t.type === "stake") return;
 
-    const type =
-      (t.type || "").toLowerCase();
-
-    // Prevent duplicates
-    if(
-      type === "stake" ||
-      type === "withdraw" ||
-      type === "reward" ||
-      type === "capital"
-    ){
-      return;
-    }
-
-    txs.push({
-      source:"core",
-      project:t.project,
-      amount:Number(t.amount) || 0,
-      type:t.type,
-      status:t.status || "Successful",
-      timestamp:t.timestamp || Date.now()
-    });
-
-  });
-
-}
-
-try{
-
-  const user =
-    JSON.parse(localStorage.getItem("pi_user"));
-
-  if(user?.uid){
-
-    const { data, error } =
-      await supabase
-        .from("withdraw_requests")
-        .select("*")
-        .eq("userid", user.uid);
-
-    if(!error && data){
-
-      data.forEach(w=>{
-
-        txs.push({
-
-          source:"withdraw",
-
-          project:w.project,
-
-          amount:Number(w.amount) || 0,
-
-          type:w.type,
-
-          status:w.status,
-
-          wallet:w.wallet,
-
-          txid:w.txid,
-
-          timestamp:
-            new Date(
-              w.created_at
-            ).getTime()
-
-        });
-
+      txs.push({
+        source:"core",
+        project:t.project,
+        amount:Number(t.amount) || 0,
+        type:t.type,
+        status:t.status || "Successful",
+        timestamp:t.timestamp || Date.now()
       });
-
-    }
-
+    });
   }
 
-}catch(e){
-
-  console.error("Withdraw requests error:", e);
-
-}
-
-/* ========= RETURN ========= */
-return txs.sort((a,b)=>
-  (b.timestamp || 0) -
-  (a.timestamp || 0)
-);
-
+  return txs.sort((a,b)=>b.timestamp - a.timestamp);
 }
