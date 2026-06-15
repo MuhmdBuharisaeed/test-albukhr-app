@@ -10,6 +10,10 @@
 <link rel="stylesheet" href="css/global-layout.css">
 <link rel="stylesheet" href="css/global-components.css">
 <link rel="stylesheet" href="css/global-style.css">
+
+<!-- Custom App Alert -->
+<link rel="stylesheet" href="css/app-alert.css">
+  
 </head>
 
 <body>
@@ -219,7 +223,9 @@ const supabase = window.supabase.createClient(
 </script>
 
 <script src="js/withdraw.js"></script>
-
+<!-- Custom App Alert -->
+<script src="js/app-alert.js"></script>
+  
 <div id="messageModal" class="modal" style="display:none;">
   <div class="modal-content">
 
@@ -331,16 +337,24 @@ async function confirmStake(){
   const min = getMinStake(PROJECT_NAME);
 
   if(!amount || amount < min){
-    alert("Minimum stake is " + min + " Pi");
-    return;
-  }
+    showAlert(
+  "Minimum Stake Required",
+  "The minimum stake for this project is " +
+  min +
+  " Pi."
+);
+
+return;
 
   const user = await ensurePiAuth();
 
 if(!user?.uid){
-  alert("Pi login failed");
-  return;
-}
+  showAlert(
+  "Login Failed",
+  "Unable to verify your Pi account. Please log in again using Pi Browser."
+);
+
+return;
 
   const btn =
     document.querySelector("#stakeModal .primary");
@@ -823,10 +837,16 @@ if(request?.error){
   );
 
   if(!res?.success){
-    alert(res?.error || "Withdraw failed");
-    __withdrawLock = false;
-    return;
-  }
+
+  showAlert(
+    "Withdrawal Failed",
+    res?.error || "Your withdrawal request could not be processed. Please try again."
+  );
+
+  __withdrawLock = false;
+
+  return;
+    }
 
   const fee = amount * 0.01;
   const receive = amount - fee;
@@ -999,15 +1019,27 @@ async function confirmCapitalWithdraw(){
 
   // 🔥 VALIDATION
   if(!Number.isFinite(amount) || amount <= 0){
-    alert("Invalid amount");
-    __capitalLock = false;
-    return;
+
+  showAlert(
+    "Invalid Amount",
+    "Please enter a valid capital withdrawal amount greater than zero."
+  );
+
+  __capitalLock = false;
+
+  return;
   }
 
   if(!wallet){
-    alert("Enter wallet address");
-    __capitalLock = false;
-    return;
+
+  showAlert(
+    "Wallet Address Required",
+    "Please enter your Pi wallet address to continue with the capital withdrawal."
+  );
+
+  __capitalLock = false;
+
+  return;
   }
   
   const request = await createWithdrawRequest({
@@ -1018,8 +1050,16 @@ async function confirmCapitalWithdraw(){
 });
   
 if(request?.error){
-  alert(request.error);
+
+  showAlert(
+    "Withdrawal Request Failed",
+    typeof request.error === "string"
+      ? request.error
+      : "Unable to submit your capital withdrawal request. Please try again."
+  );
+
   __capitalLock = false;
+
   return;
 }
 
@@ -1030,9 +1070,17 @@ if(request?.error){
   });
 
   if(res?.error){
-    alert(res.error);
-    __capitalLock = false;
-    return;
+
+  showAlert(
+    "Capital Withdrawal Failed",
+    typeof res.error === "string"
+      ? res.error
+      : "Unable to process your capital withdrawal. Please try again later."
+  );
+
+  __capitalLock = false;
+
+  return;
   }
 
   const fee = amount * 0.01;
@@ -1108,23 +1156,6 @@ document.getElementById("stakeStatus")
 .innerText = text;
 
   }
-
-/* ===============================
-   SHOW MESSAGE 
-=============================== */
-function showMessage(title, text){
-
-  document.getElementById("messageTitle").innerText = title;
-
-  document.getElementById("messageText").innerText = text;
-
-  document.getElementById("messageModal").style.display = "flex";
-}
-
-function closeMessageModal(){
-
-  document.getElementById("messageModal").style.display = "none";
-}
 
 /* ===============================
    INIT
