@@ -752,7 +752,7 @@ return address.slice(0,6)
 
   });
 
-        }
+  }
 
 /* ===============================
    WITHDRAW
@@ -766,6 +766,8 @@ async function confirmWithdraw(){
   __withdrawLock = true;
 
   const amount = Number(withdrawAmount.value);
+
+  const wallet = walletAddress.value.trim();
 
   /* ===============================
    REWARD GUARD
@@ -792,37 +794,67 @@ data.stakes.forEach(s=>{
 
 });
 
-if(amount > availableReward){
+/* ===============================
+   VALIDATION
+=============================== */
+
+if(!Number.isFinite(amount) || amount <= 0){
 
   showAlert(
-  "Insufficient Reward",
-  `Available Balance: ${availableReward.toFixed(2)} Pi`
-);
+    "Invalid Amount",
+    "Please enter a valid withdrawal amount."
+  );
 
   __withdrawLock = false;
-
   return;
 }
 
-  // 🔥 VALIDATION
-  if(!Number.isFinite(amount)){
-    alert("Invalid number");
-    __withdrawLock = false;
-    return;
-  }
+if(!wallet){
 
+  showAlert(
+    "Wallet Address Required",
+    "Please enter your Pi wallet address."
+  );
+
+  __withdrawLock = false;
+  return;
+}
+
+/* ===============================
+   REWARD GUARD
+=============================== */
+
+if(amount > availableReward){
+
+  showAlert(
+    "Insufficient Reward",
+    `Available Balance: ${availableReward.toFixed(2)} Pi`
+  );
+
+  __withdrawLock = false;
+  return;
+}
+  
   if(amount <= 0){
-    alert("Invalid amount");
-    __withdrawLock = false;
-    return;
-  }
 
-  const wallet = walletAddress.value;
+  showAlert(
+    "Invalid Amount",
+    "Please enter an amount greater than zero."
+  );
+
+  __withdrawLock = false;
+  return;
+  }
 
   if(!wallet){
-    alert("Enter wallet address");
-    __withdrawLock = false;
-    return;
+
+  showAlert(
+    "Wallet Address Required",
+    "Please enter your Pi wallet address."
+  );
+
+  __withdrawLock = false;
+  return;
   }
   
   const request = await createWithdrawRequest({
@@ -833,7 +865,14 @@ if(amount > availableReward){
 });
   
 if(request?.error){
-  alert("Failed to create withdraw request");
+
+  showAlert(
+    "Withdrawal Request Failed",
+    typeof request.error === "string"
+      ? request.error
+      : "Unable to submit your withdrawal request. Please try again."
+  );
+
   __withdrawLock = false;
   return;
 }
