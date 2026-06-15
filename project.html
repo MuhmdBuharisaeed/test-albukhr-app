@@ -504,17 +504,13 @@ const user =
 
 let withdraws = [];
 
-const { data, error } = await supabase
-  .from("withdraw_requests")
-  .select("*")
-  .eq("userid", user.uid)
-  .eq("project", PROJECT_NAME);
+if(user?.uid){
 
-alert("PROJECT = " + PROJECT_NAME);
-
-alert("ERROR = " + JSON.stringify(error));
-
-alert("DATA = " + JSON.stringify(data));
+  const { data, error } = await supabase
+    .from("withdraw_requests")
+    .select("*")
+    .eq("userid", user.uid)
+    .eq("project", PROJECT_NAME);
   
   if(!error && data){
 
