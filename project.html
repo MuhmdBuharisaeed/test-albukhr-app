@@ -64,6 +64,17 @@ Stake
 </button>
 </div>
 
+<div class="refresh-wrapper">
+  <button
+    id="refreshBtn"
+    class="refresh-btn"
+    onclick="manualRefresh()">
+
+    🔄 Refresh
+
+  </button>
+</div>
+
 <div class="scroll-area">
 
   <div class="scroll-area">
@@ -515,6 +526,42 @@ reward += Math.max(0, remaining);
 });
 
 /* ===============================
+MANUAL REFRESH
+=============================== */
+async function manualRefresh(){
+
+  const btn =
+    document.getElementById("refreshBtn");
+
+  btn.disabled = true;
+  btn.innerText = "Refreshing...";
+
+  try{
+
+    await load();
+
+    await renderHistory();
+
+    await updateStakeStatus();
+
+    await updateCapitalAvailable();
+
+  }catch(e){
+
+    console.error(e);
+
+    showAlert(
+      "Refresh Failed",
+      "Unable to refresh data."
+    );
+
+  }
+
+  btn.innerText = "🔄 Refresh";
+  btn.disabled = false;
+}
+
+/* ===============================
 UPDATE UI
 =============================== */
 
@@ -530,10 +577,6 @@ await renderHistory();
 updateStakeStatus();
 
   }
-  
-setTimeout(()=>{
-  load();
-}, 2000);
   
 /* ===============================
 SHORT WALLET
