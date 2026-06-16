@@ -294,3 +294,27 @@ opacity:.98;
   font-weight:600;
   box-shadow:0 1px 4px rgba(0,0,0,.12);
 }
+
+.tx-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:12px;
+    margin-bottom:12px;
+}
+
+.tx-header h3{
+    margin:0;
+    font-size:15px;
+}
+
+.refresh-btn{
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:600;
+    color:#0b7a35;
+    background:#fff;
+    border:none;
+    border-radius:10px;
+    box-shadow:0 1px 4px rgba(0,0,0,.12);
+}
