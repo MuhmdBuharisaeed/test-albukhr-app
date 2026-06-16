@@ -347,15 +347,57 @@ async function payRequest(id){
         headers:{
           "Content-Type":"application/json"
         },
-        body:JSON.stringify({
-          requestId:id
+        body: JSON.stringify({
+          requestId: id
         })
       }
     );
 
     const result = await response.json();
 
-    alert(JSON.stringify(result));
+    if(!result.success){
+      alert(result.error || "Payment failed");
+      return;
+    }
+
+    /* Get request details */
+    const { data:req, error } = await supabaseClient
+      .from("withdraw_requests")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if(error || !req){
+      alert("Unable to load request details");
+      return;
+    }
+
+    /* Deduct reward only for reward withdrawals */
+    if(req.type === "reward"){
+
+      const deduct =
+        await markRewardAsPaid(
+          req.userid,
+          req.project,
+          req.amount
+        );
+
+      if(deduct?.error){
+
+        alert(
+          "Payment sent, but reward update failed:\n" +
+          deduct.error
+        );
+
+        return;
+      }
+    }
+
+    alert("Payment completed ✅");
+
+    renderPendingRequests();
+    renderApprovedRequests();
+    renderPaidRequests();
 
   }catch(error){
 
