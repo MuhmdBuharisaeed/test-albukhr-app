@@ -412,11 +412,11 @@ async function getUserStakes(){
 /* ======================================
    WITHDRAW PROJECT REWARD
 ====================================== */
-await withdrawProjectReward(
-  req.project,
-  req.amount,
-  req.userid
-);
+async function withdrawProjectReward(
+  project,
+  amount,
+  userId = null
+){
 
   let uid;
 
