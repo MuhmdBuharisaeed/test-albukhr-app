@@ -286,20 +286,13 @@ opacity:.98;
   font-weight:600;
 }
 
-.refresh-wrapper{
-  position: fixed;
-  right: 15px;
-  bottom: 90px; /* sama da keyboard/navbar */
-  z-index: 9999;
-}
+<div class="refresh-wrapper">
+  <button
+    id="refreshBtn"
+    class="refresh-btn"
+    onclick="manualRefresh()">
 
-.refresh-btn{
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: #0b7a35;
-  color: white;
-  font-size: 22px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.25);
-  }
+    🔄 Refresh
+
+  </button>
+</div>
