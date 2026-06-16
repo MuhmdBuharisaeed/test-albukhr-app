@@ -859,18 +859,16 @@ if(amount > availableReward){
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
-  amount: amount,
-  wallet: wallet,
+  amount,
+  wallet,
   type: "reward"
 });
-  
+
 if(request?.error){
 
   showAlert(
     "Withdrawal Request Failed",
-    typeof request.error === "string"
-      ? request.error
-      : "Unable to submit your withdrawal request. Please try again."
+    "Unable to submit your withdrawal request."
   );
 
   __withdrawLock = false;
@@ -878,13 +876,7 @@ if(request?.error){
 }
 
   // 🔥 CALL ENGINE
-  const res = await withdrawProjectReward(
-    PROJECT_NAME,
-    amount
-  );
-
-  if(!res?.success){
-
+  
   showAlert(
     "Withdrawal Failed",
     res?.error || "Your withdrawal request could not be processed. Please try again."
