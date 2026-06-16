@@ -412,34 +412,13 @@ async function getUserStakes(){
 /* ======================================
    WITHDRAW PROJECT REWARD
 ====================================== */
-async function withdrawProjectReward(
-  project,
-  amount,
-  userId = null
-){
-
-  let uid;
-
-/* USER MODE */
-if(!userId){
+async function withdrawProjectReward(project, amount){
 
   const user = await ensurePiAuth();
 
-  if(!user?.uid){
-    return { error:"Login required" };
-  }
-
-  uid = user.uid;
-
-}else{
-
-  /* ADMIN MODE */
-  uid = userId;
-
-}
-
-if(!uid){
-  return { error:"User not found" };
+if(!user?.uid){
+  __stakingLock = false;
+  return {error:"Login required"};
 }
 
   let remainingToTake = Number(amount);
@@ -449,7 +428,7 @@ if(!uid){
   }
 
   const res = await fetch(
-`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${uid}&project=eq.${project}`,
+  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
