@@ -412,11 +412,11 @@ async function getUserStakes(){
 /* ======================================
    WITHDRAW PROJECT REWARD
 ====================================== */
-async function withdrawProjectReward(
-  project,
-  amount,
-  userId = null
-){
+async function await withdrawProjectReward(
+  req.project,
+  req.amount,
+  req.userid
+);
 
   let uid;
 
@@ -449,7 +449,7 @@ if(!uid){
   }
 
   const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${uid}`,
+`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${uid}&project=eq.${project}`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
