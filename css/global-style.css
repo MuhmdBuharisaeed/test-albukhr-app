@@ -285,3 +285,22 @@ opacity:.98;
   color:#fff;
   font-weight:600;
 }
+
+.refresh-wrapper{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+.refresh-btn{
+  padding:10px 16px;
+  border:none;
+  border-radius:12px;
+  background:#fff;
+  color:#0b7a35;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
