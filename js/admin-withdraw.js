@@ -355,39 +355,6 @@ async function payRequest(id){
 
     const result = await response.json();
 
-     if(result.success){
-
-        alert("SUCCESS BLOCK ENTERED");
-console.log("SUCCESS BLOCK ENTERED");
-
-  const { data:req } = await supabaseClient
-    .from("withdraw_requests")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if(req){
-
-    if(req.type === "reward"){
-
-      const deduction = await withdrawProjectReward(
-  req.project,
-  req.amount,
-  req.userid
-);
-
-console.log("DEDUCTION:", deduction);
-alert(JSON.stringify(deduction));
-    }
-
-  }
-
-  await refreshAdminDashboard();
-
-  alert("Payment completed ✅");
-
-     }
-
     alert(JSON.stringify(result));
 
   }catch(error){
@@ -486,4 +453,4 @@ visible.forEach(req => {
 
   });
 
-    }
+     }
