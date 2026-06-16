@@ -367,12 +367,14 @@ async function payRequest(id){
 
     if(req.type === "reward"){
 
-      await withdrawProjectReward(
-        req.userid,
-        req.project,
-        req.amount
-      );
+      const deduction = await withdrawProjectReward(
+  req.project,
+  req.amount,
+  req.userid
+);
 
+console.log("DEDUCTION:", deduction);
+alert(JSON.stringify(deduction));
     }
 
   }
