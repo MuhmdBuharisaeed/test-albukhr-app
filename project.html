@@ -64,24 +64,27 @@ Stake
 </button>
 </div>
 
-<div class="refresh-wrapper">
-  <button
-    id="refreshBtn"
-    class="refresh-btn"
-    onclick="manualRefresh()">
-
-    🔄 Refresh
-
-  </button>
-</div>
-
 <div class="scroll-area">
 
   <div class="scroll-area">
-    <h3 id="txTitle" style="margin-bottom:10px;font-size:15px">
-Transaction History
+    <div class="tx-header">
+
+    <h3 id="txTitle">
+        Transaction History
     </h3>
-    <div id="projectHistory"></div>
+
+    <button
+        id="refreshBtn"
+        class="refresh-btn"
+        onclick="manualRefresh()">
+
+        🔄 Refresh
+
+    </button>
+
+</div>
+
+<div id="projectHistory"></div>
   </div>
 
 </div>
