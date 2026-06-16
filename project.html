@@ -878,22 +878,7 @@ if(request?.error){
 }
 
   // 🔥 CALL ENGINE
-  const res = await withdrawProjectReward(
-    PROJECT_NAME,
-    amount
-  );
-
-  if(!res?.success){
-
-  showAlert(
-    "Withdrawal Failed",
-    res?.error || "Your withdrawal request could not be processed. Please try again."
-  );
-
-  __withdrawLock = false;
-
-  return;
-    }
+  
 
   const fee = amount * 0.01;
   const receive = amount - fee;
