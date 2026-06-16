@@ -357,6 +357,9 @@ async function payRequest(id){
 
      if(result.success){
 
+        alert("SUCCESS BLOCK ENTERED");
+console.log("SUCCESS BLOCK ENTERED");
+
   const { data:req } = await supabaseClient
     .from("withdraw_requests")
     .select("*")
