@@ -70,7 +70,7 @@ Stake
     class="refresh-btn"
     onclick="manualRefresh()">
 
-    🔄 Refresh
+    🔄
 
   </button>
 </div>
@@ -528,19 +528,16 @@ reward += Math.max(0, remaining);
 /* ===============================
 MANUAL REFRESH
 =============================== */
-async function manualRefresh(){
+window.manualRefresh = async function(){
 
-  const btn =
-    document.getElementById("refreshBtn");
+  const btn = document.getElementById("refreshBtn");
 
   btn.disabled = true;
-  btn.innerText = "Refreshing...";
+  btn.innerText = "⏳";
 
   try{
 
     await load();
-
-    await renderHistory();
 
     await updateStakeStatus();
 
@@ -550,14 +547,9 @@ async function manualRefresh(){
 
     console.error(e);
 
-    showAlert(
-      "Refresh Failed",
-      "Unable to refresh data."
-    );
-
   }
 
-  btn.innerText = "🔄 Refresh";
+  btn.innerText = "🔄";
   btn.disabled = false;
 }
 
