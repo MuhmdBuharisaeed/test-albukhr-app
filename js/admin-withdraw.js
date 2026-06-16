@@ -355,6 +355,34 @@ async function payRequest(id){
 
     const result = await response.json();
 
+     if(result.success){
+
+  const { data:req } = await supabaseClient
+    .from("withdraw_requests")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if(req){
+
+    if(req.type === "reward"){
+
+      await withdrawProjectReward(
+        req.userid,
+        req.project,
+        req.amount
+      );
+
+    }
+
+  }
+
+  await refreshAdminDashboard();
+
+  alert("Payment completed ✅");
+
+     }
+
     alert(JSON.stringify(result));
 
   }catch(error){
