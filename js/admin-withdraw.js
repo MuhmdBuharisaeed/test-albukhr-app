@@ -377,10 +377,10 @@ async function payRequest(id){
 
       const deduct =
         await markRewardAsPaid(
-          req.userid,
-          req.project,
-          req.amount
-        );
+  req.userid,
+  req.project,
+  Number(req.amount) + Number(req.fee || 0)
+);
 
       if(deduct?.error){
 
@@ -397,10 +397,10 @@ if(req.type === "capital"){
 
       const deduct =
         await markCapitalAsPaid(
-          req.userid,
-          req.project,
-          req.amount
-        );
+  req.userid,
+  req.project,
+  Number(req.amount) + Number(req.fee || 0)
+);
 
       if(deduct?.error){
 
