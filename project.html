@@ -1071,28 +1071,36 @@ capitalModal.style.display="flex";
 UPDATE CAPITAL AVAILABLE
 =============================== */
 async function updateCapitalAvailable(){
+
 const el =
 document.getElementById("capitalAvailable");
 
 if(!el) return;
 
 const data = await getProjectTotals(PROJECT_NAME);
+
 let total = 0;
 
 const now = Date.now();
 
 data.stakes.forEach(s=>{
 
-if(now >= (s.unlockTime||0)){
-total += Number(s.amount)||0;
-}
+  if(now >= (s.unlockTime || 0)){
+
+    total += Math.max(
+      0,
+      (Number(s.amount) || 0) -
+      (Number(s.withdrawnCapital) || 0)
+    );
+
+  }
 
 });
 
 el.innerText =
 "Available: " + total.toFixed(2) + " Pi";
 
-  }
+}
 
 /* ===============================
 CLOSE CAPITAL MODAL
@@ -1221,13 +1229,18 @@ let unlocked = 0;
 const now = Date.now();
 
 data.forEach(s=>{
-const amount =
-Number(s.amount)||0;
 
-if(now >= (s.unlockTime||0)){
-unlocked += amount;
+const amount =
+Math.max(
+  0,
+  (Number(s.amount) || 0) -
+  (Number(s.withdrawnCapital) || 0)
+);
+
+if(now >= (s.unlockTime || 0)){
+  unlocked += amount;
 }else{
-locked += amount;
+  locked += amount;
 }
 
 });
