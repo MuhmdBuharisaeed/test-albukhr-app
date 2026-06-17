@@ -891,17 +891,11 @@ if(!wallet){
    REWARD GUARD
 =============================== */
 
-const fee = amount * 0.01;
-
-const totalDeduction =
-amount + fee;
-
-if(totalDeduction > availableReward){
+if(amount > availableReward){
 
   showAlert(
     "Insufficient Reward",
-    `Available Reward: ${availableReward.toFixed(2)} Pi
-Required: ${totalDeduction.toFixed(2)} Pi`
+    `Available Balance: ${availableReward.toFixed(2)} Pi`
   );
 
   __withdrawLock = false;
@@ -949,9 +943,7 @@ if(request?.error){
 }
 
   const fee = amount * 0.01;
-
-const totalDeduction =
-amount + fee;
+  const receive = amount - fee;
 
   // 🔥 RESET UI
   withdrawAmount.value = "";
@@ -986,16 +978,17 @@ Number(this.value)||0;
 const fee =
 amount * 0.01;
 
-const totalDeduction =
-amount + fee;
-  
+const receive =
+amount - fee;
+
 document.getElementById("withdrawFee")
 .innerText =
 fee.toFixed(2) + " Pi";
 
 document.getElementById("withdrawReceive")
 .innerText =
-amount.toFixed(2) + " Pi";
+receive.toFixed(2) + " Pi";
+
 });
 
 }
@@ -1292,4 +1285,4 @@ setInterval(updateCapitalAvailable, 5000);
 </script>
 
 </body>
-</html>
+  </html>
