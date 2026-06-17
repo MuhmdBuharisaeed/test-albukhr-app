@@ -16,16 +16,24 @@ window.createWithdrawRequest = async function({
     return { error: "User not logged in" };
   }
 
-  const result = await db
-    .from("withdraw_requests")
-    .insert([{
-      userid: user.uid,
-      project,
-      amount,
-      wallet,
-      type,
-      status: "pending"
-    }]);
+  const fee =
+  Number(amount) * 0.01;
+
+const receive =
+  Number(amount);
+
+const result = await db
+  .from("withdraw_requests")
+  .insert([{
+    userid: user.uid,
+    project,
+    amount,
+    fee,
+    receive,
+    wallet,
+    type,
+    status: "pending"
+  }]);
 
   if(result.error){
     return { error: result.error };
