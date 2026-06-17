@@ -373,7 +373,7 @@ async function payRequest(id){
     }
 
     /* Deduct reward only for reward withdrawals */
-    if(req.type === "reward"){
+     if(req.type === "reward"){
 
       const deduct =
         await markRewardAsPaid(
@@ -391,10 +391,31 @@ async function payRequest(id){
 
         return;
       }
-    }
+}
 
-    alert("Payment completed ✅");
+if(req.type === "capital"){
 
+      const deduct =
+        await markCapitalAsPaid(
+          req.userid,
+          req.project,
+          req.amount
+        );
+
+      if(deduct?.error){
+
+        alert(
+          "Payment sent, but capital update failed:\n" +
+          deduct.error
+        );
+
+        return;
+      }
+}
+
+alert("Payment completed ✅");
+
+     
     renderPendingRequests();
     renderApprovedRequests();
     renderPaidRequests();
@@ -552,4 +573,71 @@ async function markRewardAsPaid(userid, project, amount){
    }
 
    return { success:true };
+}
+
+async function markCapitalAsPaid(
+  userid,
+  project,
+  amount
+){
+
+  let remaining = Number(amount);
+
+  const { data: stakes, error } =
+    await supabaseClient
+      .from("stakes")
+      .select("*")
+      .eq("userid", userid)
+      .eq("project", project);
+
+  if(error){
+    return { error:error.message };
+  }
+
+  for(const stake of stakes){
+
+    const available =
+      (Number(stake.amount) || 0)
+      -
+      (Number(stake.withdrawnCapital) || 0);
+
+    if(available <= 0){
+      continue;
+    }
+
+    const take =
+      Math.min(remaining, available);
+
+    const { error:updateError } =
+      await supabaseClient
+        .from("stakes")
+        .update({
+          withdrawnCapital:
+            (Number(stake.withdrawnCapital) || 0)
+            + take
+        })
+        .eq("id", stake.id);
+
+    if(updateError){
+      return {
+        error:updateError.message
+      };
+    }
+
+    remaining -= take;
+
+    if(remaining <= 0){
+      break;
+    }
+
+  }
+
+  if(remaining > 0){
+    return {
+      error:"Insufficient capital"
+    };
+  }
+
+  return { success:true };
+
 }
