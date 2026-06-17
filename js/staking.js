@@ -560,24 +560,35 @@ if(!user?.uid){
     return {error:"Invalid data"};
   }
 
-  // 🔥 ONLY REAL STAKES
-  stakes = stakes.filter(s => s.type === "stake");
+  // ONLY REAL STAKES
+stakes = stakes.filter(s => s.type === "stake");
 
-  for(const s of stakes){
+const now = Date.now();
 
-    if(remaining <= 0) break;
+for(const s of stakes){
 
-    const available = Number(s.amount) || 0;
+  if(remaining <= 0) break;
 
-    if(available <= 0) continue;
+  // LOCK CHECK
+  const unlockTime = Number(s.unlockTime) || 0;
 
-    const take = Math.min(available, remaining);
-
-    // 🔥 INSERT NEGATIVE (CAPITAL WITHDRAW)
-    
-
-    remaining -= take;
+  if(now < unlockTime){
+    continue;
   }
+
+  // AVAILABLE CAPITAL
+  const available =
+    (Number(s.amount) || 0) -
+    (Number(s.withdrawnCapital) || 0);
+
+  if(available <= 0){
+    continue;
+  }
+
+  const take = Math.min(available, remaining);
+
+  remaining -= take;
+}
 
   if(remaining > 0){
     return {error:"Insufficient capital"};
