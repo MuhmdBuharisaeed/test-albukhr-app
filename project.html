@@ -1017,8 +1017,8 @@ Number(this.value)||0;
 const fee =
 amount * 0.01;
 
-const receive =
-amount - fee;
+const totalDeduction =
+amount + fee;
 
 document.getElementById("capitalWithdrawFee")
 .innerText =
@@ -1026,7 +1026,7 @@ fee.toFixed(2) + " Pi";
 
 document.getElementById("capitalWithdrawReceive")
 .innerText =
-receive.toFixed(2) + " Pi";
+amount.toFixed(2) + " Pi";
 
 });
 
@@ -1156,6 +1156,46 @@ async function confirmCapitalWithdraw(){
 
   return;
   }
+
+  const data =
+await getProjectTotals(PROJECT_NAME);
+
+let availableCapital = 0;
+
+const now = Date.now();
+
+data.stakes.forEach(s=>{
+
+  if(now >= (s.unlockTime || 0)){
+
+    availableCapital += Math.max(
+      0,
+      (Number(s.amount) || 0) -
+      (Number(s.withdrawnCapital) || 0)
+    );
+
+  }
+
+});
+
+const fee =
+amount * 0.01;
+
+const totalDeduction =
+amount + fee;
+
+if(totalDeduction > availableCapital){
+
+  showAlert(
+    "Insufficient Capital",
+    `Available Capital: ${availableCapital.toFixed(2)} Pi
+Required: ${totalDeduction.toFixed(2)} Pi`
+  );
+
+  __capitalLock = false;
+
+  return;
+}
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -1199,7 +1239,9 @@ if(request?.error){
   }
 
   const fee = amount * 0.01;
-  const receive = amount - fee;
+
+const totalDeduction =
+amount + fee;
 
   // 🔥 RESET UI
   capitalWithdrawAmount.value = "";
