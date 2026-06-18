@@ -143,7 +143,7 @@ Fee (1%):
 </div>
 
 <div style="font-size:12px;color:#666">
-Total:
+Total Deduction:
 <strong id="withdrawTotalDeduction">0.00 Pi</strong>
 </div>
 
@@ -176,6 +176,11 @@ Wallet Receive:
 <div style="font-size:12px;color:#666;margin-top:6px">
 Fee (1%): 
 <strong id="capitalWithdrawFee">0.00 Pi</strong>
+</div>
+
+<div style="font-size:12px;color:#666">
+Total Deduction:
+<strong id="capitalTotalDeduction">0.00 Pi</strong>
 </div>
 
 <div style="font-size:12px;color:#666">
@@ -1031,17 +1036,21 @@ if(capitalWithdrawAmount){
 capitalWithdrawAmount.addEventListener("input", function(){
 
 const amount =
-Number(this.value)||0;
+Number(this.value) || 0;
 
 const fee =
 amount * 0.01;
 
-const receive =
-amount;
+const totalDeduction =
+amount + fee;
 
 document.getElementById("capitalWithdrawFee")
 .innerText =
 fee.toFixed(2) + " Pi";
+
+document.getElementById("capitalTotalDeduction")
+.innerText =
+totalDeduction.toFixed(2) + " Pi";
 
 document.getElementById("capitalWithdrawReceive")
 .innerText =
