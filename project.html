@@ -945,6 +945,7 @@ if(request?.error){
     request.error
   );
 
+  __withdrawLock = false;
   return;
 }
 
@@ -991,9 +992,6 @@ withdrawAmount.addEventListener("input", function(){
 
 const amount =
 Number(this.value)||0;
-
-const fee =
-amount * 0.01;
 
 const receive =
 amount - fee;
