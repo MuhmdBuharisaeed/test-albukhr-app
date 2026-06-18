@@ -16,6 +16,21 @@ window.createWithdrawRequest = async function({
     return { error: "User not logged in" };
   }
 
+  const existing = await db
+  .from("withdraw_requests")
+  .select("id,status")
+  .eq("userid", user.uid)
+  .in("status", ["pending","approved"]);
+
+if(existing.data?.length){
+
+  return {
+    error:
+      "You already have a pending or approved withdrawal request."
+  };
+
+}
+
   const fee =
   Number(amount) * 0.01;
 
