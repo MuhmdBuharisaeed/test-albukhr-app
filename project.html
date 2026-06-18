@@ -923,20 +923,6 @@ if(amount > availableReward){
   __withdrawLock = false;
   return;
   }
-
-  const fee = amount * 0.01;
-const totalRequired = amount + fee;
-
-if(totalRequired > availableReward){
-
-  showAlert(
-    "Insufficient Reward",
-    `You need ${totalRequired.toFixed(2)} Pi but only have ${availableReward.toFixed(2)} Pi available.`
-  );
-
-  __withdrawLock = false;
-  return;
-}
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -1173,20 +1159,6 @@ async function confirmCapitalWithdraw(){
 
   return;
   }
-
-  const fee = amount * 0.01;
-const totalRequired = amount + fee;
-
-if(totalRequired > availableCapital){
-
-  showAlert(
-    "Insufficient Capital",
-    `You need ${totalRequired.toFixed(2)} Pi but only have ${availableCapital.toFixed(2)} Pi available.`
-  );
-
-  __capitalLock = false;
-  return;
-}
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -1333,4 +1305,4 @@ setInterval(updateCapitalAvailable, 5000);
 </script>
 
 </body>
-  </html>
+</html>
