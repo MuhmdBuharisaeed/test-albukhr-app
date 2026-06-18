@@ -143,7 +143,7 @@ Fee (1%):
 </div>
 
 <div style="font-size:12px;color:#666">
-You Receive: 
+Wallet Receive: 
 <strong id="withdrawReceive">0.00 Pi</strong>
 </div>
     
@@ -174,7 +174,7 @@ Fee (1%):
 </div>
 
 <div style="font-size:12px;color:#666">
-You Receive: 
+Wallet Receive: 
 <strong id="capitalWithdrawReceive">0.00 Pi</strong>
 </div>
 
@@ -996,7 +996,7 @@ const fee =
 amount * 0.01;
 
 const receive =
-amount - fee;
+amount;
 
 document.getElementById("withdrawFee")
 .innerText =
@@ -1004,7 +1004,7 @@ fee.toFixed(2) + " Pi";
 
 document.getElementById("withdrawReceive")
 .innerText =
-receive.toFixed(2) + " Pi";
+amount.toFixed(2) + " Pi";
 
 });
 
@@ -1028,7 +1028,7 @@ const fee =
 amount * 0.01;
 
 const receive =
-amount - fee;
+amount;
 
 document.getElementById("capitalWithdrawFee")
 .innerText =
@@ -1036,7 +1036,7 @@ fee.toFixed(2) + " Pi";
 
 document.getElementById("capitalWithdrawReceive")
 .innerText =
-receive.toFixed(2) + " Pi";
+amount.toFixed(2) + " Pi";
 
 });
 
