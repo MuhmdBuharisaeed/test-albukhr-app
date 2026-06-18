@@ -1166,6 +1166,48 @@ async function confirmCapitalWithdraw(){
 
   return;
   }
+
+  /* ===============================
+   CAPITAL GUARD
+=============================== */
+
+const data = await getProjectTotals(PROJECT_NAME);
+
+let availableCapital = 0;
+
+const now = Date.now();
+
+data.stakes.forEach(s=>{
+
+  if(now >= (s.unlockTime || 0)){
+
+    availableCapital += Math.max(
+      0,
+      (Number(s.amount) || 0) -
+      (Number(s.withdrawnCapital) || 0)
+    );
+
+  }
+
+});
+
+const fee = amount * 0.01;
+
+const totalRequired =
+amount + fee;
+
+if(totalRequired > availableCapital){
+
+  showAlert(
+    "Insufficient Capital",
+    `Available Capital: ${availableCapital.toFixed(2)} Pi
+
+Required (including fee): ${totalRequired.toFixed(2)} Pi`
+  );
+
+  __capitalLock = false;
+  return;
+}
   
   const request = await createWithdrawRequest({
   project: PROJECT_NAME,
@@ -1181,6 +1223,7 @@ if(request?.error){
     request.error
   );
 
+  __capitalLock = false;
   return;
 }
 
@@ -1218,7 +1261,6 @@ if(request?.error){
   return;
   }
 
-  const fee = amount * 0.01;
   const receive = amount - fee;
 
   // 🔥 RESET UI
