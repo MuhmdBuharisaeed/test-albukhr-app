@@ -891,11 +891,18 @@ if(!wallet){
    REWARD GUARD
 =============================== */
 
-if(amount > availableReward){
+const fee = amount * 0.01;
+
+const totalRequired =
+amount + fee;
+
+if(totalRequired > availableReward){
 
   showAlert(
     "Insufficient Reward",
-    `Available Balance: ${availableReward.toFixed(2)} Pi`
+    `Available Reward: ${availableReward.toFixed(2)} Pi
+
+Required (including fee): ${totalRequired.toFixed(2)} Pi`
   );
 
   __withdrawLock = false;
