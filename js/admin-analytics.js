@@ -13,6 +13,21 @@ async function loadAnalytics(){
   let received = 0;
   let sent = 0;
 
+let totalFees = 0;
+
+const { data: fees } =
+  await supabaseClient
+    .from("transactions")
+    .select("fee")
+    .eq("status","paid");
+
+(fees || []).forEach(tx=>{
+
+  totalFees +=
+    Number(tx.fee || 0);
+
+});
+
   payments.forEach(tx => {
 
     const amount =
@@ -37,11 +52,12 @@ async function loadAnalytics(){
     received - sent;
 
   renderAnalytics({
-    received,
-    sent,
-    totalTransactions,
-    netFlow
-  });
+  received,
+  sent,
+  totalTransactions,
+  netFlow,
+  totalFees
+});
 
 }
 
@@ -70,6 +86,11 @@ function renderAnalytics(data){
       "netFlow"
     );
 
+ const feeBox =
+  document.getElementById(
+    "totalFees"
+  );
+   
   if(receivedBox){
     receivedBox.innerText =
       data.received.toFixed(2) + " Pi";
@@ -90,6 +111,14 @@ function renderAnalytics(data){
     flowBox.innerText =
       data.netFlow.toFixed(2) + " Pi";
 
+  if(feeBox){
+
+  feeBox.innerText =
+    (data.totalFees || 0)
+      .toFixed(2) + " Pi";
+
+  }   
+     
     flowBox.style.color =
       data.netFlow >= 0
       ? "green"
