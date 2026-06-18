@@ -934,6 +934,16 @@ if(amount > availableReward){
 if(request?.error){
 
   showAlert(
+    "Withdrawal Blocked",
+    request.error
+  );
+
+  return;
+}
+
+if(request?.error){
+
+  showAlert(
     "Withdrawal Request Failed",
     "Unable to submit your withdrawal request."
   );
@@ -1156,7 +1166,17 @@ async function confirmCapitalWithdraw(){
   wallet,
   type: "capital"
 });
-  
+
+if(request?.error){
+
+  showAlert(
+    "Withdrawal Blocked",
+    request.error
+  );
+
+  return;
+}
+
 if(request?.error){
 
   showAlert(
