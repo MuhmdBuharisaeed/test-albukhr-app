@@ -891,18 +891,11 @@ if(!wallet){
    REWARD GUARD
 =============================== */
 
-const fee = amount * 0.01;
-
-const totalRequired =
-amount + fee;
-
-if(totalRequired > availableReward){
+if(amount > availableReward){
 
   showAlert(
     "Insufficient Reward",
-    `Available Reward: ${availableReward.toFixed(2)} Pi
-
-Required (including fee): ${totalRequired.toFixed(2)} Pi`
+    `Available Balance: ${availableReward.toFixed(2)} Pi`
   );
 
   __withdrawLock = false;
@@ -945,7 +938,6 @@ if(request?.error){
     request.error
   );
 
-  __withdrawLock = false;
   return;
 }
 
@@ -992,6 +984,9 @@ withdrawAmount.addEventListener("input", function(){
 
 const amount =
 Number(this.value)||0;
+
+const fee =
+amount * 0.01;
 
 const receive =
 amount - fee;
@@ -1310,4 +1305,4 @@ setInterval(updateCapitalAvailable, 5000);
 </script>
 
 </body>
-</html>
+  </html>
