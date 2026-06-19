@@ -206,12 +206,33 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
   if(pending){
 
-    const btn = document.getElementById("submitBtn");
-    if(btn){
-      btn.disabled = true;
-      btn.innerText = "Pending Review";
-      btn.style.opacity = "0.6";
-    }
+  const btn =
+  document.getElementById("submitBtn");
+
+  if(btn){
+
+    btn.disabled = true;
+
+    btn.innerText =
+    "Pending Review";
+
+    btn.style.opacity = "0.6";
+
+  }
+
+  const viewBox =
+  document.getElementById(
+    "viewRequestBox"
+  );
+
+  if(viewBox){
+
+    viewBox.style.display =
+    "block";
+
+  }
+
+  }
 
     showAlert(
   "Pending Request",
