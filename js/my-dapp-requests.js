@@ -84,6 +84,53 @@ async function loadMyRequests(){
       `;
     }
 
+    data.forEach(r=>{
+
+  let telegram = "";
+  let adminNote = "";
+
+  if(r.status === "approved" && r.telegram_unlocked){
+
+    telegram = `
+      <a class="btn"
+        href="https://t.me/+7A6IMz9PutMzZjVk"
+        target="_blank">
+        🔓 Join Private Telegram Group
+      </a>
+    `;
+  }
+
+  if(r.admin_note){
+
+    adminNote = `
+      <div class="notice">
+        <strong>📝 Admin Note:</strong><br>
+        ${r.admin_note}
+      </div>
+    `;
+  }
+
+  // 👇 SAKA SHI NAN
+  let statusText = "";
+  let statusClass = "";
+
+  if(r.status === "pending"){
+    statusText = "🟡 Under Review";
+    statusClass = "pending";
+  }
+
+  if(r.status === "approved"){
+    statusText = "🟢 Approved";
+    statusClass = "approved";
+  }
+
+  if(r.status === "rejected"){
+    statusText = "🔴 Rejected";
+    statusClass = "rejected";
+  }
+
+  box.innerHTML += `
+
     box.innerHTML += `
       <div class="card">
 
@@ -94,9 +141,9 @@ async function loadMyRequests(){
           👤 ${r.pi_user}
         </div>
 
-        <div class="status ${r.status}">
-          Status: ${r.status.toUpperCase()}
-        </div>
+          <div class="status ${statusClass}">
+  ${statusText}
+</div>
 
         <div class="desc">
           <strong>Description:</strong><br>
