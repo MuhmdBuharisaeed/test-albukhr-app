@@ -179,10 +179,10 @@ const { error } =
 await window.supabaseClient
 .from("dapp_requests")
 .update({
-status:"approved",
-admin_note:note,
-reviewed_at:
-new Date().toISOString()
+  status:"approved",
+  telegram_unlocked:true,
+  admin_note:note,
+  reviewed_at:new Date().toISOString()
 })
 .eq("id", id);
 
@@ -210,10 +210,10 @@ const { error } =
 await window.supabaseClient
 .from("dapp_requests")
 .update({
-status:"rejected",
-admin_note:note,
-reviewed_at:
-new Date().toISOString()
+  status:"rejected",
+  telegram_unlocked:false,
+  admin_note:note,
+  reviewed_at:new Date().toISOString()
 })
 .eq("id", id);
 
