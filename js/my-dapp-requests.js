@@ -60,32 +60,6 @@ async function loadMyRequests(){
 
   data.forEach(r=>{
 
-    let telegram = "";
-    let adminNote = "";
-
-    if(r.status === "approved" && r.telegram_unlocked){
-
-      telegram = `
-        <a class="btn"
-          href="https://t.me/+7A6IMz9PutMzZjVk"
-          target="_blank">
-          🔓 Join Private Telegram Group
-        </a>
-      `;
-    }
-
-    if(r.admin_note){
-
-      adminNote = `
-        <div class="notice">
-          <strong>📝 Admin Note:</strong><br>
-          ${r.admin_note}
-        </div>
-      `;
-    }
-
-    data.forEach(r=>{
-
   let telegram = "";
   let adminNote = "";
 
@@ -93,9 +67,9 @@ async function loadMyRequests(){
 
     telegram = `
       <a class="btn"
-        href="https://t.me/+7A6IMz9PutMzZjVk"
-        target="_blank">
-        🔓 Join Private Telegram Group
+      href="https://t.me/+7A6IMz9PutMzZjVk"
+      target="_blank">
+      🔓 Join Private Telegram Group
       </a>
     `;
   }
@@ -110,7 +84,6 @@ async function loadMyRequests(){
     `;
   }
 
-  // 👇 SAKA SHI NAN
   let statusText = "";
   let statusClass = "";
 
@@ -130,50 +103,48 @@ async function loadMyRequests(){
   }
 
   box.innerHTML += `
+    <div class="card">
 
-    box.innerHTML += `
-      <div class="card">
+      <strong>${r.project_name}</strong>
 
-        <strong>${r.project_name}</strong>
-
-        <div class="meta">
-          🛠 ${r.service_type}<br>
-          👤 ${r.pi_user}
-        </div>
-
-          <div class="status ${statusClass}">
-  ${statusText}
-</div>
-
-        <div class="desc">
-          <strong>Description:</strong><br>
-          ${r.description || "—"}
-        </div>
-
-        <div class="receipt">
-          <strong>Payment Receipt:</strong><br>
-
-          ${
-            r.receipt_image
-            ? `<img src="${r.receipt_image}" alt="Receipt">`
-            : `<em>No receipt image</em>`
-          }
-
-          ${
-            r.receipt_ref
-            ? `<div style="font-size:12px;color:#666">
-                Ref: ${r.receipt_ref}
-              </div>`
-            : ""
-          }
-        </div>
-
-        ${adminNote}
-        ${telegram}
-
+      <div class="meta">
+        🛠 ${r.service_type}<br>
+        👤 ${r.pi_user}
       </div>
-    `;
-  });
+
+      <div class="status ${statusClass}">
+        ${statusText}
+      </div>
+
+      <div class="desc">
+        <strong>Description:</strong><br>
+        ${r.description || "—"}
+      </div>
+
+      <div class="receipt">
+        <strong>Payment Receipt:</strong><br>
+
+        ${
+          r.receipt_image
+          ? `<img src="${r.receipt_image}" alt="Receipt">`
+          : `<em>No receipt image</em>`
+        }
+
+        ${
+          r.receipt_ref
+          ? `<div style="font-size:12px;color:#666">
+              Ref: ${r.receipt_ref}
+            </div>`
+          : ""
+        }
+      </div>
+
+      ${adminNote}
+      ${telegram}
+
+    </div>
+  `;
+});
 
 }
 
