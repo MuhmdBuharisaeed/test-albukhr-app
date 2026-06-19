@@ -181,11 +181,13 @@ setTimeout(()=>{
 },1500);
 
     }catch(e){
-      console.error(e);
-      showAlert(
-  "Pending Request",
-  "You already have a pending request under review."
-);
+
+  console.error(e);
+
+  showAlert(
+    "Network Error",
+    "Unable to connect to the server. Please try again."
+  );
     }
   };
 
@@ -212,8 +214,8 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     }
 
     showAlert(
-  "Network Error",
-  "Unable to connect to the server. Please try again."
+  "Pending Request",
+  "You already have a pending request under review."
 );
   }
 });
