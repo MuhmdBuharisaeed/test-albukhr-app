@@ -414,6 +414,9 @@ async function loadHome(){
 
     let stakes = await getAllStakesMerged();
 
+    const globalStakes =
+await getGlobalStakes();
+
 /* ✅ FALLBACK FOR NEW USERS */
 if(!Array.isArray(stakes) || stakes.length === 0){
 
@@ -439,6 +442,7 @@ if(!Array.isArray(stakes) || stakes.length === 0){
     // ===== MAPS =====
     const userMap = {};
     const globalMap = {};
+    const popularMap = {};
     const countMap = {};
 
     let totalStake = 0;
@@ -510,6 +514,32 @@ stakes.forEach(s=>{
 
 });
 
+/* =========================
+   GLOBAL POPULAR PROJECTS
+========================= */
+
+globalStakes.forEach(s=>{
+
+  if(!s) return;
+
+  if(s.type !== "stake") return;
+
+  if(!s.project) return;
+
+  if(!popularMap[s.project]){
+
+    popularMap[s.project] = {
+      total: 0,
+      investors: 0
+    };
+
+  }
+
+  popularMap[s.project].total +=
+    Number(s.amount) || 0;
+
+});
+
     // ===== ASSIGN COUNTS =====
     Object.keys(globalMap).forEach(project=>{
 
@@ -541,7 +571,7 @@ stakes.forEach(s=>{
 
     // ===== RENDER =====
     if(typeof renderPopular === "function"){
-      renderPopular(globalMap);
+      renderPopular(popularMap);
     }
 
     if(typeof renderAssets === "function"){
