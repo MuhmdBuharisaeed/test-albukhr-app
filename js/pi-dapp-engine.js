@@ -200,43 +200,46 @@ setTimeout(()=>{
 window.addEventListener("DOMContentLoaded", async ()=>{
 
   const user = await getCurrentUser();
+
   if(!user?.uid) return;
 
-  const pending = await userHasPending(user.uid);
+  const pending =
+  await userHasPending(user.uid);
 
   if(pending){
 
-  const btn =
-  document.getElementById("submitBtn");
+    const btn =
+    document.getElementById("submitBtn");
 
-  if(btn){
+    if(btn){
 
-    btn.disabled = true;
+      btn.disabled = true;
 
-    btn.innerText =
-    "Pending Review";
+      btn.innerText =
+      "Pending Review";
 
-    btn.style.opacity = "0.6";
+      btn.style.opacity =
+      "0.6";
 
-  }
+    }
 
-  const viewBox =
-  document.getElementById(
-    "viewRequestBox"
-  );
+    const viewBox =
+    document.getElementById(
+      "viewRequestBox"
+    );
 
-  if(viewBox){
+    if(viewBox){
 
-    viewBox.style.display =
-    "block";
+      viewBox.style.display =
+      "block";
 
-  }
-
-  }
+    }
 
     showAlert(
-  "Pending Request",
-  "You already have a pending request under review."
-);
+      "Pending Request",
+      "You already have a pending request under review."
+    );
+
   }
+
 });
