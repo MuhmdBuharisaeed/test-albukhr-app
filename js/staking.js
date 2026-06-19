@@ -303,6 +303,56 @@ async function getAllStakesMerged(){
   }
 
 }
+
+/* ======================================
+   GLOBAL STAKES
+====================================== */
+async function getGlobalStakes(){
+
+  try{
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/stakes?select=*`,
+      {
+        headers:{
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
+    if(!res.ok){
+
+      const err = await res.text();
+
+      console.error(
+        "GLOBAL STAKES ERROR:",
+        err
+      );
+
+      return [];
+
+    }
+
+    const data = await res.json();
+
+    return Array.isArray(data)
+      ? data
+      : [];
+
+  }catch(e){
+
+    console.error(
+      "GLOBAL NETWORK ERROR:",
+      e
+    );
+
+    return [];
+
+  }
+
+}
+
 /* ======================================
    PROJECT TOTALS
 ====================================== */
