@@ -204,10 +204,18 @@ document.getElementById("serviceType").addEventListener("change", e=>{
 });
 
 function copyText(id){
+
   const el = document.getElementById(id);
+
   el.select();
+
   document.execCommand("copy");
-  alert("Copied successfully");
+
+  showAlert(
+    "Copied",
+    "The information has been copied successfully."
+  );
+
 }
 </script>
 
