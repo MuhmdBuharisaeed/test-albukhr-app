@@ -11,7 +11,7 @@ async function loadMyRequests(){
 
   if(window.Pi && Pi.getUser){
     try{
-      user = Pi.getUser();
+      let user = await ensurePiAuth();
     }catch(e){}
   }
 
