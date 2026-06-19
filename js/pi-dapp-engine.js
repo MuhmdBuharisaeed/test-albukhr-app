@@ -63,7 +63,10 @@ async function submitDappRequest(){
   const user = await getCurrentUser();
 
   if(!user?.uid){
-    alert("Please login with Pi Browser");
+    showAlert(
+  "Login Required",
+  "Please login with Pi Browser."
+);
     return;
   }
 
@@ -76,29 +79,44 @@ async function submitDappRequest(){
   const agree = document.getElementById("agree").checked;
 
   if(!piUser || !projectName || !serviceType || !description || !receiptRef){
-    alert("Please fill all fields");
+    showAlert(
+  "Missing Information",
+  "Please fill all required fields."
+);
     return;
   }
 
   if(!agree){
-    alert("You must agree first");
+    showAlert(
+  "Agreement Required",
+  "You must agree to the terms before submitting."
+);
     return;
   }
 
   if(await userHasPending(user.uid)){
-    alert("You already have a pending request");
+    showAlert(
+  "Pending Request",
+  "You already have a pending request under review."
+);
     return;
   }
 
   if(!fileInput.files.length){
-    alert("Upload receipt image");
+    showAlert(
+  "Receipt Required",
+  "Please upload your payment receipt image."
+);
     return;
   }
 
   const file = fileInput.files[0];
 
   if(file.size > 2 * 1024 * 1024){
-    alert("Image too large (max 2MB)");
+    showAlert(
+  "Image Too Large",
+  "Maximum allowed image size is 2 MB."
+);
     return;
   }
 
@@ -142,18 +160,32 @@ async function submitDappRequest(){
 
   console.error(err);
 
-  alert("Supabase Error:\n" + err);
+  showAlert(
+  "Submission Failed",
+  "Unable to save request. Please try again."
+);
+
+console.error(err);
 
   return;
       }
 
-      alert("✅ Request submitted successfully");
+      showAlert(
+  "Request Submitted",
+  "Your dApp launch request has been submitted successfully."
+);
 
-      window.location.href = "my-dapp-requests.html";
+setTimeout(()=>{
+  window.location.href =
+  "my-dapp-requests.html";
+},1500);
 
     }catch(e){
       console.error(e);
-      alert("Network error");
+      showAlert(
+  "Network Error",
+  "Unable to connect to the server. Please try again."
+);
     }
   };
 
@@ -179,6 +211,9 @@ window.addEventListener("DOMContentLoaded", async ()=>{
       btn.style.opacity = "0.6";
     }
 
-    alert("You already have a pending request");
+    showAlert(
+  "Network Error",
+  "Unable to connect to the server. Please try again."
+);
   }
 });
