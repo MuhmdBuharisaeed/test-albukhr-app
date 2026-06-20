@@ -8,25 +8,32 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/albukhr-ui.css">
 <link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/app-alert.css">
 
 <style>
 .section{padding:16px}
+
 .card{
   background:#fff;
   border-radius:14px;
   padding:14px;
-  margin-bottom:14px
+  margin-bottom:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.05);
 }
+
 .meta{
   font-size:12px;
   color:#555;
-  margin-top:4px
+  margin-top:4px;
+  line-height:1.6;
 }
+
 .status{
   font-size:12px;
   font-weight:700;
-  margin-top:8px
+  margin-top:8px;
 }
+
 .pending{color:#856404}
 .approved{color:#0f7a3d}
 .rejected{color:#b02a37}
@@ -36,8 +43,8 @@
   font-size:12px;
   line-height:1.6;
   background:#f7f9f8;
-  padding:8px;
-  border-radius:8px
+  padding:10px;
+  border-radius:8px;
 }
 
 .notice{
@@ -45,7 +52,8 @@
   background:#f6fbf8;
   border-left:4px solid #0f7a3d;
   padding:10px;
-  margin-top:10px
+  margin-top:10px;
+  line-height:1.6;
 }
 
 .btn{
@@ -56,16 +64,21 @@
   color:#fff;
   border-radius:10px;
   font-size:13px;
-  text-decoration:none
+  text-decoration:none;
+  font-weight:700;
+}
+
+.receipt{
+  margin-top:10px;
 }
 
 .receipt img{
   display:block;
   width:100%;
-  max-width:320px;      /* kar ya cika screen */
-  max-height:220px;     /* iyakar tsawo */
-  object-fit:cover;     /* ya daidaita crop */
-  margin:8px auto 0;    /* center */
+  max-width:320px;
+  max-height:220px;
+  object-fit:cover;
+  margin:8px auto 0;
   border-radius:10px;
   border:1px solid #e5e5e5;
   box-shadow:0 6px 18px rgba(0,0,0,0.06);
@@ -75,15 +88,13 @@
   text-align:center;
   color:#777;
   font-size:13px;
-  padding:30px
+  padding:30px;
 }
 </style>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="js/pi-auth.js"></script>
-  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 </head>
 
 <body>
