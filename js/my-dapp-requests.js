@@ -19,22 +19,29 @@ function escapeHtml(text = ""){
 
 /* =========================
    GET CURRENT PI USER
+   ⚠️ KAR A YI ensurePiAuth NAN
 ========================= */
 async function getCurrentPiUser(){
 
   let user = null;
 
-  /* 1) ensurePiAuth */
+  /* 1) localStorage first */
   try{
-    if(typeof ensurePiAuth === "function"){
-      user = await ensurePiAuth();
+    const localUser = JSON.parse(
+      localStorage.getItem("pi_user")
+    );
+
+    if(localUser?.uid){
+      user = localUser;
+      console.log("USER FROM LOCAL:", user);
+      return user;
     }
   }catch(e){
-    console.warn("ensurePiAuth failed:", e);
+    console.warn("localStorage parse failed:", e);
   }
 
   /* 2) Pi.getUser fallback */
-  if(!user?.uid && window.Pi && Pi.getUser){
+  if(window.Pi && Pi.getUser){
     try{
       const piUser = await Pi.getUser();
 
@@ -43,28 +50,21 @@ async function getCurrentPiUser(){
           uid: piUser.uid,
           username: piUser.username || ""
         };
+
+        localStorage.setItem(
+          "pi_user",
+          JSON.stringify(user)
+        );
+
+        console.log("USER FROM PI.GETUSER:", user);
+        return user;
       }
     }catch(e){
       console.warn("Pi.getUser failed:", e);
     }
   }
 
-  /* 3) localStorage fallback */
-  if(!user?.uid){
-    try{
-      const localUser = JSON.parse(
-        localStorage.getItem("pi_user")
-      );
-
-      if(localUser?.uid){
-        user = localUser;
-      }
-    }catch(e){
-      console.warn("localStorage parse failed:", e);
-    }
-  }
-
-  return user;
+  return null;
 }
 
 /* =========================
@@ -79,6 +79,8 @@ async function loadMyRequests(){
   `;
 
   const user = await getCurrentPiUser();
+
+  console.log("MY DAPP USER:", user);
 
   if(!user?.uid){
 
@@ -96,6 +98,9 @@ async function loadMyRequests(){
     .select("*")
     .eq("userid", user.uid)
     .order("created_at", { ascending:false });
+
+  console.log("MY DAPP DATA:", data);
+  console.log("MY DAPP ERROR:", error);
 
   if(error){
 
@@ -150,12 +155,12 @@ async function loadMyRequests(){
     /* =========================
        TELEGRAM LINK
     ========================= */
-    if(r.status === "approved" && r.telegram_unlocked){
+    if(r.status === "approved" && r.telegram_unlocked === true){
       telegram = `
         <a class="btn"
-          href="https://t.me/+7A6IMz9PutMzZjVk"
-          target="_blank">
-          🔓 Join Private Telegram Group
+           href="https://t.me/+7A6IMz9PutMzZjVk"
+           target="_blank">
+           🔓 Join Private Telegram Group
         </a>
       `;
     }
@@ -220,20 +225,17 @@ async function loadMyRequests(){
 }
 
 /* =========================
-   INIT PAGE
+   START
 ========================= */
 document.addEventListener("DOMContentLoaded", async ()=>{
 
   try{
-
     if(typeof initPi === "function"){
       await initPi();
     }
-
   }catch(e){
     console.warn("initPi failed:", e);
   }
 
   await loadMyRequests();
-
 });
