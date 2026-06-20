@@ -5,15 +5,79 @@ const supabase = window.supabase.createClient(
 
 const box = document.getElementById("list");
 
-async function loadMyRequests(){
+/* =========================
+   ESCAPE HTML
+========================= */
+function escapeHtml(text = ""){
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* =========================
+   GET USER
+========================= */
+async function getCurrentPiUser(){
 
   let user = null;
 
-  if(window.Pi && Pi.getUser){
-    try{
-      let user = await ensurePiAuth();
-    }catch(e){}
+  // 1) try Pi auth helper
+  try{
+    if(typeof ensurePiAuth === "function"){
+      user = await ensurePiAuth();
+    }
+  }catch(e){
+    console.warn("ensurePiAuth failed:", e);
   }
+
+  // 2) fallback to Pi.getUser
+  if(!user?.uid && window.Pi && Pi.getUser){
+    try{
+      const piUser = await Pi.getUser();
+      if(piUser?.uid){
+        user = {
+          uid: piUser.uid,
+          username: piUser.username || ""
+        };
+      }
+    }catch(e){
+      console.warn("Pi.getUser failed:", e);
+    }
+  }
+
+  // 3) fallback to localStorage
+  if(!user?.uid){
+    try{
+      const localUser = JSON.parse(
+        localStorage.getItem("pi_user")
+      );
+
+      if(localUser?.uid){
+        user = localUser;
+      }
+    }catch(e){
+      console.warn("localStorage pi_user parse failed:", e);
+    }
+  }
+
+  return user;
+}
+
+/* =========================
+   LOAD MY REQUESTS
+========================= */
+async function loadMyRequests(){
+
+  box.innerHTML = `
+    <div class="empty">
+      Loading requests...
+    </div>
+  `;
+
+  const user = await getCurrentPiUser();
 
   if(!user?.uid){
 
@@ -30,11 +94,11 @@ async function loadMyRequests(){
     .from("dapp_requests")
     .select("*")
     .eq("userid", user.uid)
-    .order("created_at",{ascending:false});
+    .order("created_at", { ascending:false });
 
   if(error){
 
-    console.error(error);
+    console.error("loadMyRequests error:", error);
 
     box.innerHTML = `
       <div class="empty">
@@ -60,92 +124,102 @@ async function loadMyRequests(){
 
   data.forEach(r=>{
 
-  let telegram = "";
-  let adminNote = "";
+    let telegram = "";
+    let adminNote = "";
+    let statusText = "";
+    let statusClass = "";
 
-  if(r.status === "approved" && r.telegram_unlocked){
+    /* =========================
+       STATUS
+    ========================= */
+    if(r.status === "pending"){
+      statusText = "🟡 Under Review";
+      statusClass = "pending";
+    }
 
-    telegram = `
-      <a class="btn"
-      href="https://t.me/+7A6IMz9PutMzZjVk"
-      target="_blank">
-      🔓 Join Private Telegram Group
-      </a>
-    `;
-  }
+    if(r.status === "approved"){
+      statusText = "🟢 Approved";
+      statusClass = "approved";
+    }
 
-  if(r.admin_note){
+    if(r.status === "rejected"){
+      statusText = "🔴 Rejected";
+      statusClass = "rejected";
+    }
 
-    adminNote = `
-      <div class="notice">
-        <strong>📝 Admin Note:</strong><br>
-        ${r.admin_note}
+    /* =========================
+       TELEGRAM LINK
+    ========================= */
+    if(r.status === "approved" && r.telegram_unlocked){
+      telegram = `
+        <a class="btn"
+          href="https://t.me/+7A6IMz9PutMzZjVk"
+          target="_blank">
+          🔓 Join Private Telegram Group
+        </a>
+      `;
+    }
+
+    /* =========================
+       ADMIN NOTE
+    ========================= */
+    if(r.admin_note){
+      adminNote = `
+        <div class="notice">
+          <strong>📝 Admin Note:</strong><br>
+          ${escapeHtml(r.admin_note)}
+        </div>
+      `;
+    }
+
+    box.innerHTML += `
+      <div class="card">
+
+        <strong>${escapeHtml(r.project_name || "Untitled Project")}</strong>
+
+        <div class="meta">
+          🛠 ${escapeHtml(r.service_type || "-")}<br>
+          👤 ${escapeHtml(r.pi_user || "-")}
+        </div>
+
+        <div class="status ${statusClass}">
+          ${statusText}
+        </div>
+
+        <div class="desc">
+          <strong>Description:</strong><br>
+          ${escapeHtml(r.description || "—")}
+        </div>
+
+        <div class="receipt">
+          <strong>Payment Receipt:</strong><br>
+
+          ${
+            r.receipt_image
+            ? `<img src="${r.receipt_image}" alt="Receipt">`
+            : `<em>No receipt image</em>`
+          }
+
+          ${
+            r.receipt_ref
+            ? `
+              <div style="font-size:12px;color:#666;margin-top:6px">
+                Ref: ${escapeHtml(r.receipt_ref)}
+              </div>
+            `
+            : ""
+          }
+        </div>
+
+        ${adminNote}
+        ${telegram}
+
       </div>
     `;
-  }
-
-  let statusText = "";
-  let statusClass = "";
-
-  if(r.status === "pending"){
-    statusText = "🟡 Under Review";
-    statusClass = "pending";
-  }
-
-  if(r.status === "approved"){
-    statusText = "🟢 Approved";
-    statusClass = "approved";
-  }
-
-  if(r.status === "rejected"){
-    statusText = "🔴 Rejected";
-    statusClass = "rejected";
-  }
-
-  box.innerHTML += `
-    <div class="card">
-
-      <strong>${r.project_name}</strong>
-
-      <div class="meta">
-        🛠 ${r.service_type}<br>
-        👤 ${r.pi_user}
-      </div>
-
-      <div class="status ${statusClass}">
-        ${statusText}
-      </div>
-
-      <div class="desc">
-        <strong>Description:</strong><br>
-        ${r.description || "—"}
-      </div>
-
-      <div class="receipt">
-        <strong>Payment Receipt:</strong><br>
-
-        ${
-          r.receipt_image
-          ? `<img src="${r.receipt_image}" alt="Receipt">`
-          : `<em>No receipt image</em>`
-        }
-
-        ${
-          r.receipt_ref
-          ? `<div style="font-size:12px;color:#666">
-              Ref: ${r.receipt_ref}
-            </div>`
-          : ""
-        }
-      </div>
-
-      ${adminNote}
-      ${telegram}
-
-    </div>
-  `;
-});
-
+  });
 }
 
+/* =========================
+   START
+========================= */
 loadMyRequests();
