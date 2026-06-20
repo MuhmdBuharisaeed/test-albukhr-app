@@ -8,14 +8,61 @@ const SUPABASE_KEY = "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
 let __pendingAlertShown = false;
 
 /* -------------------------------------
-   GET CURRENT USER (Pi SDK / fallback)
+   GET CURRENT USER
+   order:
+   1) localStorage
+   2) Pi.getUser()
+   3) ensurePiAuth() only if needed
 ------------------------------------- */
 async function getCurrentUser(){
 
-  // 1) try ensurePiAuth first
+  /* 1) localStorage first */
+  try{
+    const local = localStorage.getItem("pi_user");
+
+    if(local){
+      const parsed = JSON.parse(local);
+
+      if(parsed?.uid){
+        return {
+          uid: parsed.uid,
+          username: parsed.username || ""
+        };
+      }
+    }
+  }catch(e){
+    console.warn("localStorage pi_user parse failed:", e);
+  }
+
+  /* 2) Pi.getUser */
+  if(window.Pi && Pi.getUser){
+    try{
+      const u = await Pi.getUser();
+
+      if(u?.uid){
+
+        const user = {
+          uid: u.uid,
+          username: u.username || ""
+        };
+
+        localStorage.setItem(
+          "pi_user",
+          JSON.stringify(user)
+        );
+
+        return user;
+      }
+    }catch(e){
+      console.warn("Pi.getUser failed:", e);
+    }
+  }
+
+  /* 3) last fallback: ensurePiAuth */
   try{
     if(typeof ensurePiAuth === "function"){
       const authUser = await ensurePiAuth();
+
       if(authUser?.uid){
         return {
           uid: authUser.uid,
@@ -25,35 +72,6 @@ async function getCurrentUser(){
     }
   }catch(e){
     console.warn("ensurePiAuth failed:", e);
-  }
-
-  // 2) try Pi.getUser
-  if(window.Pi && Pi.getUser){
-    try{
-      const u = await Pi.getUser();
-
-      if(u?.uid){
-        return {
-          uid: u.uid,
-          username: u.username || ""
-        };
-      }
-    }catch(e){
-      console.warn("Pi auth not ready:", e);
-    }
-  }
-
-  // 3) fallback localStorage
-  const local = localStorage.getItem("pi_user");
-  if(local){
-    try{
-      const parsed = JSON.parse(local);
-      if(parsed?.uid){
-        return parsed;
-      }
-    }catch(e){
-      console.warn("localStorage pi_user parse failed:", e);
-    }
   }
 
   return null;
@@ -222,7 +240,6 @@ async function submitDappRequest(){
       );
 
       if(!res.ok){
-
         const err = await res.text();
         console.error("submitDappRequest supabase error:", err);
 
@@ -233,7 +250,6 @@ async function submitDappRequest(){
         return;
       }
 
-      // da zarar an submit, ka kunna pending mode nan take
       setPendingUI(true);
 
       showAlert(
@@ -266,7 +282,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
   const user = await getCurrentUser();
 
-  // idan ba a login ba, kar a yi alert
+  /* idan ba a login ba, a bar form a bude */
   if(!user?.uid){
     setPendingUI(false);
     return;
@@ -275,6 +291,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const pending = await userHasPending(user.uid);
 
   if(pending){
+
     setPendingUI(true);
 
     if(!__pendingAlertShown){
@@ -287,7 +304,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     }
 
   }else{
-    // idan approved/rejected ne ko babu request, form ya bude
+    /* idan babu pending, ko approved/rejected ne */
     setPendingUI(false);
   }
 
