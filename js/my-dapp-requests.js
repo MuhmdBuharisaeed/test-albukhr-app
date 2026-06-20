@@ -1,6 +1,3 @@
-alert("MY-DAPP-REQUESTS JS LOADED");
-console.log("MY-DAPP-REQUESTS JS LOADED");
-
 const supabase = window.supabase.createClient(
   "https://qexmnghilahsvethlxem.supabase.co",
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
@@ -8,6 +5,9 @@ const supabase = window.supabase.createClient(
 
 const box = document.getElementById("list");
 
+/* =========================
+   ESCAPE HTML
+========================= */
 function escapeHtml(text = ""){
   return String(text)
     .replace(/&/g, "&amp;")
@@ -17,76 +17,58 @@ function escapeHtml(text = ""){
     .replace(/'/g, "&#039;");
 }
 
+/* =========================
+   GET USER
+   MU GUJI ensurePiAuth NAN
+========================= */
 async function getCurrentPiUser(){
 
-  alert("STEP 1: getCurrentPiUser started");
+  let user = null;
 
-  // localStorage first
+  /* 1) Farko duba localStorage */
   try{
-    const local = localStorage.getItem("pi_user");
-    alert("STEP 2: localStorage = " + local);
-
-    if(local){
-      const parsed = JSON.parse(local);
-
-      if(parsed?.uid){
-        alert("STEP 3: user found in localStorage");
-        return parsed;
-      }
+    const localUser = JSON.parse(localStorage.getItem("pi_user"));
+    if(localUser?.uid){
+      user = localUser;
     }
   }catch(e){
-    alert("STEP 2 ERROR: " + e.message);
+    console.warn("localStorage pi_user parse failed:", e);
   }
 
-  // Pi.getUser fallback
-  if(window.Pi && typeof Pi.getUser === "function"){
+  /* 2) Idan babu, sai mu gwada Pi.getUser() */
+  if(!user?.uid && window.Pi && typeof Pi.getUser === "function"){
     try{
-      alert("STEP 4: calling Pi.getUser()");
-      const u = await Pi.getUser();
-      alert("STEP 5: Pi.getUser finished");
-
-      if(u?.uid){
-        const user = {
-          uid: u.uid,
-          username: u.username || ""
+      const piUser = await Pi.getUser();
+      if(piUser?.uid){
+        user = {
+          uid: piUser.uid,
+          username: piUser.username || ""
         };
 
         localStorage.setItem("pi_user", JSON.stringify(user));
-        alert("STEP 6: user saved from Pi.getUser");
-        return user;
       }
-
     }catch(e){
-      alert("STEP 4 ERROR: " + e.message);
+      console.warn("Pi.getUser failed:", e);
     }
-  }else{
-    alert("STEP 4: Pi.getUser not available");
   }
 
-  alert("STEP 7: no user found");
-  return null;
+  return user;
 }
 
+/* =========================
+   LOAD MY REQUESTS
+========================= */
 async function loadMyRequests(){
 
   box.innerHTML = `
-    <div class="empty">Loading requests...</div>
+    <div class="empty">
+      Loading requests...
+    </div>
   `;
 
   try{
 
-    alert("A: loadMyRequests started");
-
-    if(typeof initPi === "function"){
-      alert("B: initPi exists, starting...");
-      await initPi();
-      alert("C: initPi finished");
-    }else{
-      alert("B: initPi NOT found");
-    }
-
     const user = await getCurrentPiUser();
-    alert("D: user result = " + JSON.stringify(user));
 
     if(!user?.uid){
       box.innerHTML = `
@@ -97,7 +79,7 @@ async function loadMyRequests(){
       return;
     }
 
-    alert("E: starting Supabase query");
+    console.log("Current user uid:", user.uid);
 
     const { data, error } = await supabase
       .from("dapp_requests")
@@ -105,11 +87,10 @@ async function loadMyRequests(){
       .eq("userid", user.uid)
       .order("created_at", { ascending:false });
 
-    alert("F: Supabase query finished");
+    console.log("Supabase result:", data, error);
 
     if(error){
-      alert("G: Supabase error = " + error.message);
-      console.error(error);
+      console.error("loadMyRequests error:", error);
 
       box.innerHTML = `
         <div class="empty">
@@ -118,8 +99,6 @@ async function loadMyRequests(){
       `;
       return;
     }
-
-    alert("H: rows = " + (data ? data.length : 0));
 
     if(!data || !data.length){
       box.innerHTML = `
@@ -139,6 +118,7 @@ async function loadMyRequests(){
       let statusText = "";
       let statusClass = "";
 
+      /* STATUS */
       if(r.status === "pending"){
         statusText = "🟡 Under Review";
         statusClass = "pending";
@@ -153,7 +133,8 @@ async function loadMyRequests(){
         statusClass = "";
       }
 
-      if(r.status === "approved" && r.telegram_unlocked === true){
+      /* TELEGRAM LINK */
+      if(r.status === "approved" && r.telegram_unlocked){
         telegram = `
           <a class="btn"
              href="https://t.me/+7A6IMz9PutMzZjVk"
@@ -163,7 +144,8 @@ async function loadMyRequests(){
         `;
       }
 
-      if(r.admin_note && String(r.admin_note).trim() !== ""){
+      /* ADMIN NOTE */
+      if(r.admin_note){
         adminNote = `
           <div class="notice">
             <strong>📝 Admin Note:</strong><br>
@@ -218,20 +200,20 @@ async function loadMyRequests(){
       `;
     });
 
-    alert("I: render finished");
-
   }catch(err){
-    alert("FATAL ERROR: " + err.message);
-    console.error(err);
+    console.error("loadMyRequests fatal error:", err);
 
     box.innerHTML = `
       <div class="empty">
-        Something went wrong while loading your requests.
+        Something went wrong while loading requests.
       </div>
     `;
   }
 }
 
+/* =========================
+   START
+========================= */
 window.addEventListener("DOMContentLoaded", ()=>{
   loadMyRequests();
 });
