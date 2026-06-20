@@ -5,9 +5,6 @@ const supabase = window.supabase.createClient(
 
 const box = document.getElementById("list");
 
-/* =========================
-   ESCAPE HTML
-========================= */
 function escapeHtml(text = ""){
   return String(text)
     .replace(/&/g, "&amp;")
@@ -17,83 +14,87 @@ function escapeHtml(text = ""){
     .replace(/'/g, "&#039;");
 }
 
-/* =========================
-   GET CURRENT PI USER
-   IMPORTANT:
-   A NAN BA ZA MU KIRA ensurePiAuth() BA
-========================= */
 async function getCurrentPiUser(){
 
-  // 1) localStorage first
+  alert("STEP 1: getCurrentPiUser started");
+
+  // localStorage first
   try{
     const local = localStorage.getItem("pi_user");
+    alert("STEP 2: localStorage = " + local);
 
     if(local){
       const parsed = JSON.parse(local);
 
       if(parsed?.uid){
+        alert("STEP 3: user found in localStorage");
         return parsed;
       }
     }
   }catch(e){
-    console.warn("localStorage parse failed:", e);
+    alert("STEP 2 ERROR: " + e.message);
   }
 
-  // 2) try Pi.getUser only
-  if(window.Pi && Pi.getUser){
+  // Pi.getUser fallback
+  if(window.Pi && typeof Pi.getUser === "function"){
     try{
+      alert("STEP 4: calling Pi.getUser()");
       const u = await Pi.getUser();
+      alert("STEP 5: Pi.getUser finished");
 
       if(u?.uid){
-
         const user = {
           uid: u.uid,
           username: u.username || ""
         };
 
-        localStorage.setItem(
-          "pi_user",
-          JSON.stringify(user)
-        );
-
+        localStorage.setItem("pi_user", JSON.stringify(user));
+        alert("STEP 6: user saved from Pi.getUser");
         return user;
       }
+
     }catch(e){
-      console.warn("Pi.getUser failed:", e);
+      alert("STEP 4 ERROR: " + e.message);
     }
+  }else{
+    alert("STEP 4: Pi.getUser not available");
   }
 
-  // 3) no ensurePiAuth here
+  alert("STEP 7: no user found");
   return null;
 }
 
-/* =========================
-   LOAD MY REQUESTS
-========================= */
 async function loadMyRequests(){
+
+  box.innerHTML = `
+    <div class="empty">Loading requests...</div>
+  `;
 
   try{
 
-    box.innerHTML = `
-      <div class="empty">
-        Loading requests...
-      </div>
-    `;
+    alert("A: loadMyRequests started");
+
+    if(typeof initPi === "function"){
+      alert("B: initPi exists, starting...");
+      await initPi();
+      alert("C: initPi finished");
+    }else{
+      alert("B: initPi NOT found");
+    }
 
     const user = await getCurrentPiUser();
+    alert("D: user result = " + JSON.stringify(user));
 
     if(!user?.uid){
-
       box.innerHTML = `
         <div class="empty">
           Please login with Pi Browser.
         </div>
       `;
-
       return;
     }
 
-    console.log("MY REQUEST USER:", user);
+    alert("E: starting Supabase query");
 
     const { data, error } = await supabase
       .from("dapp_requests")
@@ -101,30 +102,28 @@ async function loadMyRequests(){
       .eq("userid", user.uid)
       .order("created_at", { ascending:false });
 
-    console.log("MY REQUEST DATA:", data);
-    console.log("MY REQUEST ERROR:", error);
+    alert("F: Supabase query finished");
 
     if(error){
-
-      console.error("loadMyRequests error:", error);
+      alert("G: Supabase error = " + error.message);
+      console.error(error);
 
       box.innerHTML = `
         <div class="empty">
           Failed to load requests.
         </div>
       `;
-
       return;
     }
 
-    if(!data || !data.length){
+    alert("H: rows = " + (data ? data.length : 0));
 
+    if(!data || !data.length){
       box.innerHTML = `
         <div class="empty">
           You have not submitted any dApp request yet.
         </div>
       `;
-
       return;
     }
 
@@ -137,9 +136,6 @@ async function loadMyRequests(){
       let statusText = "";
       let statusClass = "";
 
-      /* =========================
-         STATUS
-      ========================= */
       if(r.status === "pending"){
         statusText = "🟡 Under Review";
         statusClass = "pending";
@@ -154,9 +150,6 @@ async function loadMyRequests(){
         statusClass = "";
       }
 
-      /* =========================
-         TELEGRAM LINK
-      ========================= */
       if(r.status === "approved" && r.telegram_unlocked === true){
         telegram = `
           <a class="btn"
@@ -167,9 +160,6 @@ async function loadMyRequests(){
         `;
       }
 
-      /* =========================
-         ADMIN NOTE
-      ========================= */
       if(r.admin_note && String(r.admin_note).trim() !== ""){
         adminNote = `
           <div class="notice">
@@ -225,9 +215,11 @@ async function loadMyRequests(){
       `;
     });
 
-  }catch(err){
+    alert("I: render finished");
 
-    console.error("my-dapp fatal error:", err);
+  }catch(err){
+    alert("FATAL ERROR: " + err.message);
+    console.error(err);
 
     box.innerHTML = `
       <div class="empty">
@@ -237,9 +229,6 @@ async function loadMyRequests(){
   }
 }
 
-/* =========================
-   START
-========================= */
 window.addEventListener("DOMContentLoaded", ()=>{
   loadMyRequests();
 });
