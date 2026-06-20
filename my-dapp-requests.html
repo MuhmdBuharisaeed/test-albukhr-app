@@ -91,10 +91,6 @@
   padding:30px;
 }
 </style>
-
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="js/pi-auth.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -105,10 +101,26 @@
 
 <section class="section">
   <h3>📂 My dApp Requests</h3>
-  <div id="list"></div>
+  <div id="list">
+    <div class="empty">Loading requests...</div>
+  </div>
 </section>
 
+<!-- ORDER YA DAWO HAKA -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/app-alert.js"></script>
+<script src="js/pi-auth.js"></script>
 <script src="js/my-dapp-requests.js"></script>
+
+<div id="appAlert" class="app-alert">
+  <div class="app-alert-box">
+    <h3 id="appAlertTitle">Notice</h3>
+    <p id="appAlertText"></p>
+    <button onclick="closeAppAlert()">OK</button>
+  </div>
+</div>
 
 </body>
 </html>
