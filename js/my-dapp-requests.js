@@ -19,14 +19,18 @@ function escapeHtml(text = ""){
 
 /* =========================
    GET CURRENT PI USER
+   IMPORTANT:
+   A NAN BA ZA MU KIRA ensurePiAuth() BA
 ========================= */
 async function getCurrentPiUser(){
 
   // 1) localStorage first
   try{
     const local = localStorage.getItem("pi_user");
+
     if(local){
       const parsed = JSON.parse(local);
+
       if(parsed?.uid){
         return parsed;
       }
@@ -35,7 +39,7 @@ async function getCurrentPiUser(){
     console.warn("localStorage parse failed:", e);
   }
 
-  // 2) Pi.getUser
+  // 2) try Pi.getUser only
   if(window.Pi && Pi.getUser){
     try{
       const u = await Pi.getUser();
@@ -59,22 +63,7 @@ async function getCurrentPiUser(){
     }
   }
 
-  // 3) ensurePiAuth fallback
-  try{
-    if(typeof ensurePiAuth === "function"){
-      const authUser = await ensurePiAuth();
-
-      if(authUser?.uid){
-        return {
-          uid: authUser.uid,
-          username: authUser.username || ""
-        };
-      }
-    }
-  }catch(e){
-    console.warn("ensurePiAuth failed:", e);
-  }
-
+  // 3) no ensurePiAuth here
   return null;
 }
 
@@ -116,6 +105,7 @@ async function loadMyRequests(){
     console.log("MY REQUEST ERROR:", error);
 
     if(error){
+
       console.error("loadMyRequests error:", error);
 
       box.innerHTML = `
@@ -244,28 +234,12 @@ async function loadMyRequests(){
         Something went wrong while loading your requests.
       </div>
     `;
-
-    if(typeof showAlert === "function"){
-      showAlert(
-        "Load Error",
-        "Failed to load your dApp requests."
-      );
-    }
   }
 }
 
 /* =========================
    START
 ========================= */
-window.addEventListener("DOMContentLoaded", async ()=>{
-
-  try{
-    if(typeof initPi === "function"){
-      await initPi();
-    }
-  }catch(e){
-    console.warn("initPi failed:", e);
-  }
-
+window.addEventListener("DOMContentLoaded", ()=>{
   loadMyRequests();
 });
