@@ -18,13 +18,13 @@ function escapeHtml(text = ""){
 }
 
 /* =========================
-   GET USER
+   GET CURRENT PI USER
 ========================= */
 async function getCurrentPiUser(){
 
   let user = null;
 
-  // 1) try Pi auth helper
+  /* 1) ensurePiAuth */
   try{
     if(typeof ensurePiAuth === "function"){
       user = await ensurePiAuth();
@@ -33,10 +33,11 @@ async function getCurrentPiUser(){
     console.warn("ensurePiAuth failed:", e);
   }
 
-  // 2) fallback to Pi.getUser
+  /* 2) Pi.getUser fallback */
   if(!user?.uid && window.Pi && Pi.getUser){
     try{
       const piUser = await Pi.getUser();
+
       if(piUser?.uid){
         user = {
           uid: piUser.uid,
@@ -48,7 +49,7 @@ async function getCurrentPiUser(){
     }
   }
 
-  // 3) fallback to localStorage
+  /* 3) localStorage fallback */
   if(!user?.uid){
     try{
       const localUser = JSON.parse(
@@ -59,7 +60,7 @@ async function getCurrentPiUser(){
         user = localUser;
       }
     }catch(e){
-      console.warn("localStorage pi_user parse failed:", e);
+      console.warn("localStorage parse failed:", e);
     }
   }
 
@@ -135,16 +136,15 @@ async function loadMyRequests(){
     if(r.status === "pending"){
       statusText = "🟡 Under Review";
       statusClass = "pending";
-    }
-
-    if(r.status === "approved"){
+    }else if(r.status === "approved"){
       statusText = "🟢 Approved";
       statusClass = "approved";
-    }
-
-    if(r.status === "rejected"){
+    }else if(r.status === "rejected"){
       statusText = "🔴 Rejected";
       statusClass = "rejected";
+    }else{
+      statusText = escapeHtml(r.status || "Unknown");
+      statusClass = "";
     }
 
     /* =========================
@@ -220,6 +220,20 @@ async function loadMyRequests(){
 }
 
 /* =========================
-   START
+   INIT PAGE
 ========================= */
-loadMyRequests();
+document.addEventListener("DOMContentLoaded", async ()=>{
+
+  try{
+
+    if(typeof initPi === "function"){
+      await initPi();
+    }
+
+  }catch(e){
+    console.warn("initPi failed:", e);
+  }
+
+  await loadMyRequests();
+
+});
