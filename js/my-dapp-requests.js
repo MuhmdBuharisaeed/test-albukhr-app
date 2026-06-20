@@ -1,3 +1,6 @@
+alert("MY-DAPP-REQUESTS JS LOADED");
+console.log("MY-DAPP-REQUESTS JS LOADED");
+
 const supabase = window.supabase.createClient(
   "https://qexmnghilahsvethlxem.supabase.co",
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
