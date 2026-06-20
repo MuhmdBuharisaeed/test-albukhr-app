@@ -19,36 +19,32 @@ function escapeHtml(text = ""){
 
 /* =========================
    GET CURRENT PI USER
-   ⚠️ KAR A YI ensurePiAuth NAN
 ========================= */
 async function getCurrentPiUser(){
 
-  let user = null;
-
-  /* 1) localStorage first */
+  // 1) localStorage first
   try{
-    const localUser = JSON.parse(
-      localStorage.getItem("pi_user")
-    );
-
-    if(localUser?.uid){
-      user = localUser;
-      console.log("USER FROM LOCAL:", user);
-      return user;
+    const local = localStorage.getItem("pi_user");
+    if(local){
+      const parsed = JSON.parse(local);
+      if(parsed?.uid){
+        return parsed;
+      }
     }
   }catch(e){
     console.warn("localStorage parse failed:", e);
   }
 
-  /* 2) Pi.getUser fallback */
+  // 2) Pi.getUser
   if(window.Pi && Pi.getUser){
     try{
-      const piUser = await Pi.getUser();
+      const u = await Pi.getUser();
 
-      if(piUser?.uid){
-        user = {
-          uid: piUser.uid,
-          username: piUser.username || ""
+      if(u?.uid){
+
+        const user = {
+          uid: u.uid,
+          username: u.username || ""
         };
 
         localStorage.setItem(
@@ -56,12 +52,27 @@ async function getCurrentPiUser(){
           JSON.stringify(user)
         );
 
-        console.log("USER FROM PI.GETUSER:", user);
         return user;
       }
     }catch(e){
       console.warn("Pi.getUser failed:", e);
     }
+  }
+
+  // 3) ensurePiAuth fallback
+  try{
+    if(typeof ensurePiAuth === "function"){
+      const authUser = await ensurePiAuth();
+
+      if(authUser?.uid){
+        return {
+          uid: authUser.uid,
+          username: authUser.username || ""
+        };
+      }
+    }
+  }catch(e){
+    console.warn("ensurePiAuth failed:", e);
   }
 
   return null;
@@ -72,162 +83,181 @@ async function getCurrentPiUser(){
 ========================= */
 async function loadMyRequests(){
 
-  box.innerHTML = `
-    <div class="empty">
-      Loading requests...
-    </div>
-  `;
-
-  const user = await getCurrentPiUser();
-
-  console.log("MY DAPP USER:", user);
-
-  if(!user?.uid){
+  try{
 
     box.innerHTML = `
       <div class="empty">
-        Please login with Pi Browser.
+        Loading requests...
       </div>
     `;
 
-    return;
-  }
+    const user = await getCurrentPiUser();
 
-  const { data, error } = await supabase
-    .from("dapp_requests")
-    .select("*")
-    .eq("userid", user.uid)
-    .order("created_at", { ascending:false });
+    if(!user?.uid){
 
-  console.log("MY DAPP DATA:", data);
-  console.log("MY DAPP ERROR:", error);
-
-  if(error){
-
-    console.error("loadMyRequests error:", error);
-
-    box.innerHTML = `
-      <div class="empty">
-        Failed to load requests.
-      </div>
-    `;
-
-    return;
-  }
-
-  if(!data || !data.length){
-
-    box.innerHTML = `
-      <div class="empty">
-        You have not submitted any dApp request yet.
-      </div>
-    `;
-
-    return;
-  }
-
-  box.innerHTML = "";
-
-  data.forEach(r=>{
-
-    let telegram = "";
-    let adminNote = "";
-    let statusText = "";
-    let statusClass = "";
-
-    /* =========================
-       STATUS
-    ========================= */
-    if(r.status === "pending"){
-      statusText = "🟡 Under Review";
-      statusClass = "pending";
-    }else if(r.status === "approved"){
-      statusText = "🟢 Approved";
-      statusClass = "approved";
-    }else if(r.status === "rejected"){
-      statusText = "🔴 Rejected";
-      statusClass = "rejected";
-    }else{
-      statusText = escapeHtml(r.status || "Unknown");
-      statusClass = "";
-    }
-
-    /* =========================
-       TELEGRAM LINK
-    ========================= */
-    if(r.status === "approved" && r.telegram_unlocked === true){
-      telegram = `
-        <a class="btn"
-           href="https://t.me/+7A6IMz9PutMzZjVk"
-           target="_blank">
-           🔓 Join Private Telegram Group
-        </a>
-      `;
-    }
-
-    /* =========================
-       ADMIN NOTE
-    ========================= */
-    if(r.admin_note){
-      adminNote = `
-        <div class="notice">
-          <strong>📝 Admin Note:</strong><br>
-          ${escapeHtml(r.admin_note)}
+      box.innerHTML = `
+        <div class="empty">
+          Please login with Pi Browser.
         </div>
       `;
+
+      return;
     }
 
-    box.innerHTML += `
-      <div class="card">
+    console.log("MY REQUEST USER:", user);
 
-        <strong>${escapeHtml(r.project_name || "Untitled Project")}</strong>
+    const { data, error } = await supabase
+      .from("dapp_requests")
+      .select("*")
+      .eq("userid", user.uid)
+      .order("created_at", { ascending:false });
 
-        <div class="meta">
-          🛠 ${escapeHtml(r.service_type || "-")}<br>
-          👤 ${escapeHtml(r.pi_user || "-")}
+    console.log("MY REQUEST DATA:", data);
+    console.log("MY REQUEST ERROR:", error);
+
+    if(error){
+      console.error("loadMyRequests error:", error);
+
+      box.innerHTML = `
+        <div class="empty">
+          Failed to load requests.
         </div>
+      `;
 
-        <div class="status ${statusClass}">
-          ${statusText}
+      return;
+    }
+
+    if(!data || !data.length){
+
+      box.innerHTML = `
+        <div class="empty">
+          You have not submitted any dApp request yet.
         </div>
+      `;
 
-        <div class="desc">
-          <strong>Description:</strong><br>
-          ${escapeHtml(r.description || "—")}
+      return;
+    }
+
+    box.innerHTML = "";
+
+    data.forEach(r=>{
+
+      let telegram = "";
+      let adminNote = "";
+      let statusText = "";
+      let statusClass = "";
+
+      /* =========================
+         STATUS
+      ========================= */
+      if(r.status === "pending"){
+        statusText = "🟡 Under Review";
+        statusClass = "pending";
+      }else if(r.status === "approved"){
+        statusText = "🟢 Approved";
+        statusClass = "approved";
+      }else if(r.status === "rejected"){
+        statusText = "🔴 Rejected";
+        statusClass = "rejected";
+      }else{
+        statusText = escapeHtml(r.status || "Unknown");
+        statusClass = "";
+      }
+
+      /* =========================
+         TELEGRAM LINK
+      ========================= */
+      if(r.status === "approved" && r.telegram_unlocked === true){
+        telegram = `
+          <a class="btn"
+             href="https://t.me/+7A6IMz9PutMzZjVk"
+             target="_blank">
+             🔓 Join Private Telegram Group
+          </a>
+        `;
+      }
+
+      /* =========================
+         ADMIN NOTE
+      ========================= */
+      if(r.admin_note && String(r.admin_note).trim() !== ""){
+        adminNote = `
+          <div class="notice">
+            <strong>📝 Admin Note:</strong><br>
+            ${escapeHtml(r.admin_note)}
+          </div>
+        `;
+      }
+
+      box.innerHTML += `
+        <div class="card">
+
+          <strong>${escapeHtml(r.project_name || "Untitled Project")}</strong>
+
+          <div class="meta">
+            🛠 ${escapeHtml(r.service_type || "-")}<br>
+            👤 ${escapeHtml(r.pi_user || "-")}
+          </div>
+
+          <div class="status ${statusClass}">
+            ${statusText}
+          </div>
+
+          <div class="desc">
+            <strong>Description:</strong><br>
+            ${escapeHtml(r.description || "—")}
+          </div>
+
+          <div class="receipt">
+            <strong>Payment Receipt:</strong><br>
+
+            ${
+              r.receipt_image
+              ? `<img src="${r.receipt_image}" alt="Receipt">`
+              : `<em>No receipt image</em>`
+            }
+
+            ${
+              r.receipt_ref
+              ? `
+                <div style="font-size:12px;color:#666;margin-top:6px">
+                  Ref: ${escapeHtml(r.receipt_ref)}
+                </div>
+              `
+              : ""
+            }
+          </div>
+
+          ${adminNote}
+          ${telegram}
+
         </div>
+      `;
+    });
 
-        <div class="receipt">
-          <strong>Payment Receipt:</strong><br>
+  }catch(err){
 
-          ${
-            r.receipt_image
-            ? `<img src="${r.receipt_image}" alt="Receipt">`
-            : `<em>No receipt image</em>`
-          }
+    console.error("my-dapp fatal error:", err);
 
-          ${
-            r.receipt_ref
-            ? `
-              <div style="font-size:12px;color:#666;margin-top:6px">
-                Ref: ${escapeHtml(r.receipt_ref)}
-              </div>
-            `
-            : ""
-          }
-        </div>
-
-        ${adminNote}
-        ${telegram}
-
+    box.innerHTML = `
+      <div class="empty">
+        Something went wrong while loading your requests.
       </div>
     `;
-  });
+
+    if(typeof showAlert === "function"){
+      showAlert(
+        "Load Error",
+        "Failed to load your dApp requests."
+      );
+    }
+  }
 }
 
 /* =========================
    START
 ========================= */
-document.addEventListener("DOMContentLoaded", async ()=>{
+window.addEventListener("DOMContentLoaded", async ()=>{
 
   try{
     if(typeof initPi === "function"){
@@ -237,5 +267,5 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     console.warn("initPi failed:", e);
   }
 
-  await loadMyRequests();
+  loadMyRequests();
 });
