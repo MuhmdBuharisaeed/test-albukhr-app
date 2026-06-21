@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ALBUKHR Ecosystem Control Center</title>
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#f4f7f6;
+  color:#111;
+  padding-bottom:80px;
+}
+
+.header{
+  background:#0f7a3d;
+  color:white;
+  padding:16px;
+  font-weight:800;
+  font-size:18px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+
+.container{
+  padding:16px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+}
+
+.big{
+  font-size:22px;
+  font-weight:800;
+  color:#0f7a3d;
+}
+
+.label{
+  font-size:13px;
+  color:#5f6d66;
+  margin-bottom:8px;
+}
+
+.sub{
+  margin-top:6px;
+  font-size:12px;
+  color:#6c7872;
+}
+
+.section-title{
+  margin:20px 0 12px;
+  font-size:16px;
+  font-weight:800;
+  color:#0f7a3d;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  font-size:13px;
+  margin-top:7px;
+  line-height:1.5;
+}
+
+.project-card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  border:1px solid #edf1ef;
+}
+
+.project-title{
+  font-weight:800;
+  font-size:16px;
+  margin-bottom:6px;
+}
+
+.project-desc{
+  font-size:12px;
+  color:#68756e;
+  line-height:1.5;
+  margin-bottom:10px;
+}
+
+.badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:10px 0;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:999px;
+}
+
+.badge.core{
+  background:#e9f7ef;
+  color:#0f7a3d;
+}
+
+.badge.internal{
+  background:#eef4ff;
+  color:#2056c9;
+}
+
+.badge.external{
+  background:#fff7e8;
+  color:#9a6700;
+}
+
+.badge.active{
+  background:#edf9f0;
+  color:#0f7a3d;
+}
+
+.badge.inactive{
+  background:#fff1f1;
+  color:#b02a37;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:12px;
+}
+
+button{
+  margin-top:0;
+  padding:10px 12px;
+  border:none;
+  border-radius:10px;
+  background:#0f7a3d;
+  color:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+button.secondary{
+  background:#eef6f1;
+  color:#0f7a3d;
+}
+
+button.pause{
+  background:#b83232;
+  color:#fff;
+}
+
+.panel-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.loading,
+.empty,
+.error-box{
+  background:#fff;
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  font-size:14px;
+}
+
+.loading,
+.empty{
+  color:#66746d;
+  text-align:center;
+}
+
+.error-box{
+  color:#b02a37;
+  border-left:4px solid #b02a37;
+}
+
+.muted{
+  color:#6d7973;
+  font-size:12px;
+}
+
+.kpi-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.kpi-box{
+  background:#f8fbf9;
+  border:1px solid #edf1ef;
+  border-radius:12px;
+  padding:12px;
+}
+
+.kpi-title{
+  font-size:12px;
+  color:#67736d;
+  margin-bottom:6px;
+}
+
+.kpi-value{
+  font-size:16px;
+  font-weight:800;
+  color:#0f7a3d;
+}
+
+@media (max-width:820px){
+  .grid,
+  .actions,
+  .kpi-row{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  ALBUKHR Ecosystem Control Center
+</div>
+
+<div class="container">
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Total Projects</div>
+      <div class="big" id="totalProjects">0</div>
+      <div class="sub" id="projectTypeSummary">Core: 0 • Internal: 0 • External: 0</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Total Liquidity</div>
+      <div class="big" id="totalLiquidity">0 Pi</div>
+      <div class="sub" id="totalUsableLiquidity">Usable: 0 Pi</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Total Investors</div>
+      <div class="big" id="totalInvestors">0</div>
+      <div class="sub" id="activeProjectsCount">Active projects: 0</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Total Reserve</div>
+      <div class="big" id="totalReserve">0 Pi</div>
+      <div class="sub" id="lastRefreshAt">Last refresh: —</div>
+    </div>
+  </div>
+
+  <h3 class="section-title">Project Control</h3>
+  <div id="projectList" class="loading">Loading projects...</div>
+
+  <h3 class="section-title">Economic Intelligence</h3>
+  <div id="economicPanel" class="loading">Loading economic intelligence...</div>
+
+  <h3 class="section-title">Treasury Requests</h3>
+  <div id="treasuryRequests" class="loading">Loading treasury requests...</div>
+
+</div>
+
+<script src="js/admin-auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<script src="js/projects-engine.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<script src="js/staking.js"></script>
+<script src="js/capital-protection-engine.js"></script>
+<script src="js/albukhr-project-deployment-engine.js"></script>
+
+<script>
+const CONTROL_CENTER_REFRESH_MS = 20000;
+const TREASURY_REQUESTS_TABLE = "treasury_requests";
+
+const ccEls = {
+  totalProjects: document.getElementById("totalProjects"),
+  totalLiquidity: document.getElementById("totalLiquidity"),
+  totalInvestors: document.getElementById("totalInvestors"),
+  totalReserve: document.getElementById("totalReserve"),
+  totalUsableLiquidity: document.getElementById("totalUsableLiquidity"),
+  projectTypeSummary: document.getElementById("projectTypeSummary"),
+  activeProjectsCount: document.getElementById("activeProjectsCount"),
+  lastRefreshAt: document.getElementById("lastRefreshAt"),
+  projectList: document.getElementById("projectList"),
+  economicPanel: document.getElementById("economicPanel"),
+  treasuryRequests: document.getElementById("treasuryRequests")
+};
+
+let __controlCenterBusy = false;
+
+function ccSafeNumber(value, fallback = 0){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function ccFormatPi(value){
+  return `${ccSafeNumber(value, 0).toFixed(2)} Pi`;
+}
+
+function ccEscapeHtml(text = ""){
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function ccFormatProjectType(type){
+  const t = String(type || "").toLowerCase();
+  if(t === "core") return "Core";
+  if(t === "internal") return "Internal";
+  if(t === "external") return "External";
+  return "Project";
+}
+
+function ccFormatProjectStatus(status){
+  const s = String(status || "").toLowerCase();
+  if(s === "active") return "Active";
+  if(s === "inactive") return "Inactive";
+  if(s === "archived") return "Archived";
+  return s || "Unknown";
+}
+
+function getTypeBadgeClass(type){
+  const t = String(type || "").toLowerCase();
+  if(t === "core") return "core";
+  if(t === "internal") return "internal";
+  if(t === "external") return "external";
+  return "core";
+}
+
+function getStatusBadgeClass(status){
+  return String(status || "").toLowerCase() === "active"
+    ? "active"
+    : "inactive";
+}
+
+function guardControlCenterAdmin(){
+  if(typeof requireRole === "function"){
+    requireRole([
+      "super_admin",
+      "ecosystem_admin"
+    ]);
+  }
+
+  if(typeof getAdmin === "function" && !getAdmin()){
+    window.location.href = "admin-login.html";
+    return false;
+  }
+
+  return true;
+}
+
+async function getInvestorMap(projects = []){
+  let stakes = [];
+
+  try{
+    if(typeof getAllStakesMerged === "function"){
+      const result = await getAllStakesMerged();
+      if(Array.isArray(result)){
+        stakes = result;
+      }
+    }
+  }catch(e){
+    console.warn("getAllStakesMerged failed:", e);
+  }
+
+  const map = {};
+  projects.forEach(project => {
+    map[project.project_code] = 0;
+  });
+
+  stakes.forEach(stake => {
+    const code = String(
+      stake.project_code ||
+      stake.project ||
+      ""
+    ).trim();
+
+    if(code && map.hasOwnProperty(code)){
+      map[code] = (map[code] || 0) + 1;
+    }
+  });
+
+  return {
+    total: Object.values(map).reduce((sum, count) => sum + Number(count || 0), 0),
+    byProject: map
+  };
+}
+
+async function loadProjectSummaries(projects = []){
+  const summaries = await Promise.all(
+    projects.map(async project => {
+      try{
+        const summary = await getSmartLiquiditySummary(project.project_code);
+        if(summary && !summary.error){
+          return summary;
+        }
+      }catch(e){
+        console.warn("getSmartLiquiditySummary failed:", project.project_code, e);
+      }
+
+      return {
+        project_code: project.project_code,
+        project_name: project.project_name,
+        project_type: project.project_type,
+        project_status: project.status,
+        liquidity: 0,
+        reserve: 0,
+        reserve_percent: project.reserve_percent || 0.30,
+        min_liquidity: project.min_liquidity || 100,
+        max_usable_liquidity: 0,
+        reward_rate: project.reward_rate || 0
+      };
+    })
+  );
+
+  const map = {};
+  summaries.forEach(item => {
+    map[item.project_code] = item;
+  });
+
+  return {
+    rows: summaries,
+    map
+  };
+}
+
+async function loadControlCenterData(){
+  const projects = await getAllProjects({
+    visibleOnly:false,
+    activeOnly:false
+  });
+
+  const [summaryData, investorData] = await Promise.all([
+    loadProjectSummaries(projects),
+    getInvestorMap(projects)
+  ]);
+
+  return {
+    projects,
+    summaryRows: summaryData.rows,
+    summaryMap: summaryData.map,
+    investorData
+  };
+}
+
+function renderControlSummary({ projects, summaryRows, investorData }){
+  let totalLiquidity = 0;
+  let totalReserve = 0;
+  let totalUsable = 0;
+
+  let coreCount = 0;
+  let internalCount = 0;
+  let externalCount = 0;
+  let activeCount = 0;
+
+  summaryRows.forEach(row => {
+    totalLiquidity += ccSafeNumber(row.liquidity, 0);
+    totalReserve += ccSafeNumber(row.reserve, 0);
+    totalUsable += ccSafeNumber(row.max_usable_liquidity, 0);
+  });
+
+  projects.forEach(project => {
+    if(project.project_type === "core") coreCount += 1;
+    else if(project.project_type === "internal") internalCount += 1;
+    else if(project.project_type === "external") externalCount += 1;
+
+    if(project.status === "active") activeCount += 1;
+  });
+
+  ccEls.totalProjects.textContent = String(projects.length);
+  ccEls.totalLiquidity.textContent = ccFormatPi(totalLiquidity);
+  ccEls.totalInvestors.textContent = String(investorData.total || 0);
+  ccEls.totalReserve.textContent = ccFormatPi(totalReserve);
+
+  ccEls.totalUsableLiquidity.textContent =
+    `Usable: ${ccFormatPi(totalUsable)}`;
+
+  ccEls.projectTypeSummary.textContent =
+    `Core: ${coreCount} • Internal: ${internalCount} • External: ${externalCount}`;
+
+  ccEls.activeProjectsCount.textContent =
+    `Active projects: ${activeCount}`;
+
+  ccEls.lastRefreshAt.textContent =
+    `Last refresh: ${new Date().toLocaleString()}`;
+}
+
+async function renderProjects({ projects, summaryMap, investorData }){
+  if(!projects.length){
+    ccEls.projectList.className = "empty";
+    ccEls.projectList.innerHTML = "No projects found.";
+    return;
+  }
+
+  const cards = [];
+
+  for(const project of projects){
+    const summary = summaryMap[project.project_code] || {};
+    const investors = investorData.byProject[project.project_code] || 0;
+
+    let roi = 0;
+    try{
+      if(typeof calculateProjectROI === "function"){
+        const result = await calculateProjectROI(project.project_code);
+        roi = ccSafeNumber(result, 0);
+      }else{
+        roi = ccSafeNumber(project.roi, 0);
+      }
+    }catch(e){
+      roi = ccSafeNumber(project.roi, 0);
+    }
+
+    cards.push(`
+      <div class="project-card">
+        <div class="project-title">
+          ${ccEscapeHtml(project.icon || "📦")} ${ccEscapeHtml(project.project_name || project.project_code)}
+        </div>
+
+        <div class="project-desc">
+          ${ccEscapeHtml(project.description || "Albukhr Project")}
+        </div>
+
+        <div class="badges">
+          <span class="badge ${getTypeBadgeClass(project.project_type)}">
+            ${ccEscapeHtml(ccFormatProjectType(project.project_type))}
+          </span>
+
+          <span class="badge ${getStatusBadgeClass(project.status)}">
+            ${ccEscapeHtml(ccFormatProjectStatus(project.status))}
+          </span>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-box">
+            <div class="kpi-title">Project Code</div>
+            <div class="kpi-value">${ccEscapeHtml(project.project_code || "-")}</div>
+          </div>
+
+          <div class="kpi-box">
+            <div class="kpi-title">Investors</div>
+            <div class="kpi-value">${investors}</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>Liquidity</div>
+          <div>${ccFormatPi(summary.liquidity)}</div>
+        </div>
+
+        <div class="row">
+          <div>Reserve</div>
+          <div>${ccFormatPi(summary.reserve)}</div>
+        </div>
+
+        <div class="row">
+          <div>Usable Liquidity</div>
+          <div>${ccFormatPi(summary.max_usable_liquidity)}</div>
+        </div>
+
+        <div class="row">
+          <div>Minimum Liquidity</div>
+          <div>${ccFormatPi(summary.min_liquidity)}</div>
+        </div>
+
+        <div class="row">
+          <div>Reward Rate</div>
+          <div>${ccSafeNumber(summary.reward_rate, 0)}%</div>
+        </div>
+
+        <div class="row">
+          <div>ROI</div>
+          <div>${roi}%</div>
+        </div>
+
+        <div class="actions">
+          <button onclick="openProject('${ccEscapeHtml(project.project_code)}')">
+            Open Dashboard
+          </button>
+
+          <button class="secondary" onclick="openProjectTreasury('${ccEscapeHtml(project.project_code)}')">
+            Treasury View
+          </button>
+
+          <button class="secondary" onclick="openProjectUpdates('${ccEscapeHtml(project.project_code)}')">
+            Project Updates
+          </button>
+
+          <button class="pause" onclick="pauseProject('${ccEscapeHtml(project.project_code)}')">
+            Pause Project
+          </button>
+        </div>
+      </div>
+    `);
+  }
+
+  ccEls.projectList.className = "";
+  ccEls.projectList.innerHTML = cards.join("");
+}
+
+function buildLiquidityPriority(summaryRows = []){
+  return [...summaryRows]
+    .map(row => {
+      const min = ccSafeNumber(row.min_liquidity, 0);
+      const current = ccSafeNumber(row.liquidity, 0);
+      const gap = Math.max(0, min - current);
+
+      return {
+        project_code: row.project_code,
+        project_name: row.project_name,
+        project_type: row.project_type,
+        liquidity_need: gap
+      };
+    })
+    .filter(row => row.liquidity_need > 0)
+    .sort((a,b) => b.liquidity_need - a.liquidity_need)
+    .slice(0, 5);
+}
+
+function buildTopLiquidity(summaryRows = []){
+  return [...summaryRows]
+    .sort((a,b) => ccSafeNumber(b.liquidity, 0) - ccSafeNumber(a.liquidity, 0))
+    .slice(0, 5);
+}
+
+function buildReservePressure(summaryRows = []){
+  return [...summaryRows]
+    .map(row => {
+      const liquidity = ccSafeNumber(row.liquidity, 0);
+      const reserve = ccSafeNumber(row.reserve, 0);
+      const ratio = liquidity > 0 ? (reserve / liquidity) * 100 : 0;
+
+      return {
+        ...row,
+        reserve_ratio: ratio
+      };
+    })
+    .sort((a,b) => b.reserve_ratio - a.reserve_ratio)
+    .slice(0, 5);
+}
+
+function renderEconomicPanel({ summaryRows }){
+  const liquidityPriority = buildLiquidityPriority(summaryRows);
+  const topLiquidity = buildTopLiquidity(summaryRows);
+  const reservePressure = buildReservePressure(summaryRows);
+
+  ccEls.economicPanel.className = "panel-grid";
+  ccEls.economicPanel.innerHTML = `
+    <div class="card">
+      <b>Projects Needing Liquidity</b>
+      <br><br>
+      ${
+        liquidityPriority.length
+          ? liquidityPriority.map(item => `
+              <div class="row">
+                <div>${ccEscapeHtml(item.project_name || item.project_code)}</div>
+                <div>${ccFormatPi(item.liquidity_need)}</div>
+              </div>
+            `).join("")
+          : `<div class="muted">No project currently below minimum liquidity rule.</div>`
+      }
+    </div>
+
+    <div class="card">
+      <b>Top Liquidity Projects</b>
+      <br><br>
+      ${
+        topLiquidity.length
+          ? topLiquidity.map(item => `
+              <div class="row">
+                <div>${ccEscapeHtml(item.project_name || item.project_code)}</div>
+                <div>${ccFormatPi(item.liquidity)}</div>
+              </div>
+            `).join("")
+          : `<div class="muted">No liquidity data yet.</div>`
+      }
+    </div>
+
+    <div class="card">
+      <b>Highest Reserve Pressure</b>
+      <br><br>
+      ${
+        reservePressure.length
+          ? reservePressure.map(item => `
+              <div class="row">
+                <div>${ccEscapeHtml(item.project_name || item.project_code)}</div>
+                <div>${ccSafeNumber(item.reserve_ratio, 0).toFixed(2)}%</div>
+              </div>
+            `).join("")
+          : `<div class="muted">No reserve analytics yet.</div>`
+      }
+    </div>
+  `;
+}
+
+async function fetchTreasuryRequests(){
+  if(typeof getSupabaseClient !== "function"){
+    return {
+      success:false,
+      error:"Supabase core helper not available",
+      data:[]
+    };
+  }
+
+  const supabase = getSupabaseClient();
+  if(!supabase){
+    return {
+      success:false,
+      error:"Supabase client not available",
+      data:[]
+    };
+  }
+
+  try{
+    const { data, error } = await supabase
+      .from(TREASURY_REQUESTS_TABLE)
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if(error){
+      return {
+        success:false,
+        error:error.message || "Failed to load treasury requests",
+        data:[]
+      };
+    }
+
+    return {
+      success:true,
+      data: Array.isArray(data) ? data : []
+    };
+  }catch(e){
+    return {
+      success:false,
+      error:e?.message || "Treasury requests fetch failed",
+      data:[]
+    };
+  }
+}
+
+async function renderTreasuryRequests(){
+  const result = await fetchTreasuryRequests();
+
+  if(!result.success){
+    ccEls.treasuryRequests.className = "empty";
+    ccEls.treasuryRequests.innerHTML = `
+      Treasury requests table is not ready yet, or there are no requests to load.
+      <div class="muted" style="margin-top:8px">
+        ${ccEscapeHtml(result.error || "No treasury request data")}
+      </div>
+    `;
+    return;
+  }
+
+  const requests = result.data || [];
+
+  if(!requests.length){
+    ccEls.treasuryRequests.className = "empty";
+    ccEls.treasuryRequests.innerHTML = "No treasury requests found.";
+    return;
+  }
+
+  ccEls.treasuryRequests.className = "";
+
+  ccEls.treasuryRequests.innerHTML = requests.map(req => {
+    const amount = ccSafeNumber(req.amount, 0);
+    const status = String(req.status || "pending");
+
+    return `
+      <div class="project-card">
+        <div class="project-title">
+          ${ccEscapeHtml(req.project_name || req.project_code || "Treasury Request")}
+        </div>
+
+        <div class="row">
+          <div>Project Code</div>
+          <div>${ccEscapeHtml(req.project_code || "-")}</div>
+        </div>
+
+        <div class="row">
+          <div>Amount</div>
+          <div>${ccFormatPi(amount)}</div>
+        </div>
+
+        <div class="row">
+          <div>Reason</div>
+          <div>${ccEscapeHtml(req.reason || "-")}</div>
+        </div>
+
+        <div class="row">
+          <div>Status</div>
+          <div>${ccEscapeHtml(status)}</div>
+        </div>
+
+        <div class="row">
+          <div>Created</div>
+          <div>${ccEscapeHtml(req.created_at ? new Date(req.created_at).toLocaleString() : "-")}</div>
+        </div>
+
+        <div class="actions">
+          <button onclick="approveTreasuryFunding('${ccEscapeHtml(req.id)}')">
+            Approve
+          </button>
+
+          <button class="pause" onclick="rejectTreasuryFunding('${ccEscapeHtml(req.id)}')">
+            Reject
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function approveTreasuryFunding(requestId){
+  if(!requestId){
+    alert("Treasury request ID is required.");
+    return;
+  }
+
+  if(typeof getSupabaseClient !== "function"){
+    alert("Supabase client helper is missing.");
+    return;
+  }
+
+  const supabase = getSupabaseClient();
+  if(!supabase){
+    alert("Supabase client is not available.");
+    return;
+  }
+
+  try{
+    const { data: req, error: reqError } = await supabase
+      .from(TREASURY_REQUESTS_TABLE)
+      .select("*")
+      .eq("id", requestId)
+      .maybeSingle();
+
+    if(reqError || !req){
+      alert("Treasury request not found.");
+      return;
+    }
+
+    if(String(req.status || "").toLowerCase() !== "pending"){
+      alert("This treasury request has already been processed.");
+      return;
+    }
+
+    const amount = ccSafeNumber(req.amount, 0);
+    if(amount <= 0){
+      alert("Invalid treasury request amount.");
+      return;
+    }
+
+    const projectCode = req.project_code || req.project;
+    if(!projectCode){
+      alert("Treasury request has no project code.");
+      return;
+    }
+
+    const funding = await safeAddProjectLiquidity(
+      projectCode,
+      amount,
+      {
+        actor_userid: "admin",
+        actor_username: "Ecosystem Control Center",
+        note: "Treasury request approved",
+        meta: {
+          treasury_request_id: req.id,
+          source: "ecosystem_control_center"
+        }
+      }
+    );
+
+    if(funding?.error){
+      alert(funding.error);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from(TREASURY_REQUESTS_TABLE)
+      .update({
+        status: "approved",
+        processed_at: new Date().toISOString()
+      })
+      .eq("id", requestId);
+
+    if(updateError){
+      alert(updateError.message || "Request approved but failed to update request status.");
+      return;
+    }
+
+    alert("Treasury request approved successfully.");
+    await renderAllControlCenter();
+
+  }catch(e){
+    console.error("approveTreasuryFunding error:", e);
+    alert(e?.message || "Failed to approve treasury request.");
+  }
+}
+
+async function rejectTreasuryFunding(requestId){
+  if(!requestId){
+    alert("Treasury request ID is required.");
+    return;
+  }
+
+  if(typeof getSupabaseClient !== "function"){
+    alert("Supabase client helper is missing.");
+    return;
+  }
+
+  const supabase = getSupabaseClient();
+  if(!supabase){
+    alert("Supabase client is not available.");
+    return;
+  }
+
+  try{
+    const { error } = await supabase
+      .from(TREASURY_REQUESTS_TABLE)
+      .update({
+        status: "rejected",
+        processed_at: new Date().toISOString()
+      })
+      .eq("id", requestId);
+
+    if(error){
+      alert(error.message || "Failed to reject treasury request.");
+      return;
+    }
+
+    alert("Treasury request rejected.");
+    await renderAllControlCenter();
+
+  }catch(e){
+    console.error("rejectTreasuryFunding error:", e);
+    alert(e?.message || "Failed to reject treasury request.");
+  }
+}
+
+function openProject(projectCode){
+  localStorage.setItem("albukhr_current_project", projectCode);
+  window.location.href = "Albukhr-internal-project-dashboard.html";
+}
+
+function openProjectTreasury(projectCode){
+  localStorage.setItem("albukhr_current_project", projectCode);
+  window.location.href = "Albukhr-internal-project-dashboard.html";
+}
+
+function openProjectUpdates(projectCode){
+  localStorage.setItem("albukhr_update_project", projectCode);
+  window.location.href = "core-project-updates.html";
+}
+
+async function pauseProject(projectCode){
+  if(!projectCode){
+    alert("Project code is required.");
+    return;
+  }
+
+  if(typeof getSupabaseClient !== "function"){
+    alert("Supabase client helper is missing.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Are you sure you want to pause project: ${projectCode}?`
+  );
+
+  if(!confirmed) return;
+
+  const supabase = getSupabaseClient();
+  if(!supabase){
+    alert("Supabase client is not available.");
+    return;
+  }
+
+  try{
+    const { error } = await supabase
+      .from("projects")
+      .update({
+        status: "inactive"
+      })
+      .eq("project_code", projectCode);
+
+    if(error){
+      alert(error.message || "Failed to pause project.");
+      return;
+    }
+
+    alert(`Project paused: ${projectCode}`);
+
+    if(typeof refreshProjectsCache === "function"){
+      await refreshProjectsCache();
+    }
+
+    await renderAllControlCenter();
+
+  }catch(e){
+    console.error("pauseProject error:", e);
+    alert(e?.message || "Failed to pause project.");
+  }
+}
+
+async function renderAllControlCenter(){
+  if(__controlCenterBusy) return;
+  __controlCenterBusy = true;
+
+  try{
+    ccEls.projectList.className = "loading";
+    ccEls.projectList.innerHTML = "Loading projects...";
+
+    ccEls.economicPanel.className = "loading";
+    ccEls.economicPanel.innerHTML = "Loading economic intelligence...";
+
+    ccEls.treasuryRequests.className = "loading";
+    ccEls.treasuryRequests.innerHTML = "Loading treasury requests...";
+
+    const data = await loadControlCenterData();
+
+    renderControlSummary(data);
+    await renderProjects(data);
+    renderEconomicPanel(data);
+    await renderTreasuryRequests();
+
+  }catch(err){
+    console.error("Control center render error:", err);
+
+    ccEls.projectList.className = "error-box";
+    ccEls.projectList.innerHTML = `
+      Failed to load ecosystem control center.
+      <div class="muted" style="margin-top:8px">
+        ${ccEscapeHtml(err?.message || "Unknown error")}
+      </div>
+    `;
+
+    ccEls.economicPanel.className = "empty";
+    ccEls.economicPanel.innerHTML = "Economic intelligence unavailable.";
+
+    ccEls.treasuryRequests.className = "empty";
+    ccEls.treasuryRequests.innerHTML = "Treasury requests unavailable.";
+
+  }finally{
+    __controlCenterBusy = false;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+  if(!guardControlCenterAdmin()) return;
+
+  if(typeof loadProjects === "function"){
+    try{
+      await loadProjects(true);
+    }catch(e){
+      console.warn("Projects preload failed:", e);
+    }
+  }
+
+  await renderAllControlCenter();
+
+  setInterval(async ()=>{
+    await renderAllControlCenter();
+  }, CONTROL_CENTER_REFRESH_MS);
+});
+</script>
+
+</body>
+  </html>
