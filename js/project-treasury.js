@@ -1,61 +1,60 @@
 /* =========================================
-   ALBUKHR PROJECT TREASURY ENGINE v3 FINAL
-   SUPABASE TREASURY + TRANSACTION LEDGER
+   ALBUKHR PROJECT TREASURY ENGINE v4 FINAL
+   SUPABASE CORE TREASURY + TX LEDGER
 ========================================= */
 
 /*
-  Wannan file yana aiki da:
-  - projects-engine.js
-  - smart-liquidity-engine.js
+  DEPENDS ON:
+  1) js/supabase-core.js
+  2) js/projects-engine.js
 
   TABLES:
-  1) projects
-  2) project_treasury
-  3) project_treasury_transactions
+  - project_treasury
+  - project_treasury_transactions
+
+  PROJECT TYPES SUPPORTED:
+  - core
+  - internal
+  - external
 */
 
 /* =========================================
-   CONFIG
+   TABLE CONFIG
 ========================================= */
 const TREASURY_TABLE = "project_treasury";
 const TREASURY_TX_TABLE = "project_treasury_transactions";
 
 /* =========================================
    SUPABASE CLIENT RESOLUTION
+   - tied to supabase-core.js
 ========================================= */
 function getTreasurySupabaseClient(){
 
-  if(window.supabaseClient){
-    return window.supabaseClient;
+  if(typeof window.getAlbukhrSupabaseClient === "function"){
+    const client = window.getAlbukhrSupabaseClient();
+    if(client) return client;
   }
 
-  if(window.supabase){
-    try{
-      if(window.SUPABASE_URL && window.SUPABASE_KEY){
-        return window.supabase.createClient(
-          window.SUPABASE_URL,
-          window.SUPABASE_KEY
-        );
-      }
-    }catch(e){
-      console.warn("Treasury supabase client creation failed:", e);
-    }
+  if(window.albukhrSupabase){
+    return window.albukhrSupabase;
   }
+
+  console.warn(
+    "project-treasury: ALBUKHR Supabase Core client not found. " +
+    "Make sure js/supabase-core.js is loaded before js/project-treasury.js"
+  );
 
   return null;
 }
 
 /* =========================================
-   SAFE NUMBER
+   SAFE HELPERS
 ========================================= */
 function treasurySafeNumber(value, fallback = 0){
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-/* =========================================
-   SAFE STRING
-========================================= */
 function treasurySafeString(value, fallback = ""){
   if(value === null || value === undefined){
     return fallback;
@@ -63,15 +62,12 @@ function treasurySafeString(value, fallback = ""){
   return String(value);
 }
 
-/* =========================================
-   NOW ISO
-========================================= */
 function treasuryNowISO(){
   return new Date().toISOString();
 }
 
 /* =========================================
-   REQUIRE PROJECTS ENGINE
+   ASSERT DEPENDENCIES
 ========================================= */
 function assertProjectsEngine(){
 
@@ -93,21 +89,38 @@ function normalizeTreasuryRow(row = {}){
     project_code: treasurySafeString(row.project_code),
     project_name: treasurySafeString(row.project_name),
     project_type: treasurySafeString(row.project_type || "core"),
-    liquidity_balance: treasurySafeNumber(row.liquidity_balance, 0),
-    total_added: treasurySafeNumber(row.total_added, 0),
-    total_withdrawn: treasurySafeNumber(row.total_withdrawn, 0),
-    total_reward_funded: treasurySafeNumber(row.total_reward_funded, 0),
-    status: treasurySafeString(row.status || "active"),
-    last_activity_at: row.last_activity_at || null,
-    created_at: row.created_at || null,
-    updated_at: row.updated_at || null,
+
+    liquidity_balance:
+      treasurySafeNumber(row.liquidity_balance, 0),
+
+    total_added:
+      treasurySafeNumber(row.total_added, 0),
+
+    total_withdrawn:
+      treasurySafeNumber(row.total_withdrawn, 0),
+
+    total_reward_funded:
+      treasurySafeNumber(row.total_reward_funded, 0),
+
+    status:
+      treasurySafeString(row.status || "active"),
+
+    last_activity_at:
+      row.last_activity_at || null,
+
+    created_at:
+      row.created_at || null,
+
+    updated_at:
+      row.updated_at || null,
+
     raw: row
   };
 
 }
 
 /* =========================================
-   NORMALIZE TX ROW
+   NORMALIZE TREASURY TX ROW
 ========================================= */
 function normalizeTreasuryTxRow(row = {}){
 
@@ -116,15 +129,34 @@ function normalizeTreasuryTxRow(row = {}){
     project_code: treasurySafeString(row.project_code),
     project_name: treasurySafeString(row.project_name),
     project_type: treasurySafeString(row.project_type || "core"),
-    tx_type: treasurySafeString(row.tx_type),
-    amount: treasurySafeNumber(row.amount, 0),
-    balance_before: treasurySafeNumber(row.balance_before, 0),
-    balance_after: treasurySafeNumber(row.balance_after, 0),
-    actor_userid: treasurySafeString(row.actor_userid),
-    actor_username: treasurySafeString(row.actor_username),
-    note: treasurySafeString(row.note),
-    meta: row.meta || null,
-    created_at: row.created_at || null,
+
+    tx_type:
+      treasurySafeString(row.tx_type),
+
+    amount:
+      treasurySafeNumber(row.amount, 0),
+
+    balance_before:
+      treasurySafeNumber(row.balance_before, 0),
+
+    balance_after:
+      treasurySafeNumber(row.balance_after, 0),
+
+    actor_userid:
+      treasurySafeString(row.actor_userid),
+
+    actor_username:
+      treasurySafeString(row.actor_username),
+
+    note:
+      treasurySafeString(row.note),
+
+    meta:
+      row.meta || {},
+
+    created_at:
+      row.created_at || null,
+
     raw: row
   };
 
@@ -141,8 +173,13 @@ async function getTreasuryProjectMeta(projectCode){
     return null;
   }
 
-  const project = await getProjectMeta(projectCode);
-  return project || null;
+  try{
+    const project = await getProjectMeta(projectCode);
+    return project || null;
+  }catch(e){
+    console.error("getTreasuryProjectMeta error:", e);
+    return null;
+  }
 
 }
 
@@ -151,10 +188,14 @@ async function getTreasuryProjectMeta(projectCode){
 ========================================= */
 async function fetchProjectTreasuryRow(projectCode){
 
+  if(!projectCode){
+    return { error:"Project code is required" };
+  }
+
   const supabase = getTreasurySupabaseClient();
 
   if(!supabase){
-    return { error:"Supabase client not available" };
+    return { error:"Supabase core client not available" };
   }
 
   try{
@@ -166,7 +207,9 @@ async function fetchProjectTreasuryRow(projectCode){
       .maybeSingle();
 
     if(error){
-      return { error:error.message || "Failed to fetch treasury" };
+      return {
+        error:error.message || "Failed to fetch treasury"
+      };
     }
 
     return {
@@ -190,7 +233,7 @@ async function createProjectTreasury(projectCode){
   const supabase = getTreasurySupabaseClient();
 
   if(!supabase){
-    return { error:"Supabase client not available" };
+    return { error:"Supabase core client not available" };
   }
 
   const project = await getTreasuryProjectMeta(projectCode);
@@ -203,10 +246,12 @@ async function createProjectTreasury(projectCode){
     project_code: project.project_code,
     project_name: project.project_name,
     project_type: project.project_type || "core",
+
     liquidity_balance: 0,
     total_added: 0,
     total_withdrawn: 0,
     total_reward_funded: 0,
+
     status: "active",
     last_activity_at: treasuryNowISO()
   };
@@ -282,7 +327,6 @@ async function getProjectTreasury(projectCode){
   }
 
   return ensured.data;
-
 }
 
 /* =========================================
@@ -323,21 +367,24 @@ async function insertTreasuryTransaction({
   const supabase = getTreasurySupabaseClient();
 
   if(!supabase){
-    return { error:"Supabase client not available" };
+    return { error:"Supabase core client not available" };
   }
 
   const payload = {
     project_code: treasurySafeString(project_code),
     project_name: treasurySafeString(project_name),
     project_type: treasurySafeString(project_type || "core"),
+
     tx_type: treasurySafeString(tx_type),
     amount: treasurySafeNumber(amount, 0),
     balance_before: treasurySafeNumber(balance_before, 0),
     balance_after: treasurySafeNumber(balance_after, 0),
+
     actor_userid: treasurySafeString(actor_userid),
     actor_username: treasurySafeString(actor_username),
     note: treasurySafeString(note),
     meta: meta || {},
+
     created_at: treasuryNowISO()
   };
 
@@ -376,7 +423,7 @@ async function updateTreasuryRow(projectCode, patch = {}){
   const supabase = getTreasurySupabaseClient();
 
   if(!supabase){
-    return { error:"Supabase client not available" };
+    return { error:"Supabase core client not available" };
   }
 
   try{
@@ -438,7 +485,7 @@ async function addProjectLiquidity(projectCode, amount, meta = {}){
   }
 
   const balanceBefore =
-    treasurySafeNumber(treasury.liquidity_balance);
+    treasurySafeNumber(treasury.liquidity_balance, 0);
 
   const balanceAfter =
     balanceBefore + amount;
@@ -448,7 +495,7 @@ async function addProjectLiquidity(projectCode, amount, meta = {}){
     project_type: project.project_type || "core",
     liquidity_balance: balanceAfter,
     total_added:
-      treasurySafeNumber(treasury.total_added) + amount,
+      treasurySafeNumber(treasury.total_added, 0) + amount,
     last_activity_at: treasuryNowISO(),
     status: "active"
   };
@@ -517,7 +564,7 @@ async function projectInternalWithdraw(projectCode, amount, meta = {}){
   }
 
   const balanceBefore =
-    treasurySafeNumber(treasury.liquidity_balance);
+    treasurySafeNumber(treasury.liquidity_balance, 0);
 
   if(amount > balanceBefore){
     return { error:"Insufficient project liquidity" };
@@ -531,7 +578,7 @@ async function projectInternalWithdraw(projectCode, amount, meta = {}){
     project_type: project.project_type || "core",
     liquidity_balance: balanceAfter,
     total_withdrawn:
-      treasurySafeNumber(treasury.total_withdrawn) + amount,
+      treasurySafeNumber(treasury.total_withdrawn, 0) + amount,
     last_activity_at: treasuryNowISO(),
     status: "active"
   };
@@ -600,7 +647,7 @@ async function fundRewardFromTreasury(projectCode, amount, meta = {}){
   }
 
   const balanceBefore =
-    treasurySafeNumber(treasury.liquidity_balance);
+    treasurySafeNumber(treasury.liquidity_balance, 0);
 
   if(amount > balanceBefore){
     return { error:"Insufficient project liquidity" };
@@ -614,7 +661,7 @@ async function fundRewardFromTreasury(projectCode, amount, meta = {}){
     project_type: project.project_type || "core",
     liquidity_balance: balanceAfter,
     total_reward_funded:
-      treasurySafeNumber(treasury.total_reward_funded) + amount,
+      treasurySafeNumber(treasury.total_reward_funded, 0) + amount,
     last_activity_at: treasuryNowISO(),
     status: "active"
   };
@@ -713,11 +760,10 @@ async function getProjectTreasurySnapshot(projectCode, historyLimit = 20){
     return { error:treasury.error };
   }
 
-  const history =
-    await getProjectTreasuryHistory(
-      projectCode,
-      historyLimit
-    );
+  const history = await getProjectTreasuryHistory(
+    projectCode,
+    historyLimit
+  );
 
   return {
     success:true,
@@ -729,7 +775,7 @@ async function getProjectTreasurySnapshot(projectCode, historyLimit = 20){
 }
 
 /* =========================================
-   ADMIN: GET ALL TREASURIES
+   GET ALL TREASURIES
 ========================================= */
 async function getAllProjectTreasuries(){
 
@@ -757,6 +803,63 @@ async function getAllProjectTreasuries(){
     console.error("getAllProjectTreasuries network error:", e);
     return [];
   }
+
+}
+
+/* =========================================
+   GET TREASURIES BY TYPE
+========================================= */
+async function getProjectTreasuriesByType(projectType){
+
+  const type =
+    treasurySafeString(projectType).trim().toLowerCase();
+
+  if(!type){
+    return [];
+  }
+
+  const rows = await getAllProjectTreasuries();
+
+  return rows.filter(row => {
+    return treasurySafeString(row.project_type)
+      .trim()
+      .toLowerCase() === type;
+  });
+
+}
+
+async function getCoreProjectTreasuries(){
+  return await getProjectTreasuriesByType("core");
+}
+
+async function getInternalProjectTreasuries(){
+  return await getProjectTreasuriesByType("internal");
+}
+
+async function getExternalProjectTreasuries(){
+  return await getProjectTreasuriesByType("external");
+}
+
+/* =========================================
+   BULK SNAPSHOT FOR DASHBOARDS
+========================================= */
+async function getAllTreasurySnapshots(){
+
+  const treasuries = await getAllProjectTreasuries();
+
+  return treasuries.map(row => {
+    return {
+      project_code: row.project_code,
+      project_name: row.project_name,
+      project_type: row.project_type,
+      liquidity_balance: treasurySafeNumber(row.liquidity_balance, 0),
+      total_added: treasurySafeNumber(row.total_added, 0),
+      total_withdrawn: treasurySafeNumber(row.total_withdrawn, 0),
+      total_reward_funded: treasurySafeNumber(row.total_reward_funded, 0),
+      status: row.status || "active",
+      last_activity_at: row.last_activity_at || null
+    };
+  });
 
 }
 
@@ -795,4 +898,33 @@ async function getTreasuryEngineSummary(projectCode){
     last_activity_at: treasury.last_activity_at
   };
 
-   }
+}
+
+/* =========================================
+   GLOBAL EXPORTS
+========================================= */
+window.fetchProjectTreasuryRow = fetchProjectTreasuryRow;
+window.createProjectTreasury = createProjectTreasury;
+window.ensureProjectTreasury = ensureProjectTreasury;
+
+window.getProjectTreasury = getProjectTreasury;
+window.getProjectLiquidity = getProjectLiquidity;
+
+window.addProjectLiquidity = addProjectLiquidity;
+window.projectInternalWithdraw = projectInternalWithdraw;
+window.fundRewardFromTreasury = fundRewardFromTreasury;
+
+window.insertTreasuryTransaction = insertTreasuryTransaction;
+window.updateTreasuryRow = updateTreasuryRow;
+
+window.getProjectTreasuryHistory = getProjectTreasuryHistory;
+window.getProjectTreasurySnapshot = getProjectTreasurySnapshot;
+
+window.getAllProjectTreasuries = getAllProjectTreasuries;
+window.getProjectTreasuriesByType = getProjectTreasuriesByType;
+window.getCoreProjectTreasuries = getCoreProjectTreasuries;
+window.getInternalProjectTreasuries = getInternalProjectTreasuries;
+window.getExternalProjectTreasuries = getExternalProjectTreasuries;
+window.getAllTreasurySnapshots = getAllTreasurySnapshots;
+
+window.getTreasuryEngineSummary = getTreasuryEngineSummary;
