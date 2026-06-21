@@ -1,46 +1,55 @@
 /* =========================================
-   ALBUKHR PROJECTS ENGINE v1
-   Supabase-first Project Registry
+   ALBUKHR PROJECTS ENGINE v2 FINAL
+   Supabase Core-Compatible Project Registry
 ========================================= */
 
 /*
-  Wannan file shi ne single source of truth
-  na project metadata a ALBUKHR.
+  Wannan file shi ne SINGLE SOURCE OF TRUTH
+  na ALBUKHR project metadata.
 
   Yana aiki da:
-  - projects table a Supabase
-  - smart-liquidity-engine.js
-  - project-treasury.js
-  - future contributor / staking engines
+  - js/supabase-core.js
+  - js/project-treasury.js
+  - js/smart-liquidity-engine.js
+  - ecosystem dashboards
+  - future internal/external contributor engines
 
   PROJECT TYPES:
   - core
   - internal
   - external
+
+  REQUIRED BEFORE THIS FILE:
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-core.js"></script>
 */
 
 /* =========================================
+   TABLE CONFIG
+========================================= */
+const ALBUKHR_PROJECTS_TABLE = "projects";
+
+/* =========================================
    SUPABASE CLIENT RESOLUTION
+   - now tied to supabase-core.js
 ========================================= */
 function getProjectsSupabaseClient(){
 
-  if(window.supabaseClient){
-    return window.supabaseClient;
+  // primary source: new core getter
+  if(typeof window.getAlbukhrSupabaseClient === "function"){
+    const client = window.getAlbukhrSupabaseClient();
+    if(client) return client;
   }
 
-  if(window.supabase){
-    try{
-      // idan akwai global keys a wani file
-      if(window.SUPABASE_URL && window.SUPABASE_KEY){
-        return window.supabase.createClient(
-          window.SUPABASE_URL,
-          window.SUPABASE_KEY
-        );
-      }
-    }catch(e){
-      console.warn("Supabase client creation failed:", e);
-    }
+  // fallback: direct global from supabase-core.js
+  if(window.albukhrSupabase){
+    return window.albukhrSupabase;
   }
+
+  console.warn(
+    "projects-engine: ALBUKHR Supabase Core client not found. " +
+    "Make sure js/supabase-core.js is loaded before js/projects-engine.js"
+  );
 
   return null;
 }
@@ -48,6 +57,7 @@ function getProjectsSupabaseClient(){
 /* =========================================
    FALLBACK LOCAL CONFIG
    - idan Supabase bai dawo ba
+   - core projects na farko
 ========================================= */
 const ALBUKHR_PROJECTS_FALLBACK = [
   {
@@ -65,7 +75,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 1,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Labbaika",
@@ -82,7 +95,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 2,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Barsh",
@@ -99,7 +115,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 3,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Urban",
@@ -116,7 +135,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 4,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Khairat",
@@ -133,7 +155,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 5,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Hauwal",
@@ -150,7 +175,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 6,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   },
   {
     project_code: "Raheem",
@@ -167,7 +195,10 @@ const ALBUKHR_PROJECTS_FALLBACK = [
     min_liquidity: 100,
     reward_rate: 0.02,
     sort_order: 7,
-    is_visible: true
+    is_visible: true,
+    treasury_enabled: true,
+    staking_enabled: true,
+    contributions_enabled: true
   }
 ];
 
@@ -178,6 +209,7 @@ let __albukhrProjectsCache = [];
 let __albukhrProjectsLoaded = false;
 let __albukhrProjectsLoading = false;
 let __albukhrProjectsLastLoadedAt = null;
+let __albukhrProjectsLastSource = "none";
 
 /* =========================================
    HELPERS
@@ -187,8 +219,15 @@ function safeNum(value, fallback = 0){
   return Number.isFinite(n) ? n : fallback;
 }
 
+function safeStr(value, fallback = ""){
+  if(value === null || value === undefined){
+    return fallback;
+  }
+  return String(value);
+}
+
 function normalizeProjectType(type){
-  const t = String(type || "").trim().toLowerCase();
+  const t = safeStr(type).trim().toLowerCase();
 
   if(t === "core") return "core";
   if(t === "internal") return "internal";
@@ -198,7 +237,7 @@ function normalizeProjectType(type){
 }
 
 function normalizeProjectStatus(status){
-  const s = String(status || "").trim().toLowerCase();
+  const s = safeStr(status).trim().toLowerCase();
 
   if(s === "active") return "active";
   if(s === "inactive") return "inactive";
@@ -211,17 +250,20 @@ function normalizeProjectStatus(status){
 function normalizeDurations(value){
 
   if(Array.isArray(value)){
-    return value
+    const arr = value
       .map(v => Number(v))
       .filter(v => Number.isFinite(v) && v > 0);
+
+    return arr.length ? arr : [30, 60, 90];
   }
 
-  // idan text ne kamar "30,60,90"
   if(typeof value === "string" && value.trim()){
-    return value
+    const arr = value
       .split(",")
       .map(v => Number(v.trim()))
       .filter(v => Number.isFinite(v) && v > 0);
+
+    return arr.length ? arr : [30, 60, 90];
   }
 
   return [30, 60, 90];
@@ -230,7 +272,7 @@ function normalizeDurations(value){
 function normalizeProjectRow(row = {}){
 
   const code =
-    String(
+    safeStr(
       row.project_code ||
       row.code ||
       row.slug ||
@@ -238,7 +280,7 @@ function normalizeProjectRow(row = {}){
     ).trim();
 
   const name =
-    String(
+    safeStr(
       row.project_name ||
       row.title ||
       code ||
@@ -247,40 +289,34 @@ function normalizeProjectRow(row = {}){
 
   return {
     id: row.id ?? null,
+
     project_code: code,
     project_name: name,
     title: name,
 
     project_type:
-      normalizeProjectType(
-        row.project_type
-      ),
+      normalizeProjectType(row.project_type),
 
     status:
-      normalizeProjectStatus(
-        row.status
-      ),
+      normalizeProjectStatus(row.status),
 
     icon:
-      String(row.icon || "📦"),
+      safeStr(row.icon, "📦"),
 
     description:
-      String(
-        row.description ||
-        row.desc ||
+      safeStr(
+        row.description || row.desc,
         "Albukhr Project"
       ),
 
     info:
-      String(
-        row.info ||
+      safeStr(
+        row.info,
         "Project information not available."
       ),
 
     durations:
-      normalizeDurations(
-        row.durations
-      ),
+      normalizeDurations(row.durations),
 
     reserve_percent:
       safeNum(row.reserve_percent, 0.30),
@@ -295,34 +331,28 @@ function normalizeProjectRow(row = {}){
       safeNum(row.sort_order, 9999),
 
     is_visible:
-      row.is_visible === false
-        ? false
-        : true,
+      row.is_visible === false ? false : true,
 
     treasury_enabled:
-      row.treasury_enabled === false
-        ? false
-        : true,
+      row.treasury_enabled === false ? false : true,
 
     staking_enabled:
-      row.staking_enabled === false
-        ? false
-        : true,
+      row.staking_enabled === false ? false : true,
 
     contributions_enabled:
-      row.contributions_enabled === false
-        ? false
-        : true,
+      row.contributions_enabled === false ? false : true,
 
     cover_image:
-      row.cover_image || "",
+      safeStr(row.cover_image, ""),
 
     created_at:
       row.created_at || null,
 
+    updated_at:
+      row.updated_at || null,
+
     raw: row
   };
-
 }
 
 /* =========================================
@@ -339,14 +369,13 @@ function sortProjects(rows = []){
       return aSort - bSort;
     }
 
-    return String(a.project_name || "")
-      .localeCompare(String(b.project_name || ""));
+    return safeStr(a.project_name)
+      .localeCompare(safeStr(b.project_name));
   });
-
 }
 
 /* =========================================
-   LOAD PROJECTS FROM SUPABASE
+   FETCH PROJECTS FROM SUPABASE
 ========================================= */
 async function fetchProjectsFromSupabase(){
 
@@ -355,14 +384,14 @@ async function fetchProjectsFromSupabase(){
   if(!supabase){
     return {
       success:false,
-      error:"Supabase client not available"
+      error:"Supabase core client not available"
     };
   }
 
   try{
 
     const { data, error } = await supabase
-      .from("projects")
+      .from(ALBUKHR_PROJECTS_TABLE)
       .select("*")
       .order("sort_order", { ascending:true })
       .order("project_name", { ascending:true });
@@ -374,14 +403,13 @@ async function fetchProjectsFromSupabase(){
       };
     }
 
-    const normalized =
-      (data || [])
+    const normalized = (data || [])
       .map(normalizeProjectRow)
       .filter(p => p.project_code);
 
     return {
       success:true,
-      data: sortProjects(normalized)
+      data:sortProjects(normalized)
     };
 
   }catch(e){
@@ -390,7 +418,6 @@ async function fetchProjectsFromSupabase(){
       error:e?.message || "Projects fetch failed"
     };
   }
-
 }
 
 /* =========================================
@@ -410,12 +437,16 @@ async function loadProjects(forceRefresh = false){
 
   const remote = await fetchProjectsFromSupabase();
 
-  if(remote.success && Array.isArray(remote.data) && remote.data.length){
-
+  if(
+    remote.success &&
+    Array.isArray(remote.data) &&
+    remote.data.length
+  ){
     __albukhrProjectsCache = remote.data;
     __albukhrProjectsLoaded = true;
     __albukhrProjectsLoading = false;
     __albukhrProjectsLastLoadedAt = Date.now();
+    __albukhrProjectsLastSource = "supabase";
 
     return __albukhrProjectsCache;
   }
@@ -431,6 +462,7 @@ async function loadProjects(forceRefresh = false){
   __albukhrProjectsLoaded = true;
   __albukhrProjectsLoading = false;
   __albukhrProjectsLastLoadedAt = Date.now();
+  __albukhrProjectsLastSource = "fallback";
 
   console.warn(
     "Projects engine fallback in use:",
@@ -438,11 +470,10 @@ async function loadProjects(forceRefresh = false){
   );
 
   return __albukhrProjectsCache;
-
 }
 
 /* =========================================
-   FORCE REFRESH CACHE
+   REFRESH CACHE
 ========================================= */
 async function refreshProjectsCache(){
   return await loadProjects(true);
@@ -453,9 +484,7 @@ async function refreshProjectsCache(){
 ========================================= */
 async function getAllProjects(options = {}){
 
-  const rows = await loadProjects(
-    !!options.forceRefresh
-  );
+  const rows = await loadProjects(!!options.forceRefresh);
 
   let result = [...rows];
 
@@ -467,7 +496,27 @@ async function getAllProjects(options = {}){
     result = result.filter(p => p.status === "active");
   }
 
+  if(options.treasuryEnabledOnly){
+    result = result.filter(p => p.treasury_enabled !== false);
+  }
+
+  if(options.stakingEnabledOnly){
+    result = result.filter(p => p.staking_enabled !== false);
+  }
+
+  if(options.contributionsEnabledOnly){
+    result = result.filter(p => p.contributions_enabled !== false);
+  }
+
   return result;
+}
+
+/* =========================================
+   LEGACY ALIAS
+   dashboards da tsofaffin pages na iya kiran getProjects()
+========================================= */
+async function getProjects(options = {}){
+  return await getAllProjects(options);
 }
 
 /* =========================================
@@ -485,11 +534,8 @@ async function getActiveProjects(options = {}){
 ========================================= */
 async function getProjectsByType(projectType, options = {}){
 
-  const type =
-    normalizeProjectType(projectType);
-
-  const rows =
-    await getAllProjects(options);
+  const type = normalizeProjectType(projectType);
+  const rows = await getAllProjects(options);
 
   return rows.filter(p => p.project_type === type);
 }
@@ -511,18 +557,13 @@ async function getExternalProjects(options = {}){
 ========================================= */
 async function groupProjectsByType(options = {}){
 
-  const rows =
-    await getAllProjects(options);
+  const rows = await getAllProjects(options);
 
   return {
-    core:
-      rows.filter(p => p.project_type === "core"),
-    internal:
-      rows.filter(p => p.project_type === "internal"),
-    external:
-      rows.filter(p => p.project_type === "external")
+    core: rows.filter(p => p.project_type === "core"),
+    internal: rows.filter(p => p.project_type === "internal"),
+    external: rows.filter(p => p.project_type === "external")
   };
-
 }
 
 /* =========================================
@@ -534,19 +575,21 @@ async function getProjectByCode(projectCode){
 
   const rows = await getAllProjects();
 
-  const code =
-    String(projectCode).trim().toLowerCase();
+  const code = safeStr(projectCode).trim().toLowerCase();
 
   return rows.find(p => {
-    return String(p.project_code)
+    return safeStr(p.project_code)
       .trim()
       .toLowerCase() === code;
   }) || null;
-
 }
 
-/* alias mai sauki */
+/* aliases */
 async function getProjectMeta(projectCode){
+  return await getProjectByCode(projectCode);
+}
+
+async function getProject(projectCode){
   return await getProjectByCode(projectCode);
 }
 
@@ -556,6 +599,10 @@ async function getProjectMeta(projectCode){
 async function getProjectTitle(projectCode){
   const p = await getProjectByCode(projectCode);
   return p?.project_name || projectCode || "Unknown Project";
+}
+
+async function getProjectName(projectCode){
+  return await getProjectTitle(projectCode);
 }
 
 async function getProjectIcon(projectCode){
@@ -621,9 +668,23 @@ async function isExternalProject(projectCode){
   return !!p && p.project_type === "external";
 }
 
+async function isProjectTreasuryEnabled(projectCode){
+  const p = await getProjectByCode(projectCode);
+  return !!p && p.treasury_enabled !== false;
+}
+
+async function isProjectStakingEnabled(projectCode){
+  const p = await getProjectByCode(projectCode);
+  return !!p && p.staking_enabled !== false;
+}
+
+async function isProjectContributionsEnabled(projectCode){
+  const p = await getProjectByCode(projectCode);
+  return !!p && p.contributions_enabled !== false;
+}
+
 /* =========================================
    GET PROJECT RULES
-   - liquidity engine zai iya amfani da shi
 ========================================= */
 async function getProjectRules(projectCode){
 
@@ -642,7 +703,6 @@ async function getProjectRules(projectCode){
     min_liquidity: safeNum(p.min_liquidity, 100),
     reward_rate: safeNum(p.reward_rate, 0.02)
   };
-
 }
 
 /* =========================================
@@ -659,18 +719,57 @@ async function getProjectsEngineSummary(){
     internal: grouped.internal.length,
     external: grouped.external.length,
     loaded: __albukhrProjectsLoaded,
+    loading: __albukhrProjectsLoading,
     last_loaded_at: __albukhrProjectsLastLoadedAt,
-    source:
-      all.length &&
-      !ALBUKHR_PROJECTS_FALLBACK.some(f => f.project_code === all[0]?.project_code)
-        ? "supabase_or_fallback"
-        : "fallback_or_supabase"
+    source: __albukhrProjectsLastSource
   };
-
 }
 
 /* =========================================
-   PRELOAD ON PAGE LOAD (OPTIONAL)
+   GLOBAL EXPORTS
+   domin sauran files su same su
+========================================= */
+window.loadProjects = loadProjects;
+window.refreshProjectsCache = refreshProjectsCache;
+
+window.getProjects = getProjects;
+window.getAllProjects = getAllProjects;
+window.getActiveProjects = getActiveProjects;
+
+window.getProjectsByType = getProjectsByType;
+window.getCoreProjects = getCoreProjects;
+window.getInternalProjects = getInternalProjects;
+window.getExternalProjects = getExternalProjects;
+window.groupProjectsByType = groupProjectsByType;
+
+window.getProjectByCode = getProjectByCode;
+window.getProjectMeta = getProjectMeta;
+window.getProject = getProject;
+
+window.getProjectTitle = getProjectTitle;
+window.getProjectName = getProjectName;
+window.getProjectIcon = getProjectIcon;
+window.getProjectDescription = getProjectDescription;
+window.getProjectInfo = getProjectInfo;
+window.getProjectDurations = getProjectDurations;
+window.getProjectType = getProjectType;
+window.getProjectStatus = getProjectStatus;
+window.projectExists = projectExists;
+
+window.isProjectActive = isProjectActive;
+window.isProjectVisible = isProjectVisible;
+window.isCoreProject = isCoreProject;
+window.isInternalProject = isInternalProject;
+window.isExternalProject = isExternalProject;
+window.isProjectTreasuryEnabled = isProjectTreasuryEnabled;
+window.isProjectStakingEnabled = isProjectStakingEnabled;
+window.isProjectContributionsEnabled = isProjectContributionsEnabled;
+
+window.getProjectRules = getProjectRules;
+window.getProjectsEngineSummary = getProjectsEngineSummary;
+
+/* =========================================
+   PRELOAD ON PAGE LOAD
 ========================================= */
 window.addEventListener("DOMContentLoaded", ()=>{
   loadProjects().catch(err=>{
