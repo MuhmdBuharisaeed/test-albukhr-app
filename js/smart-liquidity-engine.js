@@ -1,23 +1,24 @@
 /* =========================================
-   ALBUKHR SMART LIQUIDITY ENGINE v3 FINAL
-   Supabase Treasury + Rule Protection Layer
+   ALBUKHR SMART LIQUIDITY ENGINE v4 FINAL
+   Rule Layer on Top of Project Treasury
 ========================================= */
 
 /*
   DEPENDS ON:
-  1) projects-engine.js
-  2) project-treasury.js
+  1) js/projects-engine.js
+  2) js/project-treasury.js
 
-  REQUIRED FUNCTIONS FROM projects-engine.js:
+  REQUIRED FROM projects-engine.js:
   - getProjectMeta(projectCode)
   - getProjectRules(projectCode)
   - isProjectActive(projectCode)
 
-  REQUIRED FUNCTIONS FROM project-treasury.js:
+  REQUIRED FROM project-treasury.js:
   - getProjectTreasury(projectCode)
   - addProjectLiquidity(projectCode, amount, meta)
   - projectInternalWithdraw(projectCode, amount, meta)
   - fundRewardFromTreasury(projectCode, amount, meta)
+  - getAllProjectTreasuries()
 */
 
 /* =========================================
@@ -25,6 +26,7 @@
 ========================================= */
 const DEFAULT_RESERVE_PERCENT = 0.30;
 const DEFAULT_MIN_PROJECT_LIQUIDITY = 100;
+const DEFAULT_REWARD_RATE = 0.02;
 
 /* =========================================
    SAFE HELPERS
@@ -39,6 +41,12 @@ function liquiditySafeString(value, fallback = ""){
     return fallback;
   }
   return String(value);
+}
+
+function liquidityRound(value, decimals = 8){
+  const n = liquiditySafeNumber(value, 0);
+  const factor = Math.pow(10, decimals);
+  return Math.round(n * factor) / factor;
 }
 
 /* =========================================
@@ -91,11 +99,15 @@ function assertLiquidityDependencies(){
 }
 
 /* =========================================
-   GET PROJECT RULES (NORMALIZED)
+   GET NORMALIZED PROJECT RULES
 ========================================= */
 async function getLiquidityProjectRules(projectCode){
 
   assertLiquidityDependencies();
+
+  if(!projectCode){
+    return null;
+  }
 
   const meta = await getProjectMeta(projectCode);
 
@@ -124,7 +136,7 @@ async function getLiquidityProjectRules(projectCode){
 
   const rewardRate = liquiditySafeNumber(
     rules.reward_rate,
-    liquiditySafeNumber(meta.reward_rate, 0)
+    liquiditySafeNumber(meta.reward_rate, DEFAULT_REWARD_RATE)
   );
 
   return {
@@ -140,11 +152,17 @@ async function getLiquidityProjectRules(projectCode){
 }
 
 /* =========================================
-   GET PROJECT LIQUIDITY STATUS
+   GET TREASURY STATUS
 ========================================= */
 async function getProjectTreasuryStatus(projectCode){
 
   assertLiquidityDependencies();
+
+  if(!projectCode){
+    return {
+      error:"Project code is required"
+    };
+  }
 
   const rules = await getLiquidityProjectRules(projectCode);
 
@@ -165,17 +183,20 @@ async function getProjectTreasuryStatus(projectCode){
   const liquidity =
     liquiditySafeNumber(treasury.liquidity_balance, 0);
 
-  const reserve =
-    liquidity * liquiditySafeNumber(rules.reserve_percent, DEFAULT_RESERVE_PERCENT);
+  const reservePercent =
+    liquiditySafeNumber(rules.reserve_percent, DEFAULT_RESERVE_PERCENT);
 
   const minLiquidity =
     liquiditySafeNumber(rules.min_liquidity, DEFAULT_MIN_PROJECT_LIQUIDITY);
 
+  const reserve =
+    liquidityRound(liquidity * reservePercent);
+
   const usableAfterReserve =
-    Math.max(0, liquidity - reserve);
+    Math.max(0, liquidityRound(liquidity - reserve));
 
   const usableAfterMinimum =
-    Math.max(0, liquidity - minLiquidity);
+    Math.max(0, liquidityRound(liquidity - minLiquidity));
 
   const maxUsable =
     Math.max(0, Math.min(usableAfterReserve, usableAfterMinimum));
@@ -186,21 +207,26 @@ async function getProjectTreasuryStatus(projectCode){
     project_name: rules.project_name,
     project_type: rules.project_type,
     project_status: rules.status,
+
     liquidity,
     reserve,
-    reserve_percent: rules.reserve_percent,
+    reserve_percent: reservePercent,
     min_liquidity: minLiquidity,
+
     usable_after_reserve: usableAfterReserve,
     usable_after_minimum: usableAfterMinimum,
-    max_usable_liquidity: maxUsable,
-    reward_rate: rules.reward_rate,
+    max_usable_liquidity: liquidityRound(maxUsable),
+
+    reward_rate: liquiditySafeNumber(rules.reward_rate, DEFAULT_REWARD_RATE),
+
     treasury
   };
 
 }
 
 /* =========================================
-   CHECK PROJECT LIQUIDITY
+   CHECK RAW LIQUIDITY ONLY
+   - kawai shin akwai isasshen balance?
 ========================================= */
 async function checkProjectLiquidity(projectCode, amount){
 
@@ -221,7 +247,7 @@ async function checkProjectLiquidity(projectCode, amount){
 }
 
 /* =========================================
-   HAS MINIMUM LIQUIDITY
+   CHECK MINIMUM LIQUIDITY
 ========================================= */
 async function hasMinimumLiquidity(projectCode){
 
@@ -238,13 +264,24 @@ async function hasMinimumLiquidity(projectCode){
 
 /* =========================================
    CAN USE LIQUIDITY
-   Checks reserve + minimum liquidity protection
+   Checks:
+   - project active
+   - enough liquidity
+   - reserve protection
+   - minimum liquidity protection
 ========================================= */
 async function canUseLiquidity(projectCode, amount){
 
   amount = liquiditySafeNumber(amount, 0);
 
-  if(!projectCode || amount <= 0){
+  if(!projectCode){
+    return {
+      allowed:false,
+      reason:"Project code is required"
+    };
+  }
+
+  if(amount <= 0){
     return {
       allowed:false,
       reason:"Invalid amount"
@@ -278,7 +315,8 @@ async function canUseLiquidity(projectCode, amount){
   const minLiquidity =
     liquiditySafeNumber(status.min_liquidity, DEFAULT_MIN_PROJECT_LIQUIDITY);
 
-  const balanceAfter = liquidity - amount;
+  const balanceAfter =
+    liquidityRound(liquidity - amount);
 
   if(amount > liquidity){
     return {
@@ -287,7 +325,6 @@ async function canUseLiquidity(projectCode, amount){
     };
   }
 
-  // reserve protection
   if(balanceAfter < reserve){
     return {
       allowed:false,
@@ -295,7 +332,6 @@ async function canUseLiquidity(projectCode, amount){
     };
   }
 
-  // minimum liquidity protection
   if(balanceAfter < minLiquidity){
     return {
       allowed:false,
@@ -306,10 +342,15 @@ async function canUseLiquidity(projectCode, amount){
   return {
     allowed:true,
     reason:"",
+    project_code: status.project_code,
+    project_name: status.project_name,
+    project_type: status.project_type,
     liquidity,
     reserve,
-    min_liquidity:minLiquidity,
-    balance_after:balanceAfter
+    min_liquidity: minLiquidity,
+    balance_after: balanceAfter,
+    max_usable_liquidity:
+      liquiditySafeNumber(status.max_usable_liquidity, 0)
   };
 
 }
@@ -417,7 +458,7 @@ async function safeFundRewardFromLiquidity(projectCode, amount, meta = {}){
 }
 
 /* =========================================
-   CALCULATE REWARD BY RULE
+   CALCULATE REWARD AMOUNT
 ========================================= */
 async function calculateRewardAmount(projectCode, principalAmount){
 
@@ -434,15 +475,14 @@ async function calculateRewardAmount(projectCode, principalAmount){
   }
 
   const rewardRate =
-    liquiditySafeNumber(rules.reward_rate, 0);
+    liquiditySafeNumber(rules.reward_rate, DEFAULT_REWARD_RATE);
 
-  return principalAmount * rewardRate;
+  return liquidityRound(principalAmount * rewardRate);
 
 }
 
 /* =========================================
    DISTRIBUTE SINGLE STAKE REWARD
-   Utility for future contributor engine
 ========================================= */
 async function distributeSingleStakeReward({
   projectCode,
@@ -505,12 +545,6 @@ async function distributeSingleStakeReward({
 
 /* =========================================
    BULK DISTRIBUTE PROJECT REWARDS
-   Utility for future contributors system
-   stakeRows example:
-   [
-     { id:1, amount:100 },
-     { id:2, amount:50 }
-   ]
 ========================================= */
 async function distributeProjectRewards(projectCode, stakeRows = []){
 
@@ -589,14 +623,14 @@ async function distributeProjectRewards(projectCode, stakeRows = []){
     success:true,
     project_code:projectCode,
     distributed,
-    total_reward:totalReward,
+    total_reward:liquidityRound(totalReward),
     rows:results
   };
 
 }
 
 /* =========================================
-   ENGINE SUMMARY
+   DASHBOARD SUMMARY FOR ONE PROJECT
 ========================================= */
 async function getSmartLiquiditySummary(projectCode){
 
@@ -624,6 +658,7 @@ async function getSmartLiquiditySummary(projectCode){
     project_name: rules.project_name,
     project_type: rules.project_type,
     project_status: rules.status,
+
     liquidity: treasuryStatus.liquidity,
     reserve: treasuryStatus.reserve,
     reserve_percent: treasuryStatus.reserve_percent,
@@ -633,3 +668,144 @@ async function getSmartLiquiditySummary(projectCode){
   };
 
 }
+
+/* =========================================
+   GET ALL SMART LIQUIDITY SUMMARIES
+   - good for ecosystem dashboards
+========================================= */
+async function getAllSmartLiquiditySummaries(){
+
+  if(typeof getAllProjects !== "function"){
+    console.warn("getAllProjects() not found in projects-engine.js");
+    return [];
+  }
+
+  const projects = await getAllProjects({
+    visibleOnly:false,
+    activeOnly:false
+  });
+
+  const rows = [];
+
+  for(const project of projects){
+
+    const summary = await getSmartLiquiditySummary(
+      project.project_code
+    );
+
+    if(summary && !summary.error){
+      rows.push(summary);
+    }else{
+      rows.push({
+        project_code: project.project_code,
+        project_name: project.project_name,
+        project_type: project.project_type || "core",
+        project_status: project.status || "active",
+        liquidity: 0,
+        reserve: 0,
+        reserve_percent:
+          liquiditySafeNumber(project.reserve_percent, DEFAULT_RESERVE_PERCENT),
+        min_liquidity:
+          liquiditySafeNumber(project.min_liquidity, DEFAULT_MIN_PROJECT_LIQUIDITY),
+        max_usable_liquidity: 0,
+        reward_rate:
+          liquiditySafeNumber(project.reward_rate, DEFAULT_REWARD_RATE),
+        error: summary?.error || "Treasury summary unavailable"
+      });
+    }
+  }
+
+  return rows;
+
+}
+
+/* =========================================
+   GROUP SMART LIQUIDITY BY PROJECT TYPE
+========================================= */
+async function getSmartLiquidityGroupedByType(){
+
+  const rows = await getAllSmartLiquiditySummaries();
+
+  return {
+    core: rows.filter(r => r.project_type === "core"),
+    internal: rows.filter(r => r.project_type === "internal"),
+    external: rows.filter(r => r.project_type === "external")
+  };
+
+}
+
+/* =========================================
+   ECOSYSTEM LIQUIDITY TOTALS
+========================================= */
+async function getEcosystemLiquidityTotals(){
+
+  const rows = await getAllSmartLiquiditySummaries();
+
+  let totalLiquidity = 0;
+  let totalReserve = 0;
+  let totalUsable = 0;
+
+  let coreLiquidity = 0;
+  let internalLiquidity = 0;
+  let externalLiquidity = 0;
+
+  rows.forEach(row => {
+
+    const liquidity = liquiditySafeNumber(row.liquidity, 0);
+    const reserve = liquiditySafeNumber(row.reserve, 0);
+    const usable = liquiditySafeNumber(row.max_usable_liquidity, 0);
+
+    totalLiquidity += liquidity;
+    totalReserve += reserve;
+    totalUsable += usable;
+
+    if(row.project_type === "core"){
+      coreLiquidity += liquidity;
+    }
+
+    if(row.project_type === "internal"){
+      internalLiquidity += liquidity;
+    }
+
+    if(row.project_type === "external"){
+      externalLiquidity += liquidity;
+    }
+
+  });
+
+  return {
+    total_projects: rows.length,
+
+    total_liquidity: liquidityRound(totalLiquidity),
+    total_reserve: liquidityRound(totalReserve),
+    total_usable_liquidity: liquidityRound(totalUsable),
+
+    core_liquidity: liquidityRound(coreLiquidity),
+    internal_liquidity: liquidityRound(internalLiquidity),
+    external_liquidity: liquidityRound(externalLiquidity)
+  };
+
+}
+
+/* =========================================
+   GLOBAL EXPORTS
+========================================= */
+window.getLiquidityProjectRules = getLiquidityProjectRules;
+window.getProjectTreasuryStatus = getProjectTreasuryStatus;
+
+window.checkProjectLiquidity = checkProjectLiquidity;
+window.hasMinimumLiquidity = hasMinimumLiquidity;
+window.canUseLiquidity = canUseLiquidity;
+
+window.safeAddProjectLiquidity = safeAddProjectLiquidity;
+window.safeProjectInternalWithdraw = safeProjectInternalWithdraw;
+window.safeFundRewardFromLiquidity = safeFundRewardFromLiquidity;
+
+window.calculateRewardAmount = calculateRewardAmount;
+window.distributeSingleStakeReward = distributeSingleStakeReward;
+window.distributeProjectRewards = distributeProjectRewards;
+
+window.getSmartLiquiditySummary = getSmartLiquiditySummary;
+window.getAllSmartLiquiditySummaries = getAllSmartLiquiditySummaries;
+window.getSmartLiquidityGroupedByType = getSmartLiquidityGroupedByType;
+window.getEcosystemLiquidityTotals = getEcosystemLiquidityTotals;
