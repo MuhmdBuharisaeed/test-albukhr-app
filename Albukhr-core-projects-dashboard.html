@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ALBUKHR Core Projects Dashboard</title>
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#f4f7f6;
+  color:#111;
+  padding-bottom:80px;
+}
+
+.header{
+  background:#0f7a3d;
+  color:white;
+  padding:16px;
+  font-weight:800;
+  font-size:18px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+
+.container{
+  padding:16px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+}
+
+.card-label{
+  font-size:13px;
+  color:#5d6b63;
+  margin-bottom:8px;
+}
+
+.big{
+  font-size:22px;
+  font-weight:800;
+  color:#0f7a3d;
+  line-height:1.2;
+}
+
+.sub{
+  font-size:12px;
+  color:#6f7b75;
+  margin-top:6px;
+}
+
+.section-title{
+  margin:0 0 12px;
+  font-size:16px;
+  font-weight:800;
+  color:#0f7a3d;
+}
+
+.project-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.project-card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  border:1px solid #edf1ef;
+}
+
+.project-title{
+  font-weight:800;
+  margin-bottom:6px;
+  font-size:16px;
+  color:#111;
+}
+
+.project-desc{
+  font-size:12px;
+  color:#68756e;
+  line-height:1.5;
+  margin-bottom:10px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:13px;
+  margin-top:7px;
+  line-height:1.5;
+}
+
+.row strong{
+  color:#222;
+}
+
+.badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:10px 0 6px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#f1f6f3;
+  color:#0f7a3d;
+}
+
+.badge.core{
+  background:#e9f7ef;
+  color:#0f7a3d;
+}
+
+.badge.active{
+  background:#edf9f0;
+  color:#0f7a3d;
+}
+
+.badge.inactive{
+  background:#fff1f1;
+  color:#b02a37;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:12px;
+}
+
+button{
+  padding:10px 12px;
+  border:none;
+  border-radius:10px;
+  background:#0f7a3d;
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+  width:100%;
+}
+
+button.secondary{
+  background:#eef6f1;
+  color:#0f7a3d;
+}
+
+.loading,
+.empty,
+.error-box{
+  background:#fff;
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  font-size:14px;
+}
+
+.loading,
+.empty{
+  color:#66746d;
+  text-align:center;
+}
+
+.error-box{
+  color:#b02a37;
+  border-left:4px solid #b02a37;
+}
+
+.muted{
+  color:#6d7973;
+  font-size:12px;
+}
+
+@media (max-width:820px){
+  .grid,
+  .project-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+  ALBUKHR Core Projects Dashboard
+</div>
+
+<div class="container">
+
+  <!-- TOP SUMMARY -->
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-label">Core Projects</div>
+      <div class="big" id="totalCoreProjects">0</div>
+      <div class="sub" id="activeCoreProjects">
+        Active: 0
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Total Core Liquidity</div>
+      <div class="big" id="totalCoreLiquidity">0 Pi</div>
+      <div class="sub" id="totalCoreUsable">
+        Usable: 0 Pi
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Total Core Reserve</div>
+      <div class="big" id="totalCoreReserve">0 Pi</div>
+      <div class="sub" id="totalCoreRewardRate">
+        Avg Reward Rate: 0%
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Core Investors</div>
+      <div class="big" id="totalCoreInvestors">0</div>
+      <div class="sub" id="lastRefreshAt">
+        Last refresh: —
+      </div>
+    </div>
+
+  </div>
+
+  <h3 class="section-title">Core Project Cards</h3>
+  <div id="projectsGrid" class="loading">Loading core projects...</div>
+
+</div>
+
+<script src="js/admin-auth.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<script src="js/projects-engine.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<script src="js/staking.js"></script>
+<script src="js/capital-protection-engine.js"></script>
+<script src="js/albukhr-project-deployment-engine.js"></script>
+
+<script>
+/* =========================================
+   ALBUKHR CORE PROJECTS DASHBOARD
+   SUPABASE VERSION
+========================================= */
+
+const coreDashboardEls = {
+  totalCoreProjects: document.getElementById("totalCoreProjects"),
+  activeCoreProjects: document.getElementById("activeCoreProjects"),
+  totalCoreLiquidity: document.getElementById("totalCoreLiquidity"),
+  totalCoreUsable: document.getElementById("totalCoreUsable"),
+  totalCoreReserve: document.getElementById("totalCoreReserve"),
+  totalCoreRewardRate: document.getElementById("totalCoreRewardRate"),
+  totalCoreInvestors: document.getElementById("totalCoreInvestors"),
+  lastRefreshAt: document.getElementById("lastRefreshAt"),
+  projectsGrid: document.getElementById("projectsGrid")
+};
+
+let __coreDashboardBusy = false;
+
+/* =========================================
+   HELPERS
+========================================= */
+function formatPi(value){
+  const n = Number(value || 0);
+  return `${n.toFixed(2)} Pi`;
+}
+
+function safeNumber(value, fallback = 0){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function escapeHtml(text = ""){
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatProjectStatus(status){
+  const s = String(status || "").toLowerCase();
+  if(s === "active") return "Active";
+  if(s === "inactive") return "Inactive";
+  if(s === "archived") return "Archived";
+  return s || "Unknown";
+}
+
+/* =========================================
+   ADMIN AUTH GUARD
+========================================= */
+function guardAdmin(){
+
+  if(typeof requireRole === "function"){
+    requireRole([
+      "super_admin",
+      "ecosystem_admin",
+      "project_admin",
+      "finance_admin"
+    ]);
+  }
+
+  if(typeof getAdmin === "function" && !getAdmin()){
+    window.location.href = "admin-login.html";
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================
+   INVESTOR STATS
+========================================= */
+async function getCoreInvestorStats(coreProjects = []){
+
+  let allStakes = [];
+
+  try{
+    if(typeof getAllStakesMerged === "function"){
+      const result = await getAllStakesMerged();
+      if(Array.isArray(result)){
+        allStakes = result;
+      }
+    }
+  }catch(e){
+    console.warn("getAllStakesMerged failed:", e);
+  }
+
+  const byProject = {};
+  coreProjects.forEach(project => {
+    byProject[project.project_code] = 0;
+  });
+
+  allStakes.forEach(stake => {
+    const code = String(
+      stake.project_code ||
+      stake.project ||
+      ""
+    ).trim();
+
+    if(code && byProject.hasOwnProperty(code)){
+      byProject[code] = (byProject[code] || 0) + 1;
+    }
+  });
+
+  const total = Object.values(byProject)
+    .reduce((sum, count) => sum + Number(count || 0), 0);
+
+  return {
+    total,
+    byProject
+  };
+}
+
+/* =========================================
+   ROI HELPER
+========================================= */
+async function getProjectROI(projectCode, fallbackProject = null){
+
+  try{
+    if(typeof calculateProjectROI === "function"){
+      const roi = await calculateProjectROI(projectCode);
+      const n = Number(roi);
+      if(Number.isFinite(n)) return n;
+    }
+  }catch(e){
+    console.warn("calculateProjectROI failed:", e);
+  }
+
+  return safeNumber(fallbackProject?.roi, 0);
+}
+
+/* =========================================
+   LOAD CORE DASHBOARD DATA
+========================================= */
+async function loadCoreDashboardData(){
+
+  const coreProjects = await getCoreProjects({
+    visibleOnly:false,
+    activeOnly:false
+  });
+
+  const summaries = await Promise.all(
+    coreProjects.map(async project => {
+      try{
+        const summary = await getSmartLiquiditySummary(project.project_code);
+        return summary?.error ? null : summary;
+      }catch(e){
+        console.warn("getSmartLiquiditySummary failed:", project.project_code, e);
+        return null;
+      }
+    })
+  );
+
+  const summaryMap = {};
+  summaries.filter(Boolean).forEach(summary => {
+    summaryMap[summary.project_code] = summary;
+  });
+
+  const investorStats =
+    await getCoreInvestorStats(coreProjects);
+
+  return {
+    coreProjects,
+    summaries,
+    summaryMap,
+    investorStats
+  };
+}
+
+/* =========================================
+   RENDER TOP SUMMARY
+========================================= */
+function renderCoreSummary({
+  coreProjects,
+  summaryMap,
+  investorStats
+}){
+
+  const totalProjects = coreProjects.length;
+  const activeProjects =
+    coreProjects.filter(p => p.status === "active").length;
+
+  let totalLiquidity = 0;
+  let totalReserve = 0;
+  let totalUsable = 0;
+  let totalRewardRate = 0;
+
+  coreProjects.forEach(project => {
+    const summary = summaryMap[project.project_code];
+
+    totalLiquidity += safeNumber(summary?.liquidity, 0);
+    totalReserve += safeNumber(summary?.reserve, 0);
+    totalUsable += safeNumber(summary?.max_usable_liquidity, 0);
+    totalRewardRate += safeNumber(summary?.reward_rate, project.reward_rate || 0);
+  });
+
+  const avgRewardRate =
+    totalProjects ? (totalRewardRate / totalProjects) : 0;
+
+  coreDashboardEls.totalCoreProjects.textContent =
+    String(totalProjects);
+
+  coreDashboardEls.activeCoreProjects.textContent =
+    `Active: ${activeProjects}`;
+
+  coreDashboardEls.totalCoreLiquidity.textContent =
+    formatPi(totalLiquidity);
+
+  coreDashboardEls.totalCoreUsable.textContent =
+    `Usable: ${formatPi(totalUsable)}`;
+
+  coreDashboardEls.totalCoreReserve.textContent =
+    formatPi(totalReserve);
+
+  coreDashboardEls.totalCoreRewardRate.textContent =
+    `Avg Reward Rate: ${avgRewardRate.toFixed(2)}%`;
+
+  coreDashboardEls.totalCoreInvestors.textContent =
+    String(investorStats.total || 0);
+
+  coreDashboardEls.lastRefreshAt.textContent =
+    `Last refresh: ${new Date().toLocaleString()}`;
+}
+
+/* =========================================
+   RENDER CORE PROJECT CARDS
+========================================= */
+async function renderCoreProjects({
+  coreProjects,
+  summaryMap,
+  investorStats
+}){
+
+  if(!coreProjects.length){
+    coreDashboardEls.projectsGrid.className = "empty";
+    coreDashboardEls.projectsGrid.innerHTML = "No core projects found.";
+    return;
+  }
+
+  const chunks = [];
+
+  for(const project of coreProjects){
+
+    const summary = summaryMap[project.project_code] || {};
+    const investors =
+      investorStats.byProject[project.project_code] || 0;
+
+    const roi = await getProjectROI(project.project_code, project);
+
+    const liquidity = safeNumber(summary.liquidity, 0);
+    const reserve = safeNumber(summary.reserve, 0);
+    const usable = safeNumber(summary.max_usable_liquidity, 0);
+    const rewardRate = safeNumber(summary.reward_rate, project.reward_rate || 0);
+    const reservePercent = safeNumber(summary.reserve_percent, project.reserve_percent || 0.30) * 100;
+    const minLiquidity = safeNumber(summary.min_liquidity, project.min_liquidity || 100);
+
+    chunks.push(`
+      <div class="project-card">
+
+        <div class="project-title">
+          ${escapeHtml(project.icon || "📦")} ${escapeHtml(project.project_name || project.project_code)}
+        </div>
+
+        <div class="project-desc">
+          ${escapeHtml(project.description || "Albukhr Core Project")}
+        </div>
+
+        <div class="badges">
+          <span class="badge core">Core</span>
+          <span class="badge ${project.status === "active" ? "active" : "inactive"}">
+            ${escapeHtml(formatProjectStatus(project.status))}
+          </span>
+        </div>
+
+        <div class="row">
+          <div>Code</div>
+          <div><strong>${escapeHtml(project.project_code || "-")}</strong></div>
+        </div>
+
+        <div class="row">
+          <div>Liquidity</div>
+          <div>${formatPi(liquidity)}</div>
+        </div>
+
+        <div class="row">
+          <div>Reserve</div>
+          <div>${formatPi(reserve)}</div>
+        </div>
+
+        <div class="row">
+          <div>Usable Liquidity</div>
+          <div>${formatPi(usable)}</div>
+        </div>
+
+        <div class="row">
+          <div>Min Liquidity Rule</div>
+          <div>${formatPi(minLiquidity)}</div>
+        </div>
+
+        <div class="row">
+          <div>Reserve Rule</div>
+          <div>${reservePercent.toFixed(0)}%</div>
+        </div>
+
+        <div class="row">
+          <div>Reward Rate</div>
+          <div>${rewardRate}%</div>
+        </div>
+
+        <div class="row">
+          <div>Investors</div>
+          <div>${investors}</div>
+        </div>
+
+        <div class="row">
+          <div>ROI</div>
+          <div>${safeNumber(roi, 0)}%</div>
+        </div>
+
+        <div class="actions">
+          <button onclick="openProject('${escapeHtml(project.project_code)}')">
+            Open Dashboard
+          </button>
+
+          <button class="secondary" onclick="openProjectUpdates('${escapeHtml(project.project_code)}')">
+            Project Updates
+          </button>
+        </div>
+
+      </div>
+    `);
+  }
+
+  coreDashboardEls.projectsGrid.className = "project-grid";
+  coreDashboardEls.projectsGrid.innerHTML = chunks.join("");
+}
+
+/* =========================================
+   MAIN RENDER
+========================================= */
+async function renderDashboard(){
+
+  if(__coreDashboardBusy) return;
+  __coreDashboardBusy = true;
+
+  try{
+
+    coreDashboardEls.projectsGrid.className = "loading";
+    coreDashboardEls.projectsGrid.innerHTML = "Loading core projects...";
+
+    const data = await loadCoreDashboardData();
+
+    renderCoreSummary(data);
+    await renderCoreProjects(data);
+
+  }catch(err){
+
+    console.error("Core dashboard render error:", err);
+
+    coreDashboardEls.projectsGrid.className = "error-box";
+    coreDashboardEls.projectsGrid.innerHTML = `
+      Failed to load core projects dashboard.<br>
+      <span class="muted">${escapeHtml(err?.message || "Unknown error")}</span>
+    `;
+
+  }finally{
+    __coreDashboardBusy = false;
+  }
+}
+
+/* =========================================
+   OPEN PROJECT DASHBOARD
+========================================= */
+function openProject(projectCode){
+
+  localStorage.setItem(
+    "albukhr_current_project",
+    projectCode
+  );
+
+  /*
+    Wannan ya fi kyau saboda page na gaba
+    zai iya sanin wane type ne daga projectCode.
+    Idan kana da dedicated core-project-details.html
+    za mu iya mayar da shi can daga baya.
+  */
+  window.location.href =
+    "Albukhr-internal-project-dashboard.html";
+}
+
+/* =========================================
+   OPEN PROJECT UPDATES
+========================================= */
+function openProjectUpdates(projectCode){
+
+  localStorage.setItem(
+    "albukhr_update_project",
+    projectCode
+  );
+
+  window.location.href =
+    "core-project-updates.html";
+}
+
+/* =========================================
+   START
+========================================= */
+document.addEventListener("DOMContentLoaded", async ()=>{
+
+  if(!guardAdmin()) return;
+
+  if(typeof loadProjects === "function"){
+    try{
+      await loadProjects(true);
+    }catch(e){
+      console.warn("Projects preload failed:", e);
+    }
+  }
+
+  await renderDashboard();
+
+  setInterval(async ()=>{
+    await renderDashboard();
+  }, 20000);
+
+});
+</script>
+
+</body>
+  </html>
