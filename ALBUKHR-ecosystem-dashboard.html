@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ALBUKHR Ecosystem Dashboard</title>
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#f4f7f6;
+  color:#111;
+  padding-bottom:80px;
+}
+
+.header{
+  background:#0f7a3d;
+  color:#fff;
+  padding:16px;
+  font-weight:800;
+  font-size:18px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+
+.container{
+  padding:16px;
+}
+
+.section-title{
+  margin:0 0 12px;
+  font-size:16px;
+  font-weight:800;
+  color:#0f7a3d;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+}
+
+.card-label{
+  font-size:13px;
+  color:#5d6b63;
+  margin-bottom:8px;
+}
+
+.big{
+  font-size:22px;
+  font-weight:800;
+  color:#0f7a3d;
+  line-height:1.2;
+}
+
+.sub{
+  font-size:12px;
+  color:#6f7b75;
+  margin-top:6px;
+}
+
+.panel{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  margin-bottom:16px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:13px;
+  margin-top:8px;
+  line-height:1.5;
+}
+
+.row strong{
+  color:#222;
+}
+
+.project-card{
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  border:1px solid #edf1ef;
+}
+
+.project-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.project-title{
+  font-size:16px;
+  font-weight:800;
+  color:#111;
+  margin:0;
+}
+
+.project-meta{
+  font-size:12px;
+  color:#68756e;
+  margin-top:4px;
+  line-height:1.5;
+}
+
+.badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#f1f6f3;
+  color:#0f7a3d;
+}
+
+.badge.core{
+  background:#e9f7ef;
+  color:#0f7a3d;
+}
+
+.badge.internal{
+  background:#eef4ff;
+  color:#1f5bd8;
+}
+
+.badge.external{
+  background:#fff4e9;
+  color:#b25a00;
+}
+
+.badge.active{
+  background:#edf9f0;
+  color:#0f7a3d;
+}
+
+.badge.inactive{
+  background:#fff1f1;
+  color:#b02a37;
+}
+
+.loading,
+.empty,
+.error-box{
+  background:#fff;
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+  font-size:14px;
+}
+
+.loading,
+.empty{
+  color:#66746d;
+  text-align:center;
+}
+
+.error-box{
+  color:#b02a37;
+  border-left:4px solid #b02a37;
+}
+
+.muted{
+  color:#6d7973;
+  font-size:12px;
+}
+
+@media (max-width:640px){
+  .grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  ALBUKHR Ecosystem Master Dashboard
+</div>
+
+<div class="container">
+
+  <!-- TOP TOTALS -->
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-label">Total Projects</div>
+      <div class="big" id="totalProjects">0</div>
+      <div class="sub" id="projectTypeBreakdown">
+        Core: 0 • Internal: 0 • External: 0
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Total Liquidity</div>
+      <div class="big" id="totalLiquidity">0 Pi</div>
+      <div class="sub" id="totalUsableLiquidity">
+        Usable: 0 Pi
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Total Investors</div>
+      <div class="big" id="totalInvestors">0</div>
+      <div class="sub" id="totalActiveProjects">
+        Active Projects: 0
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Total Reserve</div>
+      <div class="big" id="totalReserve">0 Pi</div>
+      <div class="sub" id="lastRefreshAt">
+        Last refresh: —
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TYPE TOTALS -->
+  <div class="panel">
+    <h3 class="section-title">Project Type Liquidity</h3>
+
+    <div class="row">
+      <div><strong>Core Projects</strong></div>
+      <div id="coreLiquidity">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>Internal Projects</strong></div>
+      <div id="internalLiquidity">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>External Projects</strong></div>
+      <div id="externalLiquidity">0 Pi</div>
+    </div>
+  </div>
+
+  <!-- PROJECT LIST -->
+  <h3 class="section-title">All Projects</h3>
+  <div id="projectList" class="loading">Loading dashboard...</div>
+
+</div>
+
+<script src="js/admin-auth.js"></script>
+
+<!-- Supabase + New Engines -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+<script src="js/projects-engine.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<!-- Optional modules if already available -->
+<script src="js/staking.js"></script>
+<script src="js/capital-protection-engine.js"></script>
+<script src="js/albukhr-project-deployment-engine.js"></script>
+
+<script>
+/* =========================================
+   ALBUKHR ECOSYSTEM DASHBOARD
+   SUPABASE VERSION
+========================================= */
+
+const dashboardEls = {
+  totalProjects: document.getElementById("totalProjects"),
+  totalLiquidity: document.getElementById("totalLiquidity"),
+  totalInvestors: document.getElementById("totalInvestors"),
+  totalReserve: document.getElementById("totalReserve"),
+  totalUsableLiquidity: document.getElementById("totalUsableLiquidity"),
+  totalActiveProjects: document.getElementById("totalActiveProjects"),
+  projectTypeBreakdown: document.getElementById("projectTypeBreakdown"),
+  lastRefreshAt: document.getElementById("lastRefreshAt"),
+  coreLiquidity: document.getElementById("coreLiquidity"),
+  internalLiquidity: document.getElementById("internalLiquidity"),
+  externalLiquidity: document.getElementById("externalLiquidity"),
+  projectList: document.getElementById("projectList")
+};
+
+let __dashboardBusy = false;
+
+/* =========================================
+   HELPERS
+========================================= */
+function formatPi(value){
+  const n = Number(value || 0);
+  return `${n.toFixed(2)} Pi`;
+}
+
+function escapeHtml(text = ""){
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatProjectType(type){
+  const t = String(type || "").toLowerCase();
+  if(t === "core") return "Core";
+  if(t === "internal") return "Internal";
+  if(t === "external") return "External";
+  return "Unknown";
+}
+
+function formatProjectStatus(status){
+  const s = String(status || "").toLowerCase();
+  if(s === "active") return "Active";
+  if(s === "inactive") return "Inactive";
+  if(s === "archived") return "Archived";
+  return s || "Unknown";
+}
+
+function safeNumber(value, fallback = 0){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/* =========================================
+   ADMIN AUTH GUARD
+========================================= */
+function guardAdmin(){
+
+  if(typeof requireRole === "function"){
+    requireRole([
+      "super_admin",
+      "ecosystem_admin",
+      "finance_admin"
+    ]);
+  }
+
+  if(typeof getAdmin === "function" && !getAdmin()){
+    window.location.href = "admin-login.html";
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================
+   INVESTOR COUNT
+   NOTE:
+   Wannan part yana fallback gracefully.
+========================================= */
+async function getInvestorStats(projects = []){
+
+  let allStakes = [];
+
+  try{
+    if(typeof getAllStakesMerged === "function"){
+      const result = await getAllStakesMerged();
+      if(Array.isArray(result)){
+        allStakes = result;
+      }
+    }
+  }catch(e){
+    console.warn("getAllStakesMerged failed:", e);
+  }
+
+  const totalInvestors = allStakes.length;
+
+  const byProject = {};
+  projects.forEach(p => {
+    byProject[p.project_code] = 0;
+  });
+
+  allStakes.forEach(stake => {
+    const code = String(
+      stake.project_code ||
+      stake.project ||
+      ""
+    ).trim();
+
+    if(code){
+      byProject[code] = (byProject[code] || 0) + 1;
+    }
+  });
+
+  return {
+    totalInvestors,
+    byProject
+  };
+}
+
+/* =========================================
+   ROI HELPER
+========================================= */
+async function getProjectROI(project){
+
+  try{
+    if(typeof calculateProjectROI === "function"){
+      const roi = await calculateProjectROI(project.project_code);
+      const n = Number(roi);
+      return Number.isFinite(n) ? n : 0;
+    }
+  }catch(e){
+    console.warn("calculateProjectROI failed:", e);
+  }
+
+  return safeNumber(project.roi, 0);
+}
+
+/* =========================================
+   LOAD DASHBOARD DATA
+========================================= */
+async function loadDashboardData(){
+
+  const [
+    projects,
+    liquidityRows,
+    ecosystemTotals
+  ] = await Promise.all([
+    getAllProjects({
+      visibleOnly:false,
+      activeOnly:false
+    }),
+    getAllSmartLiquiditySummaries(),
+    getEcosystemLiquidityTotals()
+  ]);
+
+  const investorStats =
+    await getInvestorStats(projects);
+
+  const liquidityMap = {};
+  liquidityRows.forEach(row => {
+    liquidityMap[row.project_code] = row;
+  });
+
+  return {
+    projects,
+    liquidityRows,
+    liquidityMap,
+    ecosystemTotals,
+    investorStats
+  };
+}
+
+/* =========================================
+   RENDER TOP CARDS
+========================================= */
+function renderTopCards({
+  projects,
+  ecosystemTotals,
+  investorStats
+}){
+
+  const coreCount =
+    projects.filter(p => p.project_type === "core").length;
+
+  const internalCount =
+    projects.filter(p => p.project_type === "internal").length;
+
+  const externalCount =
+    projects.filter(p => p.project_type === "external").length;
+
+  const activeCount =
+    projects.filter(p => p.status === "active").length;
+
+  dashboardEls.totalProjects.textContent =
+    String(projects.length);
+
+  dashboardEls.totalLiquidity.textContent =
+    formatPi(ecosystemTotals.total_liquidity);
+
+  dashboardEls.totalReserve.textContent =
+    formatPi(ecosystemTotals.total_reserve);
+
+  dashboardEls.totalInvestors.textContent =
+    String(investorStats.totalInvestors || 0);
+
+  dashboardEls.totalUsableLiquidity.textContent =
+    `Usable: ${formatPi(ecosystemTotals.total_usable_liquidity)}`;
+
+  dashboardEls.totalActiveProjects.textContent =
+    `Active Projects: ${activeCount}`;
+
+  dashboardEls.projectTypeBreakdown.textContent =
+    `Core: ${coreCount} • Internal: ${internalCount} • External: ${externalCount}`;
+
+  dashboardEls.coreLiquidity.textContent =
+    formatPi(ecosystemTotals.core_liquidity);
+
+  dashboardEls.internalLiquidity.textContent =
+    formatPi(ecosystemTotals.internal_liquidity);
+
+  dashboardEls.externalLiquidity.textContent =
+    formatPi(ecosystemTotals.external_liquidity);
+
+  dashboardEls.lastRefreshAt.textContent =
+    `Last refresh: ${new Date().toLocaleString()}`;
+}
+
+/* =========================================
+   RENDER PROJECT LIST
+========================================= */
+async function renderProjects({
+  projects,
+  liquidityMap,
+  investorStats
+}){
+
+  if(!projects.length){
+    dashboardEls.projectList.className = "empty";
+    dashboardEls.projectList.innerHTML =
+      "No projects found.";
+    return;
+  }
+
+  const chunks = [];
+
+  for(const project of projects){
+
+    const liquidity =
+      liquidityMap[project.project_code] || null;
+
+    const investors =
+      investorStats.byProject[project.project_code] || 0;
+
+    const roi = await getProjectROI(project);
+
+    const projectName =
+      project.project_name || project.project_code || "Unnamed Project";
+
+    const projectType =
+      String(project.project_type || "core").toLowerCase();
+
+    const status =
+      String(project.status || "active").toLowerCase();
+
+    const liquidityValue =
+      safeNumber(liquidity?.liquidity, 0);
+
+    const reserveValue =
+      safeNumber(liquidity?.reserve, 0);
+
+    const usableValue =
+      safeNumber(liquidity?.max_usable_liquidity, 0);
+
+    const rewardRate =
+      safeNumber(liquidity?.reward_rate, project.reward_rate || 0);
+
+    const reservePercent =
+      safeNumber(liquidity?.reserve_percent, project.reserve_percent || 0.30) * 100;
+
+    chunks.push(`
+      <div class="project-card">
+
+        <div class="project-top">
+          <div>
+            <div class="project-title">
+              ${escapeHtml(project.icon || "📦")} ${escapeHtml(projectName)}
+            </div>
+
+            <div class="project-meta">
+              Code: ${escapeHtml(project.project_code || "-")}<br>
+              ${escapeHtml(project.description || "Albukhr Project")}
+            </div>
+
+            <div class="badges">
+              <span class="badge ${escapeHtml(projectType)}">
+                ${escapeHtml(formatProjectType(projectType))}
+              </span>
+
+              <span class="badge ${status === "active" ? "active" : "inactive"}">
+                ${escapeHtml(formatProjectStatus(status))}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>Liquidity</div>
+          <div><strong>${formatPi(liquidityValue)}</strong></div>
+        </div>
+
+        <div class="row">
+          <div>Reserve</div>
+          <div>${formatPi(reserveValue)}</div>
+        </div>
+
+        <div class="row">
+          <div>Usable Liquidity</div>
+          <div>${formatPi(usableValue)}</div>
+        </div>
+
+        <div class="row">
+          <div>Investors</div>
+          <div>${investors}</div>
+        </div>
+
+        <div class="row">
+          <div>Reward Rate</div>
+          <div>${rewardRate}%</div>
+        </div>
+
+        <div class="row">
+          <div>Reserve Rule</div>
+          <div>${reservePercent.toFixed(0)}%</div>
+        </div>
+
+        <div class="row">
+          <div>ROI</div>
+          <div>${safeNumber(roi, 0)}%</div>
+        </div>
+
+      </div>
+    `);
+  }
+
+  dashboardEls.projectList.className = "";
+  dashboardEls.projectList.innerHTML = chunks.join("");
+}
+
+/* =========================================
+   RENDER FULL DASHBOARD
+========================================= */
+async function renderDashboard(){
+
+  if(__dashboardBusy) return;
+  __dashboardBusy = true;
+
+  try{
+
+    dashboardEls.projectList.className = "loading";
+    dashboardEls.projectList.innerHTML = "Loading dashboard...";
+
+    const data = await loadDashboardData();
+
+    renderTopCards(data);
+    await renderProjects(data);
+
+  }catch(err){
+
+    console.error("renderDashboard error:", err);
+
+    dashboardEls.projectList.className = "error-box";
+    dashboardEls.projectList.innerHTML = `
+      Failed to load ecosystem dashboard.<br>
+      <span class="muted">${escapeHtml(err?.message || "Unknown error")}</span>
+    `;
+
+  }finally{
+    __dashboardBusy = false;
+  }
+}
+
+/* =========================================
+   START
+========================================= */
+document.addEventListener("DOMContentLoaded", async ()=>{
+
+  if(!guardAdmin()) return;
+
+  if(typeof loadProjects === "function"){
+    try{
+      await loadProjects(true);
+    }catch(e){
+      console.warn("Projects preload failed:", e);
+    }
+  }
+
+  await renderDashboard();
+
+  // refresh every 20s
+  setInterval(async ()=>{
+    await renderDashboard();
+  }, 20000);
+
+});
+</script>
+
+</body>
+  </html>
