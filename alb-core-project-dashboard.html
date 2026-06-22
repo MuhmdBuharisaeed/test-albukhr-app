@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ALBUKHR Core Project Dashboard</title>
+
+  <link rel="stylesheet" href="css/global-header.css" />
+  <link rel="stylesheet" href="global-buttons.css" />
+
+  <style>
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:#f4f7f6;
+      color:#111;
+      padding-bottom:110px;
+    }
+
+    .header{
+      background:#0f7a3d;
+      height:60px;
+      padding:0 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow:0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .header-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .main-logo{
+      height:48px;
+      width:auto;
+    }
+
+    .brand{
+      color:#fff;
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:1px;
+    }
+
+    .dashboard{
+      padding:16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .card{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .card-full{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      margin-bottom:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .title{
+      font-size:13px;
+      color:#666;
+      margin-bottom:6px;
+    }
+
+    .big{
+      font-size:22px;
+      font-weight:800;
+      color:#0f7a3d;
+      line-height:1.2;
+    }
+
+    .sub{
+      font-size:12px;
+      color:#6f7b75;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .project-title{
+      font-size:16px;
+      font-weight:800;
+      margin-bottom:8px;
+      color:#111;
+    }
+
+    .badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:11px;
+      font-weight:700;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f1f6f3;
+      color:#0f7a3d;
+    }
+
+    .badge.core{
+      background:#e9f7ef;
+      color:#0f7a3d;
+    }
+
+    .badge.active{
+      background:#edf9f0;
+      color:#0f7a3d;
+    }
+
+    .badge.inactive{
+      background:#fff1f1;
+      color:#b02a37;
+    }
+
+    .badge.archived{
+      background:#f3f3f3;
+      color:#666;
+    }
+
+    .status-low{
+      color:#b02a37;
+    }
+
+    .status-safe{
+      color:#b25a00;
+    }
+
+    .status-strong{
+      color:#0f7a3d;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:13px;
+      margin-top:7px;
+      line-height:1.5;
+    }
+
+    .row strong{
+      color:#222;
+    }
+
+    input,
+    textarea{
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ddd;
+      margin-top:8px;
+      background:#fff;
+      font-family:inherit;
+    }
+
+    textarea{
+      min-height:90px;
+      resize:none;
+    }
+
+    button{
+      margin-top:10px;
+      padding:10px;
+      border:none;
+      border-radius:10px;
+      background:#0f7a3d;
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      width:100%;
+    }
+
+    button.secondary{
+      background:#eef6f1;
+      color:#0f7a3d;
+    }
+
+    .tx{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-top:1px dashed #eee;
+      padding-top:10px;
+      margin-top:10px;
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .tx-left{
+      flex:1;
+    }
+
+    .tx-right{
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .loading,
+    .empty,
+    .error-box{
+      background:#fff;
+      padding:18px;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+      font-size:14px;
+    }
+
+    .loading,
+    .empty{
+      color:#66746d;
+      text-align:center;
+    }
+
+    .error-box{
+      color:#b02a37;
+      border-left:4px solid #b02a37;
+    }
+
+    .muted{
+      color:#6d7973;
+      font-size:12px;
+    }
+
+    @media (max-width:820px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <img
+        src="file_000000007c187246b1c01967ee086dc4.png"
+        class="main-logo"
+        alt="ALBUKHR Logo"
+      />
+      <span class="brand">ALBUKHR CORE</span>
+    </div>
+  </header>
+
+  <div class="dashboard">
+
+    <!-- PROJECT HEADER -->
+    <div class="card-full">
+      <div class="title">Core Project</div>
+      <div class="big" id="projectName">Loading...</div>
+      <div class="sub" id="projectMetaLine">Preparing core project dashboard...</div>
+      <div class="badges" id="projectBadges"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid">
+
+      <div class="card">
+        <div class="title">Liquidity</div>
+        <div class="big" id="liquidity">0 Pi</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Reserve</div>
+        <div class="big" id="reserve">0 Pi</div>
+      </div>
+
+      <div class="card">
+        <div class="title">ROI</div>
+        <div class="big" id="roi">0%</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Investors</div>
+        <div class="big" id="investors">0</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Liquidity Status</div>
+        <div class="big" id="liquidityStatus">LOW</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Usable Liquidity</div>
+        <div class="big" id="usableLiquidity">0 Pi</div>
+      </div>
+
+    </div>
+
+    <!-- ADD LIQUIDITY -->
+    <div class="card-full">
+      <div class="title">Add Liquidity</div>
+
+      <input
+        type="number"
+        id="addAmount"
+        placeholder="Amount"
+      />
+
+      <button id="addLiquidityBtn">
+        Add Liquidity
+      </button>
+    </div>
+
+    <!-- INTERNAL WITHDRAW -->
+    <div class="card-full">
+      <div class="title">Internal Withdraw</div>
+
+      <input
+        type="number"
+        id="withdrawAmount"
+        placeholder="Amount"
+      />
+
+      <button id="withdrawLiquidityBtn">
+        Withdraw Liquidity
+      </button>
+    </div>
+
+    <!-- PROJECT UPDATES -->
+    <div class="card-full">
+      <div class="project-title">📸 Core Project Updates</div>
+
+      <input
+        type="file"
+        id="projectUpdateImage"
+        accept="image/*"
+      />
+
+      <textarea
+        id="projectUpdateText"
+        placeholder="Describe core project progress..."
+      ></textarea>
+
+      <button id="uploadProjectUpdateBtn">
+        Upload Update
+      </button>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="card-full">
+      <div class="title">Treasury Activity</div>
+      <div id="history" class="loading">Loading treasury history...</div>
+    </div>
+
+    <!-- STAKE PANEL -->
+    <div class="card-full">
+      <div class="title">Project Stake Panel</div>
+      <div id="projectStakeBox"></div>
+    </div>
+
+  </div>
+
+  <script src="js/admin-auth.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-core.js"></script>
+
+  <script src="js/projects-engine.js"></script>
+  <script src="js/project-treasury.js"></script>
+  <script src="js/smart-liquidity-engine.js"></script>
+  <script src="js/ecosystem-treasury.js"></script>
+
+  <script src="js/staking.js"></script>
+  <script src="js/capital-protection-engine.js"></script>
+  <script src="js/albukhr-project-deployment-engine.js"></script>
+
+  <!-- NEW SHARED DASHBOARD BASE -->
+  <script src="js/project-dashboard-base.js"></script>
+
+  <script>
+    /* =========================================
+       ALBUKHR CORE PROJECT DASHBOARD FINAL
+       Core-only UI
+       Safe migration layer
+       Uses project-dashboard-base.js
+    ========================================= */
+
+    const coreDashboardEls = {
+      projectName: document.getElementById("projectName"),
+      projectMetaLine: document.getElementById("projectMetaLine"),
+      projectBadges: document.getElementById("projectBadges"),
+
+      liquidity: document.getElementById("liquidity"),
+      reserve: document.getElementById("reserve"),
+      roi: document.getElementById("roi"),
+      investors: document.getElementById("investors"),
+      liquidityStatus: document.getElementById("liquidityStatus"),
+      usableLiquidity: document.getElementById("usableLiquidity"),
+
+      history: document.getElementById("history"),
+
+      addAmount: document.getElementById("addAmount"),
+      withdrawAmount: document.getElementById("withdrawAmount"),
+
+      addLiquidityBtn: document.getElementById("addLiquidityBtn"),
+      withdrawLiquidityBtn: document.getElementById("withdrawLiquidityBtn"),
+      uploadProjectUpdateBtn: document.getElementById("uploadProjectUpdateBtn")
+    };
+
+    let __coreDashboardApp = null;
+
+    /* =========================================
+       SMALL SAFE HELPERS
+    ========================================= */
+    function coreEscapeHtml(text = ""){
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function coreFormatPi(value){
+      const n = Number(value || 0);
+      return `${n.toFixed(2)} Pi`;
+    }
+
+    function coreSafeNumber(value, fallback = 0){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function coreFormatProjectType(type){
+      const t = String(type || "").toLowerCase();
+      if(t === "core") return "Core";
+      if(t === "internal") return "Internal";
+      if(t === "external") return "External";
+      return "Unknown";
+    }
+
+    function coreFormatProjectStatus(status){
+      const s = String(status || "").toLowerCase();
+      if(s === "active") return "Active";
+      if(s === "inactive") return "Inactive";
+      if(s === "archived") return "Archived";
+      return s || "Unknown";
+    }
+
+    function coreProjectTypeBadgeClass(type){
+      const t = String(type || "").toLowerCase();
+      if(t === "core") return "core";
+      if(t === "internal") return "core";
+      if(t === "external") return "core";
+      return "core";
+    }
+
+    function coreProjectStatusBadgeClass(status){
+      const s = String(status || "").toLowerCase();
+      if(s === "active") return "active";
+      if(s === "inactive") return "inactive";
+      if(s === "archived") return "archived";
+      return "inactive";
+    }
+
+    function coreComputeLiquidityStatus(status){
+      const liquidity = coreSafeNumber(status?.liquidity, 0);
+      const minLiquidity = coreSafeNumber(status?.min_liquidity, 100);
+      const usable = coreSafeNumber(status?.max_usable_liquidity, 0);
+
+      if(liquidity < minLiquidity){
+        return {
+          label:"LOW",
+          className:"status-low"
+        };
+      }
+
+      if(usable <= 0){
+        return {
+          label:"SAFE",
+          className:"status-safe"
+        };
+      }
+
+      return {
+        label:"STRONG",
+        className:"status-strong"
+      };
+    }
+
+    /* =========================================
+       ADMIN GUARD
+    ========================================= */
+    function guardCoreAdmin(){
+      if(typeof requireRole === "function"){
+        requireRole([
+          "super_admin",
+          "ecosystem_admin",
+          "project_admin",
+          "finance_admin"
+        ]);
+      }
+
+      if(typeof getAdmin === "function" && !getAdmin()){
+        window.location.href = "admin-login.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    /* =========================================
+       CORE PROJECT GUARD
+       Wannan page core projects kadai yake karba.
+    ========================================= */
+    async function ensureCoreProjectSelected(){
+
+      const currentProjectCode =
+        String(localStorage.getItem("albukhr_current_project") || "").trim();
+
+      if(!currentProjectCode){
+        alert("Core project not found");
+        window.location.href = "Albukhr-core-projects-dashboard.html";
+        return null;
+      }
+
+      if(typeof getProjectMeta !== "function"){
+        alert("projects-engine.js is missing getProjectMeta()");
+        window.location.href = "Albukhr-core-projects-dashboard.html";
+        return null;
+      }
+
+      let project = null;
+
+      try{
+        project = await getProjectMeta(currentProjectCode);
+      }catch(e){
+        console.error("ensureCoreProjectSelected getProjectMeta failed:", e);
+      }
+
+      if(!project){
+        alert("Project not found");
+        window.location.href = "Albukhr-core-projects-dashboard.html";
+        return null;
+      }
+
+      if(String(project.project_type || "").toLowerCase() !== "core"){
+        alert("This dashboard is for core projects only.");
+        window.location.href = "Albukhr-core-projects-dashboard.html";
+        return null;
+      }
+
+      return project;
+    }
+
+    /* =========================================
+       RENDER HEADER
+    ========================================= */
+    function renderCoreProjectHeader(project){
+
+      coreDashboardEls.projectName.textContent =
+        project.project_name || project.project_code || "Unknown Core Project";
+
+      coreDashboardEls.projectMetaLine.innerHTML = `
+        Code: <strong>${coreEscapeHtml(project.project_code || "-")}</strong> •
+        Type: <strong>${coreEscapeHtml(coreFormatProjectType(project.project_type))}</strong>
+      `;
+
+      coreDashboardEls.projectBadges.innerHTML = `
+        <span class="badge ${coreEscapeHtml(coreProjectTypeBadgeClass(project.project_type))}">
+          ${coreEscapeHtml(coreFormatProjectType(project.project_type))}
+        </span>
+
+        <span class="badge ${coreEscapeHtml(coreProjectStatusBadgeClass(project.status))}">
+          ${coreEscapeHtml(coreFormatProjectStatus(project.status))}
+        </span>
+      `;
+    }
+
+    /* =========================================
+       RENDER STATS
+    ========================================= */
+    function renderCoreProjectStats(data = {}){
+
+      const project = data.project || {};
+      const treasuryStatus = data.treasuryStatus || {};
+      const roi = coreSafeNumber(data.roi, 0);
+      const investors = coreSafeNumber(data.investors, 0);
+
+      const liquidity = coreSafeNumber(treasuryStatus.liquidity, 0);
+      const reserve = coreSafeNumber(treasuryStatus.reserve, 0);
+      const usable = coreSafeNumber(treasuryStatus.max_usable_liquidity, 0);
+
+      coreDashboardEls.liquidity.textContent = coreFormatPi(liquidity);
+      coreDashboardEls.reserve.textContent = coreFormatPi(reserve);
+      coreDashboardEls.usableLiquidity.textContent = coreFormatPi(usable);
+      coreDashboardEls.roi.textContent = `${roi.toFixed(2)}%`;
+      coreDashboardEls.investors.textContent = String(investors);
+
+      const liquidityState = coreComputeLiquidityStatus(treasuryStatus);
+
+      coreDashboardEls.liquidityStatus.textContent = liquidityState.label;
+      coreDashboardEls.liquidityStatus.className =
+        `big ${liquidityState.className}`;
+    }
+
+    /* =========================================
+       RENDER HISTORY
+    ========================================= */
+    function renderCoreHistory(history = []){
+
+      if(!Array.isArray(history) || !history.length){
+        coreDashboardEls.history.className = "empty";
+        coreDashboardEls.history.innerHTML = "No treasury activity yet.";
+        return;
+      }
+
+      const chunks = history.map(tx => {
+        const txType =
+          String(tx.tx_type || "transaction").replace(/_/g, " ");
+
+        const amount =
+          coreSafeNumber(tx.amount, 0);
+
+        const note =
+          tx.note || tx.tx_type || "Treasury transaction";
+
+        const createdAt =
+          tx.created_at
+            ? new Date(tx.created_at).toLocaleString()
+            : "—";
+
+        return `
+          <div class="tx">
+            <div class="tx-left">
+              <div><strong>${coreEscapeHtml(txType)}</strong></div>
+              <div class="muted">${coreEscapeHtml(note)}</div>
+              <div class="muted">${coreEscapeHtml(createdAt)}</div>
+            </div>
+
+            <div class="tx-right">
+              ${coreFormatPi(amount)}
+            </div>
+          </div>
+        `;
+      });
+
+      coreDashboardEls.history.className = "";
+      coreDashboardEls.history.innerHTML = chunks.join("");
+    }
+
+    /* =========================================
+       LOCAL PROJECT UPDATE FEED
+       Har yanzu localStorage ne
+    ========================================= */
+    function uploadCoreProjectUpdate(){
+
+      if(!__coreDashboardApp || !__coreDashboardApp.project){
+        alert("Project not loaded");
+        return;
+      }
+
+      const file =
+        document.getElementById("projectUpdateImage").files[0];
+
+      const text =
+        document.getElementById("projectUpdateText").value.trim();
+
+      if(!file){
+        alert("Select update image first");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(){
+
+        let feed =
+          JSON.parse(localStorage.getItem("albukhr_project_feed")) || [];
+
+        feed.push({
+          id: "update_" + Date.now(),
+          project_code: __coreDashboardApp.project.project_code,
+          project: __coreDashboardApp.project.project_name || __coreDashboardApp.project.project_code,
+          type: "Core Project",
+          image: reader.result,
+          description: text,
+          time: Date.now()
+        });
+
+        localStorage.setItem(
+          "albukhr_project_feed",
+          JSON.stringify(feed)
+        );
+
+        window.dispatchEvent(new Event("projectFeedUpdated"));
+
+        document.getElementById("projectUpdateImage").value = "";
+        document.getElementById("projectUpdateText").value = "";
+
+        alert("Core project update uploaded");
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    /* =========================================
+       BIND BUTTONS
+    ========================================= */
+    function bindCoreDashboardActions(){
+
+      coreDashboardEls.addLiquidityBtn.addEventListener("click", async function(){
+
+        if(!__coreDashboardApp) return;
+
+        const amount =
+          coreSafeNumber(coreDashboardEls.addAmount.value, 0);
+
+        if(amount <= 0){
+          alert("Enter valid liquidity amount");
+          return;
+        }
+
+        try{
+          await __coreDashboardApp.addLiquidity(amount);
+          coreDashboardEls.addAmount.value = "";
+        }catch(err){
+          alert(err?.message || "Failed to add liquidity");
+        }
+      });
+
+      coreDashboardEls.withdrawLiquidityBtn.addEventListener("click", async function(){
+
+        if(!__coreDashboardApp) return;
+
+        const amount =
+          coreSafeNumber(coreDashboardEls.withdrawAmount.value, 0);
+
+        if(amount <= 0){
+          alert("Enter valid withdraw amount");
+          return;
+        }
+
+        try{
+          await __coreDashboardApp.withdrawLiquidity(amount);
+          coreDashboardEls.withdrawAmount.value = "";
+        }catch(err){
+          alert(err?.message || "Failed to withdraw liquidity");
+        }
+      });
+
+      coreDashboardEls.uploadProjectUpdateBtn.addEventListener("click", function(){
+        uploadCoreProjectUpdate();
+      });
+    }
+
+    /* =========================================
+       BUILD DASHBOARD
+       project-dashboard-base.js integration
+    ========================================= */
+    async function startCoreDashboard(){
+
+      if(!guardCoreAdmin()) return;
+
+      const project = await ensureCoreProjectSelected();
+      if(!project) return;
+
+      if(typeof bootstrapProjectDashboard !== "function"){
+        coreDashboardEls.history.className = "error-box";
+        coreDashboardEls.history.innerHTML =
+          "bootstrapProjectDashboard() is missing from project-dashboard-base.js";
+        return;
+      }
+
+      __coreDashboardApp = await bootstrapProjectDashboard({
+        projectCode: project.project_code,
+        projectType: "core",
+        refreshIntervalMs: 90000,
+
+        hooks: {
+
+          beforeLoad(){
+            coreDashboardEls.history.className = "loading";
+            coreDashboardEls.history.innerHTML = "Loading treasury history...";
+          },
+
+          onLoaded(payload = {}){
+            renderCoreProjectHeader(payload.project || project);
+            renderCoreProjectStats(payload);
+            renderCoreHistory(payload.history || []);
+
+            if(typeof renderProjectStakeUI === "function"){
+              Promise.resolve(
+                renderProjectStakeUI(
+                  project.project_code,
+                  localStorage.getItem("albukhr_current_email")
+                )
+              ).catch(e=>{
+                console.warn("renderProjectStakeUI failed:", e);
+              });
+            }
+          },
+
+          onError(err){
+            console.error("Core dashboard load error:", err);
+
+            coreDashboardEls.projectName.textContent = "Core project load failed";
+            coreDashboardEls.projectMetaLine.textContent =
+              err?.message || "Unknown error";
+
+            coreDashboardEls.history.className = "error-box";
+            coreDashboardEls.history.innerHTML = `
+              Failed to load core project dashboard.<br>
+              <span class="muted">${coreEscapeHtml(err?.message || "Unknown error")}</span>
+            `;
+          }
+        }
+      });
+
+      bindCoreDashboardActions();
+    }
+
+    /* =========================================
+       START
+    ========================================= */
+    document.addEventListener("DOMContentLoaded", async function(){
+
+      if(typeof loadProjects === "function"){
+        try{
+          await loadProjects(true);
+        }catch(e){
+          console.warn("Projects preload failed:", e);
+        }
+      }
+
+      await startCoreDashboard();
+    });
+  </script>
+</body>
+  </html>
