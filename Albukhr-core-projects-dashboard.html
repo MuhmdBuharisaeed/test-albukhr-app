@@ -754,9 +754,8 @@ function openProject(encodedProjectCode){
     albukhr-project-dashboard.html
     sai a mayar da route can.
   */
-  window.location.href =
-    "alb-core-project-dashboard.html";
-}
+  localStorage.setItem("albukhr_current_project", project.project_code);
+window.location.href = "alb-core-project-dashboard.html";
 
 /* =========================================
    OPEN PROJECT UPDATES
