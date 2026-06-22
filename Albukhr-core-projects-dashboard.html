@@ -18,7 +18,7 @@ body{
 
 .header{
   background:#0f7a3d;
-  color:white;
+  color:#fff;
   padding:16px;
   font-weight:800;
   font-size:18px;
@@ -144,6 +144,11 @@ body{
   color:#b02a37;
 }
 
+.badge.archived{
+  background:#f3f3f3;
+  color:#666;
+}
+
 .actions{
   display:grid;
   grid-template-columns:1fr;
@@ -156,7 +161,7 @@ button{
   border:none;
   border-radius:10px;
   background:#0f7a3d;
-  color:white;
+  color:#fff;
   font-weight:700;
   cursor:pointer;
   width:100%;
@@ -262,14 +267,15 @@ button.secondary{
 <script src="js/project-treasury.js"></script>
 <script src="js/smart-liquidity-engine.js"></script>
 
+<!-- Optional modules -->
 <script src="js/staking.js"></script>
 <script src="js/capital-protection-engine.js"></script>
 <script src="js/albukhr-project-deployment-engine.js"></script>
 
 <script>
 /* =========================================
-   ALBUKHR CORE PROJECTS DASHBOARD
-   SUPABASE VERSION
+   ALBUKHR CORE PROJECTS DASHBOARD FINAL
+   Supabase-first + project_code based
 ========================================= */
 
 const coreDashboardEls = {
@@ -310,10 +316,53 @@ function escapeHtml(text = ""){
 
 function formatProjectStatus(status){
   const s = String(status || "").toLowerCase();
+
   if(s === "active") return "Active";
   if(s === "inactive") return "Inactive";
   if(s === "archived") return "Archived";
+
   return s || "Unknown";
+}
+
+function getStatusBadgeClass(status){
+  const s = String(status || "").toLowerCase();
+
+  if(s === "active") return "active";
+  if(s === "inactive") return "inactive";
+  if(s === "archived") return "archived";
+
+  return "inactive";
+}
+
+/*
+  Reward rate formatter:
+  - idan DB ya adana 0.02 => 2%
+  - idan DB ya adana 2 => 2%
+*/
+function normalizeRewardPercent(value){
+  const n = safeNumber(value, 0);
+
+  if(n <= 0) return 0;
+
+  if(n > 0 && n < 1){
+    return n * 100;
+  }
+
+  return n;
+}
+
+function average(values = []){
+  if(!Array.isArray(values) || !values.length){
+    return 0;
+  }
+
+  const nums = values
+    .map(v => safeNumber(v, NaN))
+    .filter(v => Number.isFinite(v));
+
+  if(!nums.length) return 0;
+
+  return nums.reduce((sum, n) => sum + n, 0) / nums.length;
 }
 
 /* =========================================
@@ -368,7 +417,7 @@ async function getCoreInvestorStats(coreProjects = []){
       ""
     ).trim();
 
-    if(code && byProject.hasOwnProperty(code)){
+    if(code && Object.prototype.hasOwnProperty.call(byProject, code)){
       byProject[code] = (byProject[code] || 0) + 1;
     }
   });
@@ -405,6 +454,10 @@ async function getProjectROI(projectCode, fallbackProject = null){
 ========================================= */
 async function loadCoreDashboardData(){
 
+  if(typeof getCoreProjects !== "function"){
+    throw new Error("getCoreProjects() is missing from projects-engine.js");
+  }
+
   const coreProjects = await getCoreProjects({
     visibleOnly:false,
     activeOnly:false
@@ -413,10 +466,21 @@ async function loadCoreDashboardData(){
   const summaries = await Promise.all(
     coreProjects.map(async project => {
       try{
-        const summary = await getSmartLiquiditySummary(project.project_code);
+        if(typeof getSmartLiquiditySummary !== "function"){
+          return null;
+        }
+
+        const summary =
+          await getSmartLiquiditySummary(project.project_code);
+
         return summary?.error ? null : summary;
+
       }catch(e){
-        console.warn("getSmartLiquiditySummary failed:", project.project_code, e);
+        console.warn(
+          "getSmartLiquiditySummary failed:",
+          project.project_code,
+          e
+        );
         return null;
       }
     })
@@ -454,19 +518,25 @@ function renderCoreSummary({
   let totalLiquidity = 0;
   let totalReserve = 0;
   let totalUsable = 0;
-  let totalRewardRate = 0;
+
+  const rewardRates = [];
 
   coreProjects.forEach(project => {
-    const summary = summaryMap[project.project_code];
+    const summary = summaryMap[project.project_code] || null;
 
     totalLiquidity += safeNumber(summary?.liquidity, 0);
     totalReserve += safeNumber(summary?.reserve, 0);
     totalUsable += safeNumber(summary?.max_usable_liquidity, 0);
-    totalRewardRate += safeNumber(summary?.reward_rate, project.reward_rate || 0);
+
+    const rewardRaw =
+      summary?.reward_rate ?? project.reward_rate ?? 0;
+
+    rewardRates.push(
+      normalizeRewardPercent(rewardRaw)
+    );
   });
 
-  const avgRewardRate =
-    totalProjects ? (totalRewardRate / totalProjects) : 0;
+  const avgRewardRate = average(rewardRates);
 
   coreDashboardEls.totalCoreProjects.textContent =
     String(totalProjects);
@@ -521,9 +591,27 @@ async function renderCoreProjects({
     const liquidity = safeNumber(summary.liquidity, 0);
     const reserve = safeNumber(summary.reserve, 0);
     const usable = safeNumber(summary.max_usable_liquidity, 0);
-    const rewardRate = safeNumber(summary.reward_rate, project.reward_rate || 0);
-    const reservePercent = safeNumber(summary.reserve_percent, project.reserve_percent || 0.30) * 100;
-    const minLiquidity = safeNumber(summary.min_liquidity, project.min_liquidity || 100);
+
+    const rewardRateRaw =
+      summary.reward_rate ?? project.reward_rate ?? 0;
+
+    const rewardRate =
+      normalizeRewardPercent(rewardRateRaw);
+
+    const reservePercent =
+      safeNumber(
+        summary.reserve_percent,
+        project.reserve_percent ?? 0.30
+      ) * 100;
+
+    const minLiquidity =
+      safeNumber(
+        summary.min_liquidity,
+        project.min_liquidity ?? 100
+      );
+
+    const statusClass =
+      getStatusBadgeClass(project.status);
 
     chunks.push(`
       <div class="project-card">
@@ -538,7 +626,7 @@ async function renderCoreProjects({
 
         <div class="badges">
           <span class="badge core">Core</span>
-          <span class="badge ${project.status === "active" ? "active" : "inactive"}">
+          <span class="badge ${statusClass}">
             ${escapeHtml(formatProjectStatus(project.status))}
           </span>
         </div>
@@ -575,7 +663,7 @@ async function renderCoreProjects({
 
         <div class="row">
           <div>Reward Rate</div>
-          <div>${rewardRate}%</div>
+          <div>${rewardRate.toFixed(2)}%</div>
         </div>
 
         <div class="row">
@@ -585,15 +673,15 @@ async function renderCoreProjects({
 
         <div class="row">
           <div>ROI</div>
-          <div>${safeNumber(roi, 0)}%</div>
+          <div>${safeNumber(roi, 0).toFixed(2)}%</div>
         </div>
 
         <div class="actions">
-          <button onclick="openProject('${escapeHtml(project.project_code)}')">
+          <button onclick="openProject('${encodeURIComponent(project.project_code || "")}')">
             Open Dashboard
           </button>
 
-          <button class="secondary" onclick="openProjectUpdates('${escapeHtml(project.project_code)}')">
+          <button class="secondary" onclick="openProjectUpdates('${encodeURIComponent(project.project_code || "")}')">
             Project Updates
           </button>
         </div>
@@ -641,8 +729,18 @@ async function renderDashboard(){
 
 /* =========================================
    OPEN PROJECT DASHBOARD
+   NOTE:
+   muna adana project_code ne, ba project_name ba
 ========================================= */
-function openProject(projectCode){
+function openProject(encodedProjectCode){
+
+  const projectCode =
+    decodeURIComponent(encodedProjectCode || "").trim();
+
+  if(!projectCode){
+    alert("Project code missing");
+    return;
+  }
 
   localStorage.setItem(
     "albukhr_current_project",
@@ -650,10 +748,11 @@ function openProject(projectCode){
   );
 
   /*
-    Wannan ya fi kyau saboda page na gaba
-    zai iya sanin wane type ne daga projectCode.
-    Idan kana da dedicated core-project-details.html
-    za mu iya mayar da shi can daga baya.
+    Wannan page din yanzu muna amfani da shi
+    a matsayin single project dashboard entry.
+    Daga baya idan ka kirkiri universal page kamar:
+    albukhr-project-dashboard.html
+    sai a mayar da route can.
   */
   window.location.href =
     "Albukhr-internal-project-dashboard.html";
@@ -662,7 +761,15 @@ function openProject(projectCode){
 /* =========================================
    OPEN PROJECT UPDATES
 ========================================= */
-function openProjectUpdates(projectCode){
+function openProjectUpdates(encodedProjectCode){
+
+  const projectCode =
+    decodeURIComponent(encodedProjectCode || "").trim();
+
+  if(!projectCode){
+    alert("Project code missing");
+    return;
+  }
 
   localStorage.setItem(
     "albukhr_update_project",
@@ -690,6 +797,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   await renderDashboard();
 
+  /* refresh every 90 seconds */
   setInterval(async ()=>{
     await renderDashboard();
   }, 90000);
@@ -698,4 +806,4 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 
 </body>
-  </html>
+</html>
