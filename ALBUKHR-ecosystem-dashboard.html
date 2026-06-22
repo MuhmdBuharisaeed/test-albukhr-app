@@ -243,6 +243,36 @@ body{
 
   </div>
 
+  <!-- ECOSYSTEM TREASURY PANEL -->
+  <div class="panel" id="ecosystemTreasuryPanel">
+    <h3 class="section-title">Ecosystem Treasury</h3>
+
+    <div class="row">
+      <div><strong>Main Treasury Balance</strong></div>
+      <div id="ecoMainBalance">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>Available Liquidity</strong></div>
+      <div id="ecoAvailableLiquidity">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>Pending Funding</strong></div>
+      <div id="ecoPendingFunding">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>Approved Funding</strong></div>
+      <div id="ecoApprovedFunding">0 Pi</div>
+    </div>
+
+    <div class="row">
+      <div><strong>Treasury Status</strong></div>
+      <div id="ecoTreasuryStatus">—</div>
+    </div>
+  </div>
+
   <!-- TYPE TOTALS -->
   <div class="panel">
     <h3 class="section-title">Project Type Liquidity</h3>
@@ -271,22 +301,25 @@ body{
 
 <script src="js/admin-auth.js"></script>
 
-<!-- Supabase + New Engines -->
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-core.js"></script>
+
+<!-- New engines -->
 <script src="js/projects-engine.js"></script>
 <script src="js/project-treasury.js"></script>
 <script src="js/smart-liquidity-engine.js"></script>
+<script src="js/ecosystem-treasury.js"></script>
 
-<!-- Optional modules if already available -->
+<!-- Optional modules -->
 <script src="js/staking.js"></script>
 <script src="js/capital-protection-engine.js"></script>
 <script src="js/albukhr-project-deployment-engine.js"></script>
 
 <script>
 /* =========================================
-   ALBUKHR ECOSYSTEM DASHBOARD
-   SUPABASE VERSION
+   ALBUKHR ECOSYSTEM DASHBOARD FINAL
+   SUPABASE + TREASURY VERSION
 ========================================= */
 
 const dashboardEls = {
@@ -301,7 +334,13 @@ const dashboardEls = {
   coreLiquidity: document.getElementById("coreLiquidity"),
   internalLiquidity: document.getElementById("internalLiquidity"),
   externalLiquidity: document.getElementById("externalLiquidity"),
-  projectList: document.getElementById("projectList")
+  projectList: document.getElementById("projectList"),
+
+  ecoMainBalance: document.getElementById("ecoMainBalance"),
+  ecoAvailableLiquidity: document.getElementById("ecoAvailableLiquidity"),
+  ecoPendingFunding: document.getElementById("ecoPendingFunding"),
+  ecoApprovedFunding: document.getElementById("ecoApprovedFunding"),
+  ecoTreasuryStatus: document.getElementById("ecoTreasuryStatus")
 };
 
 let __dashboardBusy = false;
@@ -344,6 +383,19 @@ function safeNumber(value, fallback = 0){
   return Number.isFinite(n) ? n : fallback;
 }
 
+function formatPercent(value){
+  const n = safeNumber(value, 0);
+  return `${n.toFixed(2)}%`;
+}
+
+function normalizePercent(rawValue){
+  const n = safeNumber(rawValue, 0);
+  if(n > 0 && n <= 1){
+    return n * 100;
+  }
+  return n;
+}
+
 /* =========================================
    ADMIN AUTH GUARD
 ========================================= */
@@ -366,9 +418,191 @@ function guardAdmin(){
 }
 
 /* =========================================
+   SMART LIQUIDITY FALLBACK HELPERS
+========================================= */
+async function dashboardGetAllSmartLiquiditySummaries(){
+
+  if(typeof getAllSmartLiquiditySummaries === "function"){
+    return await getAllSmartLiquiditySummaries();
+  }
+
+  const projects =
+    typeof getAllProjects === "function"
+      ? await getAllProjects({ visibleOnly:false, activeOnly:false })
+      : [];
+
+  const rows = [];
+
+  for(const project of projects){
+    const code = project.project_code;
+    if(!code) continue;
+
+    let summary = null;
+
+    try{
+      if(typeof getSmartLiquiditySummary === "function"){
+        summary = await getSmartLiquiditySummary(code);
+      }
+    }catch(e){
+      console.warn("getSmartLiquiditySummary failed:", code, e);
+    }
+
+    if(summary && !summary.error){
+      rows.push(summary);
+      continue;
+    }
+
+    rows.push({
+      project_code: code,
+      project_name: project.project_name || code,
+      project_type: project.project_type || "core",
+      project_status: project.status || "active",
+      liquidity: 0,
+      reserve: 0,
+      reserve_percent: safeNumber(project.reserve_percent, 0.30),
+      min_liquidity: safeNumber(project.min_liquidity, 100),
+      max_usable_liquidity: 0,
+      reward_rate: safeNumber(project.reward_rate, 0)
+    });
+  }
+
+  return rows;
+}
+
+async function dashboardGetEcosystemLiquidityTotals(){
+
+  if(typeof getEcosystemLiquidityTotals === "function"){
+    return await getEcosystemLiquidityTotals();
+  }
+
+  const rows = await dashboardGetAllSmartLiquiditySummaries();
+
+  const totals = {
+    total_liquidity: 0,
+    total_reserve: 0,
+    total_usable_liquidity: 0,
+
+    core_liquidity: 0,
+    internal_liquidity: 0,
+    external_liquidity: 0
+  };
+
+  for(const row of rows){
+
+    const liquidity = safeNumber(row.liquidity, 0);
+    const reserve = safeNumber(row.reserve, 0);
+    const usable = safeNumber(row.max_usable_liquidity, 0);
+    const type = String(row.project_type || "core").toLowerCase();
+
+    totals.total_liquidity += liquidity;
+    totals.total_reserve += reserve;
+    totals.total_usable_liquidity += usable;
+
+    if(type === "core"){
+      totals.core_liquidity += liquidity;
+    }else if(type === "internal"){
+      totals.internal_liquidity += liquidity;
+    }else if(type === "external"){
+      totals.external_liquidity += liquidity;
+    }
+  }
+
+  return totals;
+}
+
+/* =========================================
+   ECOSYSTEM TREASURY SNAPSHOT
+========================================= */
+async function getDashboardEcosystemTreasurySnapshot(){
+
+  const fallback = {
+    treasury_balance: 0,
+    available_liquidity: 0,
+    pending_funding: 0,
+    approved_funding: 0,
+    status: "N/A"
+  };
+
+  try{
+    if(typeof getEcosystemTreasurySummary === "function"){
+      const summary = await getEcosystemTreasurySummary();
+      if(summary && !summary.error){
+        return {
+          treasury_balance: safeNumber(
+            summary.treasury_balance ??
+            summary.balance ??
+            summary.available_balance,
+            0
+          ),
+          available_liquidity: safeNumber(
+            summary.available_liquidity ??
+            summary.available_balance ??
+            summary.treasury_balance ??
+            summary.balance,
+            0
+          ),
+          pending_funding: safeNumber(
+            summary.pending_funding ??
+            summary.pending ??
+            0,
+            0
+          ),
+          approved_funding: safeNumber(
+            summary.approved_funding ??
+            summary.approved ??
+            0,
+            0
+          ),
+          status: summary.status || "ACTIVE"
+        };
+      }
+    }
+
+    if(typeof getEcosystemTreasury === "function"){
+      const treasury = await getEcosystemTreasury();
+
+      if(treasury && !treasury.error){
+        return {
+          treasury_balance: safeNumber(
+            treasury.treasury_balance ??
+            treasury.balance ??
+            treasury.available_balance,
+            0
+          ),
+          available_liquidity: safeNumber(
+            treasury.available_liquidity ??
+            treasury.available_balance ??
+            treasury.treasury_balance ??
+            treasury.balance,
+            0
+          ),
+          pending_funding: safeNumber(
+            treasury.pending_funding ??
+            treasury.pending ??
+            0,
+            0
+          ),
+          approved_funding: safeNumber(
+            treasury.approved_funding ??
+            treasury.approved ??
+            0,
+            0
+          ),
+          status: treasury.status || "ACTIVE"
+        };
+      }
+    }
+
+    return fallback;
+
+  }catch(e){
+    console.warn("Ecosystem treasury snapshot failed:", e);
+    return fallback;
+  }
+}
+
+/* =========================================
    INVESTOR COUNT
-   NOTE:
-   Wannan part yana fallback gracefully.
 ========================================= */
 async function getInvestorStats(projects = []){
 
@@ -418,8 +652,7 @@ async function getProjectROI(project){
   try{
     if(typeof calculateProjectROI === "function"){
       const roi = await calculateProjectROI(project.project_code);
-      const n = Number(roi);
-      return Number.isFinite(n) ? n : 0;
+      return safeNumber(roi, 0);
     }
   }catch(e){
     console.warn("calculateProjectROI failed:", e);
@@ -436,14 +669,18 @@ async function loadDashboardData(){
   const [
     projects,
     liquidityRows,
-    ecosystemTotals
+    ecosystemTotals,
+    ecosystemTreasury
   ] = await Promise.all([
-    getAllProjects({
-      visibleOnly:false,
-      activeOnly:false
-    }),
-    getAllSmartLiquiditySummaries(),
-    getEcosystemLiquidityTotals()
+    typeof getAllProjects === "function"
+      ? getAllProjects({
+          visibleOnly:false,
+          activeOnly:false
+        })
+      : [],
+    dashboardGetAllSmartLiquiditySummaries(),
+    dashboardGetEcosystemLiquidityTotals(),
+    getDashboardEcosystemTreasurySnapshot()
   ]);
 
   const investorStats =
@@ -459,6 +696,7 @@ async function loadDashboardData(){
     liquidityRows,
     liquidityMap,
     ecosystemTotals,
+    ecosystemTreasury,
     investorStats
   };
 }
@@ -519,6 +757,27 @@ function renderTopCards({
 }
 
 /* =========================================
+   RENDER ECOSYSTEM TREASURY
+========================================= */
+function renderEcosystemTreasury(ecosystemTreasury = {}){
+
+  dashboardEls.ecoMainBalance.textContent =
+    formatPi(ecosystemTreasury.treasury_balance || 0);
+
+  dashboardEls.ecoAvailableLiquidity.textContent =
+    formatPi(ecosystemTreasury.available_liquidity || 0);
+
+  dashboardEls.ecoPendingFunding.textContent =
+    formatPi(ecosystemTreasury.pending_funding || 0);
+
+  dashboardEls.ecoApprovedFunding.textContent =
+    formatPi(ecosystemTreasury.approved_funding || 0);
+
+  dashboardEls.ecoTreasuryStatus.textContent =
+    ecosystemTreasury.status || "N/A";
+}
+
+/* =========================================
    RENDER PROJECT LIST
 ========================================= */
 async function renderProjects({
@@ -555,6 +814,8 @@ async function renderProjects({
     const status =
       String(project.status || "active").toLowerCase();
 
+    const projectIcon = project.icon || "📦";
+
     const liquidityValue =
       safeNumber(liquidity?.liquidity, 0);
 
@@ -564,11 +825,17 @@ async function renderProjects({
     const usableValue =
       safeNumber(liquidity?.max_usable_liquidity, 0);
 
-    const rewardRate =
+    const rewardRateRaw =
       safeNumber(liquidity?.reward_rate, project.reward_rate || 0);
 
+    const rewardRatePercent =
+      normalizePercent(rewardRateRaw);
+
     const reservePercent =
-      safeNumber(liquidity?.reserve_percent, project.reserve_percent || 0.30) * 100;
+      safeNumber(
+        liquidity?.reserve_percent,
+        project.reserve_percent || 0.30
+      ) * 100;
 
     chunks.push(`
       <div class="project-card">
@@ -576,7 +843,7 @@ async function renderProjects({
         <div class="project-top">
           <div>
             <div class="project-title">
-              ${escapeHtml(project.icon || "📦")} ${escapeHtml(projectName)}
+              ${projectIcon} ${escapeHtml(projectName)}
             </div>
 
             <div class="project-meta">
@@ -618,7 +885,7 @@ async function renderProjects({
 
         <div class="row">
           <div>Reward Rate</div>
-          <div>${rewardRate}%</div>
+          <div>${formatPercent(rewardRatePercent)}</div>
         </div>
 
         <div class="row">
@@ -628,7 +895,7 @@ async function renderProjects({
 
         <div class="row">
           <div>ROI</div>
-          <div>${safeNumber(roi, 0)}%</div>
+          <div>${formatPercent(safeNumber(roi, 0))}</div>
         </div>
 
       </div>
@@ -655,6 +922,7 @@ async function renderDashboard(){
     const data = await loadDashboardData();
 
     renderTopCards(data);
+    renderEcosystemTreasury(data.ecosystemTreasury);
     await renderProjects(data);
 
   }catch(err){
@@ -689,10 +957,10 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
   await renderDashboard();
 
-  // refresh every 20s
+  // refresh every 30 seconds
   setInterval(async ()=>{
     await renderDashboard();
-  }, 90000);
+  }, 30000);
 
 });
 </script>
