@@ -386,15 +386,16 @@
   <script src="js/capital-protection-engine.js"></script>
   <script src="js/albukhr-project-deployment-engine.js"></script>
 
-  <!-- NEW SHARED DASHBOARD BASE -->
+  <!-- SHARED DASHBOARD BASE -->
   <script src="js/project-dashboard-base.js"></script>
 
   <script>
     /* =========================================
        ALBUKHR CORE PROJECT DASHBOARD FINAL
-       Core-only UI
-       Safe migration layer
-       Uses project-dashboard-base.js
+       PATCHED VERSION
+       - Matches project-dashboard-base.js contract
+       - Core-only page
+       - Safe migration architecture
     ========================================= */
 
     const coreDashboardEls = {
@@ -410,6 +411,7 @@
       usableLiquidity: document.getElementById("usableLiquidity"),
 
       history: document.getElementById("history"),
+      projectStakeBox: document.getElementById("projectStakeBox"),
 
       addAmount: document.getElementById("addAmount"),
       withdrawAmount: document.getElementById("withdrawAmount"),
@@ -420,9 +422,10 @@
     };
 
     let __coreDashboardApp = null;
+    let __coreDashboardRefreshTimer = null;
 
     /* =========================================
-       SMALL SAFE HELPERS
+       SAFE HELPERS
     ========================================= */
     function coreEscapeHtml(text = ""){
       return String(text)
@@ -433,71 +436,9 @@
         .replace(/'/g, "&#039;");
     }
 
-    function coreFormatPi(value){
-      const n = Number(value || 0);
-      return `${n.toFixed(2)} Pi`;
-    }
-
     function coreSafeNumber(value, fallback = 0){
       const n = Number(value);
       return Number.isFinite(n) ? n : fallback;
-    }
-
-    function coreFormatProjectType(type){
-      const t = String(type || "").toLowerCase();
-      if(t === "core") return "Core";
-      if(t === "internal") return "Internal";
-      if(t === "external") return "External";
-      return "Unknown";
-    }
-
-    function coreFormatProjectStatus(status){
-      const s = String(status || "").toLowerCase();
-      if(s === "active") return "Active";
-      if(s === "inactive") return "Inactive";
-      if(s === "archived") return "Archived";
-      return s || "Unknown";
-    }
-
-    function coreProjectTypeBadgeClass(type){
-      const t = String(type || "").toLowerCase();
-      if(t === "core") return "core";
-      if(t === "internal") return "core";
-      if(t === "external") return "core";
-      return "core";
-    }
-
-    function coreProjectStatusBadgeClass(status){
-      const s = String(status || "").toLowerCase();
-      if(s === "active") return "active";
-      if(s === "inactive") return "inactive";
-      if(s === "archived") return "archived";
-      return "inactive";
-    }
-
-    function coreComputeLiquidityStatus(status){
-      const liquidity = coreSafeNumber(status?.liquidity, 0);
-      const minLiquidity = coreSafeNumber(status?.min_liquidity, 100);
-      const usable = coreSafeNumber(status?.max_usable_liquidity, 0);
-
-      if(liquidity < minLiquidity){
-        return {
-          label:"LOW",
-          className:"status-low"
-        };
-      }
-
-      if(usable <= 0){
-        return {
-          label:"SAFE",
-          className:"status-safe"
-        };
-      }
-
-      return {
-        label:"STRONG",
-        className:"status-strong"
-      };
     }
 
     /* =========================================
@@ -523,7 +464,7 @@
 
     /* =========================================
        CORE PROJECT GUARD
-       Wannan page core projects kadai yake karba.
+       This page accepts core projects only
     ========================================= */
     async function ensureCoreProjectSelected(){
 
@@ -537,7 +478,7 @@
       }
 
       if(typeof getProjectMeta !== "function"){
-        alert("projects-engine.js is missing getProjectMeta()");
+        alert("getProjectMeta() is missing from projects-engine.js");
         window.location.href = "Albukhr-core-projects-dashboard.html";
         return null;
       }
@@ -566,108 +507,12 @@
     }
 
     /* =========================================
-       RENDER HEADER
-    ========================================= */
-    function renderCoreProjectHeader(project){
-
-      coreDashboardEls.projectName.textContent =
-        project.project_name || project.project_code || "Unknown Core Project";
-
-      coreDashboardEls.projectMetaLine.innerHTML = `
-        Code: <strong>${coreEscapeHtml(project.project_code || "-")}</strong> •
-        Type: <strong>${coreEscapeHtml(coreFormatProjectType(project.project_type))}</strong>
-      `;
-
-      coreDashboardEls.projectBadges.innerHTML = `
-        <span class="badge ${coreEscapeHtml(coreProjectTypeBadgeClass(project.project_type))}">
-          ${coreEscapeHtml(coreFormatProjectType(project.project_type))}
-        </span>
-
-        <span class="badge ${coreEscapeHtml(coreProjectStatusBadgeClass(project.status))}">
-          ${coreEscapeHtml(coreFormatProjectStatus(project.status))}
-        </span>
-      `;
-    }
-
-    /* =========================================
-       RENDER STATS
-    ========================================= */
-    function renderCoreProjectStats(data = {}){
-
-      const project = data.project || {};
-      const treasuryStatus = data.treasuryStatus || {};
-      const roi = coreSafeNumber(data.roi, 0);
-      const investors = coreSafeNumber(data.investors, 0);
-
-      const liquidity = coreSafeNumber(treasuryStatus.liquidity, 0);
-      const reserve = coreSafeNumber(treasuryStatus.reserve, 0);
-      const usable = coreSafeNumber(treasuryStatus.max_usable_liquidity, 0);
-
-      coreDashboardEls.liquidity.textContent = coreFormatPi(liquidity);
-      coreDashboardEls.reserve.textContent = coreFormatPi(reserve);
-      coreDashboardEls.usableLiquidity.textContent = coreFormatPi(usable);
-      coreDashboardEls.roi.textContent = `${roi.toFixed(2)}%`;
-      coreDashboardEls.investors.textContent = String(investors);
-
-      const liquidityState = coreComputeLiquidityStatus(treasuryStatus);
-
-      coreDashboardEls.liquidityStatus.textContent = liquidityState.label;
-      coreDashboardEls.liquidityStatus.className =
-        `big ${liquidityState.className}`;
-    }
-
-    /* =========================================
-       RENDER HISTORY
-    ========================================= */
-    function renderCoreHistory(history = []){
-
-      if(!Array.isArray(history) || !history.length){
-        coreDashboardEls.history.className = "empty";
-        coreDashboardEls.history.innerHTML = "No treasury activity yet.";
-        return;
-      }
-
-      const chunks = history.map(tx => {
-        const txType =
-          String(tx.tx_type || "transaction").replace(/_/g, " ");
-
-        const amount =
-          coreSafeNumber(tx.amount, 0);
-
-        const note =
-          tx.note || tx.tx_type || "Treasury transaction";
-
-        const createdAt =
-          tx.created_at
-            ? new Date(tx.created_at).toLocaleString()
-            : "—";
-
-        return `
-          <div class="tx">
-            <div class="tx-left">
-              <div><strong>${coreEscapeHtml(txType)}</strong></div>
-              <div class="muted">${coreEscapeHtml(note)}</div>
-              <div class="muted">${coreEscapeHtml(createdAt)}</div>
-            </div>
-
-            <div class="tx-right">
-              ${coreFormatPi(amount)}
-            </div>
-          </div>
-        `;
-      });
-
-      coreDashboardEls.history.className = "";
-      coreDashboardEls.history.innerHTML = chunks.join("");
-    }
-
-    /* =========================================
        LOCAL PROJECT UPDATE FEED
-       Har yanzu localStorage ne
+       Still localStorage for now
     ========================================= */
     function uploadCoreProjectUpdate(){
 
-      if(!__coreDashboardApp || !__coreDashboardApp.project){
+      if(!__coreDashboardApp || !__coreDashboardApp.data || !__coreDashboardApp.data.project){
         alert("Project not loaded");
         return;
       }
@@ -683,6 +528,9 @@
         return;
       }
 
+      const project =
+        __coreDashboardApp.data.project;
+
       const reader = new FileReader();
 
       reader.onload = function(){
@@ -692,8 +540,8 @@
 
         feed.push({
           id: "update_" + Date.now(),
-          project_code: __coreDashboardApp.project.project_code,
-          project: __coreDashboardApp.project.project_name || __coreDashboardApp.project.project_code,
+          project_code: project.project_code,
+          project: project.project_name || project.project_code,
           type: "Core Project",
           image: reader.result,
           description: text,
@@ -717,7 +565,7 @@
     }
 
     /* =========================================
-       BIND BUTTONS
+       BIND ACTIONS
     ========================================= */
     function bindCoreDashboardActions(){
 
@@ -734,9 +582,25 @@
         }
 
         try{
-          await __coreDashboardApp.addLiquidity(amount);
+          const result = await __coreDashboardApp.addLiquidity(amount, {
+            actor_userid: localStorage.getItem("albukhr_current_email") || "admin",
+            actor_username: "ALBUKHR Admin",
+            note: "Manual liquidity add from core dashboard",
+            meta:{
+              source:"core_project_dashboard_add_liquidity"
+            }
+          });
+
+          if(result?.error){
+            alert(result.error);
+            return;
+          }
+
           coreDashboardEls.addAmount.value = "";
+          alert("Liquidity added successfully");
+
         }catch(err){
+          console.error("Core addLiquidity error:", err);
           alert(err?.message || "Failed to add liquidity");
         }
       });
@@ -754,9 +618,25 @@
         }
 
         try{
-          await __coreDashboardApp.withdrawLiquidity(amount);
+          const result = await __coreDashboardApp.withdrawLiquidity(amount, {
+            actor_userid: localStorage.getItem("albukhr_current_email") || "admin",
+            actor_username: "ALBUKHR Admin",
+            note: "Manual internal withdraw from core dashboard",
+            meta:{
+              source:"core_project_dashboard_internal_withdraw"
+            }
+          });
+
+          if(result?.error){
+            alert(result.error);
+            return;
+          }
+
           coreDashboardEls.withdrawAmount.value = "";
+          alert("Liquidity withdrawn successfully");
+
         }catch(err){
+          console.error("Core withdrawLiquidity error:", err);
           alert(err?.message || "Failed to withdraw liquidity");
         }
       });
@@ -767,8 +647,16 @@
     }
 
     /* =========================================
-       BUILD DASHBOARD
-       project-dashboard-base.js integration
+       START CORE DASHBOARD
+       IMPORTANT:
+       This now uses the REAL base.js contract:
+       bootstrapProjectDashboard({
+         projectCode,
+         dashboardType,
+         targets,
+         options,
+         viewerId
+       })
     ========================================= */
     async function startCoreDashboard(){
 
@@ -784,52 +672,69 @@
         return;
       }
 
-      __coreDashboardApp = await bootstrapProjectDashboard({
-        projectCode: project.project_code,
-        projectType: "core",
-        refreshIntervalMs: 90000,
+      coreDashboardEls.history.className = "loading";
+      coreDashboardEls.history.innerHTML = "Loading treasury history...";
 
-        hooks: {
+      try{
+        __coreDashboardApp = await bootstrapProjectDashboard({
+          projectCode: project.project_code,
+          dashboardType: "core",
 
-          beforeLoad(){
-            coreDashboardEls.history.className = "loading";
-            coreDashboardEls.history.innerHTML = "Loading treasury history...";
+          targets: {
+            projectName: coreDashboardEls.projectName,
+            projectMetaLine: coreDashboardEls.projectMetaLine,
+            projectBadges: coreDashboardEls.projectBadges,
+
+            liquidity: coreDashboardEls.liquidity,
+            reserve: coreDashboardEls.reserve,
+            roi: coreDashboardEls.roi,
+            investors: coreDashboardEls.investors,
+            liquidityStatus: coreDashboardEls.liquidityStatus,
+            usableLiquidity: coreDashboardEls.usableLiquidity,
+
+            history: coreDashboardEls.history,
+            projectStakeBox: coreDashboardEls.projectStakeBox
           },
 
-          onLoaded(payload = {}){
-            renderCoreProjectHeader(payload.project || project);
-            renderCoreProjectStats(payload);
-            renderCoreHistory(payload.history || []);
-
-            if(typeof renderProjectStakeUI === "function"){
-              Promise.resolve(
-                renderProjectStakeUI(
-                  project.project_code,
-                  localStorage.getItem("albukhr_current_email")
-                )
-              ).catch(e=>{
-                console.warn("renderProjectStakeUI failed:", e);
-              });
-            }
+          options: {
+            historyLimit: 50,
+            renderStakePanel: true
           },
 
-          onError(err){
-            console.error("Core dashboard load error:", err);
+          viewerId: localStorage.getItem("albukhr_current_email") || ""
+        });
 
-            coreDashboardEls.projectName.textContent = "Core project load failed";
-            coreDashboardEls.projectMetaLine.textContent =
-              err?.message || "Unknown error";
+        bindCoreDashboardActions();
 
-            coreDashboardEls.history.className = "error-box";
-            coreDashboardEls.history.innerHTML = `
-              Failed to load core project dashboard.<br>
-              <span class="muted">${coreEscapeHtml(err?.message || "Unknown error")}</span>
-            `;
-          }
+        /* optional page-level auto refresh */
+        if(__coreDashboardRefreshTimer){
+          clearInterval(__coreDashboardRefreshTimer);
+          __coreDashboardRefreshTimer = null;
         }
-      });
 
-      bindCoreDashboardActions();
+        __coreDashboardRefreshTimer = setInterval(async ()=>{
+          if(__coreDashboardApp && typeof __coreDashboardApp.reload === "function"){
+            try{
+              await __coreDashboardApp.reload();
+            }catch(e){
+              console.warn("Core dashboard auto refresh failed:", e);
+            }
+          }
+        }, 90000);
+
+      }catch(err){
+        console.error("Core dashboard load error:", err);
+
+        coreDashboardEls.projectName.textContent = "Core project load failed";
+        coreDashboardEls.projectMetaLine.textContent =
+          err?.message || "Unknown error";
+
+        coreDashboardEls.history.className = "error-box";
+        coreDashboardEls.history.innerHTML = `
+          Failed to load core project dashboard.<br>
+          <span class="muted">${coreEscapeHtml(err?.message || "Unknown error")}</span>
+        `;
+      }
     }
 
     /* =========================================
@@ -849,4 +754,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
