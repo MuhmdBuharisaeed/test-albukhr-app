@@ -1,5 +1,5 @@
 /* =========================================
-   ALBUKHR PROJECT UPDATES ENGINE FINAL
+   ALBUKHR PROJECT UPDATES ENGINE FINAL PATCHED
    SUPABASE VERSION
    ------------------------------------------------
    TABLES:
@@ -19,8 +19,10 @@
 
    SAFE NOTES:
    - Works with UUID update IDs
-   - Falls back safely where possible
-   - Does not depend on legacy localStorage feed
+   - Compatible with patched dashboards
+   - Compatible with transparency.html
+   - Supports imageFile and file aliases
+   - Provides normalized feed payloads for UI
 ========================================= */
 
 (function(){
@@ -67,6 +69,11 @@
 
   function safeArray(value){
     return Array.isArray(value) ? value : [];
+  }
+
+  function safeDateMs(value){
+    const ms = new Date(value || Date.now()).getTime();
+    return Number.isFinite(ms) ? ms : Date.now();
   }
 
   function normalizeProjectType(type){
@@ -125,6 +132,47 @@
     if(t === "internal") return "Internal Project";
     if(t === "external") return "External Project";
     return "Project";
+  }
+
+  function getTypeBadgeClass(type){
+    const t = normalizeProjectType(type);
+    if(t === "core") return "core-badge";
+    if(t === "internal") return "internal-badge";
+    if(t === "external") return "external-badge";
+    return "internal-badge";
+  }
+
+  function dispatchFeedEvent(detail = {}){
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", { detail })
+    );
+  }
+
+  /* =========================================
+     CURRENT VIEWER HELPERS
+  ========================================= */
+  function getTransparencyViewerMeta(){
+    return {
+      email:
+        safeString(
+          localStorage.getItem("albukhr_current_email") ||
+          localStorage.getItem("currentUserEmail") ||
+          ""
+        ).trim(),
+
+      name:
+        safeString(
+          localStorage.getItem("albukhr_current_username") ||
+          localStorage.getItem("currentUserName") ||
+          "ALBUKHR User"
+        ).trim(),
+
+      role:
+        safeString(
+          localStorage.getItem("albukhr_current_role") ||
+          "user"
+        ).trim()
+    };
   }
 
   /* =========================================
@@ -247,34 +295,17 @@
       throw new Error(error.message || "Failed to create project update");
     }
 
-    window.dispatchEvent(
-      new CustomEvent("projectFeedUpdated", {
-        detail: {
-          type: "create",
-          update: data
-        }
-      })
-    );
+    dispatchFeedEvent({
+      type: "create",
+      update: data
+    });
 
     return data;
   }
 
   /* =========================================
      DASHBOARD HELPER:
-     UPLOAD PROJECT UPDATE TO SUPABASE
-     ------------------------------------------------
-     Usage:
-     await uploadProjectUpdateToSupabase({
-       projectCode,
-       projectName,
-       projectType,
-       title,
-       description,
-       file,
-       createdByEmail,
-       createdByName,
-       createdByRole
-     });
+     Supports file + imageFile
   ========================================= */
   async function uploadProjectUpdateToSupabase({
     projectCode = "",
@@ -283,6 +314,7 @@
     title = "",
     description = "",
     file = null,
+    imageFile = null,
     createdByEmail = "",
     createdByName = "",
     createdByRole = ""
@@ -292,6 +324,8 @@
     projectName = safeString(projectName).trim();
     projectType = normalizeProjectType(projectType);
 
+    const pickedFile = imageFile || file || null;
+
     if(!projectCode){
       throw new Error("Project code is required");
     }
@@ -300,11 +334,11 @@
       throw new Error("Project name is required");
     }
 
-    if(!file){
+    if(!pickedFile){
       throw new Error("Project update image is required");
     }
 
-    const upload = await uploadProjectUpdateImage(file, {
+    const upload = await uploadProjectUpdateImage(pickedFile, {
       projectCode,
       projectType
     });
@@ -330,12 +364,6 @@
 
   /* =========================================
      FETCH PROJECT UPDATES
-     ------------------------------------------------
-     filters:
-     - projectCode
-     - projectType
-     - visibleOnly
-     - limit
   ========================================= */
   async function fetchProjectUpdates({
     projectCode = "",
@@ -416,7 +444,6 @@
 
   /* =========================================
      FETCH COMMENTS FOR MANY UPDATES
-     returns map keyed by update_id
   ========================================= */
   async function fetchCommentsMapForUpdates(updateIds = []){
     const supabase = getSupabaseClient();
@@ -453,15 +480,6 @@
 
   /* =========================================
      FETCH REACTIONS FOR MANY UPDATES
-     returns:
-     {
-       counts: {
-         [updateId]: { like: n, dislike: n }
-       },
-       userVotes: {
-         [updateId]: "like" | "dislike"
-       }
-     }
   ========================================= */
   async function fetchReactionsMapForUpdates(updateIds = [], viewerEmail = ""){
     const supabase = getSupabaseClient();
@@ -522,12 +540,76 @@
   }
 
   /* =========================================
+     NORMALIZE COMMENT
+  ========================================= */
+  function normalizeCommentRow(comment = {}){
+    return {
+      ...comment,
+      id: safeString(comment.id).trim(),
+      update_id: safeString(comment.update_id).trim(),
+      text: safeString(comment.comment_text).trim(),
+      comment_text: safeString(comment.comment_text).trim(),
+      commenter_name: safeString(comment.commenter_name).trim() || "User",
+      commenter_role: safeString(comment.commenter_role).trim() || "user",
+      created_at: comment.created_at || null,
+      time_ms: safeDateMs(comment.created_at)
+    };
+  }
+
+  /* =========================================
+     NORMALIZE UPDATE FOR UI
+  ========================================= */
+  function normalizeUpdateRow(update = {}, {
+    comments = [],
+    likeCount = 0,
+    dislikeCount = 0,
+    userVote = null
+  } = {}){
+
+    const projectType = normalizeProjectType(update.project_type);
+    const createdAt = update.created_at || null;
+    const normalizedComments = safeArray(comments).map(normalizeCommentRow);
+
+    return {
+      ...update,
+
+      id: safeString(update.id).trim(),
+      project_code: safeString(update.project_code).trim(),
+      project_name: safeString(update.project_name).trim(),
+      project_type: projectType,
+      project_type_label: formatProjectTypeLabel(projectType),
+
+      title: safeString(update.title).trim(),
+      description: safeString(update.description).trim(),
+      image_url: safeString(update.image_url).trim(),
+
+      created_by_email: safeString(update.created_by_email).trim(),
+      created_by_name: safeString(update.created_by_name).trim(),
+      created_by_role: safeString(update.created_by_role).trim(),
+
+      created_at: createdAt,
+      updated_at: update.updated_at || null,
+      is_visible: !!update.is_visible,
+
+      comments: normalizedComments,
+      comments_count: normalizedComments.length,
+      like_count: safeNumber(likeCount, 0),
+      dislike_count: safeNumber(dislikeCount, 0),
+      user_vote: userVote || null,
+
+      type_badge_class: getTypeBadgeClass(projectType),
+      time_ms: safeDateMs(createdAt),
+
+      /* compatibility aliases */
+      project: safeString(update.project_name).trim(),
+      type: formatProjectTypeLabel(projectType),
+      image: safeString(update.image_url).trim(),
+      time: safeDateMs(createdAt)
+    };
+  }
+
+  /* =========================================
      FETCH FULL TRANSPARENCY FEED
-     ------------------------------------------------
-     Returns each update with:
-     - comments
-     - reaction counts
-     - current viewer vote
   ========================================= */
   async function fetchProjectUpdatesFeed({
     projectCode = "",
@@ -544,7 +626,9 @@
       limit
     });
 
-    const ids = updates.map(u => safeString(u.id).trim()).filter(Boolean);
+    const ids = updates
+      .map(u => safeString(u.id).trim())
+      .filter(Boolean);
 
     const [commentsMap, reactions] = await Promise.all([
       fetchCommentsMapForUpdates(ids),
@@ -555,13 +639,38 @@
       const id = safeString(update.id).trim();
       const reactionCount = reactions.counts[id] || { like:0, dislike:0 };
 
-      return {
-        ...update,
+      return normalizeUpdateRow(update, {
         comments: commentsMap[id] || [],
-        like_count: safeNumber(reactionCount.like, 0),
-        dislike_count: safeNumber(reactionCount.dislike, 0),
-        user_vote: reactions.userVotes[id] || null
-      };
+        likeCount: reactionCount.like,
+        dislikeCount: reactionCount.dislike,
+        userVote: reactions.userVotes[id] || null
+      });
+    });
+  }
+
+  /* =========================================
+     TRANSPARENCY FEED HELPER
+  ========================================= */
+  async function fetchTransparencyFeed({
+    projectCode = "",
+    projectType = "",
+    visibleOnly = true,
+    limit = DEFAULT_FEED_LIMIT,
+    viewerEmail = ""
+  } = {}){
+
+    let email = safeString(viewerEmail).trim();
+
+    if(!email){
+      email = getTransparencyViewerMeta().email;
+    }
+
+    return await fetchProjectUpdatesFeed({
+      projectCode,
+      projectType,
+      visibleOnly,
+      limit,
+      viewerEmail: email
     });
   }
 
@@ -609,17 +718,29 @@
       throw new Error(error.message || "Failed to add comment");
     }
 
-    window.dispatchEvent(
-      new CustomEvent("projectFeedUpdated", {
-        detail:{
-          type:"comment",
-          updateId,
-          comment:data
-        }
-      })
-    );
+    dispatchFeedEvent({
+      type:"comment",
+      updateId,
+      comment:data
+    });
 
     return data;
+  }
+
+  /* =========================================
+     TRANSPARENCY COMMENT HELPER
+  ========================================= */
+  async function postTransparencyComment(updateId, commentText, viewerMeta = null){
+    const viewer = viewerMeta || getTransparencyViewerMeta();
+
+    return await addProjectUpdateComment({
+      updateId,
+      commentText,
+      commenterEmail: viewer.email,
+      commenterName: viewer.name,
+      commenterRole: viewer.role,
+      isVisible: true
+    });
   }
 
   /* =========================================
@@ -651,11 +772,6 @@
 
   /* =========================================
      TOGGLE LIKE / DISLIKE
-     ------------------------------------------------
-     Rules:
-     - if same vote exists => remove it
-     - if different vote exists => replace it
-     - if no vote exists => insert it
   ========================================= */
   async function toggleProjectUpdateReaction({
     updateId = "",
@@ -668,7 +784,7 @@
     const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
-    reactorEmail = safeString(reactorEmail).trim();
+    reactorEmail = safeString(reactorEmail).trim().toLowerCase();
     reactorName = safeString(reactorName).trim();
     reactorRole = normalizeRole(reactorRole);
     voteType = safeString(voteType).trim().toLowerCase();
@@ -687,9 +803,7 @@
 
     const existing = await getUserReactionForUpdate(updateId, reactorEmail);
 
-    /* same vote => remove vote */
     if(existing && safeString(existing.vote_type).trim().toLowerCase() === voteType){
-
       const { error: deleteError } = await supabase
         .from("project_update_reactions")
         .delete()
@@ -699,15 +813,11 @@
         throw new Error(deleteError.message || "Failed to remove reaction");
       }
 
-      window.dispatchEvent(
-        new CustomEvent("projectFeedUpdated", {
-          detail:{
-            type:"reaction-remove",
-            updateId,
-            voteType
-          }
-        })
-      );
+      dispatchFeedEvent({
+        type:"reaction-remove",
+        updateId,
+        voteType
+      });
 
       return {
         action:"removed",
@@ -715,7 +825,6 @@
       };
     }
 
-    /* different vote exists => update it */
     if(existing){
       const { data, error } = await supabase
         .from("project_update_reactions")
@@ -732,16 +841,12 @@
         throw new Error(error.message || "Failed to update reaction");
       }
 
-      window.dispatchEvent(
-        new CustomEvent("projectFeedUpdated", {
-          detail:{
-            type:"reaction-update",
-            updateId,
-            voteType,
-            reaction:data
-          }
-        })
-      );
+      dispatchFeedEvent({
+        type:"reaction-update",
+        updateId,
+        voteType,
+        reaction:data
+      });
 
       return {
         action:"updated",
@@ -750,7 +855,6 @@
       };
     }
 
-    /* no vote => insert */
     const { data, error } = await supabase
       .from("project_update_reactions")
       .insert({
@@ -767,16 +871,12 @@
       throw new Error(error.message || "Failed to add reaction");
     }
 
-    window.dispatchEvent(
-      new CustomEvent("projectFeedUpdated", {
-        detail:{
-          type:"reaction-add",
-          updateId,
-          voteType,
-          reaction:data
-        }
-      })
-    );
+    dispatchFeedEvent({
+      type:"reaction-add",
+      updateId,
+      voteType,
+      reaction:data
+    });
 
     return {
       action:"added",
@@ -786,14 +886,22 @@
   }
 
   /* =========================================
+     TRANSPARENCY REACTION HELPER
+  ========================================= */
+  async function toggleTransparencyReaction(updateId, voteType, viewerMeta = null){
+    const viewer = viewerMeta || getTransparencyViewerMeta();
+
+    return await toggleProjectUpdateReaction({
+      updateId,
+      reactorEmail: viewer.email,
+      reactorName: viewer.name,
+      reactorRole: viewer.role,
+      voteType
+    });
+  }
+
+  /* =========================================
      GET UPDATE STATS
-     ------------------------------------------------
-     Returns:
-     {
-       likes,
-       dislikes,
-       comments
-     }
   ========================================= */
   async function getProjectUpdateStats(updateId){
     const supabase = getSupabaseClient();
@@ -842,8 +950,6 @@
 
   /* =========================================
      DELETE UPDATE
-     ------------------------------------------------
-     Optional admin utility
   ========================================= */
   async function deleteProjectUpdate(updateId){
     const supabase = getSupabaseClient();
@@ -862,22 +968,16 @@
       throw new Error(error.message || "Failed to delete project update");
     }
 
-    window.dispatchEvent(
-      new CustomEvent("projectFeedUpdated", {
-        detail:{
-          type:"delete",
-          updateId
-        }
-      })
-    );
+    dispatchFeedEvent({
+      type:"delete",
+      updateId
+    });
 
     return true;
   }
 
   /* =========================================
      SET VISIBILITY
-     ------------------------------------------------
-     Optional admin utility
   ========================================= */
   async function setProjectUpdateVisibility(updateId, isVisible = true){
     const supabase = getSupabaseClient();
@@ -900,25 +1000,17 @@
       throw new Error(error.message || "Failed to update visibility");
     }
 
-    window.dispatchEvent(
-      new CustomEvent("projectFeedUpdated", {
-        detail:{
-          type:"visibility",
-          updateId,
-          update:data
-        }
-      })
-    );
+    dispatchFeedEvent({
+      type:"visibility",
+      updateId,
+      update:data
+    });
 
     return data;
   }
 
   /* =========================================
      LEGACY FEED IMPORT HELPER
-     ------------------------------------------------
-     Optional one-time migration helper
-     Reads localStorage albukhr_project_feed and moves
-     entries to Supabase.
   ========================================= */
   async function migrateLegacyLocalProjectFeedToSupabase({
     createdByEmail = "",
@@ -955,7 +1047,7 @@
           project_type: meta.project_type,
           title: item.title || null,
           description: item.description || "",
-          image_url: item.image || null,
+          image_url: item.image || item.image_url || null,
           created_by_email: createdByEmail || null,
           created_by_name: createdByName || null,
           created_by_role: createdByRole || "system",
@@ -982,6 +1074,8 @@
   window.ALBUKHR_PROJECT_UPDATES = {
     bucket: PROJECT_UPDATES_BUCKET,
 
+    getTransparencyViewerMeta,
+
     resolveProjectMeta,
     uploadProjectUpdateImage,
     createProjectUpdate,
@@ -992,24 +1086,43 @@
     fetchCommentsMapForUpdates,
     fetchReactionsMapForUpdates,
     fetchProjectUpdatesFeed,
+    fetchTransparencyFeed,
 
     addProjectUpdateComment,
+    postTransparencyComment,
+
     getUserReactionForUpdate,
     toggleProjectUpdateReaction,
+    toggleTransparencyReaction,
+
     getProjectUpdateStats,
 
     deleteProjectUpdate,
     setProjectUpdateVisibility,
 
-    migrateLegacyLocalProjectFeedToSupabase
+    migrateLegacyLocalProjectFeedToSupabase,
+
+    normalizeUpdateRow,
+    normalizeCommentRow,
+    formatProjectTypeLabel,
+    getTypeBadgeClass
   };
 
+  window.getTransparencyViewerMeta = getTransparencyViewerMeta;
+
   window.uploadProjectUpdateToSupabase = uploadProjectUpdateToSupabase;
+
   window.fetchProjectUpdatesFeed = fetchProjectUpdatesFeed;
+  window.fetchTransparencyFeed = fetchTransparencyFeed;
   window.fetchProjectUpdates = fetchProjectUpdates;
   window.fetchProjectUpdateComments = fetchProjectUpdateComments;
+
   window.addProjectUpdateComment = addProjectUpdateComment;
+  window.postTransparencyComment = postTransparencyComment;
+
   window.toggleProjectUpdateReaction = toggleProjectUpdateReaction;
+  window.toggleTransparencyReaction = toggleTransparencyReaction;
+
   window.getProjectUpdateStats = getProjectUpdateStats;
   window.deleteProjectUpdate = deleteProjectUpdate;
   window.setProjectUpdateVisibility = setProjectUpdateVisibility;
