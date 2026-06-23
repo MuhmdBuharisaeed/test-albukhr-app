@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>ALBUKHR Transparency</title>
 
   <!-- Global User Page CSS -->
@@ -12,9 +11,8 @@
   <link rel="stylesheet" href="css/global-layout.css">
   <link rel="stylesheet" href="css/global-components.css">
   <link rel="stylesheet" href="css/global-style.css">
-
   <link rel="stylesheet" href="css/global-header.css">
-  <link rel="stylesheet" href="global-buttons.css">
+  <link rel="stylesheet" href="css/global-buttons.css">
 
   <!-- App Alert -->
   <link rel="stylesheet" href="css/app-alert.css">
@@ -44,21 +42,11 @@
       box-shadow:0 4px 16px rgba(0,0,0,0.08);
     }
 
-    .header-left{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
+    .header-left,
     .header-right{
       display:flex;
       align-items:center;
       gap:10px;
-    }
-
-    .main-logo{
-      height:44px;
-      width:auto;
     }
 
     .brand{
@@ -491,10 +479,7 @@
       </div>
 
       <div class="header-right">
-        <div
-          class="header-btn notification-btn"
-          onclick="openNotifications()"
-        >
+        <div class="header-btn notification-btn" onclick="openNotifications()">
           🔔
           <span id="notifBadge" class="notification-badge"></span>
         </div>
@@ -503,9 +488,7 @@
 
     <!-- TOP NAV -->
     <div class="top-nav">
-      <button class="nav-btn active">
-        📸 Transparency
-      </button>
+      <button class="nav-btn active">📸 Transparency</button>
 
       <button
         class="nav-btn ghost"
@@ -519,10 +502,7 @@
     <div class="content">
 
       <div class="hero-card">
-        <div class="hero-title">
-          📸 Project Transparency Hub
-        </div>
-
+        <div class="hero-title">📸 Project Transparency Hub</div>
         <div class="hero-sub">
           Follow verified updates published by ALBUKHR Core, Internal, and External project teams.
           Each update may include project progress, milestone evidence, field activity, infrastructure work,
@@ -551,16 +531,11 @@
           <option value="oldest">Oldest first</option>
         </select>
 
-        <button id="refreshFeedBtn" class="filter-btn">
-          Refresh
-        </button>
+        <button id="refreshFeedBtn" class="filter-btn">Refresh</button>
       </div>
 
-      <div class="section-title">
-        Project Updates Feed
-      </div>
+      <div class="section-title">Project Updates Feed</div>
 
-      <!-- FEED -->
       <div id="projectFeed" class="loading">
         Loading project updates...
       </div>
@@ -571,13 +546,11 @@
       All project updates published here are transparency records from
       Core, Internal, and External project teams inside the ALBUKHR ecosystem.
     </div>
-
   </div>
 
   <!-- ===== ALBUKHR DOCK NAV ===== -->
   <div class="dock-nav">
 
-    <!-- HOME -->
     <a href="index.html" class="dock-item">
       <svg viewBox="0 0 24 24" class="dock-icon">
         <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
@@ -585,7 +558,6 @@
       <span>Home</span>
     </a>
 
-    <!-- INVESTORS -->
     <a href="investor-dashboard.html" class="dock-item">
       <svg viewBox="0 0 24 24" class="dock-icon">
         <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
@@ -596,7 +568,6 @@
       <span>Investors</span>
     </a>
 
-    <!-- TRANSPARENCY HUB -->
     <a href="transparency.html" class="dock-item">
       <svg viewBox="0 0 24 24" class="dock-icon">
         <path d="M6 3h8l4 4v14H6z"/>
@@ -609,7 +580,6 @@
       <span>Transparency</span>
     </a>
 
-    <!-- SERVICES -->
     <a href="services.html" class="dock-item">
       <svg viewBox="0 0 24 24" class="dock-icon">
         <circle cx="12" cy="12" r="3"/>
@@ -617,7 +587,6 @@
       </svg>
       <span>Services</span>
     </a>
-
   </div>
 
   <!-- APP ALERT JS -->
@@ -632,7 +601,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-core.js"></script>
 
-  <!-- PROJECTS ENGINE (optional but recommended for project metadata) -->
+  <!-- PROJECT META ENGINE -->
   <script src="js/projects-engine.js"></script>
 
   <!-- PROJECT UPDATES ENGINE -->
@@ -640,8 +609,8 @@
 
   <script>
     /* =========================================
-       ALBUKHR TRANSPARENCY PAGE FINAL
-       Supabase feed + comments + reactions
+       ALBUKHR TRANSPARENCY PAGE FINAL PATCHED
+       Uses project-updates.js transparency helpers
     ========================================= */
 
     const transparencyState = {
@@ -680,7 +649,19 @@
         .replace(/'/g, "&#039;");
     }
 
-    function getCurrentViewer(){
+    function showAlertMessage(title, text){
+      if(typeof openAppAlert === "function"){
+        openAppAlert(title, text);
+        return;
+      }
+      alert(`${title}\n\n${text}`);
+    }
+
+    function getViewer(){
+      if(typeof getTransparencyViewerMeta === "function"){
+        return getTransparencyViewerMeta();
+      }
+
       return {
         email:
           localStorage.getItem("albukhr_current_email") ||
@@ -689,84 +670,11 @@
         name:
           localStorage.getItem("albukhr_current_username") ||
           localStorage.getItem("currentUserName") ||
-          "User",
+          "ALBUKHR User",
         role:
           localStorage.getItem("albukhr_current_role") ||
-          "investor"
+          "user"
       };
-    }
-
-    function getProjectTypeClass(type){
-      const t = safeString(type).trim().toLowerCase();
-
-      if(t === "core") return "core-badge";
-      if(t === "internal") return "internal-badge";
-      if(t === "external") return "external-badge";
-
-      return "internal-badge";
-    }
-
-    function getProjectTypeLabel(type){
-      const t = safeString(type).trim().toLowerCase();
-
-      if(t === "core") return "Core Project";
-      if(t === "internal") return "Internal Project";
-      if(t === "external") return "External Project";
-
-      return "Project";
-    }
-
-    function formatDisplayDate(value){
-      if(!value) return "—";
-
-      const d = new Date(value);
-      if(Number.isNaN(d.getTime())) return "—";
-
-      return d.toLocaleString();
-    }
-
-    function timeAgo(value){
-      if(!value) return "Just now";
-
-      const time = new Date(value).getTime();
-      if(!time) return "Just now";
-
-      const seconds = Math.floor((Date.now() - time) / 1000);
-
-      let interval = Math.floor(seconds / 31536000);
-      if(interval >= 1){
-        return interval + " year" + (interval > 1 ? "s" : "") + " ago";
-      }
-
-      interval = Math.floor(seconds / 2592000);
-      if(interval >= 1){
-        return interval + " month" + (interval > 1 ? "s" : "") + " ago";
-      }
-
-      interval = Math.floor(seconds / 86400);
-      if(interval >= 1){
-        return interval + " day" + (interval > 1 ? "s" : "") + " ago";
-      }
-
-      interval = Math.floor(seconds / 3600);
-      if(interval >= 1){
-        return interval + " hour" + (interval > 1 ? "s" : "") + " ago";
-      }
-
-      interval = Math.floor(seconds / 60);
-      if(interval >= 1){
-        return interval + " minute" + (interval > 1 ? "s" : "") + " ago";
-      }
-
-      return "Just now";
-    }
-
-    function showAlertMessage(title, text){
-      if(typeof openAppAlert === "function"){
-        openAppAlert(title, text);
-        return;
-      }
-      alert(`${title}\n\n${text}`);
     }
 
     function getFeedFilters(){
@@ -777,17 +685,49 @@
       };
     }
 
+    function formatDisplayDate(value){
+      if(!value) return "—";
+      const d = new Date(value);
+      if(Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleString();
+    }
+
+    function timeAgo(value){
+      if(!value) return "Just now";
+
+      const time = new Date(value).getTime();
+      if(!Number.isFinite(time)) return "Just now";
+
+      const seconds = Math.floor((Date.now() - time) / 1000);
+
+      let interval = Math.floor(seconds / 31536000);
+      if(interval >= 1) return interval + " year" + (interval > 1 ? "s" : "") + " ago";
+
+      interval = Math.floor(seconds / 2592000);
+      if(interval >= 1) return interval + " month" + (interval > 1 ? "s" : "") + " ago";
+
+      interval = Math.floor(seconds / 86400);
+      if(interval >= 1) return interval + " day" + (interval > 1 ? "s" : "") + " ago";
+
+      interval = Math.floor(seconds / 3600);
+      if(interval >= 1) return interval + " hour" + (interval > 1 ? "s" : "") + " ago";
+
+      interval = Math.floor(seconds / 60);
+      if(interval >= 1) return interval + " minute" + (interval > 1 ? "s" : "") + " ago";
+
+      return "Just now";
+    }
+
     function sortFeed(feed = [], sort = "latest"){
       const copy = [...safeArray(feed)];
 
       copy.sort((a, b) => {
-        const at = new Date(a.created_at || 0).getTime();
-        const bt = new Date(b.created_at || 0).getTime();
+        const at = Number(a.time_ms || new Date(a.created_at || 0).getTime() || 0);
+        const bt = Number(b.time_ms || new Date(b.created_at || 0).getTime() || 0);
 
         if(sort === "oldest"){
           return at - bt;
         }
-
         return bt - at;
       });
 
@@ -819,7 +759,6 @@
        FEED RENDER
     ========================================= */
     function renderFeed(feed = []){
-
       const items = safeArray(feed);
 
       if(!items.length){
@@ -830,12 +769,13 @@
 
       const html = items.map(item => {
         const id = safeString(item.id).trim();
-        const projectName = safeString(item.project_name || item.project_code || "Project");
+        const projectName = safeString(item.project_name || item.project || item.project_code || "Project");
         const projectCode = safeString(item.project_code || "");
         const projectType = safeString(item.project_type || "internal").toLowerCase();
+        const projectTypeLabel = safeString(item.project_type_label || item.type || "Project");
         const title = safeString(item.title || "");
         const description = safeString(item.description || "");
-        const imageUrl = safeString(item.image_url || "");
+        const imageUrl = safeString(item.image_url || item.image || "");
         const createdByName = safeString(item.created_by_name || "ALBUKHR Team");
         const createdByRole = safeString(item.created_by_role || "");
         const createdAt = item.created_at || "";
@@ -851,7 +791,6 @@
           <div class="timeline-card">
 
             <div class="timeline-header">
-
               <div class="timeline-left">
                 <div class="timeline-project">
                   ${escapeHtml(projectName)}
@@ -867,10 +806,9 @@
                 </div>
               </div>
 
-              <div class="timeline-type ${getProjectTypeClass(projectType)}">
-                ${escapeHtml(getProjectTypeLabel(projectType))}
+              <div class="timeline-type ${escapeHtml(item.type_badge_class || "internal-badge")}">
+                ${escapeHtml(projectTypeLabel)}
               </div>
-
             </div>
 
             ${title ? `
@@ -885,24 +823,17 @@
                   src="${escapeHtml(imageUrl)}"
                   class="timeline-image"
                   alt="Project update image"
-                  onclick="openImageModal('${escapeHtml(imageUrl)}')"
+                  onclick="openImageModal(${JSON.stringify(imageUrl)})"
                 />
               </div>
             ` : ""}
 
-            <div
-              class="timeline-desc ${isExpanded ? "expanded" : "collapsed"}"
-              id="desc-${id}"
-            >
+            <div class="timeline-desc ${isExpanded ? "expanded" : "collapsed"}">
               ${escapeHtml(description || "No description provided.")}
             </div>
 
             ${needsReadMore ? `
-              <div
-                class="read-more"
-                onclick="toggleReadMore('${id}')"
-                id="read-${id}"
-              >
+              <div class="read-more" onclick="toggleReadMore('${id}')">
                 ${isExpanded ? "Show less" : "Read more"}
               </div>
             ` : ""}
@@ -927,43 +858,36 @@
               </button>
             </div>
 
-            <div
-              class="comment-box"
-              id="comment-box-${id}"
-              style="display:${commentsOpen ? "flex" : "none"}"
-            >
-              <input
-                type="text"
-                id="comment-input-${id}"
-                placeholder="Write comment..."
-              />
+            ${commentsOpen ? `
+              <div class="comment-box">
+                <input
+                  type="text"
+                  id="comment-input-${id}"
+                  placeholder="Write comment..."
+                />
+                <button onclick="handleAddComment('${id}')">Post</button>
+              </div>
 
-              <button onclick="handleAddComment('${id}')">
-                Post
-              </button>
-            </div>
+              <div class="comment-list">
+                ${comments.length ? comments.map(comment => `
+                  <div class="comment-item">
+                    <div class="comment-author">
+                      ${escapeHtml(comment.commenter_name || "User")}
+                    </div>
 
-            <div class="comment-list">
-              ${comments.length ? comments.map(comment => `
-                <div class="comment-item">
-                  <div class="comment-author">
-                    ${escapeHtml(comment.commenter_name || "User")}
+                    <div>
+                      ${escapeHtml(comment.comment_text || comment.text || "")}
+                    </div>
+
+                    <div class="comment-time">
+                      ${escapeHtml(timeAgo(comment.created_at || comment.time_ms))}
+                    </div>
                   </div>
-
-                  <div>
-                    ${escapeHtml(comment.comment_text || "")}
-                  </div>
-
-                  <div class="comment-time">
-                    ${escapeHtml(timeAgo(comment.created_at))}
-                  </div>
-                </div>
-              `).join("") : `
-                <div class="muted">
-                  No comments yet.
-                </div>
-              `}
-            </div>
+                `).join("") : `
+                  <div class="muted">No comments yet.</div>
+                `}
+              </div>
+            ` : ""}
 
             <div class="timeline-time">
               Published: ${escapeHtml(formatDisplayDate(createdAt))}
@@ -981,7 +905,6 @@
        LOAD FEED
     ========================================= */
     async function loadTransparencyFeed(forceMessage = false){
-
       if(transparencyState.loading) return;
       transparencyState.loading = true;
 
@@ -991,14 +914,14 @@
           transparencyEls.feed.innerHTML = "Loading project updates...";
         }
 
-        if(typeof fetchProjectUpdatesFeed !== "function"){
-          throw new Error("fetchProjectUpdatesFeed() is missing. Load js/project-updates.js");
+        if(typeof fetchTransparencyFeed !== "function"){
+          throw new Error("fetchTransparencyFeed() is missing. Load js/project-updates.js");
         }
 
-        const viewer = getCurrentViewer();
+        const viewer = getViewer();
         const filters = getFeedFilters();
 
-        const feed = await fetchProjectUpdatesFeed({
+        const feed = await fetchTransparencyFeed({
           projectCode: filters.projectCode,
           projectType: filters.projectType,
           visibleOnly: true,
@@ -1046,7 +969,6 @@
        ADD COMMENT
     ========================================= */
     window.handleAddComment = async function(updateId){
-
       try{
         const input = document.getElementById(`comment-input-${updateId}`);
         if(!input) return;
@@ -1057,7 +979,7 @@
           return;
         }
 
-        const viewer = getCurrentViewer();
+        const viewer = getViewer();
 
         if(!viewer.email){
           showAlertMessage(
@@ -1067,17 +989,20 @@
           return;
         }
 
-        await addProjectUpdateComment({
-          updateId,
-          commentText,
-          commenterEmail: viewer.email,
-          commenterName: viewer.name,
-          commenterRole: viewer.role
-        });
+        if(typeof postTransparencyComment === "function"){
+          await postTransparencyComment(updateId, commentText, viewer);
+        }else{
+          await addProjectUpdateComment({
+            updateId,
+            commentText,
+            commenterEmail: viewer.email,
+            commenterName: viewer.name,
+            commenterRole: viewer.role
+          });
+        }
 
         input.value = "";
         transparencyState.openComments[updateId] = true;
-
         await loadTransparencyFeed(false);
 
       }catch(err){
@@ -1093,9 +1018,8 @@
        LIKE / DISLIKE
     ========================================= */
     window.handleReaction = async function(updateId, voteType){
-
       try{
-        const viewer = getCurrentViewer();
+        const viewer = getViewer();
 
         if(!viewer.email){
           showAlertMessage(
@@ -1105,13 +1029,17 @@
           return;
         }
 
-        await toggleProjectUpdateReaction({
-          updateId,
-          reactorEmail: viewer.email,
-          reactorName: viewer.name,
-          reactorRole: viewer.role,
-          voteType
-        });
+        if(typeof toggleTransparencyReaction === "function"){
+          await toggleTransparencyReaction(updateId, voteType, viewer);
+        }else{
+          await toggleProjectUpdateReaction({
+            updateId,
+            reactorEmail: viewer.email,
+            reactorName: viewer.name,
+            reactorRole: viewer.role,
+            voteType
+          });
+        }
 
         await loadTransparencyFeed(false);
 
@@ -1208,11 +1136,10 @@
 
       await loadTransparencyFeed(true);
 
-      /* soft auto refresh every 90s */
       setInterval(async () => {
         await loadTransparencyFeed(false);
       }, 90000);
     });
   </script>
 </body>
-            </html>
+  </html>
