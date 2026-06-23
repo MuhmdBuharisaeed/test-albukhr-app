@@ -23,6 +23,7 @@
    - Compatible with transparency.html
    - Supports imageFile and file aliases
    - Provides normalized feed payloads for UI
+   - SAFE with js/supabase-core.js
 ========================================= */
 
 (function(){
@@ -37,21 +38,58 @@
 
   /* =========================================
      SUPABASE GUARD
+     IMPORTANT:
+     - Never return window.supabase directly because
+       that is usually the CDN SDK namespace, not a client.
+     - Prefer ALBUKHR dedicated client from supabase-core.js
   ========================================= */
+  function isValidSupabaseClient(candidate){
+    return !!(
+      candidate &&
+      typeof candidate.from === "function" &&
+      candidate.storage &&
+      typeof candidate.storage.from === "function"
+    );
+  }
+
   function getSupabaseClient(){
-    if(typeof window.supabaseClient !== "undefined" && window.supabaseClient){
-      return window.supabaseClient;
+
+    /* 1) Primary ALBUKHR dedicated client */
+    if(isValidSupabaseClient(window.albukhrSupabase)){
+      return window.albukhrSupabase;
     }
 
-    if(typeof window.supabase !== "undefined" && window.supabase){
-      return window.supabase;
+    /* 2) Getter exported by js/supabase-core.js */
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
+      try{
+        const client = window.getAlbukhrSupabaseClient();
+        if(isValidSupabaseClient(client)){
+          return client;
+        }
+      }catch(err){
+        console.warn("getAlbukhrSupabaseClient() failed:", err);
+      }
     }
 
-    if(typeof window.sb !== "undefined" && window.sb){
-      return window.sb;
+    /* 3) Compatibility fallbacks if another page exposes a client */
+    const fallbacks = [
+      window.supabaseClient,
+      window.sb,
+      window.ALBUKHR_SUPABASE,
+      window.supabase_instance,
+      window.supabase_db,
+      window.db
+    ];
+
+    for(const candidate of fallbacks){
+      if(isValidSupabaseClient(candidate)){
+        return candidate;
+      }
     }
 
-    throw new Error("Supabase client not found. Load js/supabase-core.js first.");
+    throw new Error(
+      "Valid Supabase client not found. Make sure js/supabase-core.js is loaded before js/project-updates.js."
+    );
   }
 
   /* =========================================
@@ -750,7 +788,7 @@
     const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
-    reactorEmail = safeString(reactorEmail).trim();
+    reactorEmail = safeString(reactorEmail).trim().toLowerCase();
 
     if(!updateId || !reactorEmail){
       return null;
