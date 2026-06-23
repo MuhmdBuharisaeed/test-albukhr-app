@@ -1,6 +1,6 @@
 /* =========================================
-   ALBUKHR PROJECT RESOLVER v1 FINAL
-   SAFE MIGRATION LAYER FOR SINGLE DASHBOARD
+   ALBUKHR PROJECT RESOLVER v2 FINAL PATCHED
+   SAFE MIGRATION LAYER FOR SINGLE / UNIVERSAL DASHBOARD
    ------------------------------------------------
    PURPOSE:
    - Resolve ALBUKHR project from localStorage/projectRef
@@ -8,31 +8,18 @@
    - Identify project_type correctly: core/internal/external
    - Provide dashboard access rules
    - Provide treasury/update permission rules
-   - Work with old single dashboard without breaking it
+   - Work with old dashboard pages without breaking them
 
-   SAFE MIGRATION GOAL:
-   - Do NOT break old pages
-   - Do NOT force 3-dashboard split
-   - Do NOT overwrite existing engines
+   IMPORTANT PATCH:
+   - REMOVED dangerous name-based CORE fallback
+   - project_type is now trusted from real source first
+   - no more accidental "Barsh Agro => core" coercion
 ========================================= */
 
 (function(){
   "use strict";
 
-  /* =========================================
-     CONFIG
-  ========================================= */
-  const RESOLVER_VERSION = "1.0.0";
-
-  const CORE_FALLBACK_NAMES = [
-    "Barsh Agro",
-    "Labbaika Bakery",
-    "Raheem Pharma",
-    "Urban Transport",
-    "Khairat Recycling",
-    "Azman Chemical",
-    "Hauwal Maize"
-  ];
+  const RESOLVER_VERSION = "2.0.0";
 
   const ADMIN_ROLES = [
     "super_admin",
@@ -59,9 +46,7 @@
   }
 
   function normalizeKey(value){
-    return lower(value)
-      .replace(/\s+/g, " ")
-      .trim();
+    return lower(value).replace(/\s+/g, " ").trim();
   }
 
   function slugifyProjectRef(value){
@@ -79,10 +64,6 @@
       }
     });
     return Array.from(map.values());
-  }
-
-  function isObject(value){
-    return !!value && typeof value === "object" && !Array.isArray(value);
   }
 
   /* =========================================
@@ -165,11 +146,7 @@
 
   /* =========================================
      RAW SOURCE LOADERS
-     ------------------------------------------------
-     NOTE:
-     We try multiple sources without throwing hard errors.
   ========================================= */
-
   async function loadProjectsFromEngine(){
     const out = [];
 
@@ -256,10 +233,18 @@
   }
 
   /* =========================================
+     TYPE NORMALIZER
+  ========================================= */
+  function normalizeProjectType(value){
+    const t = lower(value);
+    if(t === "core") return "core";
+    if(t === "internal") return "internal";
+    if(t === "external") return "external";
+    return "";
+  }
+
+  /* =========================================
      PROJECT NORMALIZATION
-     ------------------------------------------------
-     Output shape is the single source of truth
-     for dashboard pages.
   ========================================= */
   function normalizeProject(raw = {}, source = "unknown"){
     const projectCode =
@@ -281,44 +266,44 @@
         projectCode
       ).trim();
 
-    let projectType =
-      lower(
-        raw.project_type ||
-        raw.type ||
-        raw.projectType ||
-        ""
-      );
+    let projectType = normalizeProjectType(
+      raw.project_type ||
+      raw.type ||
+      raw.projectType ||
+      ""
+    );
 
-    /*
-      Safe fallback typing:
-      - if explicitly marked internal/external/core, keep it
-      - else infer from known flags / source
-    */
+    /* -----------------------------------------
+       TRUST EXPLICIT FLAGS FIRST
+    ----------------------------------------- */
     if(!projectType){
-      if(raw.internal === true){
+      if(raw.is_core === true || raw.core === true){
+        projectType = "core";
+      }else if(raw.internal === true){
         projectType = "internal";
       }else if(raw.external === true){
         projectType = "external";
-      }else if(raw.is_core === true || raw.core === true){
-        projectType = "core";
       }
     }
 
+    /* -----------------------------------------
+       SAFE SOURCE-BASED FALLBACK ONLY
+       NO NAME-BASED CORE FALLBACK ANYMORE
+    ----------------------------------------- */
     if(!projectType){
-      const nameKey = normalizeKey(projectName);
-      const codeKey = normalizeKey(projectCode);
-
-      const isCoreFallback =
-        CORE_FALLBACK_NAMES.map(normalizeKey).includes(nameKey) ||
-        CORE_FALLBACK_NAMES.map(slugifyProjectRef).includes(codeKey);
-
-      if(isCoreFallback){
+      if(source === "core_engine"){
         projectType = "core";
-      }else if(source === "internal_local"){
-        projectType = "internal";
       }else if(source === "marketplace_engine" || source === "marketplace_local"){
         projectType = "external";
+      }else if(source === "internal_local"){
+        projectType = "internal";
       }else{
+        /*
+          Default safe fallback:
+          if a project exists in generic projects engine
+          and type is missing, do NOT force core by name.
+          keep it internal unless explicitly marked otherwise.
+        */
         projectType = "internal";
       }
     }
@@ -389,23 +374,21 @@
     });
 
     coreProjects.forEach(p => {
-      const normalized = normalizeProject(
-        { ...p, project_type:"core" },
+      all.push(normalizeProject(
+        { ...p, project_type: p.project_type || "core" },
         "core_engine"
-      );
-      all.push(normalized);
+      ));
     });
 
     marketplaceEngineProjects.forEach(p => {
-      const normalized = normalizeProject(
+      all.push(normalizeProject(
         { ...p, project_type: p.project_type || "external" },
         "marketplace_engine"
-      );
-      all.push(normalized);
+      ));
     });
 
     loadInternalProjectsFromLocalStorage().forEach(p => {
-      const normalized = normalizeProject(
+      all.push(normalizeProject(
         {
           ...p,
           project_name: p.project_name || p.projectName || p.name,
@@ -413,12 +396,11 @@
           project_type: p.project_type || "internal"
         },
         "internal_local"
-      );
-      all.push(normalized);
+      ));
     });
 
     loadMarketplaceProjectsFromLocalStorage().forEach(p => {
-      const normalized = normalizeProject(
+      all.push(normalizeProject(
         {
           ...p,
           project_name: p.project_name || p.projectName || p.name,
@@ -426,8 +408,7 @@
           project_type: p.project_type || "external"
         },
         "marketplace_local"
-      );
-      all.push(normalized);
+      ));
     });
 
     return uniqueBy(
@@ -477,11 +458,6 @@
 
   /* =========================================
      RESOLVE PROJECT
-     ------------------------------------------------
-     Accepts:
-     - project_code
-     - project_name
-     - old localStorage value
   ========================================= */
   async function resolveAlbukhrProject(projectRef){
     const ref = safeString(projectRef).trim();
@@ -535,35 +511,20 @@
 
   /* =========================================
      ACCESS RULES
-     ------------------------------------------------
-     Dashboard view access
   ========================================= */
   function canAccessAlbukhrProjectDashboard(project, user = null){
     if(!project) return false;
 
     user = user || getCurrentAlbukhrUser();
 
-    /*
-      Admins can always access
-    */
     if(isAnyProjectAdmin(user)){
       return true;
     }
 
-    /*
-      Core projects:
-      allow viewing if user is logged in as admin only.
-      (If later you want contributor/project-manager access,
-       we can extend here safely.)
-    */
     if(isCoreProject(project)){
       return false;
     }
 
-    /*
-      Internal / External:
-      creator can access
-    */
     const creatorId = lower(project.creator_userid);
     const currentUserId = lower(user.userid || user.email);
 
@@ -576,17 +537,12 @@
 
   /* =========================================
      TREASURY RULES
-     ------------------------------------------------
-     Add liquidity / withdraw / reward funding
   ========================================= */
   function canManageAlbukhrProjectTreasury(project, user = null){
     if(!project) return false;
 
     user = user || getCurrentAlbukhrUser();
 
-    /*
-      Treasury actions are admin-only for safety.
-    */
     if(
       isSuperAdmin(user) ||
       isFinanceAdmin(user) ||
@@ -600,24 +556,16 @@
 
   /* =========================================
      UPDATE RULES
-     ------------------------------------------------
-     Upload project updates
   ========================================= */
   function canUploadAlbukhrProjectUpdate(project, user = null){
     if(!project) return false;
 
     user = user || getCurrentAlbukhrUser();
 
-    /*
-      Admins can upload everywhere
-    */
     if(isAnyProjectAdmin(user)){
       return true;
     }
 
-    /*
-      Creator of internal/external project can upload
-    */
     const creatorId = lower(project.creator_userid);
     const currentUserId = lower(user.userid || user.email);
 
@@ -634,13 +582,9 @@
 
   /* =========================================
      SAFE DASHBOARD GUARD
-     ------------------------------------------------
-     Use this in single dashboard page before rendering.
   ========================================= */
   async function guardAlbukhrDashboardAccess({
     projectRef = "",
-    redirectIfMissing = "marketplace.html",
-    redirectIfDenied = "marketplace.html",
     requireProject = true
   } = {}){
 
@@ -697,22 +641,14 @@
   }
 
   /* =========================================
-     UI HELPERS FOR SINGLE DASHBOARD
+     UI HELPERS
   ========================================= */
   function getAlbukhrDashboardTitle(project){
     const type = getAlbukhrProjectType(project);
 
-    if(type === "core"){
-      return "ALBUKHR Core Project Dashboard";
-    }
-
-    if(type === "internal"){
-      return "ALBUKHR Internal Project Dashboard";
-    }
-
-    if(type === "external"){
-      return "ALBUKHR External Project Dashboard";
-    }
+    if(type === "core") return "ALBUKHR Core Project Dashboard";
+    if(type === "internal") return "ALBUKHR Internal Project Dashboard";
+    if(type === "external") return "ALBUKHR External Project Dashboard";
 
     return "ALBUKHR Project Dashboard";
   }
@@ -738,10 +674,7 @@
   }
 
   /* =========================================
-     LEGACY COMPATIBILITY HELPERS
-     ------------------------------------------------
-     These help old dashboard migrate from project_name
-     to project_code safely.
+     LEGACY STORAGE NORMALIZERS
   ========================================= */
   async function normalizeAlbukhrCurrentProjectStorage(){
     const raw =
@@ -752,9 +685,6 @@
     const project = await resolveAlbukhrProject(raw);
     if(!project) return null;
 
-    /*
-      Always store canonical project_code going forward
-    */
     if(project.project_code){
       localStorage.setItem("albukhr_current_project", project.project_code);
     }
@@ -783,7 +713,6 @@
   ========================================= */
   window.ALBUKHR_PROJECT_RESOLVER = {
     version: RESOLVER_VERSION,
-    CORE_FALLBACK_NAMES,
     ADMIN_ROLES,
 
     safeString,
@@ -831,7 +760,6 @@
     normalizeAlbukhrUpdateProjectStorage
   };
 
-  /* direct helpers for easy use in old pages */
   window.resolveAlbukhrProject = resolveAlbukhrProject;
   window.resolveCurrentAlbukhrProject = resolveCurrentAlbukhrProject;
   window.getAlbukhrProjectType = getAlbukhrProjectType;
