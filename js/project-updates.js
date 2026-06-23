@@ -23,7 +23,6 @@
    - Compatible with transparency.html
    - Supports imageFile and file aliases
    - Provides normalized feed payloads for UI
-   - SAFE with js/supabase-core.js
 ========================================= */
 
 (function(){
@@ -788,7 +787,7 @@
     const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
-    reactorEmail = safeString(reactorEmail).trim().toLowerCase();
+    reactorEmail = safeString(reactorEmail).trim();
 
     if(!updateId || !reactorEmail){
       return null;
