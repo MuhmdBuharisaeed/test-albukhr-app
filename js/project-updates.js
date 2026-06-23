@@ -1,40 +1,62 @@
 /* =========================================
    ALBUKHR PROJECT UPDATES ENGINE FINAL
-   Supabase-first Transparency / Project Updates
+   SUPABASE VERSION
    ------------------------------------------------
-   PURPOSE:
-   - Upload project update image to Supabase Storage
-   - Save project update into public.project_updates
-   - Load updates for transparency feed / project pages
-   - Manage comments/reactions if needed later
+   TABLES:
+   - public.project_updates
+   - public.project_update_comments
+   - public.project_update_reactions
 
-   REQUIRES:
-   - supabase-core.js
-   - projects-engine.js (optional helper use)
+   STORAGE BUCKET:
+   - project-updates
+
+   PURPOSE:
+   - Transparency feed
+   - Upload project updates from project dashboards
+   - Like / dislike project updates
+   - Comment on project updates
+   - Read feed for core / internal / external projects
+
+   SAFE NOTES:
+   - Works with UUID update IDs
+   - Falls back safely where possible
+   - Does not depend on legacy localStorage feed
 ========================================= */
 
 (function(){
-
   "use strict";
 
   /* =========================================
      CONFIG
   ========================================= */
-  const PROJECT_UPDATES_TABLE = "project_updates";
-  const PROJECT_UPDATE_COMMENTS_TABLE = "project_update_comments";
-  const PROJECT_UPDATE_REACTIONS_TABLE = "project_update_reactions";
-
   const PROJECT_UPDATES_BUCKET = "project-updates";
+  const DEFAULT_FEED_LIMIT = 50;
+  const DEFAULT_COMMENT_LIMIT = 50;
 
-  const DEFAULT_FETCH_LIMIT = 50;
+  /* =========================================
+     SUPABASE GUARD
+  ========================================= */
+  function getSupabaseClient(){
+    if(typeof window.supabaseClient !== "undefined" && window.supabaseClient){
+      return window.supabaseClient;
+    }
+
+    if(typeof window.supabase !== "undefined" && window.supabase){
+      return window.supabase;
+    }
+
+    if(typeof window.sb !== "undefined" && window.sb){
+      return window.sb;
+    }
+
+    throw new Error("Supabase client not found. Load js/supabase-core.js first.");
+  }
 
   /* =========================================
      SAFE HELPERS
   ========================================= */
   function safeString(value, fallback = ""){
-    if(value === null || value === undefined){
-      return fallback;
-    }
+    if(value === null || value === undefined) return fallback;
     return String(value);
   }
 
@@ -43,256 +65,46 @@
     return Number.isFinite(n) ? n : fallback;
   }
 
-  function escapeHtml(text = ""){
-    return safeString(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  function safeArray(value){
+    return Array.isArray(value) ? value : [];
   }
 
   function normalizeProjectType(type){
     const t = safeString(type).trim().toLowerCase();
 
-    if(t === "core" || t === "core project"){
-      return "core";
-    }
-
-    if(t === "internal" || t === "internal project"){
-      return "internal";
-    }
-
-    if(t === "external" || t === "external project"){
-      return "external";
-    }
+    if(t === "core") return "core";
+    if(t === "internal") return "internal";
+    if(t === "external") return "external";
 
     return "internal";
   }
 
-  function formatProjectTypeLabel(type){
-    const t = normalizeProjectType(type);
-
-    if(t === "core") return "Core Project";
-    if(t === "internal") return "Internal Project";
-    if(t === "external") return "External Project";
-
-    return "Project";
+  function normalizeRole(role){
+    return safeString(role || "user").trim();
   }
 
-  function getTypeBadgeClass(type){
-    const t = normalizeProjectType(type);
-
-    if(t === "core") return "core-badge";
-    if(t === "external") return "external-badge";
-    return "internal-badge";
+  function sanitizeFileName(name = ""){
+    return safeString(name)
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .toLowerCase();
   }
 
-  function timeAgo(dateInput){
-    if(!dateInput) return "Unknown time";
+  function createStoragePath(projectType, projectCode, fileName){
+    const type = normalizeProjectType(projectType);
+    const code = safeString(projectCode || "unknown-project")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    const time = new Date(dateInput).getTime();
-    if(!Number.isFinite(time)) return "Unknown time";
+    const safeName = sanitizeFileName(fileName || "update-image");
+    const stamp = Date.now();
 
-    const seconds = Math.floor((Date.now() - time) / 1000);
-
-    let interval = Math.floor(seconds / 31536000);
-    if(interval >= 1){
-      return interval + " year" + (interval > 1 ? "s" : "") + " ago";
-    }
-
-    interval = Math.floor(seconds / 2592000);
-    if(interval >= 1){
-      return interval + " month" + (interval > 1 ? "s" : "") + " ago";
-    }
-
-    interval = Math.floor(seconds / 86400);
-    if(interval >= 1){
-      return interval + " day" + (interval > 1 ? "s" : "") + " ago";
-    }
-
-    interval = Math.floor(seconds / 3600);
-    if(interval >= 1){
-      return interval + " hour" + (interval > 1 ? "s" : "") + " ago";
-    }
-
-    interval = Math.floor(seconds / 60);
-    if(interval >= 1){
-      return interval + " minute" + (interval > 1 ? "s" : "") + " ago";
-    }
-
-    return "Just now";
+    return `${type}/${code}/${stamp}-${safeName}`;
   }
 
-  function truncateComment(text, max = 60){
-    text = safeString(text);
-    max = safeNumber(max, 60);
-
-    if(text.length > max){
-      return text.slice(0, max) + "...";
-    }
-
-    return text;
-  }
-
-  function requireSupabase(){
-    if(typeof supabase === "undefined"){
-      throw new Error("Supabase client not found. Make sure supabase-core.js is loaded first.");
-    }
-  }
-
-  function getCurrentUserEmail(){
-    return (
-      localStorage.getItem("albukhr_current_email") ||
-      localStorage.getItem("currentUserEmail") ||
-      localStorage.getItem("user_email") ||
-      ""
-    ).trim();
-  }
-
-  function getCurrentUsername(){
-    return (
-      localStorage.getItem("albukhr_current_username") ||
-      localStorage.getItem("currentUsername") ||
-      localStorage.getItem("user_name") ||
-      "Albukhr User"
-    ).trim();
-  }
-
-  function getCurrentAdminRole(){
-    try{
-      if(typeof getAdmin === "function"){
-        const admin = getAdmin();
-        if(admin && admin.role){
-          return String(admin.role).trim();
-        }
-      }
-    }catch(e){
-      console.warn("getCurrentAdminRole warning:", e);
-    }
-
-    return "project_admin";
-  }
-
-  function buildStoragePath(projectCode, originalName = ""){
-    const code =
-      safeString(projectCode || "project")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "-");
-
-    const ext =
-      originalName && originalName.includes(".")
-        ? originalName.split(".").pop().toLowerCase()
-        : "jpg";
-
-    const rand = Math.random().toString(36).slice(2,10);
-
-    return `${code}/${Date.now()}-${rand}.${ext}`;
-  }
-
-  /* =========================================
-     PROJECT META HELPERS
-  ========================================= */
-  async function resolveProjectUpdateMeta(projectInput){
-
-    /*
-      projectInput can be:
-      1) project code string
-      2) project object { project_code, project_name, project_type }
-    */
-
-    if(!projectInput){
-      throw new Error("Project is required");
-    }
-
-    if(typeof projectInput === "object" && projectInput !== null){
-      const projectCode =
-        safeString(
-          projectInput.project_code ||
-          projectInput.code
-        ).trim();
-
-      const projectName =
-        safeString(
-          projectInput.project_name ||
-          projectInput.name ||
-          projectCode
-        ).trim();
-
-      const projectType =
-        normalizeProjectType(
-          projectInput.project_type ||
-          projectInput.type
-        );
-
-      if(!projectCode){
-        throw new Error("Project code is required");
-      }
-
-      return {
-        project_code: projectCode,
-        project_name: projectName || projectCode,
-        project_type: projectType
-      };
-    }
-
-    const projectCode = safeString(projectInput).trim();
-
-    if(!projectCode){
-      throw new Error("Project code is required");
-    }
-
-    if(typeof getProjectUpdateMeta === "function"){
-      const meta = await getProjectUpdateMeta(projectCode);
-
-      return {
-        project_code: safeString(meta.project_code).trim(),
-        project_name: safeString(meta.project_name).trim(),
-        project_type: normalizeProjectType(meta.project_type)
-      };
-    }
-
-    if(typeof getProjectMeta === "function"){
-      const project = await getProjectMeta(projectCode);
-
-      if(!project){
-        throw new Error(`Project not found: ${projectCode}`);
-      }
-
-      return {
-        project_code: safeString(project.project_code).trim(),
-        project_name: safeString(project.project_name || project.name || project.project_code).trim(),
-        project_type: normalizeProjectType(project.project_type)
-      };
-    }
-
-    throw new Error("Project meta resolver not found. Load projects-engine.js first.");
-  }
-
-  /* =========================================
-     STORAGE UPLOAD
-  ========================================= */
-  async function uploadProjectUpdateImage(file, projectCode){
-    requireSupabase();
-
-    if(!file){
-      return "";
-    }
-
-    const path = buildStoragePath(projectCode, file.name);
-
-    const { error: uploadError } = await supabase
-      .storage
-      .from(PROJECT_UPDATES_BUCKET)
-      .upload(path, file, {
-        cacheControl: "3600",
-        upsert: false
-      });
-
-    if(uploadError){
-      throw uploadError;
-    }
+  function buildPublicUrl(path){
+    const supabase = getSupabaseClient();
 
     const { data } = supabase
       .storage
@@ -302,221 +114,244 @@
     return data?.publicUrl || "";
   }
 
+  function isValidVoteType(voteType){
+    const vote = safeString(voteType).trim().toLowerCase();
+    return vote === "like" || vote === "dislike";
+  }
+
+  function formatProjectTypeLabel(type){
+    const t = normalizeProjectType(type);
+    if(t === "core") return "Core Project";
+    if(t === "internal") return "Internal Project";
+    if(t === "external") return "External Project";
+    return "Project";
+  }
+
+  /* =========================================
+     PROJECT META HELPERS
+  ========================================= */
+  async function resolveProjectMeta(projectCode){
+    const code = safeString(projectCode).trim();
+
+    if(!code){
+      throw new Error("Project code is required");
+    }
+
+    if(typeof getProjectMeta !== "function"){
+      return {
+        project_code: code,
+        project_name: code,
+        project_type: "internal",
+        status: "active"
+      };
+    }
+
+    const meta = await getProjectMeta(code);
+
+    if(!meta){
+      return {
+        project_code: code,
+        project_name: code,
+        project_type: "internal",
+        status: "active"
+      };
+    }
+
+    return {
+      ...meta,
+      project_code: safeString(meta.project_code || code),
+      project_name: safeString(meta.project_name || meta.name || code),
+      project_type: normalizeProjectType(meta.project_type || "internal"),
+      status: safeString(meta.status || "active").toLowerCase()
+    };
+  }
+
+  /* =========================================
+     STORAGE: UPLOAD UPDATE IMAGE
+  ========================================= */
+  async function uploadProjectUpdateImage(file, {
+    projectCode = "",
+    projectType = "internal"
+  } = {}){
+
+    if(!file){
+      throw new Error("Update image file is required");
+    }
+
+    const supabase = getSupabaseClient();
+
+    const path = createStoragePath(
+      projectType,
+      projectCode,
+      file.name || "project-update.jpg"
+    );
+
+    const { error: uploadError } = await supabase
+      .storage
+      .from(PROJECT_UPDATES_BUCKET)
+      .upload(path, file, {
+        upsert: false,
+        cacheControl: "3600"
+      });
+
+    if(uploadError){
+      throw new Error(uploadError.message || "Failed to upload update image");
+    }
+
+    const publicUrl = buildPublicUrl(path);
+
+    return {
+      path,
+      publicUrl
+    };
+  }
+
   /* =========================================
      CREATE PROJECT UPDATE
   ========================================= */
   async function createProjectUpdate(payload = {}){
-    requireSupabase();
+    const supabase = getSupabaseClient();
 
-    const meta = await resolveProjectUpdateMeta(
-      payload.project || payload.project_code || payload.projectMeta
-    );
+    const projectCode = safeString(payload.project_code).trim();
+    const projectName = safeString(payload.project_name).trim();
+    const projectType = normalizeProjectType(payload.project_type);
 
-    const title =
-      safeString(payload.title).trim();
-
-    const description =
-      safeString(payload.description).trim();
-
-    const imageFile =
-      payload.image_file || payload.imageFile || null;
-
-    const isVisible =
-      payload.is_visible !== false;
-
-    if(!description){
-      throw new Error("Project update description is required");
+    if(!projectCode){
+      throw new Error("project_code is required");
     }
 
-    let imageUrl = "";
-
-    if(imageFile){
-      imageUrl = await uploadProjectUpdateImage(
-        imageFile,
-        meta.project_code
-      );
+    if(!projectName){
+      throw new Error("project_name is required");
     }
 
     const insertPayload = {
-      project_code: meta.project_code,
-      project_name: meta.project_name,
-      project_type: meta.project_type,
-
-      title: title || null,
-      description,
-      image_url: imageUrl || null,
-
-      created_by_email: getCurrentUserEmail() || null,
-      created_by_name: getCurrentUsername() || "Albukhr User",
-      created_by_role: getCurrentAdminRole() || "project_admin",
-
-      is_visible: isVisible
+      project_code: projectCode,
+      project_name: projectName,
+      project_type: projectType,
+      title: safeString(payload.title).trim() || null,
+      description: safeString(payload.description).trim(),
+      image_url: safeString(payload.image_url).trim() || null,
+      created_by_email: safeString(payload.created_by_email).trim() || null,
+      created_by_name: safeString(payload.created_by_name).trim() || null,
+      created_by_role: safeString(payload.created_by_role).trim() || null,
+      is_visible: payload.is_visible === false ? false : true
     };
 
     const { data, error } = await supabase
-      .from(PROJECT_UPDATES_TABLE)
+      .from("project_updates")
       .insert(insertPayload)
-      .select()
+      .select("*")
       .single();
 
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to create project update");
     }
 
-    window.dispatchEvent(new CustomEvent("albukhrProjectUpdateCreated", {
-      detail: {
-        update: data
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", {
+        detail: {
+          type: "create",
+          update: data
+        }
+      })
+    );
 
     return data;
   }
 
   /* =========================================
-     UPDATE EXISTING PROJECT UPDATE
+     DASHBOARD HELPER:
+     UPLOAD PROJECT UPDATE TO SUPABASE
+     ------------------------------------------------
+     Usage:
+     await uploadProjectUpdateToSupabase({
+       projectCode,
+       projectName,
+       projectType,
+       title,
+       description,
+       file,
+       createdByEmail,
+       createdByName,
+       createdByRole
+     });
   ========================================= */
-  async function updateProjectUpdate(updateId, patch = {}){
-    requireSupabase();
+  async function uploadProjectUpdateToSupabase({
+    projectCode = "",
+    projectName = "",
+    projectType = "internal",
+    title = "",
+    description = "",
+    file = null,
+    createdByEmail = "",
+    createdByName = "",
+    createdByRole = ""
+  } = {}){
 
-    updateId = safeString(updateId).trim();
+    projectCode = safeString(projectCode).trim();
+    projectName = safeString(projectName).trim();
+    projectType = normalizeProjectType(projectType);
 
-    if(!updateId){
-      throw new Error("Update ID is required");
+    if(!projectCode){
+      throw new Error("Project code is required");
     }
 
-    const updatePayload = {};
-
-    if("title" in patch){
-      updatePayload.title = safeString(patch.title).trim() || null;
+    if(!projectName){
+      throw new Error("Project name is required");
     }
 
-    if("description" in patch){
-      const description = safeString(patch.description).trim();
-      if(!description){
-        throw new Error("Description cannot be empty");
-      }
-      updatePayload.description = description;
+    if(!file){
+      throw new Error("Project update image is required");
     }
 
-    if("is_visible" in patch){
-      updatePayload.is_visible = !!patch.is_visible;
-    }
-
-    if(patch.image_file){
-      const currentProjectCode =
-        safeString(patch.project_code || patch.projectCode || "project").trim();
-
-      updatePayload.image_url =
-        await uploadProjectUpdateImage(
-          patch.image_file,
-          currentProjectCode
-        );
-    }
-
-    if(!Object.keys(updatePayload).length){
-      throw new Error("Nothing to update");
-    }
-
-    const { data, error } = await supabase
-      .from(PROJECT_UPDATES_TABLE)
-      .update(updatePayload)
-      .eq("id", updateId)
-      .select()
-      .single();
-
-    if(error){
-      throw error;
-    }
-
-    window.dispatchEvent(new CustomEvent("albukhrProjectUpdateEdited", {
-      detail: {
-        update: data
-      }
-    }));
-
-    return data;
-  }
-
-  /* =========================================
-     SOFT HIDE PROJECT UPDATE
-  ========================================= */
-  async function hideProjectUpdate(updateId){
-    return await updateProjectUpdate(updateId, {
-      is_visible: false
+    const upload = await uploadProjectUpdateImage(file, {
+      projectCode,
+      projectType
     });
-  }
 
-  /* =========================================
-     DELETE PROJECT UPDATE HARD
-     NOTE:
-     Use only if you really want permanent delete.
-  ========================================= */
-  async function deleteProjectUpdate(updateId){
-    requireSupabase();
+    const update = await createProjectUpdate({
+      project_code: projectCode,
+      project_name: projectName,
+      project_type: projectType,
+      title,
+      description,
+      image_url: upload.publicUrl,
+      created_by_email: createdByEmail,
+      created_by_name: createdByName,
+      created_by_role: createdByRole,
+      is_visible: true
+    });
 
-    updateId = safeString(updateId).trim();
-
-    if(!updateId){
-      throw new Error("Update ID is required");
-    }
-
-    const { error } = await supabase
-      .from(PROJECT_UPDATES_TABLE)
-      .delete()
-      .eq("id", updateId);
-
-    if(error){
-      throw error;
-    }
-
-    window.dispatchEvent(new CustomEvent("albukhrProjectUpdateDeleted", {
-      detail: {
-        updateId
-      }
-    }));
-
-    return true;
+    return {
+      update,
+      image: upload
+    };
   }
 
   /* =========================================
      FETCH PROJECT UPDATES
+     ------------------------------------------------
+     filters:
+     - projectCode
+     - projectType
+     - visibleOnly
+     - limit
   ========================================= */
-  async function fetchProjectUpdates(options = {}){
-    requireSupabase();
+  async function fetchProjectUpdates({
+    projectCode = "",
+    projectType = "",
+    visibleOnly = true,
+    limit = DEFAULT_FEED_LIMIT
+  } = {}){
 
-    const projectCode =
-      safeString(options.project_code || options.projectCode).trim();
+    const supabase = getSupabaseClient();
 
-    const projectType =
-      safeString(options.project_type || options.projectType).trim().toLowerCase();
-
-    const visibleOnly =
-      options.visibleOnly !== false;
-
-    let limit =
-      safeNumber(options.limit, DEFAULT_FETCH_LIMIT);
-
-    if(limit <= 0){
-      limit = DEFAULT_FETCH_LIMIT;
-    }
+    limit = safeNumber(limit, DEFAULT_FEED_LIMIT);
+    if(limit <= 0) limit = DEFAULT_FEED_LIMIT;
 
     let query = supabase
-      .from(PROJECT_UPDATES_TABLE)
-      .select(`
-        id,
-        project_code,
-        project_name,
-        project_type,
-        title,
-        description,
-        image_url,
-        created_by_email,
-        created_by_name,
-        created_by_role,
-        is_visible,
-        created_at,
-        updated_at
-      `)
+      .from("project_updates")
+      .select("*")
       .order("created_at", { ascending:false })
       .limit(limit);
 
@@ -525,7 +360,7 @@
     }
 
     if(projectCode){
-      query = query.eq("project_code", projectCode);
+      query = query.eq("project_code", safeString(projectCode).trim());
     }
 
     if(projectType){
@@ -535,65 +370,36 @@
     const { data, error } = await query;
 
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to fetch project updates");
     }
 
-    return Array.isArray(data) ? data : [];
-  }
-
-  /* =========================================
-     FETCH SINGLE UPDATE
-  ========================================= */
-  async function getProjectUpdate(updateId){
-    requireSupabase();
-
-    updateId = safeString(updateId).trim();
-
-    if(!updateId){
-      throw new Error("Update ID is required");
-    }
-
-    const { data, error } = await supabase
-      .from(PROJECT_UPDATES_TABLE)
-      .select("*")
-      .eq("id", updateId)
-      .single();
-
-    if(error){
-      throw error;
-    }
-
-    return data;
+    return safeArray(data);
   }
 
   /* =========================================
      FETCH COMMENTS FOR ONE UPDATE
   ========================================= */
-  async function fetchProjectUpdateComments(updateId, options = {}){
-    requireSupabase();
+  async function fetchProjectUpdateComments(updateId, {
+    visibleOnly = true,
+    limit = DEFAULT_COMMENT_LIMIT
+  } = {}){
+
+    const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
-
     if(!updateId){
-      throw new Error("Update ID is required");
+      throw new Error("updateId is required");
     }
 
-    const visibleOnly =
-      options.visibleOnly !== false;
+    limit = safeNumber(limit, DEFAULT_COMMENT_LIMIT);
+    if(limit <= 0) limit = DEFAULT_COMMENT_LIMIT;
 
     let query = supabase
-      .from(PROJECT_UPDATE_COMMENTS_TABLE)
-      .select(`
-        id,
-        update_id,
-        commenter_email,
-        commenter_name,
-        comment_text,
-        is_visible,
-        created_at
-      `)
+      .from("project_update_comments")
+      .select("*")
       .eq("update_id", updateId)
-      .order("created_at", { ascending:true });
+      .order("created_at", { ascending:true })
+      .limit(limit);
 
     if(visibleOnly){
       query = query.eq("is_visible", true);
@@ -602,72 +408,182 @@
     const { data, error } = await query;
 
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to fetch update comments");
     }
 
-    return Array.isArray(data) ? data : [];
+    return safeArray(data);
   }
 
   /* =========================================
-     FETCH COMMENTS MAP FOR MANY UPDATES
+     FETCH COMMENTS FOR MANY UPDATES
+     returns map keyed by update_id
   ========================================= */
-  async function fetchProjectUpdateCommentsMap(updateIds = [], options = {}){
-    requireSupabase();
+  async function fetchCommentsMapForUpdates(updateIds = []){
+    const supabase = getSupabaseClient();
 
-    if(!Array.isArray(updateIds) || !updateIds.length){
+    const ids = safeArray(updateIds)
+      .map(id => safeString(id).trim())
+      .filter(Boolean);
+
+    if(!ids.length){
       return {};
     }
 
-    const visibleOnly =
-      options.visibleOnly !== false;
-
-    let query = supabase
-      .from(PROJECT_UPDATE_COMMENTS_TABLE)
-      .select(`
-        id,
-        update_id,
-        commenter_email,
-        commenter_name,
-        comment_text,
-        is_visible,
-        created_at
-      `)
-      .in("update_id", updateIds)
+    const { data, error } = await supabase
+      .from("project_update_comments")
+      .select("*")
+      .in("update_id", ids)
+      .eq("is_visible", true)
       .order("created_at", { ascending:true });
 
-    if(visibleOnly){
-      query = query.eq("is_visible", true);
-    }
-
-    const { data, error } = await query;
-
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to fetch comments map");
     }
 
     const map = {};
 
-    (data || []).forEach(row => {
-      if(!map[row.update_id]){
-        map[row.update_id] = [];
-      }
-      map[row.update_id].push(row);
+    safeArray(data).forEach(comment => {
+      const key = safeString(comment.update_id).trim();
+      if(!map[key]) map[key] = [];
+      map[key].push(comment);
     });
 
     return map;
   }
 
   /* =========================================
+     FETCH REACTIONS FOR MANY UPDATES
+     returns:
+     {
+       counts: {
+         [updateId]: { like: n, dislike: n }
+       },
+       userVotes: {
+         [updateId]: "like" | "dislike"
+       }
+     }
+  ========================================= */
+  async function fetchReactionsMapForUpdates(updateIds = [], viewerEmail = ""){
+    const supabase = getSupabaseClient();
+
+    const ids = safeArray(updateIds)
+      .map(id => safeString(id).trim())
+      .filter(Boolean);
+
+    if(!ids.length){
+      return {
+        counts:{},
+        userVotes:{}
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("project_update_reactions")
+      .select("*")
+      .in("update_id", ids);
+
+    if(error){
+      throw new Error(error.message || "Failed to fetch update reactions");
+    }
+
+    const counts = {};
+    const userVotes = {};
+    const viewer = safeString(viewerEmail).trim().toLowerCase();
+
+    safeArray(data).forEach(row => {
+      const updateId = safeString(row.update_id).trim();
+      const vote = safeString(row.vote_type).trim().toLowerCase();
+
+      if(!counts[updateId]){
+        counts[updateId] = {
+          like:0,
+          dislike:0
+        };
+      }
+
+      if(vote === "like"){
+        counts[updateId].like += 1;
+      }else if(vote === "dislike"){
+        counts[updateId].dislike += 1;
+      }
+
+      if(
+        viewer &&
+        safeString(row.reactor_email).trim().toLowerCase() === viewer
+      ){
+        userVotes[updateId] = vote;
+      }
+    });
+
+    return {
+      counts,
+      userVotes
+    };
+  }
+
+  /* =========================================
+     FETCH FULL TRANSPARENCY FEED
+     ------------------------------------------------
+     Returns each update with:
+     - comments
+     - reaction counts
+     - current viewer vote
+  ========================================= */
+  async function fetchProjectUpdatesFeed({
+    projectCode = "",
+    projectType = "",
+    visibleOnly = true,
+    limit = DEFAULT_FEED_LIMIT,
+    viewerEmail = ""
+  } = {}){
+
+    const updates = await fetchProjectUpdates({
+      projectCode,
+      projectType,
+      visibleOnly,
+      limit
+    });
+
+    const ids = updates.map(u => safeString(u.id).trim()).filter(Boolean);
+
+    const [commentsMap, reactions] = await Promise.all([
+      fetchCommentsMapForUpdates(ids),
+      fetchReactionsMapForUpdates(ids, viewerEmail)
+    ]);
+
+    return updates.map(update => {
+      const id = safeString(update.id).trim();
+      const reactionCount = reactions.counts[id] || { like:0, dislike:0 };
+
+      return {
+        ...update,
+        comments: commentsMap[id] || [],
+        like_count: safeNumber(reactionCount.like, 0),
+        dislike_count: safeNumber(reactionCount.dislike, 0),
+        user_vote: reactions.userVotes[id] || null
+      };
+    });
+  }
+
+  /* =========================================
      ADD COMMENT
   ========================================= */
-  async function addProjectUpdateComment(updateId, commentText){
-    requireSupabase();
+  async function addProjectUpdateComment({
+    updateId = "",
+    commentText = "",
+    commenterEmail = "",
+    commenterName = "",
+    commenterRole = "user",
+    isVisible = true
+  } = {}){
+
+    const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
     commentText = safeString(commentText).trim();
 
     if(!updateId){
-      throw new Error("Update ID is required");
+      throw new Error("updateId is required");
     }
 
     if(!commentText){
@@ -676,450 +592,427 @@
 
     const insertPayload = {
       update_id: updateId,
-      commenter_email: getCurrentUserEmail() || null,
-      commenter_name: getCurrentUsername() || "Albukhr User",
       comment_text: commentText,
-      is_visible: true
+      commenter_email: safeString(commenterEmail).trim() || null,
+      commenter_name: safeString(commenterName).trim() || null,
+      commenter_role: normalizeRole(commenterRole),
+      is_visible: isVisible === false ? false : true
     };
 
     const { data, error } = await supabase
-      .from(PROJECT_UPDATE_COMMENTS_TABLE)
+      .from("project_update_comments")
       .insert(insertPayload)
-      .select()
+      .select("*")
       .single();
 
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to add comment");
     }
 
-    window.dispatchEvent(new CustomEvent("albukhrProjectUpdateCommentCreated", {
-      detail: {
-        comment: data,
-        updateId
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", {
+        detail:{
+          type:"comment",
+          updateId,
+          comment:data
+        }
+      })
+    );
 
     return data;
   }
 
   /* =========================================
-     FETCH REACTIONS MAP
+     GET USER VOTE FOR UPDATE
   ========================================= */
-  async function fetchProjectUpdateReactionMap(updateIds = []){
-    requireSupabase();
+  async function getUserReactionForUpdate(updateId, reactorEmail){
+    const supabase = getSupabaseClient();
 
-    if(!Array.isArray(updateIds) || !updateIds.length){
+    updateId = safeString(updateId).trim();
+    reactorEmail = safeString(reactorEmail).trim();
+
+    if(!updateId || !reactorEmail){
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("project_update_reactions")
+      .select("*")
+      .eq("update_id", updateId)
+      .eq("reactor_email", reactorEmail)
+      .maybeSingle();
+
+    if(error){
+      throw new Error(error.message || "Failed to fetch user reaction");
+    }
+
+    return data || null;
+  }
+
+  /* =========================================
+     TOGGLE LIKE / DISLIKE
+     ------------------------------------------------
+     Rules:
+     - if same vote exists => remove it
+     - if different vote exists => replace it
+     - if no vote exists => insert it
+  ========================================= */
+  async function toggleProjectUpdateReaction({
+    updateId = "",
+    reactorEmail = "",
+    reactorName = "",
+    reactorRole = "user",
+    voteType = "like"
+  } = {}){
+
+    const supabase = getSupabaseClient();
+
+    updateId = safeString(updateId).trim();
+    reactorEmail = safeString(reactorEmail).trim();
+    reactorName = safeString(reactorName).trim();
+    reactorRole = normalizeRole(reactorRole);
+    voteType = safeString(voteType).trim().toLowerCase();
+
+    if(!updateId){
+      throw new Error("updateId is required");
+    }
+
+    if(!reactorEmail){
+      throw new Error("reactorEmail is required");
+    }
+
+    if(!isValidVoteType(voteType)){
+      throw new Error("voteType must be like or dislike");
+    }
+
+    const existing = await getUserReactionForUpdate(updateId, reactorEmail);
+
+    /* same vote => remove vote */
+    if(existing && safeString(existing.vote_type).trim().toLowerCase() === voteType){
+
+      const { error: deleteError } = await supabase
+        .from("project_update_reactions")
+        .delete()
+        .eq("id", existing.id);
+
+      if(deleteError){
+        throw new Error(deleteError.message || "Failed to remove reaction");
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("projectFeedUpdated", {
+          detail:{
+            type:"reaction-remove",
+            updateId,
+            voteType
+          }
+        })
+      );
+
       return {
-        likes: {},
-        dislikes: {},
-        userVotes: {}
+        action:"removed",
+        vote:null
       };
     }
 
-    const viewerEmail =
-      safeString(getCurrentUserEmail()).trim().toLowerCase();
+    /* different vote exists => update it */
+    if(existing){
+      const { data, error } = await supabase
+        .from("project_update_reactions")
+        .update({
+          vote_type: voteType,
+          reactor_name: reactorName || existing.reactor_name || null,
+          reactor_role: reactorRole || existing.reactor_role || null
+        })
+        .eq("id", existing.id)
+        .select("*")
+        .single();
 
-    const { data, error } = await supabase
-      .from(PROJECT_UPDATE_REACTIONS_TABLE)
-      .select(`
-        id,
-        update_id,
-        reactor_email,
-        reaction_type
-      `)
-      .in("update_id", updateIds);
+      if(error){
+        throw new Error(error.message || "Failed to update reaction");
+      }
 
-    if(error){
-      throw error;
+      window.dispatchEvent(
+        new CustomEvent("projectFeedUpdated", {
+          detail:{
+            type:"reaction-update",
+            updateId,
+            voteType,
+            reaction:data
+          }
+        })
+      );
+
+      return {
+        action:"updated",
+        vote:voteType,
+        reaction:data
+      };
     }
 
-    const likes = {};
-    const dislikes = {};
-    const userVotes = {};
+    /* no vote => insert */
+    const { data, error } = await supabase
+      .from("project_update_reactions")
+      .insert({
+        update_id: updateId,
+        reactor_email: reactorEmail,
+        reactor_name: reactorName || null,
+        reactor_role: reactorRole || null,
+        vote_type: voteType
+      })
+      .select("*")
+      .single();
 
-    (data || []).forEach(row => {
-      const updateId = row.update_id;
-      const reactionType =
-        safeString(row.reaction_type).trim().toLowerCase();
+    if(error){
+      throw new Error(error.message || "Failed to add reaction");
+    }
 
-      const reactorEmail =
-        safeString(row.reactor_email).trim().toLowerCase();
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", {
+        detail:{
+          type:"reaction-add",
+          updateId,
+          voteType,
+          reaction:data
+        }
+      })
+    );
 
-      if(reactionType === "like"){
-        likes[updateId] = (likes[updateId] || 0) + 1;
-      }else if(reactionType === "dislike"){
-        dislikes[updateId] = (dislikes[updateId] || 0) + 1;
-      }
+    return {
+      action:"added",
+      vote:voteType,
+      reaction:data
+    };
+  }
 
-      if(viewerEmail && reactorEmail === viewerEmail){
-        userVotes[updateId] = reactionType;
-      }
+  /* =========================================
+     GET UPDATE STATS
+     ------------------------------------------------
+     Returns:
+     {
+       likes,
+       dislikes,
+       comments
+     }
+  ========================================= */
+  async function getProjectUpdateStats(updateId){
+    const supabase = getSupabaseClient();
+
+    updateId = safeString(updateId).trim();
+    if(!updateId){
+      throw new Error("updateId is required");
+    }
+
+    const [reactionsRes, commentsRes] = await Promise.all([
+      supabase
+        .from("project_update_reactions")
+        .select("vote_type")
+        .eq("update_id", updateId),
+
+      supabase
+        .from("project_update_comments")
+        .select("id")
+        .eq("update_id", updateId)
+        .eq("is_visible", true)
+    ]);
+
+    if(reactionsRes.error){
+      throw new Error(reactionsRes.error.message || "Failed to fetch reactions stats");
+    }
+
+    if(commentsRes.error){
+      throw new Error(commentsRes.error.message || "Failed to fetch comments stats");
+    }
+
+    let likes = 0;
+    let dislikes = 0;
+
+    safeArray(reactionsRes.data).forEach(row => {
+      const vote = safeString(row.vote_type).trim().toLowerCase();
+      if(vote === "like") likes += 1;
+      if(vote === "dislike") dislikes += 1;
     });
 
     return {
       likes,
       dislikes,
-      userVotes
+      comments: safeArray(commentsRes.data).length
     };
   }
 
   /* =========================================
-     TOGGLE REACTION
-     - if same reaction exists => remove it
-     - if different reaction exists => update it
-     - if no reaction exists => insert it
+     DELETE UPDATE
+     ------------------------------------------------
+     Optional admin utility
   ========================================= */
-  async function setProjectUpdateReaction(updateId, reactionType){
-    requireSupabase();
+  async function deleteProjectUpdate(updateId){
+    const supabase = getSupabaseClient();
 
     updateId = safeString(updateId).trim();
-    reactionType = safeString(reactionType).trim().toLowerCase();
-
     if(!updateId){
-      throw new Error("Update ID is required");
+      throw new Error("updateId is required");
     }
 
-    if(!["like","dislike"].includes(reactionType)){
-      throw new Error("Invalid reaction type");
+    const { error } = await supabase
+      .from("project_updates")
+      .delete()
+      .eq("id", updateId);
+
+    if(error){
+      throw new Error(error.message || "Failed to delete project update");
     }
 
-    const viewerEmail =
-      safeString(getCurrentUserEmail()).trim().toLowerCase();
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", {
+        detail:{
+          type:"delete",
+          updateId
+        }
+      })
+    );
 
-    if(!viewerEmail){
-      throw new Error("User email not found. Please log in again.");
-    }
+    return true;
+  }
 
-    const { data: existing, error: existingError } = await supabase
-      .from(PROJECT_UPDATE_REACTIONS_TABLE)
-      .select("id, reaction_type")
-      .eq("update_id", updateId)
-      .eq("reactor_email", viewerEmail)
-      .maybeSingle();
+  /* =========================================
+     SET VISIBILITY
+     ------------------------------------------------
+     Optional admin utility
+  ========================================= */
+  async function setProjectUpdateVisibility(updateId, isVisible = true){
+    const supabase = getSupabaseClient();
 
-    if(existingError){
-      throw existingError;
-    }
-
-    if(!existing){
-      const { data, error } = await supabase
-        .from(PROJECT_UPDATE_REACTIONS_TABLE)
-        .insert({
-          update_id: updateId,
-          reactor_email: viewerEmail,
-          reaction_type: reactionType
-        })
-        .select()
-        .single();
-
-      if(error){
-        throw error;
-      }
-
-      return {
-        action: "inserted",
-        reactionType,
-        data
-      };
-    }
-
-    if(existing.reaction_type === reactionType){
-      const { error } = await supabase
-        .from(PROJECT_UPDATE_REACTIONS_TABLE)
-        .delete()
-        .eq("id", existing.id);
-
-      if(error){
-        throw error;
-      }
-
-      return {
-        action: "removed",
-        reactionType
-      };
+    updateId = safeString(updateId).trim();
+    if(!updateId){
+      throw new Error("updateId is required");
     }
 
     const { data, error } = await supabase
-      .from(PROJECT_UPDATE_REACTIONS_TABLE)
+      .from("project_updates")
       .update({
-        reaction_type: reactionType
+        is_visible: !!isVisible
       })
-      .eq("id", existing.id)
-      .select()
+      .eq("id", updateId)
+      .select("*")
       .single();
 
     if(error){
-      throw error;
+      throw new Error(error.message || "Failed to update visibility");
     }
 
-    return {
-      action: "updated",
-      reactionType,
-      data
-    };
+    window.dispatchEvent(
+      new CustomEvent("projectFeedUpdated", {
+        detail:{
+          type:"visibility",
+          updateId,
+          update:data
+        }
+      })
+    );
+
+    return data;
   }
 
   /* =========================================
-     FULL FEED LOADER
-     Good for transparency.html
+     LEGACY FEED IMPORT HELPER
+     ------------------------------------------------
+     Optional one-time migration helper
+     Reads localStorage albukhr_project_feed and moves
+     entries to Supabase.
   ========================================= */
-  async function loadTransparencyFeedData(options = {}){
-    const updates = await fetchProjectUpdates(options);
-    const updateIds = updates.map(item => item.id);
+  async function migrateLegacyLocalProjectFeedToSupabase({
+    createdByEmail = "",
+    createdByName = "",
+    createdByRole = "system"
+  } = {}){
 
-    const [commentsMap, reactionMap] = await Promise.all([
-      fetchProjectUpdateCommentsMap(updateIds),
-      fetchProjectUpdateReactionMap(updateIds)
-    ]);
+    const legacyFeed =
+      JSON.parse(localStorage.getItem("albukhr_project_feed") || "[]");
 
-    return {
-      updates,
-      commentsMap,
-      likes: reactionMap.likes,
-      dislikes: reactionMap.dislikes,
-      userVotes: reactionMap.userVotes
-    };
-  }
-
-  /* =========================================
-     DASHBOARD UPLOAD HELPER
-     This is the helper you can call directly from
-     Albukhr-internal-project-dashbord.html
-  ========================================= */
-  async function uploadProjectUpdateFromDashboard(config = {}){
-    const project =
-      config.project ||
-      null;
-
-    const imageInput =
-      config.imageInput ||
-      document.getElementById("projectUpdateImage");
-
-    const textInput =
-      config.textInput ||
-      document.getElementById("projectUpdateText");
-
-    const titleInput =
-      config.titleInput ||
-      document.getElementById("projectUpdateTitle");
-
-    if(!project){
-      throw new Error("Project not loaded");
+    if(!Array.isArray(legacyFeed) || !legacyFeed.length){
+      return {
+        migrated:0,
+        skipped:0
+      };
     }
 
-    if(!textInput){
-      throw new Error("Project update text input not found");
-    }
+    let migrated = 0;
+    let skipped = 0;
 
-    const description =
-      safeString(textInput.value).trim();
+    for(const item of legacyFeed){
+      try{
+        const projectCode = safeString(item.project_code || item.project).trim();
+        if(!projectCode){
+          skipped += 1;
+          continue;
+        }
 
-    if(!description){
-      throw new Error("Please write project update description.");
-    }
+        const meta = await resolveProjectMeta(projectCode);
 
-    const title =
-      titleInput
-        ? safeString(titleInput.value).trim()
-        : "";
+        await createProjectUpdate({
+          project_code: meta.project_code,
+          project_name: meta.project_name,
+          project_type: meta.project_type,
+          title: item.title || null,
+          description: item.description || "",
+          image_url: item.image || null,
+          created_by_email: createdByEmail || null,
+          created_by_name: createdByName || null,
+          created_by_role: createdByRole || "system",
+          is_visible: true
+        });
 
-    const file =
-      imageInput && imageInput.files
-        ? imageInput.files[0] || null
-        : null;
+        migrated += 1;
 
-    const created = await createProjectUpdate({
-      project,
-      title,
-      description,
-      image_file: file
-    });
-
-    if(imageInput){
-      imageInput.value = "";
-    }
-
-    if(textInput){
-      textInput.value = "";
-    }
-
-    if(titleInput){
-      titleInput.value = "";
-    }
-
-    window.dispatchEvent(new CustomEvent("albukhrTransparencyUpdated", {
-      detail: {
-        update: created
+      }catch(err){
+        console.warn("Legacy feed migrate skipped:", err);
+        skipped += 1;
       }
-    }));
+    }
 
-    return created;
+    return {
+      migrated,
+      skipped
+    };
   }
 
   /* =========================================
-     SIMPLE RENDER HELPERS
-     Optional: transparency page can use them
-  ========================================= */
-  function buildTransparencyCardHTML(item, options = {}){
-    const likes = options.likes || {};
-    const dislikes = options.dislikes || {};
-    const userVotes = options.userVotes || {};
-    const commentsMap = options.commentsMap || {};
-    const openComments = options.openComments || {};
-
-    const updateId = item.id;
-    const comments = commentsMap[updateId] || [];
-
-    const projectName =
-      escapeHtml(item.project_name || item.project_code || "Project");
-
-    const typeLabel =
-      formatProjectTypeLabel(item.project_type);
-
-    const typeClass =
-      getTypeBadgeClass(item.project_type);
-
-    const description =
-      escapeHtml(item.description || "");
-
-    const imageUrl =
-      safeString(item.image_url);
-
-    return `
-      <div class="timeline-card">
-
-        <div class="timeline-header">
-          <div>
-            <div class="timeline-project">
-              ${projectName}
-            </div>
-
-            <div class="timeline-time-top">
-              ${timeAgo(item.created_at)}
-            </div>
-          </div>
-
-          <div class="timeline-type ${typeClass}">
-            ${escapeHtml(typeLabel)}
-          </div>
-        </div>
-
-        ${
-          imageUrl
-          ? `
-            <div class="image-wrapper">
-              <img
-                src="${imageUrl}"
-                class="timeline-image"
-                alt="${projectName}"
-              />
-            </div>
-          `
-          : ""
-        }
-
-        <div class="timeline-desc collapsed" id="desc-${updateId}">
-          ${description || "No update description provided."}
-        </div>
-
-        ${
-          safeString(item.description).length > 120
-          ? `
-            <div class="read-more" id="read-${updateId}">
-              Read more
-            </div>
-          `
-          : ""
-        }
-
-        <div class="timeline-actions">
-          <button class="${userVotes[updateId] === "like" ? "active" : ""}">
-            👍 ${likes[updateId] || 0}
-          </button>
-
-          <button class="${userVotes[updateId] === "dislike" ? "active" : ""}">
-            👎 ${dislikes[updateId] || 0}
-          </button>
-
-          <button>
-            💬 ${comments.length}
-          </button>
-        </div>
-
-        <div
-          class="comment-box"
-          style="display:${openComments[updateId] ? "flex" : "none"}"
-          id="comments-${updateId}"
-        >
-          <input
-            placeholder="Write comment..."
-            id="comment-${updateId}"
-          />
-          <button>
-            Post
-          </button>
-        </div>
-
-        <div class="comment-list">
-          ${
-            comments.slice(0,3).map(c => `
-              <div class="comment-preview">
-                💬 ${escapeHtml(truncateComment(c.comment_text || ""))}
-              </div>
-            `).join("")
-          }
-        </div>
-
-      </div>
-    `;
-  }
-
-  /* =========================================
-     PUBLIC API
+     PUBLIC API EXPORT
   ========================================= */
   window.ALBUKHR_PROJECT_UPDATES = {
-    /* config */
-    PROJECT_UPDATES_TABLE,
-    PROJECT_UPDATE_COMMENTS_TABLE,
-    PROJECT_UPDATE_REACTIONS_TABLE,
-    PROJECT_UPDATES_BUCKET,
-    DEFAULT_FETCH_LIMIT,
+    bucket: PROJECT_UPDATES_BUCKET,
 
-    /* helpers */
-    safeString,
-    safeNumber,
-    escapeHtml,
-    normalizeProjectType,
-    formatProjectTypeLabel,
-    getTypeBadgeClass,
-    timeAgo,
-    truncateComment,
-    resolveProjectUpdateMeta,
-
-    /* create / edit / delete */
+    resolveProjectMeta,
     uploadProjectUpdateImage,
     createProjectUpdate,
-    updateProjectUpdate,
-    hideProjectUpdate,
-    deleteProjectUpdate,
+    uploadProjectUpdateToSupabase,
 
-    /* fetch */
     fetchProjectUpdates,
-    getProjectUpdate,
     fetchProjectUpdateComments,
-    fetchProjectUpdateCommentsMap,
-    fetchProjectUpdateReactionMap,
-    loadTransparencyFeedData,
+    fetchCommentsMapForUpdates,
+    fetchReactionsMapForUpdates,
+    fetchProjectUpdatesFeed,
 
-    /* comments / reactions */
     addProjectUpdateComment,
-    setProjectUpdateReaction,
+    getUserReactionForUpdate,
+    toggleProjectUpdateReaction,
+    getProjectUpdateStats,
 
-    /* dashboard helper */
-    uploadProjectUpdateFromDashboard,
+    deleteProjectUpdate,
+    setProjectUpdateVisibility,
 
-    /* optional render helper */
-    buildTransparencyCardHTML
+    migrateLegacyLocalProjectFeedToSupabase
   };
+
+  window.uploadProjectUpdateToSupabase = uploadProjectUpdateToSupabase;
+  window.fetchProjectUpdatesFeed = fetchProjectUpdatesFeed;
+  window.fetchProjectUpdates = fetchProjectUpdates;
+  window.fetchProjectUpdateComments = fetchProjectUpdateComments;
+  window.addProjectUpdateComment = addProjectUpdateComment;
+  window.toggleProjectUpdateReaction = toggleProjectUpdateReaction;
+  window.getProjectUpdateStats = getProjectUpdateStats;
+  window.deleteProjectUpdate = deleteProjectUpdate;
+  window.setProjectUpdateVisibility = setProjectUpdateVisibility;
+  window.resolveProjectMeta = resolveProjectMeta;
 
 })();
