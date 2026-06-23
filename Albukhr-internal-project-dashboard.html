@@ -1,991 +1,1146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Albukhr Project Dashboard</title>
-
-<link rel="stylesheet" href="css/global-header.css">
-<link rel="stylesheet" href="global-buttons.css">
-
-<style>
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:#f4f7f6;
-  padding-bottom:110px;
-  color:#111;
-}
-
-.header{
-  background:#0f7a3d;
-  height:60px;
-  padding:0 16px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  box-shadow:0 4px 16px rgba(0,0,0,0.08);
-}
-
-.header-left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.header-right{
-  display:flex;
-  align-items:center;
-}
-
-.main-logo{
-  height:48px;
-  width:auto;
-}
-
-.brand{
-  color:#fff;
-  font-weight:700;
-  font-size:18px;
-  letter-spacing:1px;
-}
-
-.dashboard{
-  padding:16px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-bottom:16px;
-}
-
-.card{
-  background:#fff;
-  padding:16px;
-  border-radius:14px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.05);
-}
-
-.title{
-  font-size:13px;
-  color:#666;
-  margin-bottom:6px;
-}
-
-.big{
-  font-size:22px;
-  font-weight:800;
-  color:#0f7a3d;
-  line-height:1.2;
-}
-
-.card-full{
-  background:#fff;
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:16px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.05);
-}
-
-.sub{
-  font-size:12px;
-  color:#6f7b75;
-  margin-top:6px;
-  line-height:1.5;
-}
-
-input,
-textarea{
-  width:100%;
-  box-sizing:border-box;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #ddd;
-  margin-top:8px;
-  background:#fff;
-  font-family:inherit;
-}
-
-textarea{
-  min-height:90px;
-  resize:none;
-}
-
-button{
-  margin-top:10px;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  background:#0f7a3d;
-  color:#fff;
-  font-weight:600;
-  cursor:pointer;
-  width:100%;
-}
-
-button.secondary{
-  background:#eef6f1;
-  color:#0f7a3d;
-}
-
-.tx{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  border-top:1px dashed #eee;
-  padding-top:10px;
-  margin-top:10px;
-  font-size:12px;
-  line-height:1.5;
-}
-
-.tx-left{
-  flex:1;
-}
-
-.tx-right{
-  text-align:right;
-  white-space:nowrap;
-}
-
-.badges{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:10px;
-}
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-size:11px;
-  font-weight:700;
-  padding:6px 10px;
-  border-radius:999px;
-  background:#f1f6f3;
-  color:#0f7a3d;
-}
-
-.badge.core{
-  background:#e9f7ef;
-  color:#0f7a3d;
-}
-
-.badge.internal{
-  background:#eef4ff;
-  color:#1f5bd8;
-}
-
-.badge.external{
-  background:#fff4e9;
-  color:#b25a00;
-}
-
-.badge.active{
-  background:#edf9f0;
-  color:#0f7a3d;
-}
-
-.badge.inactive{
-  background:#fff1f1;
-  color:#b02a37;
-}
-
-.badge.archived{
-  background:#f3f3f3;
-  color:#666;
-}
-
-.status-low{
-  color:#b02a37;
-}
-
-.status-safe{
-  color:#b25a00;
-}
-
-.status-strong{
-  color:#0f7a3d;
-}
-
-.loading,
-.empty,
-.error-box{
-  background:#fff;
-  padding:18px;
-  border-radius:14px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.05);
-  font-size:14px;
-}
-
-.loading,
-.empty{
-  color:#66746d;
-  text-align:center;
-}
-
-.error-box{
-  color:#b02a37;
-  border-left:4px solid #b02a37;
-}
-
-.muted{
-  color:#6d7973;
-  font-size:12px;
-}
-
-.project-title{
-  font-size:16px;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-@media (max-width:820px){
-  .grid{
-    grid-template-columns:1fr;
-  }
-}
-</style>
-
-</head>
-
-<body>
-
-<header class="header">
-  <div class="header-left">
-    <img src="file_000000007c187246b1c01967ee086dc4.png" class="main-logo" alt="ALBUKHR Logo">
-    <span class="brand">ALBUKHR</span>
-  </div>
-</header>
-
-<div class="dashboard">
-
-  <!-- PROJECT NAME -->
-  <div class="card-full">
-    <div class="title">Project</div>
-    <div class="big" id="projectName">Loading...</div>
-    <div class="sub" id="projectMetaLine">Preparing project dashboard...</div>
-
-    <div class="badges" id="projectBadges"></div>
-  </div>
-
-  <!-- STATS -->
-  <div class="grid">
-
-    <div class="card">
-      <div class="title">Liquidity</div>
-      <div class="big" id="liquidity">0 Pi</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Reserve</div>
-      <div class="big" id="reserve">0 Pi</div>
-    </div>
-
-    <div class="card">
-      <div class="title">ROI</div>
-      <div class="big" id="roi">0%</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Investors</div>
-      <div class="big" id="investors">0</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Liquidity Status</div>
-      <div class="big" id="liquidityStatus">LOW</div>
-    </div>
-
-    <div class="card">
-      <div class="title">Usable Liquidity</div>
-      <div class="big" id="usableLiquidity">0 Pi</div>
-    </div>
-
-  </div>
-
-  <!-- ADD LIQUIDITY -->
-  <div class="card-full">
-    <div class="title">Add Liquidity</div>
-
-    <input type="number" id="addAmount" placeholder="Amount">
-
-    <button onclick="addLiquidity()">
-      Add Liquidity
-    </button>
-  </div>
-
-  <!-- INTERNAL WITHDRAW -->
-  <div class="card-full">
-    <div class="title">Internal Withdraw</div>
-
-    <input type="number" id="withdrawAmount" placeholder="Amount">
-
-    <button onclick="withdrawLiquidity()">
-      Withdraw Liquidity
-    </button>
-  </div>
-
-  <!-- PROJECT UPDATES -->
-  <div class="card-full">
-    <div class="project-title">📸 Project Updates</div>
-
-    <input
-      type="file"
-      id="projectUpdateImage"
-      accept="image/*"
-    />
-
-    <textarea
-      id="projectUpdateText"
-      placeholder="Describe project progress..."
-    ></textarea>
-
-    <button onclick="uploadProjectUpdate()">
-      Upload Update
-    </button>
-  </div>
-
-  <!-- HISTORY -->
-  <div class="card-full">
-    <div class="title">Treasury Activity</div>
-    <div id="history" class="loading">Loading treasury history...</div>
-  </div>
-
-  <!-- STAKE BOX -->
-  <div class="card-full">
-    <div class="title">Project Stake Panel</div>
-    <div id="projectStakeBox"></div>
-  </div>
-
-</div>
-
-<script src="js/admin-auth.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-core.js"></script>
-
-<script src="js/projects-engine.js"></script>
-<script src="js/project-treasury.js"></script>
-<script src="js/smart-liquidity-engine.js"></script>
-<script src="js/ecosystem-treasury.js"></script>
-
-<script src="js/staking.js"></script>
-<script src="js/capital-protection-engine.js"></script>
-<script src="js/albukhr-project-deployment-engine.js"></script>
-
-<script>
-/* =========================================
-   ALBUKHR PROJECT DASHBOARD FINAL
-   project_code-first + Supabase treasury
-========================================= */
-
-const dashboardEls = {
-  projectName: document.getElementById("projectName"),
-  projectMetaLine: document.getElementById("projectMetaLine"),
-  projectBadges: document.getElementById("projectBadges"),
-
-  liquidity: document.getElementById("liquidity"),
-  reserve: document.getElementById("reserve"),
-  roi: document.getElementById("roi"),
-  investors: document.getElementById("investors"),
-  liquidityStatus: document.getElementById("liquidityStatus"),
-  usableLiquidity: document.getElementById("usableLiquidity"),
-
-  history: document.getElementById("history"),
-
-  addAmount: document.getElementById("addAmount"),
-  withdrawAmount: document.getElementById("withdrawAmount")
-};
-
-const currentProjectCode =
-  String(localStorage.getItem("albukhr_current_project") || "").trim();
-
-let __projectDashboardBusy = false;
-let __currentProjectMeta = null;
-
-/* =========================================
-   HELPERS
-========================================= */
-function formatPi(value){
-  const n = Number(value || 0);
-  return `${n.toFixed(2)} Pi`;
-}
-
-function safeNumber(value, fallback = 0){
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function escapeHtml(text = ""){
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function formatProjectType(type){
-  const t = String(type || "").toLowerCase();
-  if(t === "core") return "Core";
-  if(t === "internal") return "Internal";
-  if(t === "external") return "External";
-  return "Unknown";
-}
-
-function formatProjectStatus(status){
-  const s = String(status || "").toLowerCase();
-  if(s === "active") return "Active";
-  if(s === "inactive") return "Inactive";
-  if(s === "archived") return "Archived";
-  return s || "Unknown";
-}
-
-function getProjectTypeBadgeClass(type){
-  const t = String(type || "").toLowerCase();
-  if(t === "core") return "core";
-  if(t === "internal") return "internal";
-  if(t === "external") return "external";
-  return "core";
-}
-
-function getProjectStatusBadgeClass(status){
-  const s = String(status || "").toLowerCase();
-  if(s === "active") return "active";
-  if(s === "inactive") return "inactive";
-  if(s === "archived") return "archived";
-  return "inactive";
-}
-
-/*
-  Reward formatter:
-  0.02 => 2
-  2 => 2
-*/
-function normalizePercent(value){
-  const n = safeNumber(value, 0);
-  if(n <= 0) return 0;
-  if(n > 0 && n < 1) return n * 100;
-  return n;
-}
-
-function computeLiquidityStatus(status){
-
-  const liquidity = safeNumber(status?.liquidity, 0);
-  const minLiquidity = safeNumber(status?.min_liquidity, 100);
-  const usable = safeNumber(status?.max_usable_liquidity, 0);
-
-  if(liquidity < minLiquidity){
-    return {
-      label:"LOW",
-      className:"status-low"
-    };
-  }
-
-  if(usable <= 0){
-    return {
-      label:"SAFE",
-      className:"status-safe"
-    };
-  }
-
-  return {
-    label:"STRONG",
-    className:"status-strong"
-  };
-}
-
-/* =========================================
-   PAGE GUARD
-========================================= */
-function ensureProjectSelected(){
-
-  if(currentProjectCode){
-    return true;
-  }
-
-  alert("Project not found");
-  window.location.href = "marketplace.html";
-  return false;
-}
-
-/* =========================================
-   LOAD PROJECT DATA
-========================================= */
-async function loadProjectData(){
-
-  if(!currentProjectCode){
-    throw new Error("Missing current project code");
-  }
-
-  if(typeof getProjectMeta !== "function"){
-    throw new Error("getProjectMeta() is missing from projects-engine.js");
-  }
-
-  const project = await getProjectMeta(currentProjectCode);
-
-  if(!project){
-    throw new Error(`Project not found: ${currentProjectCode}`);
-  }
-
-  let treasuryStatus = {
-    liquidity:0,
-    reserve:0,
-    max_usable_liquidity:0,
-    min_liquidity:100,
-    reward_rate:0
-  };
-
-  if(typeof getProjectTreasuryStatus === "function"){
-    const status = await getProjectTreasuryStatus(currentProjectCode);
-    if(!status?.error){
-      treasuryStatus = status;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ALBUKHR Internal Project Dashboard</title>
+
+  <link rel="stylesheet" href="css/global-header.css" />
+  <link rel="stylesheet" href="global-buttons.css" />
+  <link rel="stylesheet" href="css/app-alert.css" />
+
+  <style>
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:#f4f7f6;
+      color:#111;
+      padding-bottom:110px;
     }
-  }
 
-  let roi = 0;
-  try{
-    if(typeof calculateProjectROI === "function"){
-      const result = await calculateProjectROI(currentProjectCode);
-      roi = safeNumber(result, 0);
-    }else{
-      roi = safeNumber(project.roi, 0);
+    .header{
+      background:#0f7a3d;
+      height:60px;
+      padding:0 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      box-shadow:0 4px 16px rgba(0,0,0,0.08);
     }
-  }catch(e){
-    console.warn("calculateProjectROI failed:", e);
-    roi = safeNumber(project.roi, 0);
-  }
 
-  let allStakes = [];
-  try{
-    if(typeof getAllStakesMerged === "function"){
-      const result = await getAllStakesMerged();
-      if(Array.isArray(result)){
-        allStakes = result;
+    .header-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .main-logo{
+      height:48px;
+      width:auto;
+    }
+
+    .brand{
+      color:#fff;
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:1px;
+    }
+
+    .dashboard{
+      padding:16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .card{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .card-full{
+      background:#fff;
+      padding:16px;
+      border-radius:14px;
+      margin-bottom:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .title{
+      font-size:13px;
+      color:#666;
+      margin-bottom:6px;
+    }
+
+    .big{
+      font-size:22px;
+      font-weight:800;
+      color:#0f7a3d;
+      line-height:1.2;
+    }
+
+    .sub{
+      font-size:12px;
+      color:#6f7b75;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .project-title{
+      font-size:16px;
+      font-weight:800;
+      margin-bottom:8px;
+      color:#111;
+    }
+
+    .badges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:11px;
+      font-weight:700;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f1f6f3;
+      color:#0f7a3d;
+    }
+
+    .badge.core{
+      background:#e9f7ef;
+      color:#0f7a3d;
+    }
+
+    .badge.internal{
+      background:#eef4ff;
+      color:#1f5bd8;
+    }
+
+    .badge.external{
+      background:#fff4e9;
+      color:#b25a00;
+    }
+
+    .badge.active{
+      background:#edf9f0;
+      color:#0f7a3d;
+    }
+
+    .badge.inactive{
+      background:#fff1f1;
+      color:#b02a37;
+    }
+
+    .badge.archived{
+      background:#f3f3f3;
+      color:#666;
+    }
+
+    .status-low{
+      color:#b02a37;
+    }
+
+    .status-safe{
+      color:#b25a00;
+    }
+
+    .status-strong{
+      color:#0f7a3d;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:13px;
+      margin-top:7px;
+      line-height:1.5;
+    }
+
+    .row strong{
+      color:#222;
+    }
+
+    input,
+    textarea{
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ddd;
+      margin-top:8px;
+      background:#fff;
+      font-family:inherit;
+    }
+
+    textarea{
+      min-height:100px;
+      resize:none;
+    }
+
+    button{
+      margin-top:10px;
+      padding:10px;
+      border:none;
+      border-radius:10px;
+      background:#0f7a3d;
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      width:100%;
+    }
+
+    button.secondary{
+      background:#eef6f1;
+      color:#0f7a3d;
+    }
+
+    button:disabled{
+      opacity:.7;
+      cursor:not-allowed;
+    }
+
+    .tx{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-top:1px dashed #eee;
+      padding-top:10px;
+      margin-top:10px;
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .tx-left{
+      flex:1;
+    }
+
+    .tx-right{
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .loading,
+    .empty,
+    .error-box{
+      background:#fff;
+      padding:18px;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.05);
+      font-size:14px;
+    }
+
+    .loading,
+    .empty{
+      color:#66746d;
+      text-align:center;
+    }
+
+    .error-box{
+      color:#b02a37;
+      border-left:4px solid #b02a37;
+    }
+
+    .muted{
+      color:#6d7973;
+      font-size:12px;
+    }
+
+    .upload-note{
+      margin-top:8px;
+      font-size:12px;
+      color:#66746d;
+      line-height:1.5;
+    }
+
+    @media (max-width:820px){
+      .grid{
+        grid-template-columns:1fr;
       }
     }
-  }catch(e){
-    console.warn("getAllStakesMerged failed:", e);
-  }
+  </style>
+</head>
+<body>
 
-  const investors = allStakes.filter(stake => {
-    const code = String(
-      stake.project_code ||
-      stake.project ||
-      ""
-    ).trim().toLowerCase();
+  <!-- APP ALERT -->
+  <div id="appAlert" class="app-alert">
+    <div class="app-alert-box">
+      <h3 id="appAlertTitle">Notice</h3>
+      <p id="appAlertText"></p>
+      <button onclick="closeAppAlert()">OK</button>
+    </div>
+  </div>
 
-    return code === currentProjectCode.toLowerCase();
-  }).length;
+  <header class="header">
+    <div class="header-left">
+      <span class="brand">ALBUKHR</span>
+    </div>
+  </header>
 
-  return {
-    project,
-    treasuryStatus,
-    roi,
-    investors
-  };
-}
+  <div class="dashboard">
 
-/* =========================================
-   RENDER PROJECT HEADER
-========================================= */
-function renderProjectHeader(project){
+    <!-- PROJECT HEADER -->
+    <div class="card-full">
+      <div class="title">Project</div>
+      <div class="big" id="projectName">Loading...</div>
+      <div class="sub" id="projectMetaLine">Preparing project dashboard...</div>
+      <div class="badges" id="projectBadges"></div>
+    </div>
 
-  dashboardEls.projectName.textContent =
-    project.project_name || project.project_code || "Unknown Project";
+    <!-- STATS -->
+    <div class="grid">
 
-  dashboardEls.projectMetaLine.innerHTML = `
-    Code: <strong>${escapeHtml(project.project_code || "-")}</strong> •
-    Type: <strong>${escapeHtml(formatProjectType(project.project_type))}</strong>
-  `;
+      <div class="card">
+        <div class="title">Liquidity</div>
+        <div class="big" id="liquidity">0 Pi</div>
+      </div>
 
-  dashboardEls.projectBadges.innerHTML = `
-    <span class="badge ${escapeHtml(getProjectTypeBadgeClass(project.project_type))}">
-      ${escapeHtml(formatProjectType(project.project_type))}
-    </span>
+      <div class="card">
+        <div class="title">Reserve</div>
+        <div class="big" id="reserve">0 Pi</div>
+      </div>
 
-    <span class="badge ${escapeHtml(getProjectStatusBadgeClass(project.status))}">
-      ${escapeHtml(formatProjectStatus(project.status))}
-    </span>
-  `;
-}
+      <div class="card">
+        <div class="title">ROI</div>
+        <div class="big" id="roi">0%</div>
+      </div>
 
-/* =========================================
-   RENDER STATS
-========================================= */
-function renderProjectStats({
-  project,
-  treasuryStatus,
-  roi,
-  investors
-}){
+      <div class="card">
+        <div class="title">Investors</div>
+        <div class="big" id="investors">0</div>
+      </div>
 
-  const liquidity = safeNumber(treasuryStatus?.liquidity, 0);
-  const reserve = safeNumber(treasuryStatus?.reserve, 0);
-  const usable = safeNumber(treasuryStatus?.max_usable_liquidity, 0);
+      <div class="card">
+        <div class="title">Liquidity Status</div>
+        <div class="big" id="liquidityStatus">LOW</div>
+      </div>
 
-  dashboardEls.liquidity.textContent =
-    formatPi(liquidity);
+      <div class="card">
+        <div class="title">Usable Liquidity</div>
+        <div class="big" id="usableLiquidity">0 Pi</div>
+      </div>
 
-  dashboardEls.reserve.textContent =
-    formatPi(reserve);
+    </div>
 
-  dashboardEls.usableLiquidity.textContent =
-    formatPi(usable);
+    <!-- ADD LIQUIDITY -->
+    <div class="card-full">
+      <div class="title">Add Liquidity</div>
 
-  dashboardEls.roi.textContent =
-    `${safeNumber(roi, 0).toFixed(2)}%`;
+      <input
+        type="number"
+        id="addAmount"
+        placeholder="Amount"
+      />
 
-  dashboardEls.investors.textContent =
-    String(investors || 0);
+      <button id="addLiquidityBtn">
+        Add Liquidity
+      </button>
+    </div>
 
-  const liquidityState =
-    computeLiquidityStatus(treasuryStatus);
+    <!-- INTERNAL WITHDRAW -->
+    <div class="card-full">
+      <div class="title">Internal Withdraw</div>
 
-  dashboardEls.liquidityStatus.textContent =
-    liquidityState.label;
+      <input
+        type="number"
+        id="withdrawAmount"
+        placeholder="Amount"
+      />
 
-  dashboardEls.liquidityStatus.className =
-    `big ${liquidityState.className}`;
-}
+      <button id="withdrawLiquidityBtn">
+        Withdraw Liquidity
+      </button>
+    </div>
 
-/* =========================================
-   RENDER HISTORY
-========================================= */
-async function renderHistory(){
+    <!-- PROJECT UPDATES -->
+    <div class="card-full">
+      <div class="project-title">📸 Project Updates</div>
 
-  if(!currentProjectCode){
-    dashboardEls.history.className = "empty";
-    dashboardEls.history.innerHTML = "No project selected.";
-    return;
-  }
+      <input
+        type="text"
+        id="projectUpdateTitle"
+        placeholder="Update title (optional)"
+      />
 
-  dashboardEls.history.className = "loading";
-  dashboardEls.history.innerHTML = "Loading treasury history...";
+      <input
+        type="file"
+        id="projectUpdateImage"
+        accept="image/*"
+      />
 
-  try{
+      <textarea
+        id="projectUpdateText"
+        placeholder="Describe project progress..."
+      ></textarea>
 
-    if(typeof getProjectTreasuryHistory !== "function"){
-      dashboardEls.history.className = "empty";
-      dashboardEls.history.innerHTML =
-        "Treasury history engine not available.";
-      return;
+      <button id="uploadProjectUpdateBtn">
+        Upload Update
+      </button>
+
+      <div class="upload-note">
+        This update will be published to the ALBUKHR Transparency feed.
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="card-full">
+      <div class="title">Treasury Activity</div>
+      <div id="history" class="loading">Loading treasury history...</div>
+    </div>
+
+    <!-- STAKE PANEL -->
+    <div class="card-full">
+      <div class="title">Project Stake Panel</div>
+      <div id="projectStakeBox"></div>
+    </div>
+
+  </div>
+
+  <script src="js/app-alert.js"></script>
+  <script src="js/admin-auth.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-core.js"></script>
+
+  <script src="js/projects-engine.js"></script>
+  <script src="js/project-treasury.js"></script>
+  <script src="js/smart-liquidity-engine.js"></script>
+  <script src="js/ecosystem-treasury.js"></script>
+
+  <script src="js/staking.js"></script>
+  <script src="js/capital-protection-engine.js"></script>
+  <script src="js/albukhr-project-deployment-engine.js"></script>
+
+  <!-- SINGLE DASHBOARD RESOLVER -->
+  <script src="js/albukhr-project-resolver.js"></script>
+
+  <!-- SUPABASE PROJECT UPDATES -->
+  <script src="js/project-updates.js"></script>
+
+  <script>
+    /* =========================================
+       ALBUKHR INTERNAL PROJECT DASHBOARD FINAL
+       SINGLE DASHBOARD SAFE PATCH
+       + SUPABASE PROJECT UPDATES
+    ========================================= */
+
+    const dashboardEls = {
+      projectName: document.getElementById("projectName"),
+      projectMetaLine: document.getElementById("projectMetaLine"),
+      projectBadges: document.getElementById("projectBadges"),
+
+      liquidity: document.getElementById("liquidity"),
+      reserve: document.getElementById("reserve"),
+      roi: document.getElementById("roi"),
+      investors: document.getElementById("investors"),
+      liquidityStatus: document.getElementById("liquidityStatus"),
+      usableLiquidity: document.getElementById("usableLiquidity"),
+
+      history: document.getElementById("history"),
+
+      addAmount: document.getElementById("addAmount"),
+      withdrawAmount: document.getElementById("withdrawAmount"),
+
+      addLiquidityBtn: document.getElementById("addLiquidityBtn"),
+      withdrawLiquidityBtn: document.getElementById("withdrawLiquidityBtn"),
+      uploadProjectUpdateBtn: document.getElementById("uploadProjectUpdateBtn"),
+
+      projectUpdateTitle: document.getElementById("projectUpdateTitle"),
+      projectUpdateImage: document.getElementById("projectUpdateImage"),
+      projectUpdateText: document.getElementById("projectUpdateText")
+    };
+
+    let currentProject = null;
+    let dashboardBusy = false;
+    let uploadBusy = false;
+
+    /* =========================================
+       HELPERS
+    ========================================= */
+    function safeString(value, fallback = ""){
+      if(value === null || value === undefined) return fallback;
+      return String(value);
     }
 
-    const history =
-      await getProjectTreasuryHistory(currentProjectCode, 50);
-
-    if(!Array.isArray(history) || !history.length){
-      dashboardEls.history.className = "empty";
-      dashboardEls.history.innerHTML = "No treasury activity yet.";
-      return;
+    function safeNumber(value, fallback = 0){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
     }
 
-    const chunks = history.map(tx => {
-      const txType =
-        String(tx.tx_type || "transaction")
+    function formatPi(value){
+      return `${safeNumber(value, 0).toFixed(2)} Pi`;
+    }
+
+    function escapeHtml(text = ""){
+      return safeString(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatProjectType(type){
+      const t = safeString(type).trim().toLowerCase();
+      if(t === "core") return "Core";
+      if(t === "internal") return "Internal";
+      if(t === "external") return "External";
+      return "Unknown";
+    }
+
+    function formatProjectStatus(status){
+      const s = safeString(status).trim().toLowerCase();
+      if(s === "active") return "Active";
+      if(s === "inactive") return "Inactive";
+      if(s === "archived") return "Archived";
+      return s || "Unknown";
+    }
+
+    function getProjectTypeBadgeClass(type){
+      const t = safeString(type).trim().toLowerCase();
+      if(t === "core") return "core";
+      if(t === "internal") return "internal";
+      if(t === "external") return "external";
+      return "internal";
+    }
+
+    function getProjectStatusBadgeClass(status){
+      const s = safeString(status).trim().toLowerCase();
+      if(s === "active") return "active";
+      if(s === "inactive") return "inactive";
+      if(s === "archived") return "archived";
+      return "inactive";
+    }
+
+    function computeLiquidityStatus(status = {}){
+      const liquidity = safeNumber(status.liquidity, 0);
+      const minLiquidity = safeNumber(status.min_liquidity, 100);
+      const usable = safeNumber(status.max_usable_liquidity, 0);
+
+      if(liquidity < minLiquidity){
+        return {
+          label:"LOW",
+          className:"status-low"
+        };
+      }
+
+      if(usable <= 0){
+        return {
+          label:"SAFE",
+          className:"status-safe"
+        };
+      }
+
+      return {
+        label:"STRONG",
+        className:"status-strong"
+      };
+    }
+
+    function showDashboardAlert(title, message){
+      if(typeof openAppAlert === "function"){
+        openAppAlert(title, message);
+        return;
+      }
+      alert(`${title}\n\n${message}`);
+    }
+
+    function getCurrentAdminMeta(){
+      return {
+        actor_userid:
+          localStorage.getItem("albukhr_current_email") ||
+          localStorage.getItem("currentUserEmail") ||
+          "admin",
+        actor_username:
+          localStorage.getItem("albukhr_current_username") ||
+          localStorage.getItem("currentUserName") ||
+          "ALBUKHR Admin",
+        actor_role:
+          localStorage.getItem("albukhr_current_role") ||
+          "project_admin"
+      };
+    }
+
+    function getCurrentUpdateMeta(){
+      return {
+        email:
+          localStorage.getItem("albukhr_current_email") ||
+          localStorage.getItem("currentUserEmail") ||
+          "",
+        name:
+          localStorage.getItem("albukhr_current_username") ||
+          localStorage.getItem("currentUserName") ||
+          "ALBUKHR Admin",
+        role:
+          localStorage.getItem("albukhr_current_role") ||
+          "project_admin"
+      };
+    }
+
+    /* =========================================
+       ADMIN GUARD
+    ========================================= */
+    function guardAdmin(){
+      if(typeof requireRole === "function"){
+        requireRole([
+          "super_admin",
+          "ecosystem_admin",
+          "project_admin",
+          "finance_admin"
+        ]);
+      }
+
+      if(typeof getAdmin === "function" && !getAdmin()){
+        window.location.href = "admin-login.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    /* =========================================
+       RESOLVE CURRENT PROJECT
+    ========================================= */
+    async function resolveCurrentProject(){
+
+      let projectCode = "";
+
+      try{
+        if(typeof resolveAlbukhrCurrentProject === "function"){
+          const resolved = await resolveAlbukhrCurrentProject();
+          if(resolved?.project_code){
+            projectCode = String(resolved.project_code).trim();
+          }
+        }
+      }catch(e){
+        console.warn("resolveAlbukhrCurrentProject warning:", e);
+      }
+
+      if(!projectCode){
+        projectCode = String(
+          localStorage.getItem("albukhr_current_project") || ""
+        ).trim();
+      }
+
+      if(!projectCode){
+        showDashboardAlert("Project missing", "No current project was found.");
+        return null;
+      }
+
+      if(typeof getProjectMeta !== "function"){
+        throw new Error("getProjectMeta() is missing from projects-engine.js");
+      }
+
+      const project = await getProjectMeta(projectCode);
+
+      if(!project){
+        showDashboardAlert("Project not found", `Project not found: ${projectCode}`);
+        return null;
+      }
+
+      return project;
+    }
+
+    /* =========================================
+       LOAD TREASURY STATUS
+    ========================================= */
+    async function getProjectTreasurySummary(project){
+      const projectCode = project.project_code;
+
+      if(typeof getProjectTreasuryStatus === "function"){
+        const summary = await getProjectTreasuryStatus(projectCode);
+
+        if(summary && !summary.error){
+          return {
+            project_code: projectCode,
+            liquidity: safeNumber(summary.liquidity, 0),
+            reserve: safeNumber(summary.reserve, 0),
+            reserve_percent: safeNumber(
+              summary.reserve_percent,
+              project.reserve_percent ?? 0.30
+            ),
+            min_liquidity: safeNumber(
+              summary.min_liquidity,
+              project.min_liquidity ?? 100
+            ),
+            max_usable_liquidity: safeNumber(
+              summary.max_usable_liquidity,
+              0
+            ),
+            reward_rate: safeNumber(
+              summary.reward_rate,
+              project.reward_rate ?? 0
+            )
+          };
+        }
+      }
+
+      return {
+        project_code: projectCode,
+        liquidity: 0,
+        reserve: 0,
+        reserve_percent: safeNumber(project.reserve_percent, 0.30),
+        min_liquidity: safeNumber(project.min_liquidity, 100),
+        max_usable_liquidity: 0,
+        reward_rate: safeNumber(project.reward_rate, 0)
+      };
+    }
+
+    /* =========================================
+       LOAD ROI
+    ========================================= */
+    async function getProjectROI(projectCode, fallbackProject = null){
+      try{
+        if(typeof calculateProjectROI === "function"){
+          const roi = await calculateProjectROI(projectCode);
+          const n = Number(roi);
+          if(Number.isFinite(n)) return n;
+        }
+      }catch(e){
+        console.warn("calculateProjectROI warning:", e);
+      }
+
+      return safeNumber(fallbackProject?.roi, 0);
+    }
+
+    /* =========================================
+       LOAD INVESTORS
+    ========================================= */
+    async function getProjectInvestorCount(projectCode){
+      let allStakes = [];
+
+      try{
+        if(typeof getAllStakesMerged === "function"){
+          const result = await getAllStakesMerged();
+          if(Array.isArray(result)){
+            allStakes = result;
+          }
+        }
+      }catch(e){
+        console.warn("getAllStakesMerged warning:", e);
+      }
+
+      const code = String(projectCode || "").trim().toLowerCase();
+
+      return allStakes.filter(stake => {
+        const stakeCode = String(
+          stake?.project_code || stake?.project || ""
+        ).trim().toLowerCase();
+
+        return stakeCode === code;
+      }).length;
+    }
+
+    /* =========================================
+       LOAD HISTORY
+    ========================================= */
+    async function getTreasuryHistory(projectCode){
+      try{
+        if(typeof getProjectTreasuryHistory === "function"){
+          const history = await getProjectTreasuryHistory(projectCode, 50);
+          return Array.isArray(history) ? history : [];
+        }
+      }catch(e){
+        console.warn("getProjectTreasuryHistory warning:", e);
+      }
+
+      return [];
+    }
+
+    /* =========================================
+       RENDER HEADER
+    ========================================= */
+    function renderProjectHeader(project){
+      dashboardEls.projectName.textContent =
+        project.project_name || project.project_code || "Unknown Project";
+
+      dashboardEls.projectMetaLine.innerHTML = `
+        Code: <strong>${escapeHtml(project.project_code || "-")}</strong> •
+        Type: <strong>${escapeHtml(formatProjectType(project.project_type))}</strong>
+      `;
+
+      dashboardEls.projectBadges.innerHTML = `
+        <span class="badge ${escapeHtml(getProjectTypeBadgeClass(project.project_type))}">
+          ${escapeHtml(formatProjectType(project.project_type))}
+        </span>
+
+        <span class="badge ${escapeHtml(getProjectStatusBadgeClass(project.status))}">
+          ${escapeHtml(formatProjectStatus(project.status))}
+        </span>
+      `;
+    }
+
+    /* =========================================
+       RENDER STATS
+    ========================================= */
+    function renderProjectStats({
+      treasuryStatus,
+      roi,
+      investors
+    }){
+      dashboardEls.liquidity.textContent =
+        formatPi(treasuryStatus.liquidity);
+
+      dashboardEls.reserve.textContent =
+        formatPi(treasuryStatus.reserve);
+
+      dashboardEls.usableLiquidity.textContent =
+        formatPi(treasuryStatus.max_usable_liquidity);
+
+      dashboardEls.roi.textContent =
+        `${safeNumber(roi, 0).toFixed(2)}%`;
+
+      dashboardEls.investors.textContent =
+        String(safeNumber(investors, 0));
+
+      const state = computeLiquidityStatus(treasuryStatus);
+
+      dashboardEls.liquidityStatus.textContent = state.label;
+      dashboardEls.liquidityStatus.className =
+        `big ${state.className}`;
+    }
+
+    /* =========================================
+       RENDER HISTORY
+    ========================================= */
+    function renderHistory(history = []){
+      if(!Array.isArray(history) || !history.length){
+        dashboardEls.history.className = "empty";
+        dashboardEls.history.innerHTML = "No treasury activity yet.";
+        return;
+      }
+
+      const chunks = history.map(tx => {
+        const txType = String(tx.tx_type || "transaction")
           .replace(/_/g, " ");
 
-      const amount =
-        safeNumber(tx.amount, 0);
-
-      const note =
-        tx.note || tx.tx_type || "Treasury transaction";
-
-      const createdAt =
-        tx.created_at
+        const amount = safeNumber(tx.amount, 0);
+        const note = tx.note || tx.tx_type || "Treasury transaction";
+        const createdAt = tx.created_at
           ? new Date(tx.created_at).toLocaleString()
           : "—";
 
-      return `
-        <div class="tx">
-          <div class="tx-left">
-            <div><strong>${escapeHtml(txType)}</strong></div>
-            <div class="muted">${escapeHtml(note)}</div>
-            <div class="muted">${escapeHtml(createdAt)}</div>
+        return `
+          <div class="tx">
+            <div class="tx-left">
+              <div><strong>${escapeHtml(txType)}</strong></div>
+              <div class="muted">${escapeHtml(note)}</div>
+              <div class="muted">${escapeHtml(createdAt)}</div>
+            </div>
+
+            <div class="tx-right">
+              ${formatPi(amount)}
+            </div>
           </div>
+        `;
+      });
 
-          <div class="tx-right">
-            ${formatPi(amount)}
-          </div>
-        </div>
-      `;
-    });
+      dashboardEls.history.className = "";
+      dashboardEls.history.innerHTML = chunks.join("");
+    }
 
-    dashboardEls.history.className = "";
-    dashboardEls.history.innerHTML = chunks.join("");
+    /* =========================================
+       RENDER DASHBOARD
+    ========================================= */
+    async function renderDashboard(){
 
-  }catch(err){
+      if(dashboardBusy) return;
+      dashboardBusy = true;
 
-    console.error("renderHistory error:", err);
-
-    dashboardEls.history.className = "error-box";
-    dashboardEls.history.innerHTML = `
-      Failed to load treasury history.<br>
-      <span class="muted">${escapeHtml(err?.message || "Unknown error")}</span>
-    `;
-  }
-}
-
-/* =========================================
-   FULL DASHBOARD RENDER
-========================================= */
-async function updateDashboard(){
-
-  if(__projectDashboardBusy) return;
-  __projectDashboardBusy = true;
-
-  try{
-
-    const data = await loadProjectData();
-
-    __currentProjectMeta = data.project;
-
-    renderProjectHeader(data.project);
-    renderProjectStats(data);
-    await renderHistory();
-
-    if(typeof renderProjectStakeUI === "function"){
       try{
-        await renderProjectStakeUI(
-          currentProjectCode,
-          localStorage.getItem("albukhr_current_email")
-        );
-      }catch(e){
-        console.warn("renderProjectStakeUI failed:", e);
+        dashboardEls.history.className = "loading";
+        dashboardEls.history.innerHTML = "Loading treasury history...";
+
+        const project = await resolveCurrentProject();
+        if(!project){
+          dashboardEls.history.className = "error-box";
+          dashboardEls.history.innerHTML = "Project could not be resolved.";
+          return;
+        }
+
+        currentProject = project;
+
+        const [treasuryStatus, roi, investors, history] = await Promise.all([
+          getProjectTreasurySummary(project),
+          getProjectROI(project.project_code, project),
+          getProjectInvestorCount(project.project_code),
+          getTreasuryHistory(project.project_code)
+        ]);
+
+        renderProjectHeader(project);
+        renderProjectStats({
+          treasuryStatus,
+          roi,
+          investors
+        });
+        renderHistory(history);
+
+        if(typeof renderProjectStakeUI === "function"){
+          Promise.resolve(
+            renderProjectStakeUI(
+              project.project_code,
+              localStorage.getItem("albukhr_current_email")
+            )
+          ).catch(e => {
+            console.warn("renderProjectStakeUI warning:", e);
+          });
+        }
+
+      }catch(err){
+        console.error("Dashboard render error:", err);
+
+        dashboardEls.projectName.textContent = "Project load failed";
+        dashboardEls.projectMetaLine.textContent =
+          err?.message || "Unknown error";
+
+        dashboardEls.history.className = "error-box";
+        dashboardEls.history.innerHTML = `
+          Failed to load project dashboard.<br>
+          <span class="muted">${escapeHtml(err?.message || "Unknown error")}</span>
+        `;
+      }finally{
+        dashboardBusy = false;
       }
     }
 
-  }catch(err){
+    /* =========================================
+       ADD LIQUIDITY
+    ========================================= */
+    async function addLiquidityAction(){
+      if(!currentProject){
+        showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
 
-    console.error("updateDashboard error:", err);
+      const amount = safeNumber(dashboardEls.addAmount.value, 0);
 
-    dashboardEls.projectName.textContent = "Project load failed";
-    dashboardEls.projectMetaLine.textContent =
-      err?.message || "Unknown error";
+      if(amount <= 0){
+        showDashboardAlert("Invalid amount", "Enter a valid liquidity amount.");
+        return;
+      }
 
-    dashboardEls.history.className = "error-box";
-    dashboardEls.history.innerHTML = `
-      Failed to load project dashboard.<br>
-      <span class="muted">${escapeHtml(err?.message || "Unknown error")}</span>
-    `;
-  }finally{
-    __projectDashboardBusy = false;
-  }
-}
+      if(typeof safeAddProjectLiquidity !== "function"){
+        showDashboardAlert("Engine missing", "safeAddProjectLiquidity() is not available.");
+        return;
+      }
 
-/* =========================================
-   ADD LIQUIDITY
-========================================= */
-async function addLiquidity(){
-
-  try{
-
-    const amount =
-      safeNumber(dashboardEls.addAmount.value, 0);
-
-    if(amount <= 0){
-      alert("Enter valid liquidity amount");
-      return;
-    }
-
-    if(typeof safeAddProjectLiquidity !== "function"){
-      alert("safeAddProjectLiquidity() not available");
-      return;
-    }
-
-    const result =
-      await safeAddProjectLiquidity(
-        currentProjectCode,
-        amount,
-        {
-          actor_userid: localStorage.getItem("albukhr_current_email") || "admin",
-          actor_username: "ALBUKHR Admin",
+      try{
+        const actorMeta = {
+          ...getCurrentAdminMeta(),
           note: "Manual liquidity add from project dashboard",
-          meta:{
-            source:"project_dashboard_add_liquidity"
-          }
+          meta:{ source:"project_dashboard_add_liquidity" }
+        };
+
+        const result = await safeAddProjectLiquidity(
+          currentProject.project_code,
+          amount,
+          actorMeta
+        );
+
+        if(result?.error){
+          throw new Error(result.error);
         }
-      );
 
-    if(result?.error){
-      alert(result.error);
-      return;
+        dashboardEls.addAmount.value = "";
+        showDashboardAlert("Success", "Liquidity added successfully.");
+        await renderDashboard();
+
+      }catch(err){
+        console.error("Add liquidity error:", err);
+        showDashboardAlert(
+          "Add Liquidity Failed",
+          err?.message || "Failed to add liquidity."
+        );
+      }
     }
 
-    dashboardEls.addAmount.value = "";
-    alert("Liquidity added successfully");
-    await updateDashboard();
+    /* =========================================
+       WITHDRAW LIQUIDITY
+    ========================================= */
+    async function withdrawLiquidityAction(){
+      if(!currentProject){
+        showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
 
-  }catch(err){
-    console.error("addLiquidity error:", err);
-    alert(err?.message || "Failed to add liquidity");
-  }
-}
+      const amount = safeNumber(dashboardEls.withdrawAmount.value, 0);
 
-/* =========================================
-   WITHDRAW LIQUIDITY
-========================================= */
-async function withdrawLiquidity(){
+      if(amount <= 0){
+        showDashboardAlert("Invalid amount", "Enter a valid withdraw amount.");
+        return;
+      }
 
-  try{
+      if(typeof safeProjectInternalWithdraw !== "function"){
+        showDashboardAlert("Engine missing", "safeProjectInternalWithdraw() is not available.");
+        return;
+      }
 
-    const amount =
-      safeNumber(dashboardEls.withdrawAmount.value, 0);
-
-    if(amount <= 0){
-      alert("Enter valid withdraw amount");
-      return;
-    }
-
-    if(typeof safeProjectInternalWithdraw !== "function"){
-      alert("safeProjectInternalWithdraw() not available");
-      return;
-    }
-
-    const result =
-      await safeProjectInternalWithdraw(
-        currentProjectCode,
-        amount,
-        {
-          actor_userid: localStorage.getItem("albukhr_current_email") || "admin",
-          actor_username: "ALBUKHR Admin",
+      try{
+        const actorMeta = {
+          ...getCurrentAdminMeta(),
           note: "Manual internal withdraw from project dashboard",
-          meta:{
-            source:"project_dashboard_internal_withdraw"
-          }
+          meta:{ source:"project_dashboard_internal_withdraw" }
+        };
+
+        const result = await safeProjectInternalWithdraw(
+          currentProject.project_code,
+          amount,
+          actorMeta
+        );
+
+        if(result?.error){
+          throw new Error(result.error);
         }
-      );
 
-    if(result?.error){
-      alert(result.error);
-      return;
+        dashboardEls.withdrawAmount.value = "";
+        showDashboardAlert("Success", "Liquidity withdrawn successfully.");
+        await renderDashboard();
+
+      }catch(err){
+        console.error("Withdraw liquidity error:", err);
+        showDashboardAlert(
+          "Withdraw Failed",
+          err?.message || "Failed to withdraw liquidity."
+        );
+      }
     }
 
-    dashboardEls.withdrawAmount.value = "";
-    alert("Liquidity withdrawn successfully");
-    await updateDashboard();
+    /* =========================================
+       PROJECT UPDATE -> SUPABASE
+    ========================================= */
+    async function uploadProjectUpdate(){
 
-  }catch(err){
-    console.error("withdrawLiquidity error:", err);
-    alert(err?.message || "Failed to withdraw liquidity");
-  }
-}
+      if(uploadBusy) return;
 
-/* =========================================
-   PROJECT UPDATE TYPE LABEL
-========================================= */
-function getProjectTypeLabel(projectMeta){
+      if(!currentProject){
+        showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
 
-  const type =
-    String(projectMeta?.project_type || "").toLowerCase();
+      if(typeof uploadProjectUpdateToSupabase !== "function"){
+        showDashboardAlert(
+          "Project updates engine missing",
+          "uploadProjectUpdateToSupabase() is not available. Make sure js/project-updates.js is loaded."
+        );
+        return;
+      }
 
-  if(type === "core"){
-    return "Core Project";
-  }
+      const title =
+        safeString(dashboardEls.projectUpdateTitle.value).trim();
 
-  if(type === "internal"){
-    return "Internal Project";
-  }
+      const description =
+        safeString(dashboardEls.projectUpdateText.value).trim();
 
-  if(type === "external"){
-    return "External Project";
-  }
+      const imageFile =
+        dashboardEls.projectUpdateImage.files[0] || null;
 
-  return "Project";
-}
+      if(!description){
+        showDashboardAlert(
+          "Description required",
+          "Please write the project update description first."
+        );
+        return;
+      }
 
-/* =========================================
-   UPLOAD PROJECT UPDATE
-   NOTE:
-   Wannan part har yanzu localStorage feed ne
-   domin ba mu kai ga Supabase project_updates ba tukuna.
-========================================= */
-function uploadProjectUpdate(){
+      if(!imageFile){
+        showDashboardAlert(
+          "Image required",
+          "Please select an update image first."
+        );
+        return;
+      }
 
-  const projectCode = currentProjectCode;
+      const actor = getCurrentUpdateMeta();
 
-  if(!projectCode){
-    alert("Project not found");
-    return;
-  }
+      uploadBusy = true;
+      dashboardEls.uploadProjectUpdateBtn.disabled = true;
+      dashboardEls.uploadProjectUpdateBtn.textContent = "Uploading...";
 
-  const file =
-    document.getElementById("projectUpdateImage").files[0];
+      try{
+        const result = await uploadProjectUpdateToSupabase({
+          projectCode: currentProject.project_code,
+          projectName: currentProject.project_name || currentProject.project_code,
+          projectType: currentProject.project_type || "internal",
+          title,
+          description,
+          imageFile,
+          createdByEmail: actor.email,
+          createdByName: actor.name,
+          createdByRole: actor.role
+        });
 
-  const text =
-    document.getElementById("projectUpdateText").value.trim();
+        if(result?.error){
+          throw new Error(result.error);
+        }
 
-  if(!file){
-    alert("Select update image first");
-    return;
-  }
+        dashboardEls.projectUpdateTitle.value = "";
+        dashboardEls.projectUpdateText.value = "";
+        dashboardEls.projectUpdateImage.value = "";
 
-  const reader = new FileReader();
+        window.dispatchEvent(new Event("projectFeedUpdated"));
 
-  reader.onload = function(){
+        showDashboardAlert(
+          "Update uploaded",
+          "Project update was published successfully to Transparency."
+        );
 
-    let feed =
-      JSON.parse(localStorage.getItem("albukhr_project_feed")) || [];
+      }catch(err){
+        console.error("Project update upload error:", err);
+        showDashboardAlert(
+          "Upload failed",
+          err?.message || "Failed to upload project update."
+        );
+      }finally{
+        uploadBusy = false;
+        dashboardEls.uploadProjectUpdateBtn.disabled = false;
+        dashboardEls.uploadProjectUpdateBtn.textContent = "Upload Update";
+      }
+    }
 
-    feed.push({
-      id: "update_" + Date.now(),
-      project_code: projectCode,
-      project: __currentProjectMeta?.project_name || projectCode,
-      type: getProjectTypeLabel(__currentProjectMeta),
-      image: reader.result,
-      description: text,
-      time: Date.now()
+    /* =========================================
+       BIND ACTIONS
+    ========================================= */
+    function bindDashboardActions(){
+      dashboardEls.addLiquidityBtn.addEventListener("click", addLiquidityAction);
+      dashboardEls.withdrawLiquidityBtn.addEventListener("click", withdrawLiquidityAction);
+      dashboardEls.uploadProjectUpdateBtn.addEventListener("click", uploadProjectUpdate);
+    }
+
+    /* =========================================
+       START
+    ========================================= */
+    document.addEventListener("DOMContentLoaded", async function(){
+
+      if(!guardAdmin()) return;
+
+      if(typeof loadProjects === "function"){
+        try{
+          await loadProjects(true);
+        }catch(e){
+          console.warn("Projects preload warning:", e);
+        }
+      }
+
+      bindDashboardActions();
+      await renderDashboard();
+
+      setInterval(async () => {
+        await renderDashboard();
+      }, 90000);
     });
-
-    localStorage.setItem(
-      "albukhr_project_feed",
-      JSON.stringify(feed)
-    );
-
-    window.dispatchEvent(
-      new Event("projectFeedUpdated")
-    );
-
-    document.getElementById("projectUpdateImage").value = "";
-    document.getElementById("projectUpdateText").value = "";
-
-    alert("Project update uploaded");
-  };
-
-  reader.readAsDataURL(file);
-}
-
-/* =========================================
-   START
-========================================= */
-document.addEventListener("DOMContentLoaded", async function(){
-
-  if(!ensureProjectSelected()) return;
-
-  if(typeof loadProjects === "function"){
-    try{
-      await loadProjects();
-    }catch(e){
-      console.warn("Project preload warning:", e);
-    }
-  }
-
-  await updateDashboard();
-
-  /* refresh every 90 seconds */
-  setInterval(async ()=>{
-    await updateDashboard();
-  }, 90000);
-
-});
-</script>
-
+  </script>
 </body>
-    </html>
+  </html>
