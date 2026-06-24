@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>ALBUKHR Internal Project Dashboard</title>
+  <title>ALBUKHR Project Dashboard</title>
 
   <link rel="stylesheet" href="css/global-header.css" />
   <link rel="stylesheet" href="css/global-buttons.css" />
@@ -177,7 +177,8 @@
     }
 
     input,
-    textarea{
+    textarea,
+    select{
       width:100%;
       box-sizing:border-box;
       padding:10px;
@@ -240,7 +241,8 @@
 
     .loading,
     .empty,
-    .error-box{
+    .error-box,
+    .info-box{
       background:#fff;
       padding:18px;
       border-radius:14px;
@@ -257,6 +259,12 @@
     .error-box{
       color:#b02a37;
       border-left:4px solid #b02a37;
+    }
+
+    .info-box{
+      color:#1f4f8f;
+      border-left:4px solid #1f4f8f;
+      background:#f5f9ff;
     }
 
     .muted{
@@ -292,6 +300,10 @@
       font-size:12px;
       color:#61706a;
       border-top:1px solid #e6ece9;
+    }
+
+    .hidden{
+      display:none !important;
     }
 
     @media (max-width:820px){
@@ -364,7 +376,7 @@
     </div>
 
     <!-- ADD LIQUIDITY -->
-    <div class="card-full">
+    <div class="card-full" id="addLiquidityCard">
       <div class="title">Add Liquidity</div>
 
       <input
@@ -378,10 +390,12 @@
       <button id="addLiquidityBtn">
         Add Liquidity
       </button>
+
+      <div id="addLiquidityNote" class="upload-note"></div>
     </div>
 
     <!-- INTERNAL WITHDRAW -->
-    <div class="card-full">
+    <div class="card-full" id="withdrawLiquidityCard">
       <div class="title">Internal Withdraw</div>
 
       <input
@@ -395,11 +409,13 @@
       <button id="withdrawLiquidityBtn">
         Withdraw Liquidity
       </button>
+
+      <div id="withdrawLiquidityNote" class="upload-note"></div>
     </div>
 
     <!-- PROJECT UPDATES -->
-    <div class="card-full">
-      <div class="project-title">📸 Project Updates</div>
+    <div class="card-full" id="projectUpdatesCard">
+      <div class="project-title" id="projectUpdatesHeading">📸 Project Updates</div>
 
       <input
         type="text"
@@ -422,7 +438,7 @@
         Upload Update
       </button>
 
-      <div class="upload-note">
+      <div class="upload-note" id="projectUpdatesNote">
         This update will be published to the ALBUKHR Transparency feed.
       </div>
 
@@ -469,9 +485,12 @@
 
   <script>
     /* =========================================
-       ALBUKHR INTERNAL PROJECT DASHBOARD FINAL
-       SINGLE DASHBOARD SAFE PATCH
-       + SUPABASE PROJECT UPDATES
+       ALBUKHR UNIVERSAL PROJECT DASHBOARD FINAL
+       - Single dashboard
+       - Internal / External / Core compatible
+       - Resolver-aware
+       - Permission-gated actions
+       - Supabase project updates compatible
     ========================================= */
 
     const dashboardEls = {
@@ -487,6 +506,7 @@
       usableLiquidity: document.getElementById("usableLiquidity"),
 
       history: document.getElementById("history"),
+      projectStakeBox: document.getElementById("projectStakeBox"),
 
       addAmount: document.getElementById("addAmount"),
       withdrawAmount: document.getElementById("withdrawAmount"),
@@ -494,6 +514,15 @@
       addLiquidityBtn: document.getElementById("addLiquidityBtn"),
       withdrawLiquidityBtn: document.getElementById("withdrawLiquidityBtn"),
       uploadProjectUpdateBtn: document.getElementById("uploadProjectUpdateBtn"),
+
+      addLiquidityCard: document.getElementById("addLiquidityCard"),
+      withdrawLiquidityCard: document.getElementById("withdrawLiquidityCard"),
+      projectUpdatesCard: document.getElementById("projectUpdatesCard"),
+
+      addLiquidityNote: document.getElementById("addLiquidityNote"),
+      withdrawLiquidityNote: document.getElementById("withdrawLiquidityNote"),
+      projectUpdatesHeading: document.getElementById("projectUpdatesHeading"),
+      projectUpdatesNote: document.getElementById("projectUpdatesNote"),
 
       projectUpdateTitle: document.getElementById("projectUpdateTitle"),
       projectUpdateImage: document.getElementById("projectUpdateImage"),
@@ -631,6 +660,38 @@
       };
     }
 
+    function getResolverCurrentUser(){
+      try{
+        if(
+          typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
+          typeof ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser === "function"
+        ){
+          return ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
+        }
+      }catch(e){
+        console.warn("Resolver getCurrentAlbukhrUser warning:", e);
+      }
+
+      return {
+        email:
+          localStorage.getItem("albukhr_current_email") ||
+          localStorage.getItem("currentUserEmail") ||
+          "",
+        userid:
+          localStorage.getItem("albukhr_current_email") ||
+          localStorage.getItem("currentUserEmail") ||
+          "",
+        username:
+          localStorage.getItem("albukhr_current_username") ||
+          localStorage.getItem("currentUserName") ||
+          "ALBUKHR Admin",
+        role:
+          localStorage.getItem("albukhr_current_role") ||
+          "project_admin",
+        isAdmin:true
+      };
+    }
+
     function resetImagePreview(){
       dashboardEls.updateImagePreviewBox.style.display = "none";
       dashboardEls.updateImagePreview.src = "";
@@ -653,8 +714,56 @@
       reader.readAsDataURL(file);
     }
 
+    function setCardButtonState(buttonEl, {
+      visible = true,
+      disabled = false,
+      text = ""
+    } = {}){
+      if(!buttonEl) return;
+      buttonEl.style.display = visible ? "" : "none";
+      buttonEl.disabled = !!disabled;
+      if(text){
+        buttonEl.textContent = text;
+      }
+    }
+
+    function setInputState(inputEl, {
+      visible = true,
+      disabled = false
+    } = {}){
+      if(!inputEl) return;
+      inputEl.style.display = visible ? "" : "none";
+      inputEl.disabled = !!disabled;
+    }
+
+    function setNote(el, text = ""){
+      if(!el) return;
+      el.textContent = text || "";
+      el.style.display = text ? "block" : "none";
+    }
+
+    function renderStakeFallback(message){
+      if(!dashboardEls.projectStakeBox) return;
+      dashboardEls.projectStakeBox.innerHTML =
+        `<div class="muted">${escapeHtml(message)}</div>`;
+    }
+
+    function getProjectTypeFromResolver(project){
+      try{
+        if(typeof getAlbukhrProjectType === "function"){
+          return getAlbukhrProjectType(project);
+        }
+      }catch(e){
+        console.warn("getAlbukhrProjectType warning:", e);
+      }
+
+      return safeString(project?.project_type).trim().toLowerCase() || "unknown";
+    }
+
     /* =========================================
        ADMIN GUARD
+       NOTE:
+       dashboard page remains admin-side for now.
     ========================================= */
     function guardAdmin(){
       if(typeof requireRole === "function"){
@@ -676,45 +785,58 @@
 
     /* =========================================
        RESOLVE CURRENT PROJECT
+       - normalize storage first
+       - use resolver as primary truth
+       - fallback to getProjectMeta only if needed
     ========================================= */
     async function resolveCurrentProject(){
+      let resolved = null;
+      let projectRef = "";
 
-      let projectCode = "";
+      try{
+        if(typeof normalizeAlbukhrCurrentProjectStorage === "function"){
+          await normalizeAlbukhrCurrentProjectStorage();
+        }
+      }catch(e){
+        console.warn("normalizeAlbukhrCurrentProjectStorage warning:", e);
+      }
 
       try{
         if(typeof resolveAlbukhrCurrentProject === "function"){
-          const resolved = await resolveAlbukhrCurrentProject();
-          if(resolved?.project_code){
-            projectCode = String(resolved.project_code).trim();
-          }
+          resolved = await resolveAlbukhrCurrentProject();
         }
       }catch(e){
         console.warn("resolveAlbukhrCurrentProject warning:", e);
       }
 
-      if(!projectCode){
-        projectCode = String(
+      if(resolved && resolved.project_code){
+        projectRef = String(resolved.project_code).trim();
+      }
+
+      if(!projectRef){
+        projectRef = String(
           localStorage.getItem("albukhr_current_project") || ""
         ).trim();
       }
 
-      if(!projectCode){
+      if(!projectRef){
         showDashboardAlert("Project missing", "No current project was found.");
         return null;
       }
 
-      if(typeof getProjectMeta !== "function"){
-        throw new Error("getProjectMeta() is missing from projects-engine.js");
+      if(resolved && resolved.project_code){
+        return resolved;
       }
 
-      const project = await getProjectMeta(projectCode);
-
-      if(!project){
-        showDashboardAlert("Project not found", `Project not found: ${projectCode}`);
-        return null;
+      if(typeof getProjectMeta === "function"){
+        const project = await getProjectMeta(projectRef);
+        if(project){
+          return project;
+        }
       }
 
-      return project;
+      showDashboardAlert("Project not found", `Project not found: ${projectRef}`);
+      return null;
     }
 
     /* =========================================
@@ -827,21 +949,24 @@
        RENDER HEADER
     ========================================= */
     function renderProjectHeader(project){
+      const projectType = getProjectTypeFromResolver(project);
+      const projectStatus = safeString(project.status || "active").toLowerCase();
+
       dashboardEls.projectName.textContent =
         project.project_name || project.project_code || "Unknown Project";
 
       dashboardEls.projectMetaLine.innerHTML = `
         Code: <strong>${escapeHtml(project.project_code || "-")}</strong> •
-        Type: <strong>${escapeHtml(formatProjectType(project.project_type))}</strong>
+        Type: <strong>${escapeHtml(formatProjectType(projectType))}</strong>
       `;
 
       dashboardEls.projectBadges.innerHTML = `
-        <span class="badge ${escapeHtml(getProjectTypeBadgeClass(project.project_type))}">
-          ${escapeHtml(formatProjectType(project.project_type))}
+        <span class="badge ${escapeHtml(getProjectTypeBadgeClass(projectType))}">
+          ${escapeHtml(formatProjectType(projectType))}
         </span>
 
-        <span class="badge ${escapeHtml(getProjectStatusBadgeClass(project.status))}">
-          ${escapeHtml(formatProjectStatus(project.status))}
+        <span class="badge ${escapeHtml(getProjectStatusBadgeClass(projectStatus))}">
+          ${escapeHtml(formatProjectStatus(projectStatus))}
         </span>
       `;
     }
@@ -916,7 +1041,138 @@
     }
 
     /* =========================================
+       APPLY DASHBOARD SECTION PERMISSIONS
+       - no hard-stop by project type
+       - only gate actions
+    ========================================= */
+    function applyDashboardSectionPermissions(project){
+      const user = getResolverCurrentUser();
+      const projectType = getProjectTypeFromResolver(project);
+
+      let canManageTreasury = false;
+      let canUploadUpdate = false;
+
+      try{
+        if(typeof canManageAlbukhrProjectTreasury === "function"){
+          canManageTreasury = !!canManageAlbukhrProjectTreasury(project, user);
+        }
+      }catch(e){
+        console.warn("canManageAlbukhrProjectTreasury warning:", e);
+      }
+
+      try{
+        if(typeof canUploadAlbukhrProjectUpdate === "function"){
+          canUploadUpdate = !!canUploadAlbukhrProjectUpdate(project, user);
+        }
+      }catch(e){
+        console.warn("canUploadAlbukhrProjectUpdate warning:", e);
+      }
+
+      /* Project updates heading */
+      if(typeof getAlbukhrProjectUpdateTitle === "function"){
+        try{
+          dashboardEls.projectUpdatesHeading.textContent =
+            getAlbukhrProjectUpdateTitle(project);
+        }catch(e){
+          dashboardEls.projectUpdatesHeading.textContent = "📸 Project Updates";
+        }
+      }else{
+        dashboardEls.projectUpdatesHeading.textContent = "📸 Project Updates";
+      }
+
+      /* -----------------------------------------
+         TREASURY CONTROLS
+      ----------------------------------------- */
+      setInputState(dashboardEls.addAmount, {
+        visible: canManageTreasury,
+        disabled: !canManageTreasury
+      });
+
+      setCardButtonState(dashboardEls.addLiquidityBtn, {
+        visible: true,
+        disabled: !canManageTreasury,
+        text: canManageTreasury ? "Add Liquidity" : "Treasury Access Required"
+      });
+
+      setInputState(dashboardEls.withdrawAmount, {
+        visible: canManageTreasury,
+        disabled: !canManageTreasury
+      });
+
+      setCardButtonState(dashboardEls.withdrawLiquidityBtn, {
+        visible: true,
+        disabled: !canManageTreasury,
+        text: canManageTreasury ? "Withdraw Liquidity" : "Treasury Access Required"
+      });
+
+      if(canManageTreasury){
+        setNote(dashboardEls.addLiquidityNote, "");
+        setNote(dashboardEls.withdrawLiquidityNote, "");
+      }else{
+        setNote(
+          dashboardEls.addLiquidityNote,
+          "Treasury actions are restricted to authorized ALBUKHR treasury administrators."
+        );
+        setNote(
+          dashboardEls.withdrawLiquidityNote,
+          "Withdraw actions are restricted to authorized ALBUKHR treasury administrators."
+        );
+      }
+
+      /* -----------------------------------------
+         PROJECT UPDATES CONTROLS
+      ----------------------------------------- */
+      setInputState(dashboardEls.projectUpdateTitle, {
+        visible: canUploadUpdate,
+        disabled: !canUploadUpdate
+      });
+
+      setInputState(dashboardEls.projectUpdateImage, {
+        visible: canUploadUpdate,
+        disabled: !canUploadUpdate
+      });
+
+      setInputState(dashboardEls.projectUpdateText, {
+        visible: canUploadUpdate,
+        disabled: !canUploadUpdate
+      });
+
+      setCardButtonState(dashboardEls.uploadProjectUpdateBtn, {
+        visible: true,
+        disabled: !canUploadUpdate,
+        text: canUploadUpdate ? "Upload Update" : "Update Access Required"
+      });
+
+      if(canUploadUpdate){
+        setNote(
+          dashboardEls.projectUpdatesNote,
+          "This update will be published to the ALBUKHR Transparency feed."
+        );
+      }else{
+        setNote(
+          dashboardEls.projectUpdatesNote,
+          "Publishing updates for this project is restricted to authorized project owners or ALBUKHR admins."
+        );
+        resetImagePreview();
+      }
+
+      /* Stake fallback note */
+      if(projectType === "core"){
+        renderStakeFallback("Core project stake panel will appear here when stake data is available.");
+      }
+
+      return {
+        user,
+        projectType,
+        canManageTreasury,
+        canUploadUpdate
+      };
+    }
+
+    /* =========================================
        RENDER DASHBOARD
+       - universal
+       - no internal-only hard stop
     ========================================= */
     async function renderDashboard(){
 
@@ -934,26 +1190,11 @@
           return;
         }
 
-        const projectType = String(project.project_type || "").trim().toLowerCase();
-
-        if(projectType !== "internal"){
-          dashboardEls.projectName.textContent =
-            project.project_name || project.project_code || "Invalid project";
-
-          dashboardEls.projectMetaLine.textContent =
-            "This dashboard only supports internal projects.";
-
-          dashboardEls.projectBadges.innerHTML = `
-            <span class="badge inactive">Wrong Dashboard</span>
-          `;
-
-          dashboardEls.history.className = "error-box";
-          dashboardEls.history.innerHTML =
-            "This page is restricted to internal projects only.";
-          return;
-        }
-
         currentProject = project;
+
+        renderProjectHeader(project);
+
+        const permissionState = applyDashboardSectionPermissions(project);
 
         const [treasuryStatus, roi, investors, history] = await Promise.all([
           getProjectTreasurySummary(project),
@@ -962,12 +1203,12 @@
           getTreasuryHistory(project.project_code)
         ]);
 
-        renderProjectHeader(project);
         renderProjectStats({
           treasuryStatus,
           roi,
           investors
         });
+
         renderHistory(history);
 
         if(typeof renderProjectStakeUI === "function"){
@@ -978,8 +1219,26 @@
             )
           ).catch(e => {
             console.warn("renderProjectStakeUI warning:", e);
+            renderStakeFallback("Stake panel could not be loaded for this project.");
           });
+        }else{
+          renderStakeFallback("Stake panel is not available on this page.");
         }
+
+        const typeLabel = formatProjectType(permissionState.projectType);
+        const treasuryLabel = permissionState.canManageTreasury
+          ? "Treasury enabled"
+          : "Treasury read-only";
+
+        const updateLabel = permissionState.canUploadUpdate
+          ? "Updates enabled"
+          : "Updates read-only";
+
+        dashboardEls.projectMetaLine.innerHTML = `
+          Code: <strong>${escapeHtml(project.project_code || "-")}</strong> •
+          Type: <strong>${escapeHtml(typeLabel)}</strong> •
+          ${escapeHtml(treasuryLabel)} • ${escapeHtml(updateLabel)}
+        `;
 
       }catch(err){
         console.error("Dashboard render error:", err);
@@ -1004,6 +1263,19 @@
     async function addLiquidityAction(){
       if(!currentProject){
         showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
+
+      const currentUser = getResolverCurrentUser();
+
+      if(
+        typeof canManageAlbukhrProjectTreasury === "function" &&
+        !canManageAlbukhrProjectTreasury(currentProject, currentUser)
+      ){
+        showDashboardAlert(
+          "Access denied",
+          "You do not have permission to manage this project's treasury."
+        );
         return;
       }
 
@@ -1055,6 +1327,19 @@
     async function withdrawLiquidityAction(){
       if(!currentProject){
         showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
+
+      const currentUser = getResolverCurrentUser();
+
+      if(
+        typeof canManageAlbukhrProjectTreasury === "function" &&
+        !canManageAlbukhrProjectTreasury(currentProject, currentUser)
+      ){
+        showDashboardAlert(
+          "Access denied",
+          "You do not have permission to withdraw treasury funds from this project."
+        );
         return;
       }
 
@@ -1118,7 +1403,6 @@
         };
       }
 
-      /* optional safety limit: 10MB */
       const maxSize = 10 * 1024 * 1024;
       if(file.size > maxSize){
         return {
@@ -1139,6 +1423,19 @@
 
       if(!currentProject){
         showDashboardAlert("Project missing", "Project not loaded yet.");
+        return;
+      }
+
+      const currentUser = getResolverCurrentUser();
+
+      if(
+        typeof canUploadAlbukhrProjectUpdate === "function" &&
+        !canUploadAlbukhrProjectUpdate(currentProject, currentUser)
+      ){
+        showDashboardAlert(
+          "Access denied",
+          "You do not have permission to publish updates for this project."
+        );
         return;
       }
 
@@ -1257,4 +1554,4 @@
     });
   </script>
 </body>
-  </html>
+        </html>
