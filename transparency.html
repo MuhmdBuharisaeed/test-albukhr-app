@@ -479,7 +479,7 @@
       </div>
 
       <div class="header-right">
-        <div class="header-btn notification-btn" onclick="openNotifications()">
+        <div class="header-btn notification-btn" onclick="safeOpenNotifications()">
           🔔
           <span id="notifBadge" class="notification-badge"></span>
         </div>
@@ -548,13 +548,11 @@
     </div>
   </div>
 
-  
-
   <!-- APP ALERT JS -->
   <script src="js/app-alert.js"></script>
 
   <!-- EXISTING APP SCRIPTS -->
-  <script src="staking.js"></script>
+  <script src="js/staking.js"></script>
   <script src="js/unified-transactions.js"></script>
   <script src="js/notifications.js"></script>
 
@@ -571,14 +569,18 @@
   <script>
     /* =========================================
        ALBUKHR TRANSPARENCY PAGE FINAL PATCHED
-       Uses project-updates.js transparency helpers
+       MATCHED TO:
+       - js/project-updates.js
+       - project_updates / comments / reactions tables
+       - bucket: project-updates
     ========================================= */
 
     const transparencyState = {
       openComments: {},
       expandedDescriptions: {},
       loading: false,
-      lastFeed: []
+      lastFeed: [],
+      lastRequestId: 0
     };
 
     const transparencyEls = {
@@ -601,6 +603,11 @@
       return Array.isArray(value) ? value : [];
     }
 
+    function safeNumber(value, fallback = 0){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
     function escapeHtml(text = ""){
       return safeString(text)
         .replace(/&/g, "&amp;")
@@ -616,6 +623,16 @@
         return;
       }
       alert(`${title}\n\n${text}`);
+    }
+
+    function safeOpenNotifications(){
+      try{
+        if(typeof openNotifications === "function"){
+          openNotifications();
+        }
+      }catch(err){
+        console.warn("openNotifications warning:", err);
+      }
     }
 
     function getViewer(){
@@ -683,8 +700,8 @@
       const copy = [...safeArray(feed)];
 
       copy.sort((a, b) => {
-        const at = Number(a.time_ms || new Date(a.created_at || 0).getTime() || 0);
-        const bt = Number(b.time_ms || new Date(b.created_at || 0).getTime() || 0);
+        const at = safeNumber(a.time_ms || new Date(a.created_at || 0).getTime(), 0);
+        const bt = safeNumber(b.time_ms || new Date(b.created_at || 0).getTime(), 0);
 
         if(sort === "oldest"){
           return at - bt;
@@ -693,6 +710,22 @@
       });
 
       return copy;
+    }
+
+    function ensureSupabaseReady(){
+      if(typeof window.isAlbukhrSupabaseReady === "function"){
+        return !!window.isAlbukhrSupabaseReady();
+      }
+
+      if(typeof window.getAlbukhrSupabaseClient === "function"){
+        return !!window.getAlbukhrSupabaseClient();
+      }
+
+      if(window.albukhrSupabase || window.supabaseClient || window.sb){
+        return true;
+      }
+
+      return false;
     }
 
     /* =========================================
@@ -733,7 +766,20 @@
         const projectName = safeString(item.project_name || item.project || item.project_code || "Project");
         const projectCode = safeString(item.project_code || "");
         const projectType = safeString(item.project_type || "internal").toLowerCase();
-        const projectTypeLabel = safeString(item.project_type_label || item.type || "Project");
+        const projectTypeLabel =
+          safeString(item.project_type_label || item.type || (
+            projectType === "core" ? "Core Project" :
+            projectType === "external" ? "External Project" :
+            "Internal Project"
+          ));
+
+        const badgeClass =
+          safeString(item.type_badge_class || (
+            projectType === "core" ? "core-badge" :
+            projectType === "external" ? "external-badge" :
+            "internal-badge"
+          ));
+
         const title = safeString(item.title || "");
         const description = safeString(item.description || "");
         const imageUrl = safeString(item.image_url || item.image || "");
@@ -741,8 +787,8 @@
         const createdByRole = safeString(item.created_by_role || "");
         const createdAt = item.created_at || "";
         const comments = safeArray(item.comments);
-        const likeCount = Number(item.like_count || 0);
-        const dislikeCount = Number(item.dislike_count || 0);
+        const likeCount = safeNumber(item.like_count, 0);
+        const dislikeCount = safeNumber(item.dislike_count, 0);
         const userVote = safeString(item.user_vote || "");
         const isExpanded = !!transparencyState.expandedDescriptions[id];
         const commentsOpen = !!transparencyState.openComments[id];
@@ -767,7 +813,7 @@
                 </div>
               </div>
 
-              <div class="timeline-type ${escapeHtml(item.type_badge_class || "internal-badge")}">
+              <div class="timeline-type ${escapeHtml(badgeClass)}">
                 ${escapeHtml(projectTypeLabel)}
               </div>
             </div>
@@ -866,13 +912,22 @@
        LOAD FEED
     ========================================= */
     async function loadTransparencyFeed(forceMessage = false){
-      if(transparencyState.loading) return;
+      const requestId = ++transparencyState.lastRequestId;
+
+      if(transparencyState.loading && !forceMessage){
+        return;
+      }
+
       transparencyState.loading = true;
 
       try{
         if(forceMessage){
           transparencyEls.feed.className = "loading";
           transparencyEls.feed.innerHTML = "Loading project updates...";
+        }
+
+        if(!ensureSupabaseReady()){
+          throw new Error("Supabase client is not ready. Check js/supabase-core.js");
         }
 
         if(typeof fetchTransparencyFeed !== "function"){
@@ -889,6 +944,10 @@
           limit: 100,
           viewerEmail: viewer.email
         });
+
+        if(requestId !== transparencyState.lastRequestId){
+          return;
+        }
 
         transparencyState.lastFeed = sortFeed(feed, filters.sort);
         renderFeed(transparencyState.lastFeed);
@@ -952,7 +1011,7 @@
 
         if(typeof postTransparencyComment === "function"){
           await postTransparencyComment(updateId, commentText, viewer);
-        }else{
+        }else if(typeof addProjectUpdateComment === "function"){
           await addProjectUpdateComment({
             updateId,
             commentText,
@@ -960,6 +1019,8 @@
             commenterName: viewer.name,
             commenterRole: viewer.role
           });
+        }else{
+          throw new Error("Comment engine is missing.");
         }
 
         input.value = "";
@@ -992,7 +1053,7 @@
 
         if(typeof toggleTransparencyReaction === "function"){
           await toggleTransparencyReaction(updateId, voteType, viewer);
-        }else{
+        }else if(typeof toggleProjectUpdateReaction === "function"){
           await toggleProjectUpdateReaction({
             updateId,
             reactorEmail: viewer.email,
@@ -1000,6 +1061,8 @@
             reactorRole: viewer.role,
             voteType
           });
+        }else{
+          throw new Error("Reaction engine is missing.");
         }
 
         await loadTransparencyFeed(false);
@@ -1103,4 +1166,4 @@
     });
   </script>
 </body>
-  </html>
+          </html>
