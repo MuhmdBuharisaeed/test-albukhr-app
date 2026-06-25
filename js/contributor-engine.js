@@ -1,6 +1,6 @@
 /* =========================================================
    ALBUKHR CONTRIBUTOR ENGINE
-   FINAL SUPABASE VERSION
+   PATCH-ADMIN-COMPAT FINAL
    ---------------------------------------------------------
    PURPOSE
    - Contributor invite generation
@@ -11,13 +11,11 @@
    - Admin unlock telegram / internal / project builder
    - Invite session handling
    ---------------------------------------------------------
-   REQUIRED BACKEND OBJECTS
-   Tables / views / functions expected from SQL layer:
+   EXPECTED SQL / SUPABASE OBJECTS
    - albukhr_contributors
    - albukhr_contributor_invites
    - albukhr_invites
    - albukhr_invite_sessions
-   - albukhr_contributor_access_view (or equivalent view)
    - albukhr_get_contributor_internal_access(email)
    - albukhr_submit_contributor_application(...)
    - albukhr_generate_contributor_invite(...)
@@ -46,7 +44,6 @@
   const ENGINE_NAME = "ALBUKHR Contributor Engine";
   const DEFAULT_INVITE_LIFETIME_HOURS = 48;
 
-  /* session keys kept only for UI continuity */
   const SESSION_KEYS = {
     contributorEmail: "albukhr_current_email",
     contributorName: "albukhr_current_username",
@@ -57,7 +54,6 @@
     internalToken: "albukhr_internal_token"
   };
 
-  /* storage bucket candidates for contributor photos */
   const CONTRIBUTOR_PHOTO_BUCKET_CANDIDATES = [
     "albukhr-contributor-photos",
     "contributor-photos",
@@ -235,6 +231,43 @@
     };
   }
 
+  function resolveActorMeta(input = {}, mode = "admin"){
+    const base = mode === "admin"
+      ? getAdminMeta()
+      : getContributorSessionMeta();
+
+    const email =
+      normalizeEmail(
+        input.email ||
+        input.actorEmail ||
+        input.approvedBy ||
+        input.rejectedBy ||
+        input.grantedBy ||
+        input.createdByEmail ||
+        base.email ||
+        ""
+      );
+
+    const name =
+      safeString(
+        input.name ||
+        input.actorName ||
+        input.createdByName ||
+        base.name ||
+        (mode === "admin" ? "ALBUKHR Admin" : "ALBUKHR User")
+      ).trim();
+
+    const role =
+      safeString(
+        input.role ||
+        input.actorRole ||
+        base.role ||
+        (mode === "admin" ? "admin" : "contributor")
+      ).trim();
+
+    return { email, name, role };
+  }
+
   /* =========================================================
      PHOTO STORAGE
   ========================================================= */
@@ -325,7 +358,8 @@
       approved_by_name: raw.approved_by_name || "",
       approved_by_email: raw.approved_by_email || "",
       rejected_by_name: raw.rejected_by_name || "",
-      rejected_by_email: raw.rejected_by_email || ""
+      rejected_by_email: raw.rejected_by_email || "",
+      rejection_reason: raw.rejection_reason || ""
     };
   }
 
@@ -399,6 +433,26 @@
     return data ? normalizeContributorRecord(data) : null;
   }
 
+  async function findContributorByIdDirect(contributorId){
+    const supabase = getSupabaseClient();
+    const cleanId = safeString(contributorId).trim();
+
+    if(!cleanId) return null;
+
+    const { data, error } = await supabase
+      .from("albukhr_contributors")
+      .select("*")
+      .eq("id", cleanId)
+      .limit(1)
+      .maybeSingle();
+
+    if(error){
+      throw new Error(error.message || "Failed to load contributor by id");
+    }
+
+    return data ? normalizeContributorRecord(data) : null;
+  }
+
   async function listContributorsDirect(limit = 300){
     const supabase = getSupabaseClient();
 
@@ -413,6 +467,77 @@
     }
 
     return safeArray(data).map(normalizeContributorRecord);
+  }
+
+  /* =========================================================
+     IDENTIFIER RESOLVER
+     Accepts:
+     - "email@example.com"
+     - "uuid"
+     - { contributorId, email, id }
+  ========================================================= */
+  async function resolveContributorIdentifier(input){
+    if(!input){
+      throw new Error("Contributor identifier is required");
+    }
+
+    /* string: email or id */
+    if(typeof input === "string"){
+      const raw = safeString(input).trim();
+
+      if(!raw){
+        throw new Error("Contributor identifier is empty");
+      }
+
+      if(raw.includes("@")){
+        const byEmail = await getContributorByEmail(raw);
+        if(!byEmail){
+          throw new Error("Contributor not found");
+        }
+        return byEmail;
+      }
+
+      const byId = await findContributorByIdDirect(raw);
+      if(!byId){
+        throw new Error("Contributor not found");
+      }
+      return byId;
+    }
+
+    /* object */
+    const contributorId =
+      safeString(
+        input.contributorId ||
+        input.id ||
+        input.recordId ||
+        ""
+      ).trim();
+
+    const email =
+      normalizeEmail(
+        input.email ||
+        input.contributorEmail ||
+        input.userEmail ||
+        ""
+      );
+
+    if(email){
+      const byEmail = await getContributorByEmail(email);
+      if(!byEmail){
+        throw new Error("Contributor not found");
+      }
+      return byEmail;
+    }
+
+    if(contributorId){
+      const byId = await findContributorByIdDirect(contributorId);
+      if(!byId){
+        throw new Error("Contributor not found");
+      }
+      return byId;
+    }
+
+    throw new Error("Unable to resolve contributor identifier");
   }
 
   /* =========================================================
@@ -446,13 +571,11 @@
       console.warn("albukhr_validate_invite_token RPC unavailable, falling back to direct query:", err);
     }
 
-    /* fallback direct read */
     const supabase = getSupabaseClient();
 
     let invite = null;
     let inviteError = null;
 
-    /* first try albukhr_invites */
     {
       const { data, error } = await supabase
         .from("albukhr_invites")
@@ -468,7 +591,6 @@
       }
     }
 
-    /* fallback contributor invite table */
     if(!invite){
       const { data, error } = await supabase
         .from("albukhr_contributor_invites")
@@ -563,7 +685,6 @@
     setInviteSession(session);
     localStorage.setItem(SESSION_KEYS.inviteToken, invite.token);
 
-    /* optional server-side session record */
     try{
       await callRpc("albukhr_mark_invite_session", {
         p_token: invite.token
@@ -598,7 +719,6 @@
     const creatorName = safeString(createdByName || admin.name).trim() || "ALBUKHR Admin";
     const inviteUrl = buildContributorInviteLink(token);
 
-    /* preferred path: RPC */
     try{
       const data = await callRpc("albukhr_generate_contributor_invite", {
         p_token: token,
@@ -618,17 +738,16 @@
         ok: true,
         invite,
         invite_url: invite.invite_url || inviteUrl,
-        token: invite.token || token
+        token: invite.token || token,
+        expires_at: invite.expires_at || null
       };
     }catch(err){
       console.warn("albukhr_generate_contributor_invite RPC unavailable, falling back to direct insert:", err);
     }
 
-    /* fallback direct insert */
     const supabase = getSupabaseClient();
     const expiresAt = new Date(Date.now() + safeNumber(expiresInHours, 48) * 60 * 60 * 1000).toISOString();
 
-    /* try main invite table first */
     let inserted = null;
     let lastError = null;
 
@@ -655,7 +774,6 @@
       }
     }
 
-    /* fallback contributor invite table */
     if(!inserted){
       const { data, error } = await supabase
         .from("albukhr_contributor_invites")
@@ -688,146 +806,8 @@
       ok: true,
       invite,
       invite_url: invite.invite_url || inviteUrl,
-      token: invite.token || token
-    };
-  }
-
-  /* =========================================================
-     CONTRIBUTOR SUBMIT
-  ========================================================= */
-  async function submitContributorApplication(payload = {}){
-    const {
-      fullName,
-      phone,
-      email,
-      address,
-      country,
-      skills,
-      experience,
-      contribution,
-      photoFile = null,
-      inviteToken = null
-    } = payload;
-
-    const normalizedEmail = normalizeEmail(email);
-
-    if(!fullName || !safeString(fullName).trim()){
-      throw new Error("Full name is required");
-    }
-    if(!normalizedEmail){
-      throw new Error("Email is required");
-    }
-    if(!phone || !safeString(phone).trim()){
-      throw new Error("Phone number is required");
-    }
-    if(!address || !safeString(address).trim()){
-      throw new Error("Address is required");
-    }
-    if(!skills || !safeString(skills).trim()){
-      throw new Error("Skills are required");
-    }
-    if(!contribution || !safeString(contribution).trim()){
-      throw new Error("Expected contribution is required");
-    }
-
-    const activeInviteToken =
-      safeString(inviteToken || getInviteSession()?.token || localStorage.getItem(SESSION_KEYS.inviteToken) || "").trim();
-
-    if(!activeInviteToken){
-      throw new Error("Valid invite token is required before contributor submission");
-    }
-
-    const inviteCheck = await validateInviteToken(activeInviteToken);
-    if(!inviteCheck.valid){
-      throw new Error("Invite is invalid, expired, or already used");
-    }
-
-    /* photo upload */
-    let photo_url = null;
-    let photo_path = null;
-
-    if(photoFile){
-      const uploaded = await uploadContributorPhoto(photoFile, normalizedEmail);
-      photo_url = uploaded.photo_url || null;
-      photo_path = uploaded.photo_path || null;
-    }
-
-    /* preferred RPC path */
-    let rpcResult = null;
-    try{
-      rpcResult = await callRpc("albukhr_submit_contributor_application", {
-        p_full_name: safeString(fullName).trim(),
-        p_phone: normalizePhone(phone),
-        p_email: normalizedEmail,
-        p_address: safeString(address).trim(),
-        p_country: trimOrNull(country),
-        p_skills: safeString(skills).trim(),
-        p_experience: trimOrNull(experience),
-        p_contribution: safeString(contribution).trim(),
-        p_photo_url: photo_url,
-        p_photo_path: photo_path,
-        p_invite_token: activeInviteToken
-      });
-    }catch(err){
-      console.warn("albukhr_submit_contributor_application RPC unavailable, falling back to direct insert:", err);
-    }
-
-    let contributor = null;
-
-    if(rpcResult){
-      contributor = normalizeContributorRecord(
-        rpcResult.contributor || rpcResult.record || rpcResult
-      );
-    }else{
-      const supabase = getSupabaseClient();
-
-      const { data, error } = await supabase
-        .from("albukhr_contributors")
-        .insert({
-          full_name: safeString(fullName).trim(),
-          phone: normalizePhone(phone),
-          email: normalizedEmail,
-          address: safeString(address).trim(),
-          country: trimOrNull(country),
-          skills: safeString(skills).trim(),
-          experience: trimOrNull(experience),
-          contribution: safeString(contribution).trim(),
-          photo_url,
-          photo_path,
-          status: "pending",
-          telegram_unlocked: false,
-          internal_unlocked: false,
-          project_creation_unlocked: false
-        })
-        .select()
-        .single();
-
-      if(error){
-        throw new Error(error.message || "Failed to submit contributor application");
-      }
-
-      contributor = normalizeContributorRecord(data);
-
-      /* mark invite used if possible */
-      try{
-        await markInviteUsed(activeInviteToken, normalizedEmail);
-      }catch(err){
-        console.warn("markInviteUsed warning:", err);
-      }
-    }
-
-    setContributorSessionMeta({
-      email: normalizedEmail,
-      name: contributor.full_name || fullName,
-      role: "contributor"
-    });
-
-    clearInviteSession();
-    localStorage.removeItem(SESSION_KEYS.inviteToken);
-
-    return {
-      ok: true,
-      contributor
+      token: invite.token || token,
+      expires_at: invite.expires_at || expiresAt
     };
   }
 
@@ -894,13 +874,148 @@
   }
 
   /* =========================================================
+     CONTRIBUTOR SUBMIT
+  ========================================================= */
+  async function submitContributorApplication(payload = {}){
+    const {
+      fullName,
+      phone,
+      email,
+      address,
+      country,
+      skills,
+      experience,
+      contribution,
+      photoFile = null,
+      inviteToken = null
+    } = payload;
+
+    const normalizedEmail = normalizeEmail(email);
+
+    if(!fullName || !safeString(fullName).trim()){
+      throw new Error("Full name is required");
+    }
+    if(!normalizedEmail){
+      throw new Error("Email is required");
+    }
+    if(!phone || !safeString(phone).trim()){
+      throw new Error("Phone number is required");
+    }
+    if(!address || !safeString(address).trim()){
+      throw new Error("Address is required");
+    }
+    if(!skills || !safeString(skills).trim()){
+      throw new Error("Skills are required");
+    }
+    if(!contribution || !safeString(contribution).trim()){
+      throw new Error("Expected contribution is required");
+    }
+
+    const activeInviteToken =
+      safeString(inviteToken || getInviteSession()?.token || localStorage.getItem(SESSION_KEYS.inviteToken) || "").trim();
+
+    if(!activeInviteToken){
+      throw new Error("Valid invite token is required before contributor submission");
+    }
+
+    const inviteCheck = await validateInviteToken(activeInviteToken);
+    if(!inviteCheck.valid){
+      throw new Error("Invite is invalid, expired, or already used");
+    }
+
+    let photo_url = null;
+    let photo_path = null;
+
+    if(photoFile){
+      const uploaded = await uploadContributorPhoto(photoFile, normalizedEmail);
+      photo_url = uploaded.photo_url || null;
+      photo_path = uploaded.photo_path || null;
+    }
+
+    let rpcResult = null;
+    try{
+      rpcResult = await callRpc("albukhr_submit_contributor_application", {
+        p_full_name: safeString(fullName).trim(),
+        p_phone: normalizePhone(phone),
+        p_email: normalizedEmail,
+        p_address: safeString(address).trim(),
+        p_country: trimOrNull(country),
+        p_skills: safeString(skills).trim(),
+        p_experience: trimOrNull(experience),
+        p_contribution: safeString(contribution).trim(),
+        p_photo_url: photo_url,
+        p_photo_path: photo_path,
+        p_invite_token: activeInviteToken
+      });
+    }catch(err){
+      console.warn("albukhr_submit_contributor_application RPC unavailable, falling back to direct insert:", err);
+    }
+
+    let contributor = null;
+
+    if(rpcResult){
+      contributor = normalizeContributorRecord(
+        rpcResult.contributor || rpcResult.record || rpcResult
+      );
+    }else{
+      const supabase = getSupabaseClient();
+
+      const { data, error } = await supabase
+        .from("albukhr_contributors")
+        .insert({
+          full_name: safeString(fullName).trim(),
+          phone: normalizePhone(phone),
+          email: normalizedEmail,
+          address: safeString(address).trim(),
+          country: trimOrNull(country),
+          skills: safeString(skills).trim(),
+          experience: trimOrNull(experience),
+          contribution: safeString(contribution).trim(),
+          photo_url,
+          photo_path,
+          status: "pending",
+          telegram_unlocked: false,
+          internal_unlocked: false,
+          project_creation_unlocked: false
+        })
+        .select()
+        .single();
+
+      if(error){
+        throw new Error(error.message || "Failed to submit contributor application");
+      }
+
+      contributor = normalizeContributorRecord(data);
+
+      try{
+        await markInviteUsed(activeInviteToken, normalizedEmail);
+      }catch(err){
+        console.warn("markInviteUsed warning:", err);
+      }
+    }
+
+    setContributorSessionMeta({
+      email: normalizedEmail,
+      name: contributor.full_name || fullName,
+      role: "contributor"
+    });
+
+    clearInviteSession();
+    localStorage.removeItem(SESSION_KEYS.inviteToken);
+
+    return {
+      ok: true,
+      contributor
+    };
+  }
+
+  /* =========================================================
      GET CONTRIBUTOR BY EMAIL
   ========================================================= */
   async function getContributorByEmail(email){
     const normalizedEmail = normalizeEmail(email);
     if(!normalizedEmail) return null;
 
-    /* preferred RPC */
     try{
       const data = await callRpc("albukhr_admin_get_contributor_by_email", {
         p_email: normalizedEmail
@@ -939,7 +1054,6 @@
       };
     }
 
-    /* preferred RPC */
     try{
       const data = await callRpc("albukhr_get_contributor_internal_access", {
         p_email: normalizedEmail
@@ -950,7 +1064,6 @@
       console.warn("albukhr_get_contributor_internal_access RPC unavailable, using direct contributor read:", err);
     }
 
-    /* fallback: direct contributor table */
     const contributor = await findContributorByEmailDirect(normalizedEmail);
 
     if(!contributor){
@@ -996,7 +1109,6 @@
     status = "",
     limit = 300
   } = {}){
-    /* preferred RPC */
     try{
       const data = await callRpc("albukhr_admin_list_contributors", {
         p_status: trimOrNull(status),
@@ -1025,23 +1137,50 @@
   }
 
   /* =========================================================
-     ADMIN APPROVE / REJECT
+     DIRECT PATCH HELPER
   ========================================================= */
-  async function adminApproveContributor(email, adminMeta = {}){
+  async function patchContributorByEmail(email, patch = {}){
     const normalizedEmail = normalizeEmail(email);
     if(!normalizedEmail){
       throw new Error("Contributor email is required");
     }
 
-    const actor = {
-      ...getAdminMeta(),
-      ...adminMeta
-    };
+    const supabase = getSupabaseClient();
 
-    /* preferred RPC */
+    const { data, error } = await supabase
+      .from("albukhr_contributors")
+      .update({
+        ...patch,
+        updated_at: nowIso()
+      })
+      .ilike("email", normalizedEmail)
+      .select()
+      .single();
+
+    if(error){
+      throw new Error(error.message || "Failed to update contributor");
+    }
+
+    return normalizeContributorRecord(data);
+  }
+
+  /* =========================================================
+     ADMIN APPROVE / REJECT
+     Supports:
+     - adminApproveContributor("email@x.com")
+     - adminApproveContributor("uuid")
+     - adminApproveContributor({ contributorId, email, approvedBy, actorEmail... })
+  ========================================================= */
+  async function adminApproveContributor(input, adminMeta = {}){
+    const contributor = await resolveContributorIdentifier(input);
+    const actor = resolveActorMeta(
+      typeof input === "object" ? { ...input, ...adminMeta } : adminMeta,
+      "admin"
+    );
+
     try{
       const data = await callRpc("albukhr_admin_approve_contributor", {
-        p_email: normalizedEmail,
+        p_email: contributor.email,
         p_approved_by_email: normalizeEmail(actor.email),
         p_approved_by_name: safeString(actor.name).trim(),
         p_approved_by_role: safeString(actor.role).trim()
@@ -1055,51 +1194,45 @@
       console.warn("albukhr_admin_approve_contributor RPC unavailable, using direct update:", err);
     }
 
-    const supabase = getSupabaseClient();
-
-    const { data, error } = await supabase
-      .from("albukhr_contributors")
-      .update({
-        status: "approved",
-        approved_at: nowIso(),
-        rejected_at: null,
-        approved_by_email: normalizeEmail(actor.email),
-        approved_by_name: safeString(actor.name).trim(),
-        updated_at: nowIso()
-      })
-      .ilike("email", normalizedEmail)
-      .select()
-      .single();
-
-    if(error){
-      throw new Error(error.message || "Failed to approve contributor");
-    }
+    const updated = await patchContributorByEmail(contributor.email, {
+      status: "approved",
+      approved_at: nowIso(),
+      rejected_at: null,
+      approved_by_email: normalizeEmail(actor.email),
+      approved_by_name: safeString(actor.name).trim(),
+      rejection_reason: null
+    });
 
     return {
       ok: true,
-      contributor: normalizeContributorRecord(data)
+      contributor: updated
     };
   }
 
-  async function adminRejectContributor(email, adminMeta = {}, reason = ""){
-    const normalizedEmail = normalizeEmail(email);
-    if(!normalizedEmail){
-      throw new Error("Contributor email is required");
-    }
+  async function adminRejectContributor(input, adminMeta = {}, reason = ""){
+    const contributor = await resolveContributorIdentifier(input);
 
-    const actor = {
-      ...getAdminMeta(),
-      ...adminMeta
-    };
+    const mergedInput =
+      typeof input === "object"
+        ? { ...input, ...adminMeta }
+        : { ...adminMeta, reason };
 
-    /* preferred RPC */
+    const actor = resolveActorMeta(mergedInput, "admin");
+    const finalReason =
+      trimOrNull(
+        (typeof input === "object" ? input.reason : "") ||
+        reason ||
+        mergedInput.reason ||
+        ""
+      );
+
     try{
       const data = await callRpc("albukhr_admin_reject_contributor", {
-        p_email: normalizedEmail,
+        p_email: contributor.email,
         p_rejected_by_email: normalizeEmail(actor.email),
         p_rejected_by_name: safeString(actor.name).trim(),
         p_rejected_by_role: safeString(actor.role).trim(),
-        p_reason: trimOrNull(reason)
+        p_reason: finalReason
       });
 
       return {
@@ -1110,82 +1243,43 @@
       console.warn("albukhr_admin_reject_contributor RPC unavailable, using direct update:", err);
     }
 
-    const supabase = getSupabaseClient();
-
-    const { data, error } = await supabase
-      .from("albukhr_contributors")
-      .update({
-        status: "rejected",
-        rejected_at: nowIso(),
-        approved_at: null,
-        rejected_by_email: normalizeEmail(actor.email),
-        rejected_by_name: safeString(actor.name).trim(),
-        rejection_reason: trimOrNull(reason),
-        updated_at: nowIso()
-      })
-      .ilike("email", normalizedEmail)
-      .select()
-      .single();
-
-    if(error){
-      throw new Error(error.message || "Failed to reject contributor");
-    }
+    const updated = await patchContributorByEmail(contributor.email, {
+      status: "rejected",
+      rejected_at: nowIso(),
+      approved_at: null,
+      rejected_by_email: normalizeEmail(actor.email),
+      rejected_by_name: safeString(actor.name).trim(),
+      rejection_reason: finalReason
+    });
 
     return {
       ok: true,
-      contributor: normalizeContributorRecord(data)
+      contributor: updated
     };
   }
 
   /* =========================================================
      ADMIN UNLOCK HELPERS
   ========================================================= */
-  async function adminUnlockTelegram(email, adminMeta = {}){
-    return await unlockContributorAccessFlag({
-      email,
-      rpcName: "albukhr_admin_unlock_contributor_telegram",
-      directPatch: { telegram_unlocked: true },
-      adminMeta
-    });
-  }
-
-  async function adminUnlockInternal(email, adminMeta = {}){
-    return await unlockContributorAccessFlag({
-      email,
-      rpcName: "albukhr_admin_unlock_contributor_internal",
-      directPatch: { internal_unlocked: true },
-      adminMeta
-    });
-  }
-
-  async function adminUnlockProjectBuilder(email, adminMeta = {}){
-    return await unlockContributorAccessFlag({
-      email,
-      rpcName: "albukhr_admin_unlock_contributor_project_builder",
-      directPatch: { project_creation_unlocked: true },
-      adminMeta
-    });
-  }
-
   async function unlockContributorAccessFlag({
+    input,
     email,
     rpcName,
     directPatch = {},
     adminMeta = {}
   }){
-    const normalizedEmail = normalizeEmail(email);
-    if(!normalizedEmail){
-      throw new Error("Contributor email is required");
-    }
+    const contributor = input
+      ? await resolveContributorIdentifier(input)
+      : await resolveContributorIdentifier(email);
 
-    const actor = {
-      ...getAdminMeta(),
-      ...adminMeta
-    };
+    const actor = resolveActorMeta(
+      typeof input === "object" ? { ...input, ...adminMeta } : adminMeta,
+      "admin"
+    );
 
     try{
       const data = await callRpc(rpcName, {
-        p_email: normalizedEmail,
+        p_email: contributor.email,
         p_actor_email: normalizeEmail(actor.email),
         p_actor_name: safeString(actor.name).trim(),
         p_actor_role: safeString(actor.role).trim()
@@ -1199,26 +1293,81 @@
       console.warn(`${rpcName} RPC unavailable, using direct update:`, err);
     }
 
-    const supabase = getSupabaseClient();
-
-    const { data, error } = await supabase
-      .from("albukhr_contributors")
-      .update({
-        ...directPatch,
-        updated_at: nowIso()
-      })
-      .ilike("email", normalizedEmail)
-      .select()
-      .single();
-
-    if(error){
-      throw new Error(error.message || "Failed to unlock contributor access");
-    }
+    const updated = await patchContributorByEmail(contributor.email, directPatch);
 
     return {
       ok: true,
-      contributor: normalizeContributorRecord(data)
+      contributor: updated
     };
+  }
+
+  async function adminUnlockTelegram(input, adminMeta = {}){
+    return await unlockContributorAccessFlag({
+      input,
+      rpcName: "albukhr_admin_unlock_contributor_telegram",
+      directPatch: { telegram_unlocked: true },
+      adminMeta
+    });
+  }
+
+  async function adminUnlockInternal(input, adminMeta = {}){
+    return await unlockContributorAccessFlag({
+      input,
+      rpcName: "albukhr_admin_unlock_contributor_internal",
+      directPatch: { internal_unlocked: true },
+      adminMeta
+    });
+  }
+
+  async function adminUnlockProjectBuilder(input, adminMeta = {}){
+    return await unlockContributorAccessFlag({
+      input,
+      rpcName: "albukhr_admin_unlock_contributor_project_builder",
+      directPatch: { project_creation_unlocked: true },
+      adminMeta
+    });
+  }
+
+  /* =========================================================
+     NEW GENERIC UNLOCK COMPAT WRAPPER
+     Supports:
+     adminUnlockContributorAccess({
+       contributorId,
+       email,
+       accessType: "telegram" | "internal" | "project_builder",
+       grantedBy: "admin@mail.com"
+     })
+  ========================================================= */
+  async function adminUnlockContributorAccess(payload = {}){
+    const accessType = safeString(payload.accessType || payload.type || "").trim().toLowerCase();
+
+    if(!accessType){
+      throw new Error("accessType is required");
+    }
+
+    const actorMeta = {
+      email: payload.grantedBy || payload.actorEmail || "",
+      name: payload.actorName || "",
+      role: payload.actorRole || "admin"
+    };
+
+    if(accessType === "telegram"){
+      return await adminUnlockTelegram(payload, actorMeta);
+    }
+
+    if(accessType === "internal"){
+      return await adminUnlockInternal(payload, actorMeta);
+    }
+
+    if(
+      accessType === "project_builder" ||
+      accessType === "projectbuilder" ||
+      accessType === "project"
+    ){
+      return await adminUnlockProjectBuilder(payload, actorMeta);
+    }
+
+    throw new Error(`Unsupported contributor access type: ${accessType}`);
   }
 
   /* =========================================================
@@ -1297,7 +1446,7 @@
   }
 
   /* =========================================================
-     VIEWER META FOR TRANSPARENCY / COMMENTS / REACTIONS
+     VIEWER META
   ========================================================= */
   function getTransparencyViewerMeta(){
     const session = getContributorSessionMeta();
@@ -1329,14 +1478,15 @@
   /* =========================================================
      CONVENIENCE WRAPPERS FOR EXISTING PAGES
   ========================================================= */
-
-  /* Admin page helper: generate invite + HTML block */
   async function generateContributorInviteForAdminUI(){
     const result = await generateContributorInvite();
+
     return {
       ok: true,
       token: result.token,
       invite_url: result.invite_url,
+      expires_at: result.expires_at || null,
+      invite: result.invite || null,
       html: `
         <b>Secure Invite Link:</b><br>
         ${escapeHtml(result.invite_url)}
@@ -1348,7 +1498,6 @@
     };
   }
 
-  /* page-level contributor form collector helper */
   async function submitContributorFromForm(formMap = {}){
     const payload = {
       fullName: formMap.fullName?.value || "",
@@ -1370,7 +1519,7 @@
   }
 
   /* =========================================================
-     PUBLIC EXPORTS
+     EXPORTS
   ========================================================= */
   ContributorEngine.getSupabaseClient = getSupabaseClient;
 
@@ -1412,12 +1561,13 @@
   ContributorEngine.adminUnlockTelegram = adminUnlockTelegram;
   ContributorEngine.adminUnlockInternal = adminUnlockInternal;
   ContributorEngine.adminUnlockProjectBuilder = adminUnlockProjectBuilder;
+  ContributorEngine.adminUnlockContributorAccess = adminUnlockContributorAccess;
 
   ContributorEngine.prepareInternalRegistryAccess = prepareInternalRegistryAccess;
+  ContributorEngine.resolveContributorIdentifier = resolveContributorIdentifier;
 
   /* =========================================================
      LEGACY GLOBAL WRAPPERS
-     So existing pages can call simple function names directly
   ========================================================= */
   window.getTransparencyViewerMeta = getTransparencyViewerMeta;
 
@@ -1435,6 +1585,7 @@
   window.adminUnlockTelegram = adminUnlockTelegram;
   window.adminUnlockInternal = adminUnlockInternal;
   window.adminUnlockProjectBuilder = adminUnlockProjectBuilder;
+  window.adminUnlockContributorAccess = adminUnlockContributorAccess;
   window.prepareInternalRegistryAccess = prepareInternalRegistryAccess;
 
 })();
