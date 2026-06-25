@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR Admin – Internal Projects</title>
+
+<script src="admin-auth.js"></script>
+<script>
+/* =====================================
+   ALBUKHR ADMIN ACCESS GUARD
+===================================== */
+requireRole([
+  "super_admin",
+  "finance_admin",
+  "review_admin"
+]);
+
+const admin = getAdmin();
+
+if(!admin){
+  window.location.href = "admin-login.html";
+}
+</script>
+
+<style>
+:root{
+  --brand:#0f7a3d;
+  --brand-dark:#0b5f2f;
+  --bg:#f4f7f6;
+  --card:#ffffff;
+  --line:#e3ebe6;
+  --text:#1b1f1d;
+  --muted:#5f6b65;
+  --danger:#b02a37;
+  --danger-bg:#fff1f2;
+  --success-bg:#eef8f2;
+  --warn-bg:#fff7e5;
+  --warn:#8a6d00;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+.header{
+  padding:16px;
+  background:var(--brand);
+  color:#fff;
+  font-weight:800;
+  font-size:18px;
+}
+
+.subbar{
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  padding:14px 16px;
+}
+
+.subbar-inner{
+  max-width:1280px;
+  margin:0 auto;
+}
+
+.subbar-title{
+  font-size:18px;
+  font-weight:800;
+  color:var(--brand);
+  margin-bottom:4px;
+}
+
+.subbar-text{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.6;
+}
+
+.section{
+  max-width:1280px;
+  margin:0 auto;
+  padding:16px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.03);
+}
+
+.top-grid{
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:14px;
+}
+
+@media (max-width: 980px){
+  .top-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.panel-title{
+  font-size:16px;
+  font-weight:800;
+  margin:0 0 8px;
+  color:var(--brand);
+}
+
+.muted{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.7;
+}
+
+.action-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:12px;
+}
+
+button{
+  border:none;
+  border-radius:10px;
+  padding:10px 14px;
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+}
+
+button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.primary-btn{
+  background:var(--brand);
+  color:#fff;
+}
+
+.secondary-btn{
+  background:#24312b;
+  color:#fff;
+}
+
+.light-btn{
+  background:#eef3f0;
+  color:#22312b;
+}
+
+.approve{
+  background:var(--brand);
+  color:#fff;
+}
+
+.reject{
+  background:#eceff0;
+  color:#333;
+}
+
+.copy-btn{
+  background:#333;
+  color:#fff;
+  font-size:11px;
+}
+
+.notice{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  font-size:12px;
+  line-height:1.7;
+}
+
+.notice.info{
+  background:#f6fbf8;
+  border-left:4px solid var(--brand);
+}
+
+.notice.warn{
+  background:var(--warn-bg);
+  border-left:4px solid var(--warn);
+}
+
+.notice.error{
+  background:var(--danger-bg);
+  border-left:4px solid var(--danger);
+  color:#8f2430;
+}
+
+.notice.success{
+  background:var(--success-bg);
+  border-left:4px solid var(--brand);
+  color:#155b31;
+}
+
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+}
+
+.input, select, textarea{
+  width:100%;
+  border:1px solid #d7dfdb;
+  background:#fff;
+  border-radius:10px;
+  padding:11px 12px;
+  font-size:14px;
+  outline:none;
+  font-family:inherit;
+}
+
+.input:focus, select:focus, textarea:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(15,122,61,.08);
+}
+
+textarea{
+  min-height:110px;
+  resize:vertical;
+}
+
+.search-wrap{
+  flex:1;
+  min-width:220px;
+}
+
+.filter-wrap{
+  width:220px;
+  max-width:100%;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+
+@media (max-width:900px){
+  .stats-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media (max-width:560px){
+  .stats-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.stat-box{
+  background:#f8fbf9;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+
+.stat-label{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+.stat-value{
+  margin-top:6px;
+  font-size:24px;
+  font-weight:900;
+  color:#18211d;
+}
+
+.empty{
+  text-align:center;
+  color:#777;
+  padding:30px 16px;
+  background:#fff;
+  border-radius:14px;
+}
+
+.list-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.list-head h3{
+  margin:0;
+  color:var(--brand);
+  font-size:18px;
+}
+
+.list-count{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.project-card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.03);
+}
+
+.project-top{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+
+.project-name{
+  font-size:20px;
+  font-weight:900;
+  color:#18211d;
+  margin:0;
+}
+
+.meta{
+  font-size:12px;
+  color:#555;
+  margin-top:6px;
+  line-height:1.8;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+}
+
+.badge.pending{
+  background:#fff4dc;
+  color:#8a6200;
+}
+
+.badge.approved{
+  background:#e8f6ee;
+  color:var(--brand);
+}
+
+.badge.rejected{
+  background:#fdeeee;
+  color:var(--danger);
+}
+
+.badge.other{
+  background:#eef3f0;
+  color:#22312b;
+}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:14px;
+}
+
+@media (max-width:980px){
+  .info-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.info-box{
+  background:#fafcfb;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+}
+
+.info-label{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+
+.info-value{
+  font-size:13px;
+  font-weight:800;
+  line-height:1.7;
+  word-break:break-word;
+}
+
+.block{
+  margin-top:14px;
+  background:#f6fbf8;
+  border-radius:12px;
+  padding:12px;
+  font-size:13px;
+  line-height:1.75;
+}
+
+.block b{
+  color:#1c2a23;
+}
+
+.actions{
+  margin-top:14px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.review-box{
+  margin-top:14px;
+  background:#fafcfb;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+
+.review-title{
+  font-size:14px;
+  font-weight:800;
+  color:#24312b;
+  margin-bottom:10px;
+}
+
+.small{
+  font-size:11px;
+}
+
+.hidden{
+  display:none !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">ALBUKHR • Admin Internal Projects Panel</div>
+
+<div class="subbar">
+  <div class="subbar-inner">
+    <div class="subbar-title">Internal Project Review</div>
+    <div class="subbar-text">
+      Review internal ALBUKHR projects submitted by approved contributors, inspect project structure and governance fields,
+      then approve or reject each submission from the internal registry pipeline.
+    </div>
+  </div>
+</div>
+
+<section class="section">
+
+  <!-- TOP AREA -->
+  <div class="top-grid">
+    <!-- CONTROL PANEL -->
+    <div class="card">
+      <h3 class="panel-title">🗂 Internal Project Review Control</h3>
+      <div class="muted">
+        This panel loads internal projects from Supabase through the internal registry engine.
+        Projects can be filtered by review status and searched by project name, contributor email,
+        creator name, Albukhr ID, category, stage, or confidentiality level.
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" id="refreshProjectsBtn">
+          Refresh Internal Projects
+        </button>
+      </div>
+
+      <div id="pageNotice" class="notice info hidden"></div>
+    </div>
+
+    <!-- STATS / FILTER PANEL -->
+    <div class="card">
+      <h3 class="panel-title">📊 Internal Project Overview</h3>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input
+            type="text"
+            class="input"
+            id="searchInput"
+            placeholder="Search by project, creator, email, internal ID, category..."
+          >
+        </div>
+
+        <div class="filter-wrap">
+          <select id="statusFilter">
+            <option value="all">All statuses</option>
+            <option value="internal_pending">Pending only</option>
+            <option value="internal_approved">Approved only</option>
+            <option value="internal_rejected">Rejected only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="statPending">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value" id="statApproved">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-value" id="statRejected">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST AREA -->
+  <div class="list-head" style="margin-top:14px">
+    <h3>Internal Projects</h3>
+    <div class="list-count" id="listCount">0 records</div>
+  </div>
+
+  <section id="list"></section>
+</section>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<!-- ENGINES -->
+<script src="js/contributor-engine.js"></script>
+<script src="js/internal-registry-engine.js"></script>
+
+<script>
+/* =========================================================
+   ALBUKHR ADMIN INTERNAL PROJECTS
+   FINAL SUPABASE VERSION
+========================================================= */
+
+const adminInternalProjectState = {
+  projects: [],
+  filtered: [],
+  loading: false
+};
+
+const els = {
+  list: document.getElementById("list"),
+  refreshProjectsBtn: document.getElementById("refreshProjectsBtn"),
+  pageNotice: document.getElementById("pageNotice"),
+  searchInput: document.getElementById("searchInput"),
+  statusFilter: document.getElementById("statusFilter"),
+  statTotal: document.getElementById("statTotal"),
+  statPending: document.getElementById("statPending"),
+  statApproved: document.getElementById("statApproved"),
+  statRejected: document.getElementById("statRejected"),
+  listCount: document.getElementById("listCount")
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function safeText(v, fallback = "—"){
+  if(v === null || v === undefined || v === "") return fallback;
+  return String(v);
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function setBtnBusy(btn, busy, busyText = "Please wait..."){
+  if(!btn) return;
+  if(busy){
+    if(!btn.dataset.originalText){
+      btn.dataset.originalText = btn.textContent;
+    }
+    btn.disabled = true;
+    btn.textContent = busyText;
+  }else{
+    btn.disabled = false;
+    btn.textContent = btn.dataset.originalText || btn.textContent;
+  }
+}
+
+function showPageNotice(message, type = "info"){
+  els.pageNotice.className = "notice " + type;
+  els.pageNotice.textContent = message;
+  els.pageNotice.classList.remove("hidden");
+}
+
+function hidePageNotice(){
+  els.pageNotice.className = "notice info hidden";
+  els.pageNotice.textContent = "";
+}
+
+function copyText(text, successMessage = "Copied successfully"){
+  navigator.clipboard.writeText(text);
+  alert(successMessage);
+}
+
+function getInternalEngine(){
+  const engine = window.AlbukhrInternalRegistryEngine;
+  if(!engine){
+    throw new Error("AlbukhrInternalRegistryEngine not found. Load js/internal-registry-engine.js first.");
+  }
+  return engine;
+}
+
+function normalizeProjectStatus(status){
+  const s = String(status || "").trim().toLowerCase();
+
+  if(s === "internal_pending" || s === "pending") return "internal_pending";
+  if(s === "internal_approved" || s === "approved") return "internal_approved";
+  if(s === "internal_rejected" || s === "rejected") return "internal_rejected";
+
+  return s || "internal_pending";
+}
+
+function statusBadge(status){
+  const s = normalizeProjectStatus(status);
+
+  if(s === "internal_approved"){
+    return `<span class="badge approved">✓ Approved</span>`;
+  }
+
+  if(s === "internal_rejected"){
+    return `<span class="badge rejected">✗ Rejected</span>`;
+  }
+
+  if(s === "internal_pending"){
+    return `<span class="badge pending">⏳ Pending</span>`;
+  }
+
+  return `<span class="badge other">${escapeHtml(s)}</span>`;
+}
+
+function projectName(p){
+  return p.project_name || p.projectName || "Unnamed Internal Project";
+}
+
+function projectCreator(p){
+  return p.creator_name || p.creatorName || "—";
+}
+
+function projectEmail(p){
+  return (p.email || "").toLowerCase();
+}
+
+function projectInternalId(p){
+  return p.internal_id || p.albukhr_id || p.albukhrId || "—";
+}
+
+function projectCategory(p){
+  return p.category || "—";
+}
+
+function projectStage(p){
+  return p.stage || "—";
+}
+
+function projectSummary(p){
+  return p.summary || "—";
+}
+
+function projectProblem(p){
+  return p.problem || "—";
+}
+
+function projectSolution(p){
+  return p.solution || "—";
+}
+
+function projectImpact(p){
+  return p.impact || "—";
+}
+
+function projectFunding(p){
+  return p.funding || "—";
+}
+
+function projectRisk(p){
+  return p.risk || "—";
+}
+
+function projectConfidentiality(p){
+  return p.confidentiality || "—";
+}
+
+function projectRole(p){
+  return p.role || "—";
+}
+
+function projectRoi(p){
+  if(p.roi === null || p.roi === undefined || p.roi === "") return "—";
+  return String(p.roi);
+}
+
+function projectLiquidity(p){
+  if(p.initial_liquidity === null || p.initial_liquidity === undefined || p.initial_liquidity === ""){
+    return "—";
+  }
+  return String(p.initial_liquidity);
+}
+
+function projectStatus(p){
+  return normalizeProjectStatus(p.status);
+}
+
+function projectCreatedAt(p){
+  return p.created_at ? new Date(p.created_at).toLocaleString() : "—";
+}
+
+function projectApprovedAt(p){
+  return p.approved_at ? new Date(p.approved_at).toLocaleString() : "—";
+}
+
+function projectRejectedAt(p){
+  return p.rejected_at ? new Date(p.rejected_at).toLocaleString() : "—";
+}
+
+function projectReviewedBy(p){
+  return p.reviewed_by_name || p.approved_by_name || p.rejected_by_name || "—";
+}
+
+function projectReviewReason(p){
+  return p.rejection_reason || p.review_note || p.review_reason || "";
+}
+
+/* =========================================================
+   FALLBACK DIRECT SUPABASE HELPERS
+========================================================= */
+async function directListInternalProjects(){
+  const contributorEngine = window.AlbukhrContributorEngine;
+  if(!contributorEngine || typeof contributorEngine.getSupabaseClient !== "function"){
+    throw new Error("AlbukhrContributorEngine.getSupabaseClient() not found.");
+  }
+
+  const supabase = contributorEngine.getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .select("*")
+    .order("created_at", { ascending:false });
+
+  if(error){
+    throw new Error(error.message || "Failed to load internal projects.");
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+async function directApproveInternalProject(projectId){
+  const contributorEngine = window.AlbukhrContributorEngine;
+  if(!contributorEngine || typeof contributorEngine.getSupabaseClient !== "function"){
+    throw new Error("AlbukhrContributorEngine.getSupabaseClient() not found.");
+  }
+
+  const supabase = contributorEngine.getSupabaseClient();
+
+  const actorEmail =
+    admin?.email ||
+    localStorage.getItem("albukhr_current_email") ||
+    localStorage.getItem("currentUserEmail") ||
+    "";
+
+  const actorName =
+    admin?.username ||
+    localStorage.getItem("albukhr_current_username") ||
+    localStorage.getItem("currentUserName") ||
+    "ALBUKHR Admin";
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_approved",
+      approved_at: new Date().toISOString(),
+      rejected_at: null,
+      approved_by_email: actorEmail,
+      approved_by_name: actorName,
+      reviewed_by_email: actorEmail,
+      reviewed_by_name: actorName,
+      rejection_reason: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(error.message || "Failed to approve internal project.");
+  }
+
+  return data;
+}
+
+async function directRejectInternalProject(projectId, reason = ""){
+  const contributorEngine = window.AlbukhrContributorEngine;
+  if(!contributorEngine || typeof contributorEngine.getSupabaseClient !== "function"){
+    throw new Error("AlbukhrContributorEngine.getSupabaseClient() not found.");
+  }
+
+  const supabase = contributorEngine.getSupabaseClient();
+
+  const actorEmail =
+    admin?.email ||
+    localStorage.getItem("albukhr_current_email") ||
+    localStorage.getItem("currentUserEmail") ||
+    "";
+
+  const actorName =
+    admin?.username ||
+    localStorage.getItem("albukhr_current_username") ||
+    localStorage.getItem("currentUserName") ||
+    "ALBUKHR Admin";
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_rejected",
+      rejected_at: new Date().toISOString(),
+      approved_at: null,
+      rejected_by_email: actorEmail,
+      rejected_by_name: actorName,
+      reviewed_by_email: actorEmail,
+      reviewed_by_name: actorName,
+      rejection_reason: reason || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(error.message || "Failed to reject internal project.");
+  }
+
+  return data;
+}
+
+/* =========================================================
+   STATS + FILTER
+========================================================= */
+function updateStats(list){
+  const total = list.length;
+  const pending = list.filter(p => projectStatus(p) === "internal_pending").length;
+  const approved = list.filter(p => projectStatus(p) === "internal_approved").length;
+  const rejected = list.filter(p => projectStatus(p) === "internal_rejected").length;
+
+  els.statTotal.textContent = total;
+  els.statPending.textContent = pending;
+  els.statApproved.textContent = approved;
+  els.statRejected.textContent = rejected;
+}
+
+function applyFilters(){
+  const q = (els.searchInput.value || "").trim().toLowerCase();
+  const status = els.statusFilter.value || "all";
+
+  let list = [...adminInternalProjectState.projects];
+
+  if(status !== "all"){
+    list = list.filter(p => projectStatus(p) === status);
+  }
+
+  if(q){
+    list = list.filter(p => {
+      const hay = [
+        projectName(p),
+        projectCreator(p),
+        projectEmail(p),
+        projectInternalId(p),
+        projectCategory(p),
+        projectStage(p),
+        projectRole(p),
+        projectSummary(p),
+        projectProblem(p),
+        projectSolution(p),
+        projectImpact(p),
+        projectFunding(p),
+        projectRisk(p),
+        projectConfidentiality(p),
+        projectReviewReason(p)
+      ].join(" ").toLowerCase();
+
+      return hay.includes(q);
+    });
+  }
+
+  adminInternalProjectState.filtered = list;
+  renderList();
+}
+
+/* =========================================================
+   FETCH PROJECTS
+========================================================= */
+async function fetchInternalProjects(){
+  try{
+    adminInternalProjectState.loading = true;
+    hidePageNotice();
+    setBtnBusy(els.refreshProjectsBtn, true, "Refreshing...");
+    els.list.innerHTML = `<div class="empty">Loading internal projects...</div>`;
+
+    const engine = getInternalEngine();
+    let list = [];
+
+    if(typeof engine.adminListInternalProjects === "function"){
+      list = await engine.adminListInternalProjects();
+    }else{
+      list = await directListInternalProjects();
+    }
+
+    adminInternalProjectState.projects = Array.isArray(list) ? list : [];
+
+    updateStats(adminInternalProjectState.projects);
+    applyFilters();
+
+  }catch(err){
+    console.error("Internal project fetch error:", err);
+    els.list.innerHTML = `<div class="empty">Failed to load internal projects.</div>`;
+    alert(err?.message || "Unable to load internal project list.");
+  }finally{
+    adminInternalProjectState.loading = false;
+    setBtnBusy(els.refreshProjectsBtn, false);
+  }
+}
+
+/* =========================================================
+   REVIEW ACTIONS
+========================================================= */
+async function approveInternalProject(projectId){
+  if(!confirm("Approve this internal project?")) return;
+
+  try{
+    const engine = getInternalEngine();
+
+    if(typeof engine.adminApproveInternalProject === "function"){
+      await engine.adminApproveInternalProject({
+        projectId,
+        approvedBy: admin?.email || admin?.username || "admin"
+      });
+    }else{
+      await directApproveInternalProject(projectId);
+    }
+
+    await fetchInternalProjects();
+    alert("Internal project approved successfully.");
+
+  }catch(err){
+    console.error("Approve internal project error:", err);
+    alert(err?.message || "Unable to approve internal project.");
+  }
+}
+
+async function rejectInternalProject(projectId){
+  const reason = prompt("Optional rejection reason (you can leave this blank):", "") || "";
+
+  if(!confirm("Reject this internal project?")) return;
+
+  try{
+    const engine = getInternalEngine();
+
+    if(typeof engine.adminRejectInternalProject === "function"){
+      await engine.adminRejectInternalProject({
+        projectId,
+        reason,
+        rejectedBy: admin?.email || admin?.username || "admin"
+      });
+    }else{
+      await directRejectInternalProject(projectId, reason);
+    }
+
+    await fetchInternalProjects();
+    alert("Internal project rejected successfully.");
+
+  }catch(err){
+    console.error("Reject internal project error:", err);
+    alert(err?.message || "Unable to reject internal project.");
+  }
+}
+
+function copyInternalProjectId(id){
+  if(!id || id === "—") return;
+  copyText(id, "Albukhr Internal ID copied: " + id);
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function renderList(){
+  const list = adminInternalProjectState.filtered || [];
+  els.listCount.textContent = `${list.length} record${list.length === 1 ? "" : "s"}`;
+
+  if(!list.length){
+    els.list.innerHTML = `<div class="empty">No internal projects found for the current filter.</div>`;
+    return;
+  }
+
+  els.list.innerHTML = list.map(p => {
+    const status = projectStatus(p);
+    const internalId = projectInternalId(p);
+    const reviewReason = projectReviewReason(p);
+
+    const pendingActions = status === "internal_pending"
+      ? `
+        <button class="approve" onclick="approveInternalProject('${String(p.id).replace(/'/g, "\\'")}')">
+          Approve
+        </button>
+        <button class="reject" onclick="rejectInternalProject('${String(p.id).replace(/'/g, "\\'")}')">
+          Reject
+        </button>
+      `
+      : status === "internal_approved"
+        ? `<span class="badge approved">✓ Approved</span>`
+        : status === "internal_rejected"
+          ? `<span class="badge rejected">✗ Rejected</span>`
+          : "";
+
+    const reviewBox = (
+      status === "internal_approved" ||
+      status === "internal_rejected" ||
+      reviewReason
+    ) ? `
+      <div class="review-box">
+        <div class="review-title">Review Record</div>
+        <div class="meta">
+          <b>Status:</b> ${escapeHtml(status)}<br>
+          <b>Reviewed By:</b> ${escapeHtml(projectReviewedBy(p))}<br>
+          <b>Approved At:</b> ${escapeHtml(projectApprovedAt(p))}<br>
+          <b>Rejected At:</b> ${escapeHtml(projectRejectedAt(p))}
+          ${reviewReason ? `<br><b>Reason:</b> ${escapeHtml(reviewReason)}` : ""}
+        </div>
+      </div>
+    ` : "";
+
+    return `
+      <div class="project-card">
+        <div class="project-top">
+          <div>
+            <h3 class="project-name">${escapeHtml(projectName(p))}</h3>
+
+            <div class="meta">
+              📧 ${escapeHtml(projectEmail(p) || "—")}<br>
+              👤 ${escapeHtml(projectCreator(p))}<br>
+              🆔 ${escapeHtml(internalId)} ${
+                internalId && internalId !== "—"
+                  ? `<button class="copy-btn small" onclick="copyInternalProjectId('${String(internalId).replace(/'/g, "\\'")}')" style="margin-left:6px">Copy</button>`
+                  : ""
+              }<br>
+              🕒 Submitted: ${escapeHtml(projectCreatedAt(p))}
+            </div>
+          </div>
+
+          <div>
+            ${statusBadge(status)}
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-label">Category</div>
+            <div class="info-value">${escapeHtml(projectCategory(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Stage</div>
+            <div class="info-value">${escapeHtml(projectStage(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Role</div>
+            <div class="info-value">${escapeHtml(projectRole(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Funding</div>
+            <div class="info-value">${escapeHtml(projectFunding(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Risk</div>
+            <div class="info-value">${escapeHtml(projectRisk(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Confidentiality</div>
+            <div class="info-value">${escapeHtml(projectConfidentiality(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Expected ROI (%)</div>
+            <div class="info-value">${escapeHtml(projectRoi(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Initial Liquidity (Pi)</div>
+            <div class="info-value">${escapeHtml(projectLiquidity(p))}</div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Contributor Email</div>
+            <div class="info-value">${escapeHtml(projectEmail(p) || "—")}</div>
+          </div>
+        </div>
+
+        <div class="block">
+          <b>Project Summary</b><br>
+          ${escapeHtml(projectSummary(p))}
+        </div>
+
+        <div class="block">
+          <b>Problem Statement</b><br>
+          ${escapeHtml(projectProblem(p))}
+        </div>
+
+        <div class="block">
+          <b>Solution / Innovation</b><br>
+          ${escapeHtml(projectSolution(p))}
+        </div>
+
+        <div class="block">
+          <b>Expected Impact</b><br>
+          ${escapeHtml(projectImpact(p))}
+        </div>
+
+        ${reviewBox}
+
+        <div class="actions">
+          ${pendingActions}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* =========================================================
+   BIND EVENTS
+========================================================= */
+function bindEvents(){
+  els.refreshProjectsBtn.addEventListener("click", fetchInternalProjects);
+  els.searchInput.addEventListener("input", applyFilters);
+  els.statusFilter.addEventListener("change", applyFilters);
+}
+
+/* expose globals for inline buttons */
+window.copyInternalProjectId = copyInternalProjectId;
+window.approveInternalProject = approveInternalProject;
+window.rejectInternalProject = rejectInternalProject;
+
+/* =========================================================
+   INIT
+========================================================= */
+document.addEventListener("DOMContentLoaded", async function(){
+  try{
+    bindEvents();
+
+    if(!window.AlbukhrContributorEngine){
+      throw new Error("js/contributor-engine.js failed to load.");
+    }
+
+    if(!window.AlbukhrInternalRegistryEngine){
+      throw new Error("js/internal-registry-engine.js failed to load.");
+    }
+
+    await fetchInternalProjects();
+
+  }catch(err){
+    console.error("Admin internal projects init error:", err);
+    alert(err?.message || "Failed to initialize internal project admin panel.");
+  }
+});
+</script>
+
+</body>
+  </html>
