@@ -730,4 +730,432 @@
   window.submitInternalProject = submitInternalProject;
   window.submitInternalProjectFromForm = submitInternalProjectFromForm;
 
+/* =========================================================
+   ADMIN REVIEW PATCH FINAL
+   ADD THIS INSIDE internal-registry-engine.js
+   BEFORE THE FINAL: })();
+========================================================= */
+
+/* =========================================================
+   INTERNAL ADMIN HELPERS
+========================================================= */
+function getInternalAdminMeta(){
+  return {
+    email:
+      (
+        localStorage.getItem("albukhr_current_email") ||
+        localStorage.getItem("currentUserEmail") ||
+        ""
+      ).trim().toLowerCase(),
+    name:
+      (
+        localStorage.getItem("albukhr_current_username") ||
+        localStorage.getItem("currentUserName") ||
+        "ALBUKHR Admin"
+      ).trim(),
+    role:
+      (
+        localStorage.getItem("albukhr_current_role") ||
+        "admin"
+      ).trim()
+  };
+}
+
+function normalizeInternalProjectRecord(raw = {}){
+  return {
+    id: raw.id || null,
+
+    project_name: raw.project_name || raw.projectName || "",
+    category: raw.category || "",
+    stage: raw.stage || "",
+
+    creator_name: raw.creator_name || raw.creatorName || "",
+    role: raw.role || "",
+    internal_id: raw.internal_id || raw.albukhr_id || raw.albukhrId || "",
+    email: (raw.email || "").trim().toLowerCase(),
+    phone: raw.phone || "",
+
+    summary: raw.summary || "",
+    problem: raw.problem || "",
+    solution: raw.solution || "",
+    impact: raw.impact || "",
+
+    funding: raw.funding || "",
+    risk: raw.risk || "",
+    confidentiality: raw.confidentiality || "",
+
+    roi: raw.roi ?? null,
+    initial_liquidity:
+      raw.initial_liquidity ??
+      raw.liquidity ??
+      null,
+
+    status: raw.status || "internal_pending",
+
+    approved_at: raw.approved_at || null,
+    rejected_at: raw.rejected_at || null,
+    created_at: raw.created_at || null,
+    updated_at: raw.updated_at || null,
+
+    approved_by_email: raw.approved_by_email || "",
+    approved_by_name: raw.approved_by_name || "",
+    rejected_by_email: raw.rejected_by_email || "",
+    rejected_by_name: raw.rejected_by_name || "",
+    reviewed_by_email: raw.reviewed_by_email || "",
+    reviewed_by_name: raw.reviewed_by_name || "",
+    rejection_reason:
+      raw.rejection_reason ||
+      raw.review_reason ||
+      raw.review_note ||
+      ""
+  };
+}
+
+/* =========================================================
+   ADMIN LIST INTERNAL PROJECTS
+   Preferred RPC:
+   albukhr_admin_list_internal_projects(
+     p_status text default null,
+     p_limit integer default 500
+   )
+========================================================= */
+async function adminListInternalProjects({
+  status = "",
+  limit = 500
+} = {}){
+  const supabase = getSupabaseClient();
+
+  /* preferred RPC */
+  try{
+    const { data, error } = await supabase.rpc(
+      "albukhr_admin_list_internal_projects",
+      {
+        p_status: status ? String(status).trim() : null,
+        p_limit: Number(limit) || 500
+      }
+    );
+
+    if(error){
+      throw error;
+    }
+
+    const rows = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.projects)
+        ? data.projects
+        : [];
+
+    return rows.map(normalizeInternalProjectRecord);
+
+  }catch(err){
+    console.warn(
+      "albukhr_admin_list_internal_projects RPC unavailable, using direct read:",
+      err
+    );
+  }
+
+  /* fallback direct table read */
+  let query = supabase
+    .from("albukhr_internal_projects")
+    .select("*")
+    .order("created_at", { ascending:false })
+    .limit(Number(limit) || 500);
+
+  if(status){
+    query = query.eq("status", String(status).trim());
+  }
+
+  const { data, error } = await query;
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to load internal projects."
+    );
+  }
+
+  return (Array.isArray(data) ? data : [])
+    .map(normalizeInternalProjectRecord);
+}
+
+/* =========================================================
+   ADMIN APPROVE INTERNAL PROJECT
+   Supports BOTH signatures:
+   1) adminApproveInternalProject("project-id")
+   2) adminApproveInternalProject({
+        projectId,
+        approvedBy,
+        approvedByName,
+        approvedByRole
+      })
+
+   Preferred RPC:
+   albukhr_admin_approve_internal_project(
+     p_project_id uuid/text,
+     p_approved_by_email text,
+     p_approved_by_name text,
+     p_approved_by_role text
+   )
+========================================================= */
+async function adminApproveInternalProject(input = {}){
+  const supabase = getSupabaseClient();
+
+  let projectId = "";
+  let approvedByEmail = "";
+  let approvedByName = "";
+  let approvedByRole = "";
+
+  if(typeof input === "string"){
+    projectId = input.trim();
+  }else{
+    projectId = String(
+      input.projectId ||
+      input.id ||
+      ""
+    ).trim();
+
+    approvedByEmail = String(
+      input.approvedBy ||
+      input.approvedByEmail ||
+      ""
+    ).trim().toLowerCase();
+
+    approvedByName = String(
+      input.approvedByName || ""
+    ).trim();
+
+    approvedByRole = String(
+      input.approvedByRole || ""
+    ).trim();
+  }
+
+  if(!projectId){
+    throw new Error("Internal project ID is required for approval.");
+  }
+
+  const actor = getInternalAdminMeta();
+
+  const actorEmail = approvedByEmail || actor.email || "";
+  const actorName = approvedByName || actor.name || "ALBUKHR Admin";
+  const actorRole = approvedByRole || actor.role || "admin";
+
+  /* preferred RPC */
+  try{
+    const { data, error } = await supabase.rpc(
+      "albukhr_admin_approve_internal_project",
+      {
+        p_project_id: projectId,
+        p_approved_by_email: actorEmail,
+        p_approved_by_name: actorName,
+        p_approved_by_role: actorRole
+      }
+    );
+
+    if(error){
+      throw error;
+    }
+
+    return {
+      ok:true,
+      project: normalizeInternalProjectRecord(
+        data?.project || data || {}
+      )
+    };
+
+  }catch(err){
+    console.warn(
+      "albukhr_admin_approve_internal_project RPC unavailable, using direct update:",
+      err
+    );
+  }
+
+  /* fallback direct update */
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_approved",
+      approved_at: now,
+      rejected_at: null,
+
+      approved_by_email: actorEmail || null,
+      approved_by_name: actorName || null,
+
+      reviewed_by_email: actorEmail || null,
+      reviewed_by_name: actorName || null,
+
+      rejected_by_email: null,
+      rejected_by_name: null,
+      rejection_reason: null,
+
+      updated_at: now
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to approve internal project."
+    );
+  }
+
+  return {
+    ok:true,
+    project: normalizeInternalProjectRecord(data)
+  };
+}
+
+/* =========================================================
+   ADMIN REJECT INTERNAL PROJECT
+   Supports BOTH signatures:
+   1) adminRejectInternalProject("project-id")
+   2) adminRejectInternalProject({
+        projectId,
+        reason,
+        rejectedBy,
+        rejectedByName,
+        rejectedByRole
+      })
+
+   Preferred RPC:
+   albukhr_admin_reject_internal_project(
+     p_project_id uuid/text,
+     p_rejected_by_email text,
+     p_rejected_by_name text,
+     p_rejected_by_role text,
+     p_reason text
+   )
+========================================================= */
+async function adminRejectInternalProject(input = {}){
+  const supabase = getSupabaseClient();
+
+  let projectId = "";
+  let reason = "";
+  let rejectedByEmail = "";
+  let rejectedByName = "";
+  let rejectedByRole = "";
+
+  if(typeof input === "string"){
+    projectId = input.trim();
+  }else{
+    projectId = String(
+      input.projectId ||
+      input.id ||
+      ""
+    ).trim();
+
+    reason = String(
+      input.reason || ""
+    ).trim();
+
+    rejectedByEmail = String(
+      input.rejectedBy ||
+      input.rejectedByEmail ||
+      ""
+    ).trim().toLowerCase();
+
+    rejectedByName = String(
+      input.rejectedByName || ""
+    ).trim();
+
+    rejectedByRole = String(
+      input.rejectedByRole || ""
+    ).trim();
+  }
+
+  if(!projectId){
+    throw new Error("Internal project ID is required for rejection.");
+  }
+
+  const actor = getInternalAdminMeta();
+
+  const actorEmail = rejectedByEmail || actor.email || "";
+  const actorName = rejectedByName || actor.name || "ALBUKHR Admin";
+  const actorRole = rejectedByRole || actor.role || "admin";
+
+  /* preferred RPC */
+  try{
+    const { data, error } = await supabase.rpc(
+      "albukhr_admin_reject_internal_project",
+      {
+        p_project_id: projectId,
+        p_rejected_by_email: actorEmail,
+        p_rejected_by_name: actorName,
+        p_rejected_by_role: actorRole,
+        p_reason: reason || null
+      }
+    );
+
+    if(error){
+      throw error;
+    }
+
+    return {
+      ok:true,
+      project: normalizeInternalProjectRecord(
+        data?.project || data || {}
+      )
+    };
+
+  }catch(err){
+    console.warn(
+      "albukhr_admin_reject_internal_project RPC unavailable, using direct update:",
+      err
+    );
+  }
+
+  /* fallback direct update */
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_rejected",
+      rejected_at: now,
+      approved_at: null,
+
+      rejected_by_email: actorEmail || null,
+      rejected_by_name: actorName || null,
+
+      reviewed_by_email: actorEmail || null,
+      reviewed_by_name: actorName || null,
+
+      rejection_reason: reason || null,
+
+      approved_by_email: null,
+      approved_by_name: null,
+
+      updated_at: now
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to reject internal project."
+    );
+  }
+
+  return {
+    ok:true,
+    project: normalizeInternalProjectRecord(data)
+  };
+}
+
+/* =========================================================
+   EXPORT TO ENGINE NAMESPACE
+========================================================= */
+InternalRegistryEngine.adminListInternalProjects = adminListInternalProjects;
+InternalRegistryEngine.adminApproveInternalProject = adminApproveInternalProject;
+InternalRegistryEngine.adminRejectInternalProject = adminRejectInternalProject;
+
+/* =========================================================
+   OPTIONAL GLOBAL WRAPPERS
+========================================================= */
+window.adminListInternalProjects = adminListInternalProjects;
+window.adminApproveInternalProject = adminApproveInternalProject;
+window.adminRejectInternalProject = adminRejectInternalProject;
+
 })();
