@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALBUKHR – Internal Project Registry</title>
+
+<style>
+:root{
+  --brand:#0f7a3d;
+  --brand-dark:#0b5f2f;
+  --bg:#f4f7f6;
+  --card:#ffffff;
+  --line:#e3ebe6;
+  --text:#1b1f1d;
+  --muted:#5f6b65;
+  --danger:#b02a37;
+  --danger-bg:#fff1f2;
+  --success-bg:#eef8f2;
+  --warn-bg:#fff7e5;
+  --warn:#8a6d00;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+.header{
+  background:var(--brand);
+  min-height:64px;
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+}
+
+.main-logo{
+  height:54px;
+  max-width:100%;
+  object-fit:contain;
+}
+
+.internal-banner{
+  background:#f4fff8;
+  padding:14px 16px;
+  font-weight:800;
+  font-size:15px;
+  color:var(--brand);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid #e6f2ec;
+}
+
+.internal-badge{
+  background:var(--brand);
+  color:#fff;
+  font-size:10px;
+  padding:5px 10px;
+  border-radius:999px;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+
+.page-wrap{
+  max-width:980px;
+  margin:0 auto;
+  padding:16px;
+}
+
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.03);
+}
+
+.card h4{
+  margin:0 0 10px;
+  color:var(--brand);
+  font-size:18px;
+}
+
+.card-text{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.7;
+  margin:0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+@media (max-width:760px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+}
+
+.full-span{
+  grid-column:1 / -1;
+}
+
+.label{
+  font-size:13px;
+  font-weight:800;
+  margin:0 0 8px;
+  display:block;
+  color:#24312b;
+}
+
+.input, .select{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #d7dfdb;
+  font-size:14px;
+  outline:none;
+  background:#fff;
+}
+
+.input:focus, .select:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(15,122,61,.08);
+}
+
+textarea.input{
+  min-height:100px;
+  resize:vertical;
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:var(--brand);
+  color:#fff;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.notice{
+  font-size:12px;
+  line-height:1.8;
+  border-radius:14px;
+  padding:14px;
+  margin-top:14px;
+}
+
+.notice.info{
+  background:#f6fbf8;
+  border-left:4px solid var(--brand);
+}
+
+.notice.warn{
+  background:var(--warn-bg);
+  border-left:4px solid var(--warn);
+  color:#7a6200;
+}
+
+.notice.error{
+  background:var(--danger-bg);
+  border-left:4px solid var(--danger);
+  color:#8f2430;
+}
+
+.notice.success{
+  background:var(--success-bg);
+  border-left:4px solid var(--brand);
+  color:#155b31;
+}
+
+.identity-box{
+  background:#f6fbf8;
+  border-left:4px solid var(--brand);
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:14px;
+  line-height:1.8;
+  font-size:13px;
+}
+
+.identity-name{
+  font-size:16px;
+  font-weight:900;
+  color:#1a241f;
+}
+
+.meta{
+  font-size:12px;
+  color:#5f6b65;
+  line-height:1.8;
+  margin-top:6px;
+}
+
+.check-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.check-row input{
+  margin-top:4px;
+  transform:scale(1.05);
+}
+
+.hidden{
+  display:none !important;
+}
+
+.lock-box{
+  background:#fff7e5;
+  border-left:4px solid #8a6d00;
+  padding:14px;
+  border-radius:14px;
+  font-size:13px;
+  line-height:1.8;
+  margin-bottom:14px;
+}
+
+.block-screen{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:24px;
+  box-sizing:border-box;
+  text-align:center;
+  background:#f4f7f6;
+}
+
+.block-card{
+  max-width:460px;
+  background:#fff;
+  padding:26px;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.block-icon{
+  font-size:48px;
+  margin-bottom:10px;
+}
+
+.block-title{
+  margin:0 0 12px;
+  color:#b02a37;
+  font-size:24px;
+}
+
+.block-text{
+  margin:0;
+  color:#55625c;
+  line-height:1.8;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <img src="file_000000007c187246b1c01967ee086dc4.png" class="main-logo" alt="Albukhr Logo">
+</header>
+
+<div class="internal-banner">
+  🏢 Internal Project Registry
+  <span class="internal-badge">Core Access</span>
+</div>
+
+<div class="page-wrap" id="pageWrap">
+
+  <!-- CONTRIBUTOR IDENTITY -->
+  <div class="identity-box hidden" id="identityBox">
+    <div class="identity-name" id="identityName">Contributor</div>
+    <div class="meta" id="identityMeta"></div>
+  </div>
+
+  <!-- LOCK STATE -->
+  <div class="lock-box hidden" id="lockBox"></div>
+
+  <div class="card">
+    <h4>Internal Project Submission</h4>
+    <p class="card-text">
+      This page is reserved for approved ALBUKHR contributors with internal registry access.
+      Submit a project only if it is an official internal ALBUKHR project and you are authorized to register it.
+    </p>
+  </div>
+
+  <div id="formArea">
+
+    <!-- PROJECT IDENTITY -->
+    <div class="card">
+      <h4>📌 Project Identity</h4>
+
+      <div class="grid">
+        <div class="full-span">
+          <label class="label" for="projectName">Project Name</label>
+          <input class="input" id="projectName">
+        </div>
+
+        <div>
+          <label class="label" for="category">Project Category</label>
+          <select class="select" id="category">
+            <option value="">Select category</option>
+            <option>Agro & Livestock</option>
+            <option>Manufacturing</option>
+            <option>FinTech</option>
+            <option>Urban Transport</option>
+            <option>Education</option>
+            <option>Web3 / Digital</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="stage">Project Stage</label>
+          <select class="select" id="stage">
+            <option value="">Select stage</option>
+            <option>Concept</option>
+            <option>Pilot</option>
+            <option>Active</option>
+            <option>Scaling</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- OWNERSHIP -->
+    <div class="card">
+      <h4>👤 Ownership & Control</h4>
+
+      <div class="grid">
+        <div>
+          <label class="label" for="creatorName">Creator Full Name</label>
+          <input class="input" id="creatorName">
+        </div>
+
+        <div>
+          <label class="label" for="role">Role</label>
+          <select class="select" id="role">
+            <option value="">Select role</option>
+            <option>Founder</option>
+            <option>Co-Founder</option>
+            <option>Project Lead</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="internalId">Albukhr Internal ID</label>
+          <input class="input" id="internalId" placeholder="ALB-INT-XXXX">
+        </div>
+
+        <div>
+          <label class="label" for="email">Contact Email</label>
+          <input class="input" id="email">
+        </div>
+      </div>
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="card">
+      <h4>🧠 Project Description</h4>
+
+      <div class="grid">
+        <div class="full-span">
+          <label class="label" for="summary">Project Summary</label>
+          <textarea class="input" id="summary"></textarea>
+        </div>
+
+        <div class="full-span">
+          <label class="label" for="problem">Problem Statement</label>
+          <textarea class="input" id="problem"></textarea>
+        </div>
+
+        <div class="full-span">
+          <label class="label" for="solution">Solution / Innovation</label>
+          <textarea class="input" id="solution"></textarea>
+        </div>
+
+        <div class="full-span">
+          <label class="label" for="impact">Expected Impact</label>
+          <textarea class="input" id="impact"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERNAL CONTROLS -->
+    <div class="card">
+      <h4>🔒 Internal Controls</h4>
+
+      <div class="grid">
+        <div>
+          <label class="label" for="funding">Funding Stage</label>
+          <select class="select" id="funding">
+            <option value="">Select</option>
+            <option>Self-Funded</option>
+            <option>Internal Funding</option>
+            <option>External Partnership</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="risk">Risk Level</label>
+          <select class="select" id="risk">
+            <option value="">Select</option>
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+
+        <div class="full-span">
+          <label class="label" for="confidentiality">Confidentiality Level</label>
+          <select class="select" id="confidentiality">
+            <option value="">Select</option>
+            <option>Internal Only</option>
+            <option>Restricted</option>
+            <option>Executive Only</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVESTMENT SETUP -->
+    <div class="card">
+      <h4>📈 Investment Setup (Optional)</h4>
+
+      <div class="grid">
+        <div>
+          <label class="label" for="roi">Expected ROI (%)</label>
+          <input class="input" id="roi" type="number" step="0.01" placeholder="e.g. 12">
+        </div>
+
+        <div>
+          <label class="label" for="liquidity">Initial Liquidity (Pi)</label>
+          <input class="input" id="liquidity" type="number" step="0.01" placeholder="e.g. 500">
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIRMATION -->
+    <div class="card">
+      <div style="margin-bottom:12px;font-size:12px">
+        📜
+        <a href="internal-policy.html" target="_blank" style="color:#0f7a3d;font-weight:800;text-decoration:none;">
+          Read Internal Project Policy
+        </a>
+      </div>
+
+      <div class="check-row">
+        <input type="checkbox" id="agree">
+        <label for="agree">
+          I confirm this is an <b>internal ALBUKHR project</b> and I agree to the Internal Governance Policy.
+        </label>
+      </div>
+    </div>
+
+    <button class="btn" id="submitBtn">Register Internal Project</button>
+
+    <div class="notice hidden" id="submitNotice"></div>
+  </div>
+</div>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<!-- ENGINES -->
+<script src="js/contributor-engine.js"></script>
+<script src="js/internal-registry-engine.js"></script>
+
+<script>
+/* =========================================================
+   ALBUKHR INTERNAL REGISTRY FORM
+   CLEAN FINAL SUPABASE VERSION
+========================================================= */
+
+(function(){
+  "use strict";
+
+  const els = {
+    pageWrap: document.getElementById("pageWrap"),
+    identityBox: document.getElementById("identityBox"),
+    identityName: document.getElementById("identityName"),
+    identityMeta: document.getElementById("identityMeta"),
+    lockBox: document.getElementById("lockBox"),
+    submitBtn: document.getElementById("submitBtn"),
+    submitNotice: document.getElementById("submitNotice"),
+
+    projectName: document.getElementById("projectName"),
+    category: document.getElementById("category"),
+    stage: document.getElementById("stage"),
+
+    creatorName: document.getElementById("creatorName"),
+    role: document.getElementById("role"),
+    internalId: document.getElementById("internalId"),
+    email: document.getElementById("email"),
+
+    summary: document.getElementById("summary"),
+    problem: document.getElementById("problem"),
+    solution: document.getElementById("solution"),
+    impact: document.getElementById("impact"),
+
+    funding: document.getElementById("funding"),
+    risk: document.getElementById("risk"),
+    confidentiality: document.getElementById("confidentiality"),
+
+    roi: document.getElementById("roi"),
+    liquidity: document.getElementById("liquidity"),
+    agree: document.getElementById("agree")
+  };
+
+  let PAGE_STATE = {
+    contributor: null,
+    locked: false,
+    lockReason: "",
+    lockMeta: null
+  };
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+  function safeText(v, fallback = ""){
+    if(v === null || v === undefined) return fallback;
+    return String(v);
+  }
+
+  function escapeHtml(value){
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function showNotice(message, type = "info"){
+    els.submitNotice.className = "notice " + type;
+    els.submitNotice.innerHTML = message;
+    els.submitNotice.classList.remove("hidden");
+  }
+
+  function hideNotice(){
+    els.submitNotice.className = "notice hidden";
+    els.submitNotice.innerHTML = "";
+  }
+
+  function setSubmitBusy(busy, text = "Submitting..."){
+    if(busy){
+      if(!els.submitBtn.dataset.originalText){
+        els.submitBtn.dataset.originalText = els.submitBtn.textContent;
+      }
+      els.submitBtn.disabled = true;
+      els.submitBtn.textContent = text;
+    }else{
+      els.submitBtn.disabled = PAGE_STATE.locked;
+      els.submitBtn.textContent =
+        els.submitBtn.dataset.originalText || "Register Internal Project";
+    }
+  }
+
+  function setFormDisabled(disabled){
+    const fields = [
+      els.projectName, els.category, els.stage,
+      els.creatorName, els.role, els.internalId, els.email,
+      els.summary, els.problem, els.solution, els.impact,
+      els.funding, els.risk, els.confidentiality,
+      els.roi, els.liquidity, els.agree
+    ];
+
+    fields.forEach(el => {
+      if(el) el.disabled = !!disabled;
+    });
+
+    els.submitBtn.disabled = !!disabled;
+  }
+
+  function renderBlockedScreen(title = "Access Denied", message = "You do not have permission to open this page."){
+    document.body.innerHTML = `
+      <div class="block-screen">
+        <div class="block-card">
+          <div class="block-icon">⛔</div>
+          <h2 class="block-title">${escapeHtml(title)}</h2>
+          <p class="block-text">${escapeHtml(message)}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderContributorIdentity(contributor){
+    if(!contributor) return;
+
+    els.identityName.textContent = contributor.full_name || "ALBUKHR Contributor";
+
+    const parts = [
+      contributor.email ? `📧 ${contributor.email}` : "",
+      contributor.albukhr_id ? `🆔 ${contributor.albukhr_id}` : "",
+      contributor.country ? `🌍 ${contributor.country}` : ""
+    ].filter(Boolean);
+
+    els.identityMeta.innerHTML = parts.map(escapeHtml).join("<br>");
+    els.identityBox.classList.remove("hidden");
+  }
+
+  function fillContributorFields(contributor){
+    if(!contributor) return;
+
+    if(!els.creatorName.value && contributor.full_name){
+      els.creatorName.value = contributor.full_name;
+    }
+
+    if(!els.internalId.value && contributor.albukhr_id){
+      els.internalId.value = contributor.albukhr_id;
+    }
+
+    if(!els.email.value && contributor.email){
+      els.email.value = contributor.email;
+    }
+  }
+
+  function showLock(message){
+    els.lockBox.innerHTML = message;
+    els.lockBox.classList.remove("hidden");
+  }
+
+  function hideLock(){
+    els.lockBox.innerHTML = "";
+    els.lockBox.classList.add("hidden");
+  }
+
+  function collectFormMap(){
+    return {
+      projectName: els.projectName,
+      category: els.category,
+      stage: els.stage,
+      creatorName: els.creatorName,
+      role: els.role,
+      internalId: els.internalId,
+      email: els.email,
+      summary: els.summary,
+      problem: els.problem,
+      solution: els.solution,
+      impact: els.impact,
+      funding: els.funding,
+      risk: els.risk,
+      confidentiality: els.confidentiality,
+      roi: els.roi,
+      liquidity: els.liquidity
+    };
+  }
+
+  function validateAgreement(){
+    if(!els.agree.checked){
+      throw new Error("You must confirm the Internal Governance Policy before submitting.");
+    }
+  }
+
+  function getInternalEngine(){
+    const engine = window.AlbukhrInternalRegistryEngine;
+    if(!engine){
+      throw new Error("AlbukhrInternalRegistryEngine not found. Load js/internal-registry-engine.js first.");
+    }
+    return engine;
+  }
+
+  /* =========================================================
+     LOCK UI
+  ========================================================= */
+  function applyLockState(lock){
+    if(!lock?.locked){
+      PAGE_STATE.locked = false;
+      PAGE_STATE.lockReason = "";
+      PAGE_STATE.lockMeta = null;
+      hideLock();
+      setFormDisabled(false);
+      return;
+    }
+
+    PAGE_STATE.locked = true;
+    PAGE_STATE.lockReason = lock.reason || "";
+    PAGE_STATE.lockMeta = lock || null;
+    setFormDisabled(true);
+
+    if(lock.reason === "internal_pending_exists"){
+      showLock(`
+        <b>⏳ Submission locked</b><br>
+        Your previous internal project is still under review. You cannot submit another internal project until the current review is completed.
+      `);
+      return;
+    }
+
+    if(lock.reason === "approval_cooldown_active"){
+      const unlockText = lock.unlock_at
+        ? new Date(lock.unlock_at).toLocaleString()
+        : "after 7 days";
+
+      showLock(`
+        <b>🔒 Submission temporarily locked</b><br>
+        Your previous internal project was approved recently. You can submit another internal project again after:
+        <b>${escapeHtml(unlockText)}</b>
+      `);
+      return;
+    }
+
+    showLock(`
+      <b>🔒 Submission locked</b><br>
+      ${escapeHtml(lock.message || "Internal project submission is temporarily unavailable.")}
+    `);
+  }
+
+  /* =========================================================
+     BOOTSTRAP
+  ========================================================= */
+  async function bootstrapPage(){
+    const internalEngine = getInternalEngine();
+
+    const boot = await internalEngine.bootstrapInternalRegistryPage();
+
+    if(!boot?.allowed){
+      const reason = safeText(boot?.reason);
+
+      if(reason === "missing_internal_session"){
+        renderBlockedScreen(
+          "Direct access not allowed",
+          "This internal registry page can only be opened through approved contributor access."
+        );
+        return false;
+      }
+
+      if(reason === "contributor_not_found"){
+        renderBlockedScreen(
+          "Contributor not found",
+          "No contributor profile was found for this internal registry session."
+        );
+        return false;
+      }
+
+      if(reason === "contributor_not_approved"){
+        renderBlockedScreen(
+          "Access denied",
+          "Only approved ALBUKHR contributors can access the internal project registry."
+        );
+        return false;
+      }
+
+      if(reason === "internal_access_locked"){
+        renderBlockedScreen(
+          "Internal access locked",
+          "Your contributor account has not been granted internal registry access yet."
+        );
+        return false;
+      }
+
+      renderBlockedScreen(
+        "Access denied",
+        "You do not have permission to open this page."
+      );
+      return false;
+    }
+
+    PAGE_STATE.contributor = boot.contributor || null;
+
+    if(PAGE_STATE.contributor){
+      renderContributorIdentity(PAGE_STATE.contributor);
+      fillContributorFields(PAGE_STATE.contributor);
+    }
+
+    applyLockState(boot.lock || null);
+    return true;
+  }
+
+  /* =========================================================
+     SUBMIT
+  ========================================================= */
+  async function handleSubmit(){
+    try{
+      hideNotice();
+
+      if(PAGE_STATE.locked){
+        throw new Error("Internal project submission is currently locked for this contributor.");
+      }
+
+      if(!PAGE_STATE.contributor?.email){
+        throw new Error("Contributor session not found.");
+      }
+
+      validateAgreement();
+      setSubmitBusy(true, "Submitting...");
+
+      const internalEngine = getInternalEngine();
+
+      const result = await internalEngine.submitInternalProjectFromForm(
+        collectFormMap()
+      );
+
+      if(!result?.ok){
+        throw new Error(result?.message || "Failed to submit internal project.");
+      }
+
+      showNotice(
+        "Internal project submitted successfully. Your project is now under review by ALBUKHR admin.",
+        "success"
+      );
+
+      /* refresh lock state after submit */
+      const refreshed = await internalEngine.bootstrapInternalRegistryPage();
+      applyLockState(refreshed.lock || null);
+
+    }catch(err){
+      console.error("Internal project submit error:", err);
+
+      const msg = safeText(err?.message || "Unable to submit internal project.");
+
+      if(msg.includes("under review") || msg.includes("Previous project under review")){
+        PAGE_STATE.locked = true;
+        setFormDisabled(true);
+        showLock(`
+          <b>⏳ Submission locked</b><br>
+          Your previous internal project is still under review. You cannot submit another internal project until the current review is completed.
+        `);
+        showNotice("Previous project under review.", "warn");
+        return;
+      }
+
+      if(msg.includes("7 days") || msg.includes("submit again after 7 days")){
+        PAGE_STATE.locked = true;
+        setFormDisabled(true);
+        showLock(`
+          <b>🔒 Submission temporarily locked</b><br>
+          Your previous internal project was approved recently. You must wait before submitting another internal project.
+        `);
+        showNotice("You can submit another internal project after the cooldown period.", "warn");
+        return;
+      }
+
+      showNotice(escapeHtml(msg), "error");
+    }finally{
+      setSubmitBusy(false);
+    }
+  }
+
+  /* =========================================================
+     INIT
+  ========================================================= */
+  async function init(){
+    try{
+      hideNotice();
+
+      const allowed = await bootstrapPage();
+      if(!allowed) return;
+
+      els.submitBtn.addEventListener("click", handleSubmit);
+
+    }catch(err){
+      console.error("Internal registry init error:", err);
+      renderBlockedScreen(
+        "Internal registry error",
+        err?.message || "Failed to initialize internal project registry."
+      );
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+
+})();
+</script>
+
+</body>
+  </html>
