@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albukhr Ecosystem – Contributor Onboarding</title>
+
+<style>
+body{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#f4f7f6;
+  margin:0;
+  color:#111;
+}
+
+.section{
+  padding:16px;
+  max-width:920px;
+  margin:0 auto;
+  box-sizing:border-box;
+}
+
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.04);
+}
+
+.label{
+  font-size:13px;
+  font-weight:700;
+  margin-top:12px;
+  color:#24312b;
+}
+
+.input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #d7dfdb;
+  font-size:14px;
+  box-sizing:border-box;
+  background:#fff;
+  outline:none;
+}
+
+.input:focus{
+  border-color:#0f7a3d;
+  box-shadow:0 0 0 3px rgba(15,122,61,0.08);
+}
+
+textarea.input{
+  min-height:90px;
+  resize:vertical;
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:#0f7a3d;
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+  margin-top:16px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.btn:hover{
+  filter:brightness(.97);
+}
+
+.btn.disabled,
+.btn:disabled{
+  opacity:.55;
+  pointer-events:none;
+}
+
+.notice{
+  font-size:12px;
+  line-height:1.7;
+  background:#f6fbf8;
+  border-left:4px solid #0f7a3d;
+  padding:12px;
+  margin-top:12px;
+  border-radius:10px;
+}
+
+.box{
+  background:#f6fbf8;
+  padding:14px;
+  border-radius:14px;
+  margin-top:14px;
+  font-size:13px;
+  border-left:4px solid #0f7a3d;
+  line-height:1.7;
+}
+
+.header{
+  background:#0f7a3d;
+  height:60px;
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+}
+
+.main-logo{
+  height:54px;
+  width:auto;
+}
+
+.top-banner{
+  background:#e9f9ef;
+  padding:14px 16px;
+  text-align:center;
+  color:#0f7a3d;
+  font-weight:800;
+  font-size:15px;
+  border-bottom:1px solid #d8eee1;
+}
+
+.sub-banner{
+  background:#fff;
+  border-bottom:1px solid #e8eeeb;
+}
+
+.sub-banner-inner{
+  max-width:920px;
+  margin:0 auto;
+  padding:14px 16px;
+  box-sizing:border-box;
+}
+
+.sub-banner-title{
+  color:#0f7a3d;
+  font-size:18px;
+  font-weight:800;
+  margin-bottom:6px;
+}
+
+.sub-banner-text{
+  font-size:13px;
+  line-height:1.7;
+  color:#5c6a63;
+}
+
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  margin-top:10px;
+}
+
+.status-pill.pending{
+  background:#fff4dc;
+  color:#8a6200;
+}
+
+.status-pill.approved{
+  background:#e8f6ee;
+  color:#0f7a3d;
+}
+
+.status-pill.rejected{
+  background:#fdeeee;
+  color:#b02a37;
+}
+
+.info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.kv{
+  background:#fff;
+  border:1px solid #e8eeeb;
+  border-radius:12px;
+  padding:12px;
+}
+
+.kv-label{
+  font-size:11px;
+  color:#6d7973;
+  font-weight:700;
+  margin-bottom:4px;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+.kv-value{
+  font-size:14px;
+  font-weight:700;
+  color:#18211d;
+  word-break:break-word;
+}
+
+.link-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:10px;
+  padding:10px 14px;
+  border-radius:12px;
+  background:#0f7a3d;
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  text-decoration:none;
+  border:none;
+  cursor:pointer;
+}
+
+.link-btn.secondary{
+  background:#24312b;
+}
+
+.muted{
+  color:#6a7771;
+  font-size:12px;
+}
+
+.hidden{
+  display:none !important;
+}
+
+.copy-mini{
+  margin-left:8px;
+  border:none;
+  background:#24312b;
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.error-box{
+  background:#fff0f1;
+  border-left:4px solid #b02a37;
+  color:#8f1f2b;
+}
+
+.success-box{
+  background:#edf9f2;
+  border-left:4px solid #0f7a3d;
+  color:#145c35;
+}
+
+@media (max-width:760px){
+  .info-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <img src="file_000000007c187246b1c01967ee086dc4.png" class="main-logo" alt="ALBUKHR">
+</header>
+
+<div id="inviteBanner" class="top-banner hidden">
+  🎉 Welcome to Albukhr Ecosystem
+</div>
+
+<div class="sub-banner">
+  <div class="sub-banner-inner">
+    <div class="sub-banner-title">Contributor Onboarding</div>
+    <div class="sub-banner-text">
+      Submit your contributor profile for review. Once approved, ALBUKHR may unlock your
+      Telegram access, Internal Project access, and Project Builder access based on your role.
+    </div>
+    <div id="statusPill" class="status-pill hidden"></div>
+  </div>
+</div>
+
+<section class="section" id="mainSection">
+
+  <!-- FORM AREA -->
+  <div id="formArea">
+    <div class="card">
+      <div class="label">Full Name</div>
+      <input class="input" id="fullName" autocomplete="name">
+
+      <div class="label">Profile Photo</div>
+      <input type="file" class="input" id="photo" accept="image/*">
+
+      <div class="label">Phone Number</div>
+      <input class="input" id="phone" autocomplete="tel">
+
+      <div class="label">Email Address</div>
+      <input class="input" id="email" autocomplete="email">
+
+      <div class="label">Full Address</div>
+      <textarea class="input" id="address"></textarea>
+
+      <div class="label">Country</div>
+      <input class="input" id="country" autocomplete="country-name">
+
+      <div class="label">Primary Skills</div>
+      <textarea class="input" id="skills"></textarea>
+
+      <div class="label">Experience</div>
+      <textarea class="input" id="experience"></textarea>
+
+      <div class="label">Expected Contribution</div>
+      <textarea class="input" id="contribution"></textarea>
+    </div>
+
+    <div class="card">
+      <label>
+        <input type="checkbox" id="agreePolicy">
+        I confirm all information entered above is correct.
+      </label>
+    </div>
+
+    <div class="card">
+      <label>
+        <input type="checkbox" id="agree">
+        I confirm all details are true and I agree to Albukhr rules & policies.
+      </label>
+
+      <div style="margin-top:10px;font-size:12px">
+        📜
+        <a
+          href="albukhr-contributor-policy.html"
+          target="_blank"
+          style="color:#0f7a3d;font-weight:700;text-decoration:none"
+        >
+          View Albukhr Contributor Policy & Rules
+        </a>
+      </div>
+    </div>
+
+    <button class="btn" id="submitBtn" type="button">
+      Submit for Review
+    </button>
+
+    <div class="notice hidden" id="submitProgressBox">
+      Processing your submission...
+    </div>
+  </div>
+
+  <!-- PENDING / STATUS NOTICES -->
+  <div class="notice hidden" id="pendingNotice">
+    ⏳ Your contributor application is currently under review.
+  </div>
+
+  <div class="notice hidden error-box" id="rejectedNotice">
+    ❌ Your contributor application was rejected. You may update your details and submit again if ALBUKHR reopens the slot for your invite.
+  </div>
+
+  <div class="notice hidden success-box" id="approvedNotice">
+    ✅ Your contributor application has been approved.
+  </div>
+
+  <!-- APPROVED ACCESS AREA -->
+  <div id="approvedArea" class="hidden">
+    <div class="card">
+      <h3 style="margin:0 0 10px;color:#0f7a3d">Contributor Access Dashboard</h3>
+      <div class="muted" style="line-height:1.7">
+        This section shows the access currently granted to your contributor account.
+      </div>
+
+      <div class="info-grid" style="margin-top:14px">
+        <div class="kv">
+          <div class="kv-label">Contributor Name</div>
+          <div class="kv-value" id="approvedName">—</div>
+        </div>
+
+        <div class="kv">
+          <div class="kv-label">Email</div>
+          <div class="kv-value" id="approvedEmail">—</div>
+        </div>
+
+        <div class="kv">
+          <div class="kv-label">Albukhr Internal ID</div>
+          <div class="kv-value" id="approvedAlbukhrId">—</div>
+        </div>
+
+        <div class="kv">
+          <div class="kv-label">Application Status</div>
+          <div class="kv-value" id="approvedStatusText">Approved</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box hidden" id="idBox"></div>
+
+    <div class="box hidden" id="telegramBox">
+      <b>✅ Telegram Access Granted</b><br>
+      You can now join the ALBUKHR Telegram contributor space.<br>
+      <a class="link-btn" href="https://t.me/+C6kVFSkwe1djZjg8" target="_blank">
+        Join Telegram Group →
+      </a>
+    </div>
+
+    <div class="box hidden" id="internalBox">
+      <b>🏗 Internal Access Granted</b><br>
+      Your contributor account has permission to enter the internal project registry flow.
+      <br>
+      <button class="link-btn" id="openInternalBtn" type="button">
+        Create Internal Project →
+      </button>
+    </div>
+
+    <div class="box hidden" id="projectBox">
+      <b>🚀 Project Builder Access</b><br>
+      Your contributor account has access to create ecosystem investment projects.
+      <br>
+      <a class="link-btn" href="create-project.html">
+        Create Investment Project →
+      </a>
+    </div>
+
+    <div class="box hidden" id="projectDashboardBox">
+      <b>📊 Project Dashboard Access</b><br>
+      Your contributor account has an active internal project dashboard.
+      <br>
+      <a class="link-btn" href="Albukhr-internal-project-dashboard.html">
+        Open Project Dashboard →
+      </a>
+    </div>
+  </div>
+
+</section>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<!-- CONTRIBUTOR ENGINE -->
+<script src="js/contributor-engine.js"></script>
+
+<script>
+/* =========================================================
+   ALBUKHR CONTRIBUTOR ONBOARDING PAGE
+   FINAL SUPABASE VERSION
+========================================================= */
+
+const contributorPageState = {
+  contributor: null,
+  access: null,
+  inviteValidated: false,
+  loading: false
+};
+
+const els = {
+  inviteBanner: document.getElementById("inviteBanner"),
+  statusPill: document.getElementById("statusPill"),
+
+  formArea: document.getElementById("formArea"),
+  submitBtn: document.getElementById("submitBtn"),
+  submitProgressBox: document.getElementById("submitProgressBox"),
+
+  fullName: document.getElementById("fullName"),
+  photo: document.getElementById("photo"),
+  phone: document.getElementById("phone"),
+  email: document.getElementById("email"),
+  address: document.getElementById("address"),
+  country: document.getElementById("country"),
+  skills: document.getElementById("skills"),
+  experience: document.getElementById("experience"),
+  contribution: document.getElementById("contribution"),
+  agreePolicy: document.getElementById("agreePolicy"),
+  agree: document.getElementById("agree"),
+
+  pendingNotice: document.getElementById("pendingNotice"),
+  rejectedNotice: document.getElementById("rejectedNotice"),
+  approvedNotice: document.getElementById("approvedNotice"),
+
+  approvedArea: document.getElementById("approvedArea"),
+  approvedName: document.getElementById("approvedName"),
+  approvedEmail: document.getElementById("approvedEmail"),
+  approvedAlbukhrId: document.getElementById("approvedAlbukhrId"),
+  approvedStatusText: document.getElementById("approvedStatusText"),
+
+  idBox: document.getElementById("idBox"),
+  telegramBox: document.getElementById("telegramBox"),
+  internalBox: document.getElementById("internalBox"),
+  projectBox: document.getElementById("projectBox"),
+  projectDashboardBox: document.getElementById("projectDashboardBox"),
+  openInternalBtn: document.getElementById("openInternalBtn")
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function safeString(value, fallback = ""){
+  if(value === null || value === undefined) return fallback;
+  return String(value);
+}
+
+function normalizeEmail(value){
+  return safeString(value).trim().toLowerCase();
+}
+
+function showEl(el){
+  if(el) el.classList.remove("hidden");
+}
+
+function hideEl(el){
+  if(el) el.classList.add("hidden");
+}
+
+function setButtonBusy(button, busy, busyText = "Please wait..."){
+  if(!button) return;
+
+  if(busy){
+    if(!button.dataset.originalText){
+      button.dataset.originalText = button.textContent;
+    }
+    button.disabled = true;
+    button.classList.add("disabled");
+    button.textContent = busyText;
+  }else{
+    button.disabled = false;
+    button.classList.remove("disabled");
+    button.textContent = button.dataset.originalText || "Submit";
+  }
+}
+
+function setStatusPill(status){
+  const s = safeString(status).trim().toLowerCase();
+
+  if(!s){
+    hideEl(els.statusPill);
+    els.statusPill.textContent = "";
+    els.statusPill.className = "status-pill hidden";
+    return;
+  }
+
+  showEl(els.statusPill);
+  els.statusPill.className = "status-pill";
+
+  if(s === "pending"){
+    els.statusPill.classList.add("pending");
+    els.statusPill.textContent = "⏳ Pending Review";
+    return;
+  }
+
+  if(s === "approved"){
+    els.statusPill.classList.add("approved");
+    els.statusPill.textContent = "✅ Approved";
+    return;
+  }
+
+  if(s === "rejected"){
+    els.statusPill.classList.add("rejected");
+    els.statusPill.textContent = "❌ Rejected";
+    return;
+  }
+
+  els.statusPill.textContent = status;
+}
+
+function resetStatusBoxes(){
+  hideEl(els.pendingNotice);
+  hideEl(els.rejectedNotice);
+  hideEl(els.approvedNotice);
+  hideEl(els.approvedArea);
+  hideEl(els.idBox);
+  hideEl(els.telegramBox);
+  hideEl(els.internalBox);
+  hideEl(els.projectBox);
+  hideEl(els.projectDashboardBox);
+}
+
+function copyAlbukhrId(id){
+  if(!id) return;
+  navigator.clipboard.writeText(id);
+  alert("Albukhr ID copied");
+}
+
+function getLocalDashboardUnlock(email){
+  const clean = normalizeEmail(email);
+  if(!clean) return false;
+
+  return (
+    localStorage.getItem("albukhr_project_dashboard_unlocked_" + clean) === "true" ||
+    localStorage.getItem("albukhr_project_dashboard_unlocked_" + clean) === "1"
+  );
+}
+
+function fillFormFromContributor(record){
+  if(!record) return;
+
+  if(record.full_name && !els.fullName.value) els.fullName.value = record.full_name;
+  if(record.phone && !els.phone.value) els.phone.value = record.phone;
+  if(record.email && !els.email.value) els.email.value = record.email;
+  if(record.address && !els.address.value) els.address.value = record.address;
+  if(record.country && !els.country.value) els.country.value = record.country;
+  if(record.skills && !els.skills.value) els.skills.value = record.skills;
+  if(record.experience && !els.experience.value) els.experience.value = record.experience;
+  if(record.contribution && !els.contribution.value) els.contribution.value = record.contribution;
+}
+
+function renderApproved(record, access){
+  resetStatusBoxes();
+
+  hideEl(els.formArea);
+  showEl(els.approvedNotice);
+  showEl(els.approvedArea);
+  setStatusPill("approved");
+
+  els.approvedName.textContent = record.full_name || "—";
+  els.approvedEmail.textContent = record.email || "—";
+  els.approvedAlbukhrId.textContent = record.albukhr_id || "—";
+  els.approvedStatusText.textContent = "Approved";
+
+  if(record.albukhr_id){
+    els.idBox.innerHTML = `
+      🆔 <b>Your Albukhr ID</b><br>
+      <span>${record.albukhr_id}</span>
+      <button class="copy-mini" onclick="copyAlbukhrId('${record.albukhr_id}')">Copy</button>
+    `;
+    showEl(els.idBox);
+  }
+
+  if(access?.has_telegram_access || record.telegram_unlocked){
+    showEl(els.telegramBox);
+  }
+
+  if(access?.has_internal_access || record.internal_unlocked){
+    showEl(els.internalBox);
+  }
+
+  if(access?.has_project_builder_access || record.project_creation_unlocked){
+    showEl(els.projectBox);
+  }
+
+  if(getLocalDashboardUnlock(record.email)){
+    showEl(els.projectDashboardBox);
+  }
+}
+
+function renderPending(record){
+  resetStatusBoxes();
+  fillFormFromContributor(record);
+  hideEl(els.approvedArea);
+  showEl(els.pendingNotice);
+  setStatusPill("pending");
+  setButtonBusy(els.submitBtn, true, "Under Review");
+}
+
+function renderRejected(record){
+  resetStatusBoxes();
+  fillFormFromContributor(record);
+  showEl(els.formArea);
+  showEl(els.rejectedNotice);
+  setStatusPill("rejected");
+  setButtonBusy(els.submitBtn, false);
+}
+
+function renderFreshForm(){
+  resetStatusBoxes();
+  showEl(els.formArea);
+  setStatusPill("");
+  setButtonBusy(els.submitBtn, false);
+}
+
+function getEmailCandidate(){
+  const typed = normalizeEmail(els.email.value);
+  if(typed) return typed;
+
+  if(
+    window.AlbukhrContributorEngine &&
+    typeof window.AlbukhrContributorEngine.getContributorSessionEmail === "function"
+  ){
+    return window.AlbukhrContributorEngine.getContributorSessionEmail();
+  }
+
+  return "";
+}
+
+/* =========================================================
+   INVITE GATE
+========================================================= */
+async function bootInviteGate(){
+  if(
+    !window.AlbukhrContributorEngine ||
+    typeof window.AlbukhrContributorEngine.ensureInviteSessionFromUrl !== "function"
+  ){
+    throw new Error("AlbukhrContributorEngine is missing. Load js/contributor-engine.js first.");
+  }
+
+  const result = await window.AlbukhrContributorEngine.ensureInviteSessionFromUrl();
+
+  if(!result?.valid){
+    window.AlbukhrContributorEngine.renderInviteBlockedScreen(
+      result?.reason === "invite_expired" ? "Invite expired" : "Access Restricted"
+    );
+    return false;
+  }
+
+  contributorPageState.inviteValidated = true;
+  showEl(els.inviteBanner);
+  return true;
+}
+
+/* =========================================================
+   STATUS CHECK
+========================================================= */
+async function checkContributorStatus(){
+  const email = getEmailCandidate();
+  if(!email) return;
+
+  if(window.AlbukhrContributorEngine?.setContributorSessionEmail){
+    window.AlbukhrContributorEngine.setContributorSessionEmail(email);
+  }
+
+  const access = await window.AlbukhrContributorEngine.getContributorAccess(email);
+  contributorPageState.access = access || null;
+  contributorPageState.contributor = access?.contributor || null;
+
+  const record = contributorPageState.contributor;
+  if(!record) return;
+
+  fillFormFromContributor(record);
+
+  if(record.status === "pending"){
+    renderPending(record);
+    return;
+  }
+
+  if(record.status === "approved"){
+    renderApproved(record, access);
+    return;
+  }
+
+  if(record.status === "rejected"){
+    renderRejected(record);
+    return;
+  }
+}
+
+/* =========================================================
+   FORM VALIDATION
+========================================================= */
+function validateForm(){
+  if(!els.fullName.value.trim()){
+    alert("Full name is required");
+    return false;
+  }
+
+  if(!els.phone.value.trim()){
+    alert("Phone number is required");
+    return false;
+  }
+
+  if(!normalizeEmail(els.email.value)){
+    alert("Email address is required");
+    return false;
+  }
+
+  if(!els.address.value.trim()){
+    alert("Full address is required");
+    return false;
+  }
+
+  if(!els.skills.value.trim()){
+    alert("Primary skills are required");
+    return false;
+  }
+
+  if(!els.contribution.value.trim()){
+    alert("Expected contribution is required");
+    return false;
+  }
+
+  if(!els.agreePolicy.checked){
+    alert("Please confirm that your information is correct.");
+    return false;
+  }
+
+  if(!els.agree.checked){
+    alert("Please agree to Albukhr rules and policies.");
+    return false;
+  }
+
+  return true;
+}
+
+/* =========================================================
+   SUBMIT
+========================================================= */
+async function submitContributor(){
+  if(contributorPageState.loading) return;
+
+  if(!contributorPageState.inviteValidated){
+    alert("Invite validation failed. Please reopen the contributor invite link.");
+    return;
+  }
+
+  if(!validateForm()) return;
+
+  contributorPageState.loading = true;
+  setButtonBusy(els.submitBtn, true, "Submitting...");
+  showEl(els.submitProgressBox);
+  els.submitProgressBox.textContent = "Uploading profile and submitting your contributor application...";
+
+  try{
+    const result = await window.AlbukhrContributorEngine.submitContributorApplication({
+      fullName: els.fullName.value.trim(),
+      phone: els.phone.value.trim(),
+      email: normalizeEmail(els.email.value),
+      address: els.address.value.trim(),
+      country: els.country.value.trim(),
+      skills: els.skills.value.trim(),
+      experience: els.experience.value.trim(),
+      contribution: els.contribution.value.trim(),
+      photoFile: els.photo.files?.[0] || null
+    });
+
+    const record = result?.contributor || null;
+    contributorPageState.contributor = record;
+
+    hideEl(els.submitProgressBox);
+
+    if(record?.status === "approved"){
+      const access = await window.AlbukhrContributorEngine.getContributorAccess(record.email);
+      contributorPageState.access = access;
+      renderApproved(record, access);
+      alert("Contributor application submitted and approved.");
+      return;
+    }
+
+    renderPending(record || {
+      email: normalizeEmail(els.email.value),
+      full_name: els.fullName.value.trim(),
+      status: "pending"
+    });
+
+    alert("Submitted successfully. Your contributor application is now under review.");
+
+  }catch(err){
+    console.error("Contributor submit error:", err);
+    hideEl(els.submitProgressBox);
+    setButtonBusy(els.submitBtn, false);
+    alert(err?.message || "Unable to submit contributor application.");
+  }finally{
+    contributorPageState.loading = false;
+  }
+}
+
+/* =========================================================
+   INTERNAL ENTRY
+========================================================= */
+async function openInternal(){
+  try{
+    const email = contributorPageState.contributor?.email || getEmailCandidate();
+    if(!email){
+      alert("Contributor email not found.");
+      return;
+    }
+
+    if(
+      !window.AlbukhrContributorEngine ||
+      typeof window.AlbukhrContributorEngine.prepareInternalRegistryAccess !== "function"
+    ){
+      throw new Error("Internal access engine is missing.");
+    }
+
+    const result = await window.AlbukhrContributorEngine.prepareInternalRegistryAccess(email);
+
+    if(!result?.allowed){
+      if(result?.reason === "internal_access_locked"){
+        alert("Internal access has not been unlocked for your contributor account yet.");
+        return;
+      }
+
+      if(result?.reason === "contributor_not_approved"){
+        alert("Your contributor application is not approved yet.");
+        return;
+      }
+
+      alert("Access restricted.");
+      return;
+    }
+
+    window.location.href = "internal-registry-form.html";
+
+  }catch(err){
+    console.error("Open internal error:", err);
+    alert(err?.message || "Unable to open internal registry.");
+  }
+}
+
+/* =========================================================
+   BIND EVENTS
+========================================================= */
+function bindEvents(){
+  els.submitBtn.addEventListener("click", submitContributor);
+
+  els.email.addEventListener("blur", async function(){
+    try{
+      await checkContributorStatus();
+    }catch(err){
+      console.warn("Contributor status check warning:", err);
+    }
+  });
+
+  els.openInternalBtn.addEventListener("click", async function(e){
+    e.preventDefault();
+    await openInternal();
+  });
+}
+
+/* expose legacy globals if page still expects them */
+window.submitContributor = submitContributor;
+window.openInternal = openInternal;
+window.copyAlbukhrId = copyAlbukhrId;
+
+/* =========================================================
+   INIT
+========================================================= */
+document.addEventListener("DOMContentLoaded", async function(){
+  try{
+    bindEvents();
+
+    const inviteOk = await bootInviteGate();
+    if(!inviteOk) return;
+
+    const sessionEmail =
+      window.AlbukhrContributorEngine?.getContributorSessionEmail?.() || "";
+
+    if(sessionEmail && !els.email.value){
+      els.email.value = sessionEmail;
+    }
+
+    await checkContributorStatus();
+    if(!contributorPageState.contributor){
+      renderFreshForm();
+    }
+
+  }catch(err){
+    console.error("Contributor onboarding init error:", err);
+    alert(err?.message || "Failed to initialize contributor onboarding page.");
+  }
+});
+</script>
+
+</body>
+          </html>
