@@ -1,1161 +1,2310 @@
 /* =========================================================
    ALBUKHR INTERNAL REGISTRY ENGINE
-   FINAL SUPABASE VERSION
-   ---------------------------------------------------------
-   PURPOSE
-   - Resolve internal registry access from contributor account
-   - Validate internal registry session token
-   - Submit internal project to Supabase RPC
-   - Check contributor lock state before submit
-   - Expose helper methods for internal-registry-form.html
-   ---------------------------------------------------------
-   EXPECTED BACKEND
-   - public.albukhr_submit_internal_project(...)
-   - public.albukhr_contributors
-   - public.albukhr_internal_projects
-   ---------------------------------------------------------
-   EXPECTED FRONTEND
-   - js/supabase-core.js
-   - js/contributor-engine.js
+   PATCH 1
+   ENGINE CORE + HELPERS + SESSION + ACCESS + RPC CORE
 ========================================================= */
 
-(function(){
-  "use strict";
+(function () {
+"use strict";
 
-  /* =========================================================
-     GLOBAL EXPORT
-  ========================================================= */
-  const InternalRegistryEngine = {};
-  window.AlbukhrInternalRegistryEngine = InternalRegistryEngine;
+/* =========================================================
+   GLOBAL EXPORT
+========================================================= */
+const InternalRegistryEngine = {};
+window.AlbukhrInternalRegistryEngine = InternalRegistryEngine;
 
-  /* =========================================================
-     CONFIG
-  ========================================================= */
-  const ENGINE_NAME = "ALBUKHR Internal Registry Engine";
+/* =========================================================
+   CONFIG
+========================================================= */
+const ENGINE_NAME = "ALBUKHR Internal Registry Engine";
 
-  const SESSION_KEYS = {
+const SESSION_KEYS = {
     contributorEmail: "albukhr_current_email",
+    contributorName: "albukhr_current_username",
+
     internalEmail: "albukhr_internal_email",
     internalToken: "albukhr_internal_token"
-  };
+};
 
-  /* =========================================================
-     CORE HELPERS
-  ========================================================= */
-  function getSupabaseClient(){
+/* =========================================================
+   SUPABASE RESOLVER
+========================================================= */
+function getSupabaseClient(){
+
     const client =
-      window.supabaseClient ||
-      window.supabase ||
-      window.albukhrSupabase ||
-      null;
+        window.supabaseClient ||
+        window.albukhrSupabase ||
+        window.supabase ||
+        null;
 
     if(!client){
-      throw new Error(
-        `${ENGINE_NAME}: Supabase client not found. Load js/supabase-core.js first.`
-      );
+        throw new Error(
+            ENGINE_NAME +
+            ": Supabase client not found. Load js/supabase-core.js first."
+        );
     }
 
     return client;
-  }
+}
 
-  function getContributorEngine(){
-    return window.AlbukhrContributorEngine || null;
-  }
+/* =========================================================
+   CONTRIBUTOR ENGINE
+========================================================= */
+function getContributorEngine(){
 
-  function safeString(value, fallback = ""){
-    if(value === null || value === undefined) return fallback;
+    if(!window.AlbukhrContributorEngine){
+        throw new Error(
+            ENGINE_NAME +
+            ": contributor-engine.js must be loaded first."
+        );
+    }
+
+    return window.AlbukhrContributorEngine;
+}
+
+/* =========================================================
+   BASIC HELPERS
+========================================================= */
+function safeString(value,fallback=""){
+    if(value===null || value===undefined) return fallback;
     return String(value);
-  }
+}
 
-  function safeNumber(value, fallback = 0){
-    const n = Number(value);
+function safeBool(value){
+    return value===true;
+}
+
+function safeNumber(value,fallback=0){
+    const n=Number(value);
     return Number.isFinite(n) ? n : fallback;
-  }
+}
 
-  function safeBool(value){
-    return value === true;
-  }
-
-  function trimOrNull(value){
-    const v = safeString(value).trim();
+function trimOrNull(value){
+    const v=safeString(value).trim();
     return v ? v : null;
-  }
+}
 
-  function normalizeEmail(value){
-    return safeString(value).trim().toLowerCase();
-  }
+function normalizeEmail(value){
+    return safeString(value)
+        .trim()
+        .toLowerCase();
+}
 
-  function nowIso(){
+function nowIso(){
     return new Date().toISOString();
-  }
+}
 
-  function getCurrentContributorEmail(){
+/* =========================================================
+   SESSION
+========================================================= */
+
+function getCurrentContributorEmail(){
+
     return normalizeEmail(
-      localStorage.getItem(SESSION_KEYS.contributorEmail) || ""
+        localStorage.getItem(
+            SESSION_KEYS.contributorEmail
+        ) || ""
     );
-  }
 
-  function getInternalSessionEmail(){
+}
+
+function getInternalSessionEmail(){
+
     return normalizeEmail(
-      sessionStorage.getItem(SESSION_KEYS.internalEmail) || ""
+        sessionStorage.getItem(
+            SESSION_KEYS.internalEmail
+        ) || ""
     );
-  }
 
-  function getInternalSessionToken(){
+}
+
+function getInternalSessionToken(){
+
     return safeString(
-      sessionStorage.getItem(SESSION_KEYS.internalToken) || ""
+        sessionStorage.getItem(
+            SESSION_KEYS.internalToken
+        ) || ""
     ).trim();
-  }
 
-  function clearInternalSession(){
-    sessionStorage.removeItem(SESSION_KEYS.internalEmail);
-    sessionStorage.removeItem(SESSION_KEYS.internalToken);
-  }
+}
 
-  function setInternalSession(email){
+function setInternalSession(email){
+
     if(email){
-      sessionStorage.setItem(
-        SESSION_KEYS.internalEmail,
-        normalizeEmail(email)
-      );
+
+        sessionStorage.setItem(
+            SESSION_KEYS.internalEmail,
+            normalizeEmail(email)
+        );
+
     }
+
     sessionStorage.setItem(
-      SESSION_KEYS.internalToken,
-      `INT-${Date.now()}-${Math.random().toString(36).slice(2,10)}`
+        SESSION_KEYS.internalToken,
+        "INT-" +
+        Date.now() +
+        "-" +
+        Math.random().toString(36).slice(2,10)
     );
-  }
 
-  function ensureContributorEngineLoaded(){
-    const engine = getContributorEngine();
-    if(!engine){
-      throw new Error(
-        `${ENGINE_NAME}: contributor-engine.js not loaded`
-      );
-    }
-    return engine;
-  }
+}
 
-  /* =========================================================
-     NORMALIZERS
-  ========================================================= */
-  function normalizeContributor(raw = {}){
-    return {
-      id: raw.id || null,
-      full_name: raw.full_name || raw.fullName || "",
-      email: normalizeEmail(raw.email || ""),
-      status: safeString(raw.status || "").trim().toLowerCase(),
-      albukhr_id: raw.albukhr_id || raw.albukhrId || "",
-      internal_unlocked:
-        safeBool(raw.internal_unlocked) ||
-        safeBool(raw.internalUnlocked),
-      telegram_unlocked:
-        safeBool(raw.telegram_unlocked) ||
-        safeBool(raw.telegramUnlocked),
-      project_creation_unlocked:
-        safeBool(raw.project_creation_unlocked) ||
-        safeBool(raw.projectCreationUnlocked)
+function clearInternalSession(){
+
+    sessionStorage.removeItem(
+        SESSION_KEYS.internalEmail
+    );
+
+    sessionStorage.removeItem(
+        SESSION_KEYS.internalToken
+    );
+
+}
+
+/* =========================================================
+   NORMALIZERS
+========================================================= */
+
+function normalizeContributor(raw={}){
+
+    return{
+
+        id:raw.id || null,
+
+        full_name:
+            raw.full_name ||
+            raw.fullName ||
+            "",
+
+        email:
+            normalizeEmail(
+                raw.email || ""
+            ),
+
+        phone:
+            raw.phone || "",
+
+        country:
+            raw.country || "",
+
+        albukhr_id:
+            raw.albukhr_id ||
+            raw.albukhrId ||
+            "",
+
+        status:
+            safeString(
+                raw.status || ""
+            ).toLowerCase(),
+
+        telegram_unlocked:
+            safeBool(
+                raw.telegram_unlocked
+            ),
+
+        internal_unlocked:
+            safeBool(
+                raw.internal_unlocked
+            ),
+
+        project_creation_unlocked:
+            safeBool(
+                raw.project_creation_unlocked
+            )
+
     };
-  }
 
-  function normalizeInternalProject(raw = {}){
-    return {
-      id: raw.id || null,
-      project_name: raw.project_name || "",
-      category: raw.category || "",
-      stage: raw.stage || "",
-      creator_name: raw.creator_name || "",
-      role: raw.role || "",
-      internal_id: raw.internal_id || "",
-      email: normalizeEmail(raw.email || ""),
-      summary: raw.summary || "",
-      problem: raw.problem || "",
-      solution: raw.solution || "",
-      impact: raw.impact || "",
-      funding: raw.funding || "",
-      risk: raw.risk || "",
-      confidentiality: raw.confidentiality || "",
-      roi: safeNumber(raw.roi, 0),
-      initial_liquidity: safeNumber(raw.initial_liquidity, 0),
-      status: raw.status || "",
-      created_at: raw.created_at || null,
-      approved_at: raw.approved_at || null
-    };
-  }
+}
 
-  function normalizeAccessResult(raw = {}){
-    return {
-      ok: safeBool(raw.ok),
-      allowed: safeBool(raw.allowed),
-      reason: raw.reason || "",
-      contributor: raw.contributor
-        ? normalizeContributor(raw.contributor)
-        : null,
-      access: raw.access || null
-    };
-  }
+/* =========================================================
+   RPC
+========================================================= */
 
-  /* =========================================================
-     LOW LEVEL RPC
-  ========================================================= */
-  async function callRpc(fnName, payload = {}){
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.rpc(fnName, payload);
+async function callRpc(
+    fnName,
+    payload={}
+){
+
+    const supabase=getSupabaseClient();
+
+    const {
+        data,
+        error
+    }=
+    await supabase.rpc(
+        fnName,
+        payload
+    );
 
     if(error){
-      throw new Error(error.message || `RPC failed: ${fnName}`);
+
+        throw new Error(
+            error.message ||
+            (
+                "RPC failed: "+
+                fnName
+            )
+        );
+
     }
 
     return data;
-  }
 
-  /* =========================================================
-     DIRECT TABLE READ HELPERS
-  ========================================================= */
-  async function findContributorByEmail(email){
-    const supabase = getSupabaseClient();
-    const normalizedEmail = normalizeEmail(email);
+}
 
-    if(!normalizedEmail) return null;
+/* =========================================================
+   CONTRIBUTOR LOOKUP
+========================================================= */
 
-    const { data, error } = await supabase
-      .from("albukhr_contributors")
-      .select("*")
-      .ilike("email", normalizedEmail)
-      .limit(1)
-      .maybeSingle();
+async function findContributorByEmail(email){
+
+    const supabase=getSupabaseClient();
+
+    const cleanEmail=
+        normalizeEmail(email);
+
+    if(!cleanEmail){
+        return null;
+    }
+
+    const{
+        data,
+        error
+    }=
+    await supabase
+        .from(
+            "albukhr_contributors"
+        )
+        .select("*")
+        .ilike(
+            "email",
+            cleanEmail
+        )
+        .limit(1)
+        .maybeSingle();
 
     if(error){
-      throw new Error(error.message || "Failed to load contributor");
+
+        throw new Error(
+            error.message ||
+            "Unable to load contributor."
+        );
+
     }
 
-    return data ? normalizeContributor(data) : null;
-  }
+    return data
+        ? normalizeContributor(data)
+        : null;
 
-  async function getLatestInternalProjectByEmail(email){
-    const supabase = getSupabaseClient();
-    const normalizedEmail = normalizeEmail(email);
+}
 
-    if(!normalizedEmail) return null;
+/* =========================================================
+   ACCESS CHECK
+========================================================= */
 
-    const { data, error } = await supabase
-      .from("albukhr_internal_projects")
-      .select("*")
-      .ilike("email", normalizedEmail)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+async function checkInternalAccess(email=""){
 
-    if(error){
-      throw new Error(error.message || "Failed to load internal project history");
-    }
+    const engine=
+        getContributorEngine();
 
-    return data ? normalizeInternalProject(data) : null;
-  }
+    const contributorEmail=
+        normalizeEmail(email) ||
+        getInternalSessionEmail() ||
+        getCurrentContributorEmail();
 
-  /* =========================================================
-     ACCESS CHECK
-     Hard gate for internal-registry-form.html
-  ========================================================= */
-  async function checkInternalAccess(email = ""){
-    const engine = ensureContributorEngineLoaded();
+    if(!contributorEmail){
 
-    const candidateEmail =
-      normalizeEmail(email) ||
-      getInternalSessionEmail() ||
-      getCurrentContributorEmail();
+        return{
 
-    if(!candidateEmail){
-      return {
-        ok: false,
-        allowed: false,
-        reason: "missing_contributor_session",
-        contributor: null
-      };
-    }
+            ok:false,
+            allowed:false,
+            reason:"missing_session",
+            contributor:null
 
-    /* preferred path via contributor engine */
-    try{
-      const result = await engine.getContributorAccess(candidateEmail);
-
-      const contributor = normalizeContributor(result?.contributor || {});
-      const approved = contributor.status === "approved";
-      const internalUnlocked =
-        safeBool(result?.internal_unlocked) ||
-        safeBool(result?.has_internal_access) ||
-        contributor.internal_unlocked;
-
-      if(!contributor.email){
-        return {
-          ok: false,
-          allowed: false,
-          reason: "contributor_not_found",
-          contributor: null
         };
-      }
 
-      if(!approved){
-        return {
-          ok: false,
-          allowed: false,
-          reason: "contributor_not_approved",
-          contributor
+    }
+
+    const access=
+        await engine.getContributorAccess(
+            contributorEmail
+        );
+
+    const contributor=
+        normalizeContributor(
+            access.contributor || {}
+        );
+
+    if(!contributor.email){
+
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:"contributor_not_found",
+            contributor:null
+
         };
-      }
 
-      if(!internalUnlocked){
-        return {
-          ok: false,
-          allowed: false,
-          reason: "internal_access_locked",
-          contributor
+    }
+
+    if(contributor.status!=="approved"){
+
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:"not_approved",
+            contributor
+
         };
-      }
 
-      return {
-        ok: true,
-        allowed: true,
-        reason: "",
-        contributor
-      };
-    }catch(err){
-      console.warn("Contributor engine access lookup failed, falling back to direct contributor query:", err);
-    }
-
-    /* fallback direct read */
-    const contributor = await findContributorByEmail(candidateEmail);
-
-    if(!contributor){
-      return {
-        ok: false,
-        allowed: false,
-        reason: "contributor_not_found",
-        contributor: null
-      };
-    }
-
-    if(contributor.status !== "approved"){
-      return {
-        ok: false,
-        allowed: false,
-        reason: "contributor_not_approved",
-        contributor
-      };
-    }
-
-    if(!contributor.internal_unlocked){
-      return {
-        ok: false,
-        allowed: false,
-        reason: "internal_access_locked",
-        contributor
-      };
-    }
-
-    return {
-      ok: true,
-      allowed: true,
-      reason: "",
-      contributor
-    };
-  }
-
-  /* =========================================================
-     SESSION TOKEN GATE
-     This matches your page logic:
-     - sessionStorage.albukhr_internal_token must exist
-     - sessionStorage.albukhr_internal_email must exist
-  ========================================================= */
-  async function validateInternalEntryGate(){
-    const token = getInternalSessionToken();
-    const email = getInternalSessionEmail();
-
-    if(!token || !email){
-      return {
-        ok: false,
-        allowed: false,
-        reason: "missing_internal_session"
-      };
-    }
-
-    const access = await checkInternalAccess(email);
-
-    if(!access.allowed){
-      return {
-        ok: false,
-        allowed: false,
-        reason: access.reason || "internal_access_denied",
-        contributor: access.contributor || null
-      };
-    }
-
-    return {
-      ok: true,
-      allowed: true,
-      reason: "",
-      contributor: access.contributor || null
-    };
-  }
-
-  /* =========================================================
-     LOCK CHECK
-     Mirrors SQL logic before submit so UI can react early:
-     - latest internal_pending => lock
-     - latest internal_approved within 7 days => lock
-  ========================================================= */
-  async function checkInternalSubmissionLock(email = ""){
-    const normalizedEmail =
-      normalizeEmail(email) ||
-      getInternalSessionEmail() ||
-      getCurrentContributorEmail();
-
-    if(!normalizedEmail){
-      return {
-        ok: false,
-        locked: true,
-        reason: "missing_email",
-        message: "Contributor email not found."
-      };
-    }
-
-    const latest = await getLatestInternalProjectByEmail(normalizedEmail);
-
-    if(!latest){
-      return {
-        ok: true,
-        locked: false,
-        reason: "",
-        message: ""
-      };
-    }
-
-    if(latest.status === "internal_pending"){
-      return {
-        ok: true,
-        locked: true,
-        reason: "internal_pending_exists",
-        message: "Previous project under review.",
-        project: latest
-      };
     }
 
     if(
-      latest.status === "internal_approved" &&
-      latest.approved_at
+        !(
+            access.internal_unlocked ||
+            access.has_internal_access
+        )
     ){
-      const approvedAt = new Date(latest.approved_at).getTime();
-      const unlockAt = approvedAt + (7 * 24 * 60 * 60 * 1000);
 
-      if(Number.isFinite(unlockAt) && Date.now() < unlockAt){
-        return {
-          ok: true,
-          locked: true,
-          reason: "approval_cooldown_active",
-          message: "You can submit again after 7 days.",
-          unlock_at: new Date(unlockAt).toISOString(),
-          project: latest
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:"internal_locked",
+            contributor
+
         };
-      }
+
     }
 
-    return {
-      ok: true,
-      locked: false,
-      reason: "",
-      message: "",
-      project: latest
-    };
-  }
+    return{
 
-  /* =========================================================
-     FORM PAYLOAD VALIDATION
-  ========================================================= */
-  function validateInternalProjectPayload(payload = {}){
-    const errors = [];
+        ok:true,
+        allowed:true,
+        reason:"",
+        contributor,
+        access
 
-    if(!trimOrNull(payload.projectName)){
-      errors.push("Project name is required");
-    }
-    if(!trimOrNull(payload.category)){
-      errors.push("Project category is required");
-    }
-    if(!trimOrNull(payload.stage)){
-      errors.push("Project stage is required");
-    }
-    if(!trimOrNull(payload.creatorName)){
-      errors.push("Creator name is required");
-    }
-    if(!trimOrNull(payload.role)){
-      errors.push("Role is required");
-    }
-    if(!trimOrNull(payload.internalId)){
-      errors.push("Albukhr Internal ID is required");
-    }
-    if(!normalizeEmail(payload.email)){
-      errors.push("Contributor email is required");
-    }
-    if(!trimOrNull(payload.summary)){
-      errors.push("Project summary is required");
-    }
-    if(!trimOrNull(payload.problem)){
-      errors.push("Problem statement is required");
-    }
-    if(!trimOrNull(payload.solution)){
-      errors.push("Solution is required");
-    }
-
-    return {
-      ok: errors.length === 0,
-      errors
-    };
-  }
-
-  /* =========================================================
-     SUBMIT INTERNAL PROJECT
-     Preferred path:
-       RPC public.albukhr_submit_internal_project(...)
-  ========================================================= */
-  async function submitInternalProject(payload = {}){
-    const access = await checkInternalAccess(payload.email);
-
-    if(!access.allowed){
-      throw new Error(
-        access.reason === "contributor_not_found"
-          ? "Contributor account not found."
-          : access.reason === "contributor_not_approved"
-            ? "Contributor is not approved."
-            : access.reason === "internal_access_locked"
-              ? "Internal project access is locked for this contributor."
-              : "Internal registry access denied."
-      );
-    }
-
-    const cleanPayload = {
-      projectName: trimOrNull(payload.projectName),
-      category: trimOrNull(payload.category),
-      stage: trimOrNull(payload.stage),
-      creatorName: trimOrNull(payload.creatorName),
-      role: trimOrNull(payload.role),
-      internalId: trimOrNull(payload.internalId),
-      email: normalizeEmail(payload.email || access.contributor?.email || ""),
-      summary: trimOrNull(payload.summary),
-      problem: trimOrNull(payload.problem),
-      solution: trimOrNull(payload.solution),
-      impact: trimOrNull(payload.impact),
-      funding: trimOrNull(payload.funding),
-      risk: trimOrNull(payload.risk),
-      confidentiality: trimOrNull(payload.confidentiality),
-      roi: safeNumber(payload.roi, 0),
-      initialLiquidity: safeNumber(payload.initialLiquidity, 0)
     };
 
-    const validation = validateInternalProjectPayload(cleanPayload);
-    if(!validation.ok){
-      throw new Error(validation.errors[0] || "Please complete all required fields");
-    }
-
-    /* early lock check for UI friendliness */
-    const lockState = await checkInternalSubmissionLock(cleanPayload.email);
-    if(lockState.locked){
-      throw new Error(lockState.message || "Internal project submission is currently locked.");
-    }
-
-    /* RPC submit */
-    const result = await callRpc("albukhr_submit_internal_project", {
-      p_project_name: cleanPayload.projectName,
-      p_category: cleanPayload.category,
-      p_stage: cleanPayload.stage,
-      p_creator_name: cleanPayload.creatorName,
-      p_role: cleanPayload.role,
-      p_internal_id: cleanPayload.internalId,
-      p_email: cleanPayload.email,
-      p_summary: cleanPayload.summary,
-      p_problem: cleanPayload.problem,
-      p_solution: cleanPayload.solution,
-      p_impact: cleanPayload.impact,
-      p_funding: cleanPayload.funding,
-      p_risk: cleanPayload.risk,
-      p_confidentiality: cleanPayload.confidentiality,
-      p_roi: cleanPayload.roi,
-      p_initial_liquidity: cleanPayload.initialLiquidity
-    });
-
-    const project = normalizeInternalProject(
-      result?.project || result || {}
-    );
-
-    return {
-      ok: true,
-      message:
-        result?.message ||
-        "Internal project submitted successfully.",
-      project
-    };
-  }
-
-  /* =========================================================
-     FORM HELPER
-     For internal-registry-form.html direct binding
-  ========================================================= */
-  async function submitInternalProjectFromForm(formMap = {}){
-    const email =
-      normalizeEmail(formMap.email?.value || "") ||
-      getInternalSessionEmail() ||
-      getCurrentContributorEmail();
-
-    const payload = {
-      projectName: formMap.projectName?.value || "",
-      category: formMap.category?.value || "",
-      stage: formMap.stage?.value || "",
-      creatorName: formMap.creatorName?.value || "",
-      role: formMap.role?.value || "",
-      internalId: formMap.internalId?.value || "",
-      email,
-      summary: formMap.summary?.value || "",
-      problem: formMap.problem?.value || "",
-      solution: formMap.solution?.value || "",
-      impact: formMap.impact?.value || "",
-      funding: formMap.funding?.value || "",
-      risk: formMap.risk?.value || "",
-      confidentiality: formMap.confidentiality?.value || "",
-      roi: formMap.roi?.value || 0,
-      initialLiquidity: formMap.liquidity?.value || 0
-    };
-
-    return await submitInternalProject(payload);
-  }
-
-  /* =========================================================
-     PAGE BOOTSTRAP HELPER
-     - validates session gate
-     - validates contributor access
-     - returns lock state
-  ========================================================= */
-  async function bootstrapInternalRegistryPage(){
-    const gate = await validateInternalEntryGate();
-
-    if(!gate.allowed){
-      return {
-        ok: false,
-        allowed: false,
-        reason: gate.reason || "internal_access_denied",
-        contributor: gate.contributor || null,
-        lock: null
-      };
-    }
-
-    const email =
-      gate.contributor?.email ||
-      getInternalSessionEmail() ||
-      getCurrentContributorEmail();
-
-    const lock = await checkInternalSubmissionLock(email);
-
-    return {
-      ok: true,
-      allowed: true,
-      reason: "",
-      contributor: gate.contributor || null,
-      lock
-    };
-  }
-
-  /* =========================================================
-     SIMPLE PAGE UTILITIES
-  ========================================================= */
-  function fillContributorFieldsIfNeeded({
-    emailInput = null
-  } = {}){
-    const email =
-      getInternalSessionEmail() ||
-      getCurrentContributorEmail();
-
-    if(emailInput && email && !emailInput.value){
-      emailInput.value = email;
-    }
-
-    return {
-      email
-    };
-  }
-
-  function disableButton(btn, text = ""){
-    if(!btn) return;
-    btn.disabled = true;
-    btn.classList.add("disabled");
-    if(text){
-      btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
-      btn.textContent = text;
-    }
-  }
-
-  function enableButton(btn){
-    if(!btn) return;
-    btn.disabled = false;
-    btn.classList.remove("disabled");
-    if(btn.dataset.originalText){
-      btn.textContent = btn.dataset.originalText;
-    }
-  }
-
-  /* =========================================================
-     PUBLIC EXPORTS
-  ========================================================= */
-  InternalRegistryEngine.getSupabaseClient = getSupabaseClient;
-  InternalRegistryEngine.getCurrentContributorEmail = getCurrentContributorEmail;
-  InternalRegistryEngine.getInternalSessionEmail = getInternalSessionEmail;
-  InternalRegistryEngine.getInternalSessionToken = getInternalSessionToken;
-  InternalRegistryEngine.setInternalSession = setInternalSession;
-  InternalRegistryEngine.clearInternalSession = clearInternalSession;
-
-  InternalRegistryEngine.findContributorByEmail = findContributorByEmail;
-  InternalRegistryEngine.getLatestInternalProjectByEmail = getLatestInternalProjectByEmail;
-
-  InternalRegistryEngine.checkInternalAccess = checkInternalAccess;
-  InternalRegistryEngine.validateInternalEntryGate = validateInternalEntryGate;
-  InternalRegistryEngine.checkInternalSubmissionLock = checkInternalSubmissionLock;
-
-  InternalRegistryEngine.validateInternalProjectPayload = validateInternalProjectPayload;
-  InternalRegistryEngine.submitInternalProject = submitInternalProject;
-  InternalRegistryEngine.submitInternalProjectFromForm = submitInternalProjectFromForm;
-
-  InternalRegistryEngine.bootstrapInternalRegistryPage = bootstrapInternalRegistryPage;
-  InternalRegistryEngine.fillContributorFieldsIfNeeded = fillContributorFieldsIfNeeded;
-  InternalRegistryEngine.disableButton = disableButton;
-  InternalRegistryEngine.enableButton = enableButton;
-
-  /* =========================================================
-     LEGACY GLOBAL WRAPPERS
-  ========================================================= */
-  window.checkInternalAccess = checkInternalAccess;
-  window.submitInternalProject = submitInternalProject;
-  window.submitInternalProjectFromForm = submitInternalProjectFromForm;
-
-/* =========================================================
-   ADMIN REVIEW PATCH FINAL
-   ADD THIS INSIDE internal-registry-engine.js
-   BEFORE THE FINAL: })();
-========================================================= */
-
-/* =========================================================
-   INTERNAL ADMIN HELPERS
-========================================================= */
-function getInternalAdminMeta(){
-  return {
-    email:
-      (
-        localStorage.getItem("albukhr_current_email") ||
-        localStorage.getItem("currentUserEmail") ||
-        ""
-      ).trim().toLowerCase(),
-    name:
-      (
-        localStorage.getItem("albukhr_current_username") ||
-        localStorage.getItem("currentUserName") ||
-        "ALBUKHR Admin"
-      ).trim(),
-    role:
-      (
-        localStorage.getItem("albukhr_current_role") ||
-        "admin"
-      ).trim()
-  };
 }
+
+/* =========================================================
+   INTERNAL SESSION VALIDATION
+========================================================= */
+
+async function validateInternalEntry(){
+
+    const token=
+        getInternalSessionToken();
+
+    const email=
+        getInternalSessionEmail();
+
+    if(
+        !token ||
+        !email
+    ){
+
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:"missing_internal_session"
+
+        };
+
+    }
+
+    return await checkInternalAccess(email);
+
+}
+
+/* =========================================================
+   PATCH 2A
+   INTERNAL PROJECT NORMALIZER + LATEST PROJECT LOOKUP
+========================================================= */
 
 function normalizeInternalProjectRecord(raw = {}){
-  return {
-    id: raw.id || null,
 
-    project_name: raw.project_name || raw.projectName || "",
-    category: raw.category || "",
-    stage: raw.stage || "",
+    return{
 
-    creator_name: raw.creator_name || raw.creatorName || "",
-    role: raw.role || "",
-    internal_id: raw.internal_id || raw.albukhr_id || raw.albukhrId || "",
-    email: (raw.email || "").trim().toLowerCase(),
-    phone: raw.phone || "",
+        id: raw.id || null,
 
-    summary: raw.summary || "",
-    problem: raw.problem || "",
-    solution: raw.solution || "",
-    impact: raw.impact || "",
+        /* ==========================
+           PROJECT
+        ========================== */
 
-    funding: raw.funding || "",
-    risk: raw.risk || "",
-    confidentiality: raw.confidentiality || "",
+        project_name:
+            raw.project_name ||
+            raw.projectName ||
+            "",
 
-    roi: raw.roi ?? null,
-    initial_liquidity:
-      raw.initial_liquidity ??
-      raw.liquidity ??
-      null,
+        project_code:
+            raw.project_code || "",
 
-    status: raw.status || "internal_pending",
+        category:
+            raw.category || "",
 
-    approved_at: raw.approved_at || null,
-    rejected_at: raw.rejected_at || null,
-    created_at: raw.created_at || null,
-    updated_at: raw.updated_at || null,
+        stage:
+            raw.stage || "",
 
-    approved_by_email: raw.approved_by_email || "",
-    approved_by_name: raw.approved_by_name || "",
-    rejected_by_email: raw.rejected_by_email || "",
-    rejected_by_name: raw.rejected_by_name || "",
-    reviewed_by_email: raw.reviewed_by_email || "",
-    reviewed_by_name: raw.reviewed_by_name || "",
-    rejection_reason:
-      raw.rejection_reason ||
-      raw.review_reason ||
-      raw.review_note ||
-      ""
-  };
+        /* ==========================
+           CREATOR
+        ========================== */
+
+        creator_name:
+            raw.creator_name ||
+            raw.creatorName ||
+            "",
+
+        creator_role:
+            raw.creator_role ||
+            raw.role ||
+            "",
+
+        internal_id:
+            raw.internal_id ||
+            raw.albukhr_id ||
+            raw.albukhrId ||
+            "",
+
+        creator_email:
+            normalizeEmail(
+                raw.creator_email ||
+                raw.email ||
+                ""
+            ),
+
+        creator_phone:
+            raw.creator_phone ||
+            raw.phone ||
+            "",
+
+        /* ==========================
+           DESCRIPTION
+        ========================== */
+
+        summary:
+            raw.summary || "",
+
+        problem:
+            raw.problem || "",
+
+        solution:
+            raw.solution || "",
+
+        impact:
+            raw.impact || "",
+
+        /* ==========================
+           INTERNAL
+        ========================== */
+
+        funding:
+            raw.funding || "",
+
+        risk:
+            raw.risk || "",
+
+        confidentiality:
+            raw.confidentiality || "",
+
+        roi:
+            safeNumber(raw.roi,0),
+
+        initial_liquidity:
+            safeNumber(
+                raw.initial_liquidity ??
+                raw.liquidity,
+                0
+            ),
+
+        /* ==========================
+           STATUS
+        ========================== */
+
+        status:
+            raw.status ||
+            "internal_pending",
+
+        project_approved:
+            raw.project_approved ??
+            null,
+
+        /* ==========================
+           DATES
+        ========================== */
+
+        created_at:
+            raw.created_at || null,
+
+        updated_at:
+            raw.updated_at || null,
+
+        approved_at:
+            raw.approved_at || null,
+
+        rejected_at:
+            raw.rejected_at || null,
+
+        reviewed_at:
+            raw.reviewed_at || null,
+
+        /* ==========================
+           REVIEW
+        ========================== */
+
+        approved_by_email:
+            raw.approved_by_email || "",
+
+        approved_by_name:
+            raw.approved_by_name || "",
+
+        rejected_by_email:
+            raw.rejected_by_email || "",
+
+        rejected_by_name:
+            raw.rejected_by_name || "",
+
+        reviewed_by_email:
+            raw.reviewed_by_email || "",
+
+        reviewed_by_name:
+            raw.reviewed_by_name || "",
+
+        rejection_reason:
+
+            raw.rejection_reason ||
+
+            raw.review_reason ||
+
+            raw.review_note ||
+
+            ""
+
+    };
+
 }
 
 /* =========================================================
+   GET LATEST INTERNAL PROJECT
+========================================================= */
+
+async function getLatestInternalProjectByEmail(email){
+
+    const supabase =
+        getSupabaseClient();
+
+    const contributorEmail =
+        normalizeEmail(email);
+
+    if(!contributorEmail){
+        return null;
+    }
+
+    const {
+
+        data,
+        error
+
+    } = await supabase
+
+        .from(
+            "albukhr_internal_projects"
+        )
+
+        .select("*")
+
+        .ilike(
+            "creator_email",
+            contributorEmail
+        )
+
+        .order(
+            "created_at",
+            {
+                ascending:false
+            }
+        )
+
+        .limit(1)
+
+        .maybeSingle();
+
+    if(error){
+
+        throw new Error(
+
+            error.message ||
+
+            "Unable to load contributor internal projects."
+
+        );
+
+    }
+
+    return data
+
+        ? normalizeInternalProjectRecord(data)
+
+        : null;
+
+       }
+
+ /* =========================================================
+   PATCH 2B
+   INTERNAL SUBMISSION LOCK ENGINE
+========================================================= */
+
+async function checkInternalSubmissionLock(email = ""){
+
+    const contributorEmail =
+
+        normalizeEmail(email) ||
+
+        getInternalSessionEmail() ||
+
+        getCurrentContributorEmail();
+
+    if(!contributorEmail){
+
+        return{
+
+            ok:false,
+            locked:true,
+            reason:"missing_email",
+            message:"Contributor email not found."
+
+        };
+
+    }
+
+    const latest =
+        await getLatestInternalProjectByEmail(
+            contributorEmail
+        );
+
+    if(!latest){
+
+        return{
+
+            ok:true,
+            locked:false,
+            reason:"",
+            message:"",
+            project:null
+
+        };
+
+    }
+
+    const status =
+        safeString(
+            latest.status
+        )
+        .trim()
+        .toLowerCase();
+
+    /* =====================================
+       Previous project still pending
+    ===================================== */
+
+    if(
+
+        status==="internal_pending" ||
+
+        status==="pending"
+
+    ){
+
+        return{
+
+            ok:true,
+
+            locked:true,
+
+            reason:"internal_pending_exists",
+
+            message:
+                "Your previous internal project is still under review.",
+
+            project:latest
+
+        };
+
+    }
+
+    /* =====================================
+       7 DAY COOLDOWN
+    ===================================== */
+
+    if(
+
+        status==="internal_approved" ||
+
+        status==="approved"
+
+    ){
+
+        const approvedDate =
+
+            latest.approved_at ||
+
+            latest.reviewed_at ||
+
+            latest.updated_at ||
+
+            latest.created_at;
+
+        if(approvedDate){
+
+            const approvedTime =
+
+                new Date(
+                    approvedDate
+                ).getTime();
+
+            const unlockTime =
+
+                approvedTime +
+
+                (7 * 24 * 60 * 60 * 1000);
+
+            if(
+
+                Number.isFinite(unlockTime) &&
+
+                Date.now() < unlockTime
+
+            ){
+
+                return{
+
+                    ok:true,
+
+                    locked:true,
+
+                    reason:"approval_cooldown_active",
+
+                    unlock_at:
+                        new Date(
+                            unlockTime
+                        ).toISOString(),
+
+                    message:
+                        "You can submit another internal project after the cooldown period.",
+
+                    project:latest
+
+                };
+
+            }
+
+        }
+
+    }
+
+    /* =====================================
+       ALLOW SUBMISSION
+    ===================================== */
+
+    return{
+
+        ok:true,
+
+        locked:false,
+
+        reason:"",
+
+        message:"",
+
+        project:latest
+
+    };
+
+       }
+
+ /* =========================================================
+   PATCH 2C
+   INTERNAL PROJECT VALIDATION ENGINE
+========================================================= */
+
+function validateInternalProjectPayload(payload = {}){
+
+    const errors = [];
+
+    /* =====================================
+       REQUIRED FIELDS
+    ===================================== */
+
+    if(!trimOrNull(payload.projectName)){
+        errors.push("Project name is required.");
+    }
+
+    if(!trimOrNull(payload.category)){
+        errors.push("Project category is required.");
+    }
+
+    if(!trimOrNull(payload.stage)){
+        errors.push("Project stage is required.");
+    }
+
+    if(!trimOrNull(payload.creatorName)){
+        errors.push("Creator name is required.");
+    }
+
+    if(!trimOrNull(payload.creatorRole)){
+        errors.push("Creator role is required.");
+    }
+
+    if(!trimOrNull(payload.internalId)){
+        errors.push("Albukhr Internal ID is required.");
+    }
+
+    if(!normalizeEmail(payload.creatorEmail)){
+        errors.push("Creator email is required.");
+    }
+
+    if(!trimOrNull(payload.summary)){
+        errors.push("Project summary is required.");
+    }
+
+    if(!trimOrNull(payload.problem)){
+        errors.push("Problem statement is required.");
+    }
+
+    if(!trimOrNull(payload.solution)){
+        errors.push("Solution is required.");
+    }
+
+    /* =====================================
+       NUMERIC VALIDATION
+    ===================================== */
+
+    if(payload.roi !== undefined){
+
+        const roi = Number(payload.roi);
+
+        if(!Number.isFinite(roi)){
+            errors.push("ROI must be a valid number.");
+        }
+
+    }
+
+    if(payload.initialLiquidity !== undefined){
+
+        const liquidity = Number(payload.initialLiquidity);
+
+        if(!Number.isFinite(liquidity)){
+            errors.push("Initial liquidity must be a valid number.");
+        }
+
+        if(liquidity < 0){
+            errors.push("Initial liquidity cannot be negative.");
+        }
+
+    }
+
+    /* =====================================
+       STATUS
+    ===================================== */
+
+    return{
+
+        ok: errors.length === 0,
+
+        errors,
+
+        firstError:
+            errors.length
+                ? errors[0]
+                : ""
+
+    };
+
+    }
+
+/* =========================================================
+   PATCH 2D
+   INTERNAL PROJECT SUBMISSION ENGINE
+========================================================= */
+
+async function submitInternalProject(payload = {}){
+
+    /* ==========================
+       ACCESS CHECK
+    ========================== */
+
+    const access = await checkInternalAccess(
+        payload.creatorEmail
+    );
+
+    if(!access.allowed){
+
+        throw new Error(
+            access.reason ||
+            "Internal registry access denied."
+        );
+
+    }
+
+    /* ==========================
+       BUILD CLEAN PAYLOAD
+    ========================== */
+
+    const cleanPayload = {
+
+        projectName:
+            trimOrNull(payload.projectName),
+
+        category:
+            trimOrNull(payload.category),
+
+        stage:
+            trimOrNull(payload.stage),
+
+        creatorName:
+            trimOrNull(payload.creatorName),
+
+        creatorRole:
+            trimOrNull(payload.creatorRole),
+
+        internalId:
+            trimOrNull(payload.internalId),
+
+        creatorEmail:
+            normalizeEmail(
+                payload.creatorEmail ||
+                access.contributor.email
+            ),
+
+        creatorPhone:
+            trimOrNull(payload.creatorPhone),
+
+        summary:
+            trimOrNull(payload.summary),
+
+        problem:
+            trimOrNull(payload.problem),
+
+        solution:
+            trimOrNull(payload.solution),
+
+        impact:
+            trimOrNull(payload.impact),
+
+        funding:
+            trimOrNull(payload.funding),
+
+        risk:
+            trimOrNull(payload.risk),
+
+        confidentiality:
+            trimOrNull(payload.confidentiality),
+
+        roi:
+            safeNumber(payload.roi,0),
+
+        initialLiquidity:
+            safeNumber(
+                payload.initialLiquidity,
+                0
+            )
+
+    };
+
+    /* ==========================
+       VALIDATION
+    ========================== */
+
+    const validation =
+        validateInternalProjectPayload(
+            cleanPayload
+        );
+
+    if(!validation.ok){
+
+        throw new Error(
+            validation.firstError
+        );
+
+    }
+
+    /* ==========================
+       LOCK CHECK
+    ========================== */
+
+    const lockState =
+        await checkInternalSubmissionLock(
+            cleanPayload.creatorEmail
+        );
+
+    if(lockState.locked){
+
+        throw new Error(
+            lockState.message
+        );
+
+    }
+
+    /* ==========================
+       RPC SUBMIT
+    ========================== */
+
+    const result =
+        await callRpc(
+            "albukhr_submit_internal_project",
+            {
+
+                p_project_name:
+                    cleanPayload.projectName,
+
+                p_category:
+                    cleanPayload.category,
+
+                p_stage:
+                    cleanPayload.stage,
+
+                p_creator_name:
+                    cleanPayload.creatorName,
+
+                p_creator_role:
+                    cleanPayload.creatorRole,
+
+                p_internal_id:
+                    cleanPayload.internalId,
+
+                p_creator_email:
+                    cleanPayload.creatorEmail,
+
+                p_creator_phone:
+                    cleanPayload.creatorPhone,
+
+                p_summary:
+                    cleanPayload.summary,
+
+                p_problem:
+                    cleanPayload.problem,
+
+                p_solution:
+                    cleanPayload.solution,
+
+                p_impact:
+                    cleanPayload.impact,
+
+                p_funding:
+                    cleanPayload.funding,
+
+                p_risk:
+                    cleanPayload.risk,
+
+                p_confidentiality:
+                    cleanPayload.confidentiality,
+
+                p_roi:
+                    cleanPayload.roi,
+
+                p_initial_liquidity:
+                    cleanPayload.initialLiquidity
+
+            }
+        );
+
+    return{
+
+        ok:true,
+
+        message:
+            result?.message ||
+            "Internal project submitted successfully.",
+
+        project:
+            normalizeInternalProjectRecord(
+                result?.project ||
+                result ||
+                {}
+            )
+
+    };
+
+}
+
+/* =========================================================
+   FORM HELPER
+========================================================= */
+
+async function submitInternalProjectFromForm(form = {}){
+
+    return await submitInternalProject({
+
+        projectName:
+            form.projectName?.value,
+
+        category:
+            form.category?.value,
+
+        stage:
+            form.stage?.value,
+
+        creatorName:
+            form.creatorName?.value,
+
+        creatorRole:
+            form.role?.value,
+
+        internalId:
+            form.internalId?.value,
+
+        creatorEmail:
+            form.email?.value,
+
+        creatorPhone:
+            form.phone?.value,
+
+        summary:
+            form.summary?.value,
+
+        problem:
+            form.problem?.value,
+
+        solution:
+            form.solution?.value,
+
+        impact:
+            form.impact?.value,
+
+        funding:
+            form.funding?.value,
+
+        risk:
+            form.risk?.value,
+
+        confidentiality:
+            form.confidentiality?.value,
+
+        roi:
+            form.roi?.value,
+
+        initialLiquidity:
+            form.liquidity?.value
+
+    });
+
+       }
+
+ /* =========================================================
+   PATCH 3A
+   INTERNAL ADMIN HELPERS
+========================================================= */
+
+/* =========================================================
+   ADMIN META
+========================================================= */
+
+function getInternalAdminMeta(){
+
+    return{
+
+        email:
+
+            normalizeEmail(
+
+                localStorage.getItem(
+                    "albukhr_current_email"
+                ) ||
+
+                localStorage.getItem(
+                    "currentUserEmail"
+                ) ||
+
+                ""
+
+            ),
+
+        name:
+
+            safeString(
+
+                localStorage.getItem(
+                    "albukhr_current_username"
+                ) ||
+
+                localStorage.getItem(
+                    "currentUserName"
+                ) ||
+
+                "ALBUKHR Admin"
+
+            ).trim(),
+
+        role:
+
+            safeString(
+
+                localStorage.getItem(
+                    "albukhr_current_role"
+                ) ||
+
+                "admin"
+
+            ).trim()
+
+    };
+
+}
+
+/* =========================================================
+   ADMIN PROJECT NORMALIZER
+========================================================= */
+
+function normalizeAdminInternalProject(raw={}){
+
+    return{
+
+        id:
+            raw.id || null,
+
+        /* Project */
+
+        project_name:
+            raw.project_name ||
+            raw.projectName ||
+            "",
+
+        project_code:
+            raw.project_code ||
+            "",
+
+        category:
+            raw.category ||
+            "",
+
+        stage:
+            raw.stage ||
+            "",
+
+        /* Creator */
+
+        creator_name:
+            raw.creator_name ||
+            raw.creatorName ||
+            "",
+
+        creator_role:
+            raw.creator_role ||
+            raw.role ||
+            "",
+
+        internal_id:
+            raw.internal_id ||
+            raw.albukhr_id ||
+            raw.albukhrId ||
+            "",
+
+        creator_email:
+
+            normalizeEmail(
+
+                raw.creator_email ||
+
+                raw.email ||
+
+                ""
+
+            ),
+
+        creator_phone:
+
+            raw.creator_phone ||
+
+            raw.phone ||
+
+            "",
+
+        /* Description */
+
+        summary:
+            raw.summary || "",
+
+        problem:
+            raw.problem || "",
+
+        solution:
+            raw.solution || "",
+
+        impact:
+            raw.impact || "",
+
+        /* Internal */
+
+        funding:
+            raw.funding || "",
+
+        risk:
+            raw.risk || "",
+
+        confidentiality:
+            raw.confidentiality || "",
+
+        roi:
+            safeNumber(raw.roi,0),
+
+        initial_liquidity:
+            safeNumber(
+                raw.initial_liquidity ??
+                raw.liquidity,
+                0
+            ),
+
+        /* Review */
+
+        status:
+            raw.status ||
+            "internal_pending",
+
+        approved_at:
+            raw.approved_at ||
+            null,
+
+        rejected_at:
+            raw.rejected_at ||
+            null,
+
+        reviewed_at:
+            raw.reviewed_at ||
+            null,
+
+        created_at:
+            raw.created_at ||
+            null,
+
+        updated_at:
+            raw.updated_at ||
+            null,
+
+        approved_by_email:
+            raw.approved_by_email ||
+            "",
+
+        approved_by_name:
+            raw.approved_by_name ||
+            "",
+
+        rejected_by_email:
+            raw.rejected_by_email ||
+            "",
+
+        rejected_by_name:
+            raw.rejected_by_name ||
+            "",
+
+        reviewed_by_email:
+            raw.reviewed_by_email ||
+            "",
+
+        reviewed_by_name:
+            raw.reviewed_by_name ||
+            "",
+
+        rejection_reason:
+
+            raw.rejection_reason ||
+
+            raw.review_reason ||
+
+            raw.review_note ||
+
+            ""
+
+    };
+
+}
+
+/* =========================================================
+   ADMIN STATUS NORMALIZER
+========================================================= */
+
+function normalizeInternalStatus(status){
+
+    const s =
+
+        safeString(status)
+        .trim()
+        .toLowerCase();
+
+    switch(s){
+
+        case "pending":
+            return "internal_pending";
+
+        case "approved":
+            return "internal_approved";
+
+        case "rejected":
+            return "internal_rejected";
+
+        default:
+            return s || "internal_pending";
+
+    }
+
+}
+
+/* =========================================================
+   INTERNAL PROJECT EXISTS
+========================================================= */
+
+function hasInternalProject(project){
+
+    return !!(
+
+        project &&
+
+        project.id
+
+    );
+
+               }
+
+ /* =========================================================
+   PATCH 3B
    ADMIN LIST INTERNAL PROJECTS
-   Preferred RPC:
-   albukhr_admin_list_internal_projects(
-     p_status text default null,
-     p_limit integer default 500
-   )
 ========================================================= */
+
 async function adminListInternalProjects({
-  status = "",
-  limit = 500
+
+    status = "",
+    limit = 500
+
 } = {}){
-  const supabase = getSupabaseClient();
 
-  /* preferred RPC */
-  try{
-    const { data, error } = await supabase.rpc(
-      "albukhr_admin_list_internal_projects",
-      {
-        p_status: status ? String(status).trim() : null,
-        p_limit: Number(limit) || 500
-      }
-    );
+    const supabase =
+        getSupabaseClient();
 
-    if(error){
-      throw error;
+    const normalizedStatus =
+        status
+            ? normalizeInternalStatus(status)
+            : "";
+
+    /* =====================================
+       Preferred RPC
+    ===================================== */
+
+    try{
+
+        const result =
+            await callRpc(
+                "albukhr_admin_list_internal_projects",
+                {
+
+                    p_status:
+                        normalizedStatus || null,
+
+                    p_limit:
+                        safeNumber(limit,500)
+
+                }
+            );
+
+        const rows =
+
+            Array.isArray(result)
+
+                ? result
+
+                : Array.isArray(
+                    result?.projects
+                )
+
+                ? result.projects
+
+                : [];
+
+        return rows.map(
+            normalizeAdminInternalProject
+        );
+
     }
 
-    const rows = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.projects)
-        ? data.projects
-        : [];
+    catch(err){
 
-    return rows.map(normalizeInternalProjectRecord);
+        console.warn(
 
-  }catch(err){
-    console.warn(
-      "albukhr_admin_list_internal_projects RPC unavailable, using direct read:",
-      err
-    );
-  }
+            "albukhr_admin_list_internal_projects RPC unavailable. Falling back to direct table read.",
 
-  /* fallback direct table read */
-  let query = supabase
-    .from("albukhr_internal_projects")
-    .select("*")
-    .order("created_at", { ascending:false })
-    .limit(Number(limit) || 500);
+            err
 
-  if(status){
-    query = query.eq("status", String(status).trim());
-  }
+        );
 
-  const { data, error } = await query;
+    }
 
-  if(error){
-    throw new Error(
-      error.message || "Failed to load internal projects."
-    );
-  }
+    /* =====================================
+       Direct Table Read
+    ===================================== */
 
-  return (Array.isArray(data) ? data : [])
-    .map(normalizeInternalProjectRecord);
-}
+    let query =
 
-/* =========================================================
+        supabase
+
+        .from(
+            "albukhr_internal_projects"
+        )
+
+        .select("*")
+
+        .order(
+            "created_at",
+            {
+                ascending:false
+            }
+        )
+
+        .limit(
+            safeNumber(limit,500)
+        );
+
+    if(normalizedStatus){
+
+        query =
+            query.eq(
+                "status",
+                normalizedStatus
+            );
+
+    }
+
+    const {
+
+        data,
+        error
+
+    } = await query;
+
+    if(error){
+
+        throw new Error(
+
+            error.message ||
+
+            "Unable to load internal projects."
+
+        );
+
+    }
+
+    return
+
+        (Array.isArray(data)
+
+            ? data
+
+            : []
+
+        ).map(
+
+            normalizeAdminInternalProject
+
+        );
+
+         }
+
+ /* =========================================================
+   PATCH 3C
    ADMIN APPROVE INTERNAL PROJECT
-   Supports BOTH signatures:
-   1) adminApproveInternalProject("project-id")
-   2) adminApproveInternalProject({
-        projectId,
-        approvedBy,
-        approvedByName,
-        approvedByRole
-      })
-
-   Preferred RPC:
-   albukhr_admin_approve_internal_project(
-     p_project_id uuid/text,
-     p_approved_by_email text,
-     p_approved_by_name text,
-     p_approved_by_role text
-   )
 ========================================================= */
+
 async function adminApproveInternalProject(input = {}){
-  const supabase = getSupabaseClient();
 
-  let projectId = "";
-  let approvedByEmail = "";
-  let approvedByName = "";
-  let approvedByRole = "";
+    const supabase = getSupabaseClient();
 
-  if(typeof input === "string"){
-    projectId = input.trim();
-  }else{
-    projectId = String(
-      input.projectId ||
-      input.id ||
-      ""
-    ).trim();
+    let projectId = "";
+    let approvedByEmail = "";
+    let approvedByName = "";
+    let approvedByRole = "";
 
-    approvedByEmail = String(
-      input.approvedBy ||
-      input.approvedByEmail ||
-      ""
-    ).trim().toLowerCase();
+    /* =====================================
+       SUPPORT BOTH SIGNATURES
+    ===================================== */
 
-    approvedByName = String(
-      input.approvedByName || ""
-    ).trim();
+    if(typeof input === "string"){
 
-    approvedByRole = String(
-      input.approvedByRole || ""
-    ).trim();
-  }
+        projectId = input.trim();
 
-  if(!projectId){
-    throw new Error("Internal project ID is required for approval.");
-  }
+    }else{
 
-  const actor = getInternalAdminMeta();
+        projectId = safeString(
+            input.projectId ||
+            input.id
+        ).trim();
 
-  const actorEmail = approvedByEmail || actor.email || "";
-  const actorName = approvedByName || actor.name || "ALBUKHR Admin";
-  const actorRole = approvedByRole || actor.role || "admin";
+        approvedByEmail = normalizeEmail(
+            input.approvedBy ||
+            input.approvedByEmail ||
+            ""
+        );
 
-  /* preferred RPC */
-  try{
-    const { data, error } = await supabase.rpc(
-      "albukhr_admin_approve_internal_project",
-      {
-        p_project_id: projectId,
-        p_approved_by_email: actorEmail,
-        p_approved_by_name: actorName,
-        p_approved_by_role: actorRole
-      }
-    );
+        approvedByName = safeString(
+            input.approvedByName
+        ).trim();
 
-    if(error){
-      throw error;
+        approvedByRole = safeString(
+            input.approvedByRole
+        ).trim();
+
     }
 
-    return {
-      ok:true,
-      project: normalizeInternalProjectRecord(
-        data?.project || data || {}
-      )
+    if(!projectId){
+        throw new Error(
+            "Internal project ID is required."
+        );
+    }
+
+    const actor = getInternalAdminMeta();
+
+    approvedByEmail =
+        approvedByEmail ||
+        actor.email;
+
+    approvedByName =
+        approvedByName ||
+        actor.name ||
+        "ALBUKHR Admin";
+
+    approvedByRole =
+        approvedByRole ||
+        actor.role ||
+        "admin";
+
+    /* =====================================
+       RPC
+    ===================================== */
+
+    try{
+
+        const result =
+            await callRpc(
+                "albukhr_admin_approve_internal_project",
+                {
+
+                    p_project_id:
+                        projectId,
+
+                    p_approved_by_email:
+                        approvedByEmail,
+
+                    p_approved_by_name:
+                        approvedByName,
+
+                    p_approved_by_role:
+                        approvedByRole
+
+                }
+            );
+
+        return{
+
+            ok:true,
+
+            project:
+                normalizeAdminInternalProject(
+                    result?.project ||
+                    result ||
+                    {}
+                )
+
+        };
+
+    }
+
+    catch(err){
+
+        console.warn(
+
+            "RPC approve unavailable, using direct update.",
+
+            err
+
+        );
+
+    }
+
+    /* =====================================
+       DIRECT UPDATE
+    ===================================== */
+
+    const now =
+        nowIso();
+
+    const {
+
+        data,
+        error
+
+    } = await supabase
+
+        .from(
+            "albukhr_internal_projects"
+        )
+
+        .update({
+
+            status:
+                "internal_approved",
+
+            approved_at:
+                now,
+
+            reviewed_at:
+                now,
+
+            updated_at:
+                now,
+
+            approved_by_email:
+                approvedByEmail,
+
+            approved_by_name:
+                approvedByName,
+
+            reviewed_by_email:
+                approvedByEmail,
+
+            reviewed_by_name:
+                approvedByName,
+
+            rejected_at:
+                null,
+
+            rejected_by_email:
+                null,
+
+            rejected_by_name:
+                null,
+
+            rejection_reason:
+                null
+
+        })
+
+        .eq(
+            "id",
+            projectId
+        )
+
+        .select()
+
+        .single();
+
+    if(error){
+
+        throw new Error(
+
+            error.message ||
+
+            "Failed to approve internal project."
+
+        );
+
+    }
+
+    return{
+
+        ok:true,
+
+        project:
+            normalizeAdminInternalProject(
+                data
+            )
+
     };
 
-  }catch(err){
-    console.warn(
-      "albukhr_admin_approve_internal_project RPC unavailable, using direct update:",
-      err
-    );
-  }
-
-  /* fallback direct update */
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("albukhr_internal_projects")
-    .update({
-      status: "internal_approved",
-      approved_at: now,
-      rejected_at: null,
-
-      approved_by_email: actorEmail || null,
-      approved_by_name: actorName || null,
-
-      reviewed_by_email: actorEmail || null,
-      reviewed_by_name: actorName || null,
-
-      rejected_by_email: null,
-      rejected_by_name: null,
-      rejection_reason: null,
-
-      updated_at: now
-    })
-    .eq("id", projectId)
-    .select()
-    .single();
-
-  if(error){
-    throw new Error(
-      error.message || "Failed to approve internal project."
-    );
-  }
-
-  return {
-    ok:true,
-    project: normalizeInternalProjectRecord(data)
-  };
 }
 
-/* =========================================================
+ /* =========================================================
+   PATCH 3D
    ADMIN REJECT INTERNAL PROJECT
-   Supports BOTH signatures:
-   1) adminRejectInternalProject("project-id")
-   2) adminRejectInternalProject({
-        projectId,
-        reason,
-        rejectedBy,
-        rejectedByName,
-        rejectedByRole
-      })
-
-   Preferred RPC:
-   albukhr_admin_reject_internal_project(
-     p_project_id uuid/text,
-     p_rejected_by_email text,
-     p_rejected_by_name text,
-     p_rejected_by_role text,
-     p_reason text
-   )
 ========================================================= */
+
 async function adminRejectInternalProject(input = {}){
-  const supabase = getSupabaseClient();
 
-  let projectId = "";
-  let reason = "";
-  let rejectedByEmail = "";
-  let rejectedByName = "";
-  let rejectedByRole = "";
+    const supabase = getSupabaseClient();
 
-  if(typeof input === "string"){
-    projectId = input.trim();
-  }else{
-    projectId = String(
-      input.projectId ||
-      input.id ||
-      ""
-    ).trim();
+    let projectId = "";
+    let reason = "";
+    let rejectedByEmail = "";
+    let rejectedByName = "";
+    let rejectedByRole = "";
 
-    reason = String(
-      input.reason || ""
-    ).trim();
+    /* =====================================
+       SUPPORT BOTH SIGNATURES
+    ===================================== */
 
-    rejectedByEmail = String(
-      input.rejectedBy ||
-      input.rejectedByEmail ||
-      ""
-    ).trim().toLowerCase();
+    if(typeof input === "string"){
 
-    rejectedByName = String(
-      input.rejectedByName || ""
-    ).trim();
+        projectId = input.trim();
 
-    rejectedByRole = String(
-      input.rejectedByRole || ""
-    ).trim();
-  }
+    }else{
 
-  if(!projectId){
-    throw new Error("Internal project ID is required for rejection.");
-  }
+        projectId = safeString(
+            input.projectId ||
+            input.id
+        ).trim();
 
-  const actor = getInternalAdminMeta();
+        reason = safeString(
+            input.reason
+        ).trim();
 
-  const actorEmail = rejectedByEmail || actor.email || "";
-  const actorName = rejectedByName || actor.name || "ALBUKHR Admin";
-  const actorRole = rejectedByRole || actor.role || "admin";
+        rejectedByEmail = normalizeEmail(
+            input.rejectedBy ||
+            input.rejectedByEmail ||
+            ""
+        );
 
-  /* preferred RPC */
-  try{
-    const { data, error } = await supabase.rpc(
-      "albukhr_admin_reject_internal_project",
-      {
-        p_project_id: projectId,
-        p_rejected_by_email: actorEmail,
-        p_rejected_by_name: actorName,
-        p_rejected_by_role: actorRole,
-        p_reason: reason || null
-      }
-    );
+        rejectedByName = safeString(
+            input.rejectedByName
+        ).trim();
 
-    if(error){
-      throw error;
+        rejectedByRole = safeString(
+            input.rejectedByRole
+        ).trim();
+
     }
 
-    return {
-      ok:true,
-      project: normalizeInternalProjectRecord(
-        data?.project || data || {}
-      )
+    if(!projectId){
+        throw new Error(
+            "Internal project ID is required."
+        );
+    }
+
+    const actor = getInternalAdminMeta();
+
+    rejectedByEmail =
+        rejectedByEmail ||
+        actor.email;
+
+    rejectedByName =
+        rejectedByName ||
+        actor.name ||
+        "ALBUKHR Admin";
+
+    rejectedByRole =
+        rejectedByRole ||
+        actor.role ||
+        "admin";
+
+    /* =====================================
+       RPC
+    ===================================== */
+
+    try{
+
+        const result =
+            await callRpc(
+                "albukhr_admin_reject_internal_project",
+                {
+
+                    p_project_id:
+                        projectId,
+
+                    p_rejected_by_email:
+                        rejectedByEmail,
+
+                    p_rejected_by_name:
+                        rejectedByName,
+
+                    p_rejected_by_role:
+                        rejectedByRole,
+
+                    p_reason:
+                        reason || null
+
+                }
+            );
+
+        return{
+
+            ok:true,
+
+            project:
+                normalizeAdminInternalProject(
+                    result?.project ||
+                    result ||
+                    {}
+                )
+
+        };
+
+    }
+
+    catch(err){
+
+        console.warn(
+
+            "RPC reject unavailable, using direct update.",
+
+            err
+
+        );
+
+    }
+
+    /* =====================================
+       DIRECT UPDATE
+    ===================================== */
+
+    const now =
+        nowIso();
+
+    const {
+
+        data,
+        error
+
+    } = await supabase
+
+        .from(
+            "albukhr_internal_projects"
+        )
+
+        .update({
+
+            status:
+                "internal_rejected",
+
+            rejected_at:
+                now,
+
+            reviewed_at:
+                now,
+
+            updated_at:
+                now,
+
+            rejected_by_email:
+                rejectedByEmail,
+
+            rejected_by_name:
+                rejectedByName,
+
+            reviewed_by_email:
+                rejectedByEmail,
+
+            reviewed_by_name:
+                rejectedByName,
+
+            rejection_reason:
+                reason || null,
+
+            approved_at:
+                null,
+
+            approved_by_email:
+                null,
+
+            approved_by_name:
+                null
+
+        })
+
+        .eq(
+            "id",
+            projectId
+        )
+
+        .select()
+
+        .single();
+
+    if(error){
+
+        throw new Error(
+
+            error.message ||
+
+            "Failed to reject internal project."
+
+        );
+
+    }
+
+    return{
+
+        ok:true,
+
+        project:
+            normalizeAdminInternalProject(
+                data
+            )
+
     };
 
-  }catch(err){
+           }
+
+ /* =========================================================
+   PATCH 4A
+   EXPORTS TO ENGINE NAMESPACE
+========================================================= */
+
+/* ---------- Session ---------- */
+
+InternalRegistryEngine.getSupabaseClient =
+    getSupabaseClient;
+
+InternalRegistryEngine.setInternalSession =
+    setInternalSession;
+
+InternalRegistryEngine.clearInternalSession =
+    clearInternalSession;
+
+InternalRegistryEngine.getInternalSessionEmail =
+    getInternalSessionEmail;
+
+InternalRegistryEngine.getInternalSessionToken =
+    getInternalSessionToken;
+
+InternalRegistryEngine.getCurrentContributorEmail =
+    getCurrentContributorEmail;
+
+
+/* ---------- Contributor ---------- */
+
+InternalRegistryEngine.findContributorByEmail =
+    findContributorByEmail;
+
+InternalRegistryEngine.checkInternalAccess =
+    checkInternalAccess;
+
+InternalRegistryEngine.validateInternalEntryGate =
+    validateInternalEntryGate;
+
+
+/* ---------- Lock Engine ---------- */
+
+InternalRegistryEngine.getLatestInternalProjectByEmail =
+    getLatestInternalProjectByEmail;
+
+InternalRegistryEngine.checkInternalSubmissionLock =
+    checkInternalSubmissionLock;
+
+
+/* ---------- Submission ---------- */
+
+InternalRegistryEngine.validateInternalProjectPayload =
+    validateInternalProjectPayload;
+
+InternalRegistryEngine.submitInternalProject =
+    submitInternalProject;
+
+InternalRegistryEngine.submitInternalProjectFromForm =
+    submitInternalProjectFromForm;
+
+
+/* ---------- Bootstrap ---------- */
+
+InternalRegistryEngine.bootstrapInternalRegistryPage =
+    bootstrapInternalRegistryPage;
+
+InternalRegistryEngine.fillContributorFieldsIfNeeded =
+    fillContributorFieldsIfNeeded;
+
+
+/* ---------- UI Helpers ---------- */
+
+InternalRegistryEngine.disableButton =
+    disableButton;
+
+InternalRegistryEngine.enableButton =
+    enableButton;
+
+
+/* ---------- Admin ---------- */
+
+InternalRegistryEngine.getInternalAdminMeta =
+    getInternalAdminMeta;
+
+InternalRegistryEngine.adminListInternalProjects =
+    adminListInternalProjects;
+
+InternalRegistryEngine.adminApproveInternalProject =
+    adminApproveInternalProject;
+
+InternalRegistryEngine.adminRejectInternalProject =
+    adminRejectInternalProject;
+
+ /* =========================================================
+   PATCH 4B
+   LEGACY GLOBAL WRAPPERS
+   ---------------------------------------------------------
+   Backward compatibility for existing pages.
+========================================================= */
+
+/* ---------- Session ---------- */
+
+window.setInternalSession =
+    setInternalSession;
+
+window.clearInternalSession =
+    clearInternalSession;
+
+window.getInternalSessionEmail =
+    getInternalSessionEmail;
+
+window.getInternalSessionToken =
+    getInternalSessionToken;
+
+
+/* ---------- Contributor ---------- */
+
+window.findContributorByEmail =
+    findContributorByEmail;
+
+window.checkInternalAccess =
+    checkInternalAccess;
+
+window.validateInternalEntryGate =
+    validateInternalEntryGate;
+
+
+/* ---------- Lock ---------- */
+
+window.checkInternalSubmissionLock =
+    checkInternalSubmissionLock;
+
+window.getLatestInternalProjectByEmail =
+    getLatestInternalProjectByEmail;
+
+
+/* ---------- Submission ---------- */
+
+window.submitInternalProject =
+    submitInternalProject;
+
+window.submitInternalProjectFromForm =
+    submitInternalProjectFromForm;
+
+window.validateInternalProjectPayload =
+    validateInternalProjectPayload;
+
+
+/* ---------- Bootstrap ---------- */
+
+window.bootstrapInternalRegistryPage =
+    bootstrapInternalRegistryPage;
+
+window.fillContributorFieldsIfNeeded =
+    fillContributorFieldsIfNeeded;
+
+
+/* ---------- UI Helpers ---------- */
+
+window.disableInternalButton =
+    disableButton;
+
+window.enableInternalButton =
+    enableButton;
+
+
+/* ---------- Admin ---------- */
+
+window.getInternalAdminMeta =
+    getInternalAdminMeta;
+
+window.adminListInternalProjects =
+    adminListInternalProjects;
+
+window.adminApproveInternalProject =
+    adminApproveInternalProject;
+
+window.adminRejectInternalProject =
+    adminRejectInternalProject;
+
+ /* =========================================================
+   PATCH 4C
+   PRODUCTION CLEANUP
+   ---------------------------------------------------------
+   Final production hardening
+========================================================= */
+
+/* =========================================================
+   VERSION
+========================================================= */
+
+InternalRegistryEngine.VERSION =
+    "1.0.0";
+
+InternalRegistryEngine.BUILD =
+    "SUPABASE-PRODUCTION";
+
+InternalRegistryEngine.ENGINE_NAME =
+    ENGINE_NAME;
+
+
+/* =========================================================
+   DUPLICATE LOADER PROTECTION
+========================================================= */
+
+if(window.__ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED__){
+
     console.warn(
-      "albukhr_admin_reject_internal_project RPC unavailable, using direct update:",
-      err
+        ENGINE_NAME +
+        " already loaded."
     );
-  }
 
-  /* fallback direct update */
-  const now = new Date().toISOString();
+}else{
 
-  const { data, error } = await supabase
-    .from("albukhr_internal_projects")
-    .update({
-      status: "internal_rejected",
-      rejected_at: now,
-      approved_at: null,
+    window.__ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED__ =
+        true;
 
-      rejected_by_email: actorEmail || null,
-      rejected_by_name: actorName || null,
-
-      reviewed_by_email: actorEmail || null,
-      reviewed_by_name: actorName || null,
-
-      rejection_reason: reason || null,
-
-      approved_by_email: null,
-      approved_by_name: null,
-
-      updated_at: now
-    })
-    .eq("id", projectId)
-    .select()
-    .single();
-
-  if(error){
-    throw new Error(
-      error.message || "Failed to reject internal project."
-    );
-  }
-
-  return {
-    ok:true,
-    project: normalizeInternalProjectRecord(data)
-  };
 }
 
-/* =========================================================
-   EXPORT TO ENGINE NAMESPACE
-========================================================= */
-InternalRegistryEngine.adminListInternalProjects = adminListInternalProjects;
-InternalRegistryEngine.adminApproveInternalProject = adminApproveInternalProject;
-InternalRegistryEngine.adminRejectInternalProject = adminRejectInternalProject;
 
 /* =========================================================
-   OPTIONAL GLOBAL WRAPPERS
+   FREEZE PUBLIC API
 ========================================================= */
-window.adminListInternalProjects = adminListInternalProjects;
-window.adminApproveInternalProject = adminApproveInternalProject;
-window.adminRejectInternalProject = adminRejectInternalProject;
 
+try{
+
+    Object.freeze(
+        InternalRegistryEngine
+    );
+
+}catch(err){
+
+    console.warn(
+        "Unable to freeze InternalRegistryEngine.",
+        err
+    );
+
+}
+
+
+/* =========================================================
+   READY LOG
+========================================================= */
+
+console.info(
+
+    "%cALBUKHR Internal Registry Engine Ready",
+
+    "color:#0f7a3d;font-weight:bold"
+
+);
+
+console.info({
+
+    version:
+        InternalRegistryEngine.VERSION,
+
+    build:
+        InternalRegistryEngine.BUILD
+
+});
+
+
+/* =========================================================
+   END OF ENGINE
+========================================================= */
 })();
