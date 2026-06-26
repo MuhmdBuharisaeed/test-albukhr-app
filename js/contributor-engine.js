@@ -64,21 +64,37 @@
      SUPABASE RESOLVER
   ========================================================= */
   function getSupabaseClient(){
-    const client =
-      window.supabaseClient ||
-      window.supabase ||
-      window.albukhrSupabase ||
-      null;
 
-    if(!client){
-      throw new Error(
-        `${ENGINE_NAME}: Supabase client not found. Load js/supabase-core.js first.`
-      );
-    }
-
-    return client;
+  if(
+    window.albukhrSupabase &&
+    typeof window.albukhrSupabase.from === "function"
+  ){
+    return window.albukhrSupabase;
   }
 
+  if(
+    typeof window.getAlbukhrSupabaseClient === "function"
+  ){
+    const client = window.getAlbukhrSupabaseClient();
+
+    if(client && typeof client.from === "function"){
+      return client;
+    }
+  }
+
+  if(
+    window.supabaseClient &&
+    typeof window.supabaseClient.from === "function"
+  ){
+    return window.supabaseClient;
+  }
+
+  throw new Error(
+    ENGINE_NAME +
+    ": Valid Supabase client not found. Load js/supabase-core.js first."
+  );
+
+     }
   /* =========================================================
      BASIC HELPERS
   ========================================================= */
