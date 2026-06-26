@@ -806,7 +806,12 @@ async function generateInviteToken(){
       throw new Error("AlbukhrContributorEngine.generateContributorInvite() not found.");
     }
 
-    const actor = adminActorMeta();
+    const result = await window.AlbukhrContributorEngine.generateContributorInvite({
+    createdByEmail: actor.email,
+    createdByName: actor.name
+});
+
+alert("STEP 4");
 
     const result = await window.AlbukhrContributorEngine.generateContributorInvite({
       createdByEmail: actor.email,
