@@ -929,7 +929,10 @@ async function fetchInternalProjects(){
     let list = [];
 
     if(typeof engine.adminListInternalProjects === "function"){
-      list = await engine.adminListInternalProjects();
+      list = await engine.adminListInternalProjects({
+  status: "",
+  limit: 500
+});
     }else{
       list = await directListInternalProjects();
     }
