@@ -31,20 +31,34 @@ const SESSION_KEYS = {
 ========================================================= */
 function getSupabaseClient(){
 
-    const client =
-        window.supabaseClient ||
-        window.albukhrSupabase ||
-        window.supabase ||
-        null;
+  // Primary client
+  if(
+    window.albukhrSupabase &&
+    typeof window.albukhrSupabase.from === "function"
+  ){
+    return window.albukhrSupabase;
+  }
 
-    if(!client){
-        throw new Error(
-            ENGINE_NAME +
-            ": Supabase client not found. Load js/supabase-core.js first."
-        );
+  // Factory function
+  if(typeof window.getAlbukhrSupabaseClient === "function"){
+    const client = window.getAlbukhrSupabaseClient();
+
+    if(client && typeof client.from === "function"){
+      return client;
     }
+  }
 
-    return client;
+  // Legacy compatibility
+  if(
+    window.supabaseClient &&
+    typeof window.supabaseClient.from === "function"
+  ){
+    return window.supabaseClient;
+  }
+
+  throw new Error(
+    "ALBUKHR: Supabase client not initialized."
+  );
 }
 
 /* =========================================================
