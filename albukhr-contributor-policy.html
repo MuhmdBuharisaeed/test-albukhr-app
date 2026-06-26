@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albukhr Contributor Policy</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.section{padding:16px}
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  line-height:1.7
+}
+.lang-switch{
+  display:flex;
+  gap:10px;
+  margin-bottom:14px
+}
+.lang-switch button{
+  padding:8px 14px;
+  border:none;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  background:#eee
+}
+.lang-switch .active{
+  background:#0f7a3d;
+  color:#fff
+}
+h3{margin-top:0}
+h4{margin-top:18px}
+ul{padding-left:18px}
+.notice{
+  font-size:12px;
+  background:#f6fbf8;
+  border-left:4px solid #0f7a3d;
+  padding:10px;
+  margin-top:16px
+}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <h1 class="brand">ALBUKHR</h1>
+</header>
+
+<section class="section">
+
+  <h3>📜 Contributor Policy & Rules</h3>
+
+  <!-- LANGUAGE SWITCH -->
+  <div class="lang-switch">
+    <button id="btn-en" class="active" onclick="showLang('en')">
+      English
+    </button>
+    <button id="btn-ha" onclick="showLang('ha')">
+      Hausa
+    </button>
+  </div>
+
+  <!-- ENGLISH VERSION -->
+  <div id="policy-en" class="card">
+
+    <h4>1. Purpose of the Contributor Program</h4>
+    <p>
+      The Albukhr Contributor Program is designed to onboard trusted individuals
+      who have demonstrated knowledge, skills, and commitment to community
+      development, Web3 education, innovation, and ecosystem growth.
+    </p>
+
+    <h4>2. Eligibility</h4>
+    <ul>
+      <li>Contributor must provide true and verifiable personal information.</li>
+      <li>Contributor must have relevant skills or experience.</li>
+      <li>Contributor must align with Albukhr’s mission and values.</li>
+    </ul>
+
+    <h4>3. Contributor Responsibilities</h4>
+    <ul>
+      <li>Act with honesty, transparency, and professionalism.</li>
+      <li>Respect Albukhr’s internal structure and confidentiality.</li>
+      <li>Use Albukhr platforms strictly for approved activities.</li>
+    </ul>
+
+    <h4>4. Prohibited Actions</h4>
+    <ul>
+      <li>Providing false information or impersonation.</li>
+      <li>Misuse of Albukhr name, tools, or community.</li>
+      <li>Engaging in fraud, scams, or unethical behavior.</li>
+    </ul>
+
+    <h4>5. Enforcement & Sanctions</h4>
+    <p>
+      Albukhr reserves the right to suspend or permanently remove any contributor
+      found violating these rules, without prior notice.
+    </p>
+
+    <h4>6. Telegram & Internal Access</h4>
+    <p>
+      Access to Albukhr contributor Telegram groups and internal channels
+      is granted only after approval and may be revoked at any time.
+    </p>
+
+    <div class="notice">
+      By participating in the Albukhr Contributor Program,
+      you agree to abide by all rules and policies stated above.
+    </div>
+
+  </div>
+
+  <!-- HAUSA VERSION -->
+  <div id="policy-ha" class="card hidden">
+
+    <h4>1. Manufar Shirin Contributors</h4>
+    <p>
+      Shirin Albukhr Contributor an kirkiro shi ne domin shigar da amintattun mutane
+      masu ilimi, kwarewa, da kishin ci gaban al’umma, musamman a fannin Web3,
+      fasaha, da bunkasar ecosystem.
+    </p>
+
+    <h4>2. Sharuddan Cancanta</h4>
+    <ul>
+      <li>Dole ne contributor ya bayar da sahihin bayanansa na gaskiya.</li>
+      <li>Dole ne ya mallaki ilimi ko kwarewa da ta dace.</li>
+      <li>Dole ne ya yarda da manufofi da hangen nesan Albukhr.</li>
+    </ul>
+
+    <h4>3. Nauyin da ke Kan Contributor</h4>
+    <ul>
+      <li>Yin aiki da gaskiya, rikon amana, da ladabi.</li>
+      <li>Girmama sirrin tsari da harkokin cikin gida na Albukhr.</li>
+      <li>Amfani da sunan Albukhr bisa ka’ida kawai.</li>
+    </ul>
+
+    <h4>4. Abubuwan da Aka Haramta</h4>
+    <ul>
+      <li>Bayar da bayanan ƙarya ko kwaikwayo.</li>
+      <li>Amfani da sunan Albukhr ta haramtacciyar hanya.</li>
+      <li>Yaudara, damfara, ko duk wata muguwar dabi’a.</li>
+    </ul>
+
+    <h4>5. Hukunci da Daukar Mataki</h4>
+    <p>
+      Albukhr na da ikon dakatarwa ko cire contributor daga tsarin gaba ɗaya
+      idan aka same shi da karya doka, ba tare da gargadi ba.
+    </p>
+
+    <h4>6. Telegram da Izinin Ciki</h4>
+    <p>
+      Shiga rukunin Telegram da tashoshin cikin gida na Albukhr
+      sai bayan amincewa, kuma ana iya janye wannan dama a kowane lokaci.
+    </p>
+
+    <div class="notice">
+      Da zarar ka shiga shirin Contributor na Albukhr,
+      ka amince da bin dukkan ka’idoji da dokoki da aka bayyana a nan.
+    </div>
+
+  </div>
+
+</section>
+
+<script>
+function showLang(lang){
+  document.getElementById("policy-en").classList.add("hidden");
+  document.getElementById("policy-ha").classList.add("hidden");
+  document.getElementById("btn-en").classList.remove("active");
+  document.getElementById("btn-ha").classList.remove("active");
+
+  if(lang === "en"){
+    document.getElementById("policy-en").classList.remove("hidden");
+    document.getElementById("btn-en").classList.add("active");
+  }else{
+    document.getElementById("policy-ha").classList.remove("hidden");
+    document.getElementById("btn-ha").classList.add("active");
+  }
+}
+</script>
+
+</body>
+</html>
