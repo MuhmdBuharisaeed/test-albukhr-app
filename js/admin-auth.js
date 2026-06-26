@@ -65,6 +65,23 @@ ADMIN_SESSION_KEY,
 JSON.stringify(session)
 );
 
+/* GLOBAL ADMIN SESSION */
+
+localStorage.setItem(
+  "albukhr_current_username",
+  username
+);
+
+localStorage.setItem(
+  "albukhr_current_role",
+  role
+);
+
+localStorage.setItem(
+  "albukhr_current_email",
+  username + "@albukhr.admin"
+);
+   
 /* LOG LOGIN */
 
 logAdminAction("login", username, role);
@@ -170,6 +187,10 @@ window.location.href =
 "admin-login.html";
 
 }
+
+localStorage.removeItem("albukhr_current_username");
+localStorage.removeItem("albukhr_current_role");
+localStorage.removeItem("albukhr_current_email");
 
 /* ==========================================
    LOGGING
