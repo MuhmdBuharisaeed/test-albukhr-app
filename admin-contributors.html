@@ -646,44 +646,31 @@ gap:16px;
 <div>
 
 <input
-
 id="searchInput"
-
 type="text"
-
 placeholder="Search contributor..."
-
 >
 
 </div>
 
 <div>
 
-<select
-id="statusFilter">
+<select id="statusFilter">
 
 <option value="all">
-
 All Contributors
-
 </option>
 
 <option value="pending">
-
 Pending
-
 </option>
 
 <option value="approved">
-
 Approved
-
 </option>
 
 <option value="rejected">
-
 Rejected
-
 </option>
 
 </select>
@@ -691,6 +678,23 @@ Rejected
 </div>
 
 </div>
+
+</div>
+
+<!-- =========================================
+     LIST COUNT
+========================================= -->
+
+<div
+style="
+margin-bottom:12px;
+font-weight:600;
+color:#555;
+">
+
+<span id="listCount">
+0 Contributors
+</span>
 
 </div>
 
@@ -763,6 +767,9 @@ document.getElementById("statApproved");
 
 const statRejected =
 document.getElementById("statRejected");
+
+const listCount =
+document.getElementById("listCount");
 
 /* ---------- NOTICE ---------- */
 
