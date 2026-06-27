@@ -55,10 +55,11 @@
   };
 
   const CONTRIBUTOR_PHOTO_BUCKET_CANDIDATES = [
-    "albukhr-contributor-photos",
-    "contributor-photos",
-    "albukhr-files"
-  ];
+  "project-updates",
+  "albukhr-contributor-photos",
+  "contributor-photos",
+  "albukhr-files"
+];
 
   /* =========================================================
      SUPABASE RESOLVER
