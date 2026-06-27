@@ -2061,6 +2061,421 @@ return{
        }
 
 /* =========================================================
+   PATCH 5A
+   UI BUTTON HELPERS
+========================================================= */
+
+function disableButton(button, text = "Please wait..."){
+
+    if(!button){
+        return;
+    }
+
+    if(!button.dataset.originalText){
+        button.dataset.originalText =
+            button.innerHTML;
+    }
+
+    button.disabled = true;
+
+    button.setAttribute(
+        "aria-disabled",
+        "true"
+    );
+
+    button.classList.add(
+        "is-disabled"
+    );
+
+    if(text){
+        button.innerHTML = text;
+    }
+
+}
+
+function enableButton(button){
+
+    if(!button){
+        return;
+    }
+
+    button.disabled = false;
+
+    button.removeAttribute(
+        "aria-disabled"
+    );
+
+    button.classList.remove(
+        "is-disabled"
+    );
+
+    if(button.dataset.originalText){
+
+        button.innerHTML =
+            button.dataset.originalText;
+
+    }
+
+}
+
+/* =========================================================
+   PATCH 5B
+   CONTRIBUTOR FORM HELPERS
+========================================================= */
+
+function fillContributorFieldsIfNeeded(contributor = {}, fields = {}){
+
+    if(!contributor || !fields){
+        return contributor;
+    }
+
+    const mapping = {
+
+        creatorName:
+            contributor.full_name ||
+
+            contributor.creator_name ||
+
+            "",
+
+        internalId:
+            contributor.albukhr_id ||
+
+            contributor.internal_id ||
+
+            "",
+
+        email:
+            contributor.email ||
+
+            contributor.creator_email ||
+
+            "",
+
+        phone:
+            contributor.phone ||
+
+            contributor.creator_phone ||
+
+            ""
+
+    };
+
+    Object.keys(mapping).forEach(function(key){
+
+        const element = fields[key];
+
+        if(
+            !element ||
+            typeof element.value === "undefined"
+        ){
+            return;
+        }
+
+        if(
+            !safeString(element.value).trim()
+        ){
+
+            element.value =
+                safeString(mapping[key]);
+
+        }
+
+    });
+
+    return contributor;
+
+}
+
+/* =========================================================
+   PATCH 5C
+   INTERNAL ENTRY GATE
+========================================================= */
+
+async function validateInternalEntryGate(){
+
+    const sessionEmail =
+        getInternalSessionEmail();
+
+    const sessionToken =
+        getInternalSessionToken();
+
+    if(
+        !sessionEmail ||
+        !sessionToken
+    ){
+
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:"missing_internal_session",
+            contributor:null,
+            access:null
+
+        };
+
+    }
+
+    const access =
+        await checkInternalAccess(
+            sessionEmail
+        );
+
+    if(!access.allowed){
+
+        return{
+
+            ok:false,
+            allowed:false,
+            reason:
+                access.reason ||
+                "access_denied",
+
+            contributor:
+                access.contributor ||
+                null,
+
+            access:null
+
+        };
+
+    }
+
+    return{
+
+        ok:true,
+        allowed:true,
+        reason:"",
+        contributor:
+            access.contributor,
+
+        access:
+            access.access || {},
+
+        session:{
+
+            email:
+                sessionEmail,
+
+            token:
+                sessionToken
+
+        }
+
+    };
+
+}
+
+/* =========================================================
+   PATCH 5D
+   INTERNAL REGISTRY BOOTSTRAP
+========================================================= */
+
+async function bootstrapInternalRegistryPage(){
+
+    /* =====================================
+       Validate session
+    ===================================== */
+
+    const gate =
+        await validateInternalEntryGate();
+
+    if(!gate.allowed){
+
+        return{
+
+            allowed:false,
+
+            reason:
+                gate.reason ||
+
+                "access_denied",
+
+            contributor:null,
+
+            lock:null
+
+        };
+
+    }
+
+    const contributor =
+        gate.contributor || {};
+
+    /* =====================================
+       Submission Lock
+    ===================================== */
+
+    let lock = {
+
+        ok:true,
+
+        locked:false,
+
+        reason:""
+
+    };
+
+    try{
+
+        lock =
+            await checkInternalSubmissionLock(
+
+                contributor.email
+
+            );
+
+    }
+
+    catch(err){
+
+        console.warn(
+
+            ENGINE_NAME +
+
+            ": Unable to determine submission lock.",
+
+            err
+
+        );
+
+    }
+
+    /* =====================================
+       Success
+    ===================================== */
+
+    return{
+
+        allowed:true,
+
+        reason:"",
+
+        contributor,
+
+        access:
+            gate.access || {},
+
+        session:
+            gate.session || {},
+
+        lock
+
+    };
+
+          }
+
+  /* =========================================================
+   PATCH 5E
+   FINAL COMPATIBILITY + PRODUCTION HELPERS
+========================================================= */
+
+/* =========================================================
+   LEGACY ALIAS
+========================================================= */
+
+async function validateInternalEntry(){
+
+    return await validateInternalEntryGate();
+
+}
+
+/* =========================================================
+   SIMPLE SESSION CHECK
+========================================================= */
+
+function hasInternalSession(){
+
+    return !!(
+
+        getInternalSessionEmail() &&
+
+        getInternalSessionToken()
+
+    );
+
+}
+
+/* =========================================================
+   SESSION INFO
+========================================================= */
+
+function getInternalSession(){
+
+    return{
+
+        email:
+            getInternalSessionEmail(),
+
+        token:
+            getInternalSessionToken()
+
+    };
+
+}
+
+/* =========================================================
+   SAFE REDIRECT
+========================================================= */
+
+function redirectToContributorPage(){
+
+    window.location.href =
+        "submit-albukhrecosystem-form.html";
+
+}
+
+/* =========================================================
+   SAFE LOGOUT
+========================================================= */
+
+function clearInternalRegistrySession(){
+
+    clearInternalSession();
+
+}
+
+/* =========================================================
+   EXTRA EXPORTS
+========================================================= */
+
+InternalRegistryEngine.validateInternalEntry =
+    validateInternalEntry;
+
+InternalRegistryEngine.hasInternalSession =
+    hasInternalSession;
+
+InternalRegistryEngine.getInternalSession =
+    getInternalSession;
+
+InternalRegistryEngine.redirectToContributorPage =
+    redirectToContributorPage;
+
+InternalRegistryEngine.clearInternalRegistrySession =
+    clearInternalRegistrySession;
+
+/* =========================================================
+   LEGACY GLOBALS
+========================================================= */
+
+window.validateInternalEntry =
+    validateInternalEntry;
+
+window.hasInternalSession =
+    hasInternalSession;
+
+window.getInternalSession =
+    getInternalSession;
+
+window.redirectToContributorPage =
+    redirectToContributorPage;
+
+window.clearInternalRegistrySession =
+    clearInternalRegistrySession;
+  
+  
+/* =========================================================
 PATCH 4A
 EXPORTS TO ENGINE NAMESPACE
 ========================================================= */
@@ -2250,19 +2665,19 @@ ENGINE_NAME;
 DUPLICATE LOADER PROTECTION
 ========================================================= */
 
-if(window.ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED){
+if(window.__ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED__){
 
-console.warn(  
-    ENGINE_NAME +  
-    " already loaded."  
-);
+    console.warn(
+        ENGINE_NAME +
+        " already loaded."
+    );
 
 }else{
 
-window.__ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED__ =  
-    true;
+    window.__ALBUKHR_INTERNAL_REGISTRY_ENGINE_LOADED__ =
+        true;
 
-}
+ }
 
 /* =========================================================
 FREEZE PUBLIC API
