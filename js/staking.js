@@ -86,6 +86,102 @@ return table?.[project]?.[Number(duration)] || 0;
 }
 
 /* ======================================
+   CREATE PENDING STAKE
+====================================== */
+async function createPendingStake({
+  user,
+  project,
+  amount,
+  duration
+}) {
+
+  const reward =
+    Number(amount) *
+    getRate(project, Number(duration));
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/stakes`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
+        userid: user.uid,
+        wallet: user.wallet_address || "",
+        project,
+        amount,
+        duration,
+        reward,
+        withdrawnreward: 0,
+        withdrawncapital: 0,
+        unlocktime:
+          Date.now() +
+          (Number(duration) * 86400000),
+
+        type: "stake",
+
+        status: "pending",
+
+        payment_id: null,
+
+        txid: null
+      })
+    }
+  );
+
+  if (!res.ok) {
+
+    throw new Error(
+      await res.text()
+    );
+
+  }
+
+  const rows = await res.json();
+
+  return rows[0];
+
+}
+
+/* ======================================
+   UPDATE PENDING STAKE
+====================================== */
+async function updatePendingStake(
+  id,
+  values
+){
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/stakes?id=eq.${id}`,
+    {
+      method:"PATCH",
+      headers:{
+        "Content-Type":"application/json",
+        "apikey":SUPABASE_KEY,
+        "Authorization":
+          `Bearer ${SUPABASE_KEY}`
+      },
+      body:JSON.stringify(values)
+    }
+  );
+
+  if(!res.ok){
+
+    throw new Error(
+      await res.text()
+    );
+
+  }
+
+  return true;
+
+}
+
+/* ======================================
    ADD STAKE
 ====================================== */
 let __stakingLock = false;
