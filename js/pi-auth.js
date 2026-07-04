@@ -65,6 +65,8 @@ if(!user.uid){
   throw new Error("UID missing");
 }
 
+__pi_user = user;
+
 localStorage.setItem(
   "pi_user",
   JSON.stringify(user)
