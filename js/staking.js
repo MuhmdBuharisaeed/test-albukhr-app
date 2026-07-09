@@ -110,26 +110,38 @@ async function createPendingStake({
         "Prefer": "return=representation"
       },
       body: JSON.stringify({
-        userid: user.uid,
-        wallet: user.wallet_address || "",
-        project,
-        amount,
-        duration,
-        reward,
-        withdrawnreward: 0,
-        withdrawncapital: 0,
-        unlocktime:
-          Date.now() +
-          (Number(duration) * 86400000),
 
-        type: "stake",
+  userid: user.uid,
 
-        status: "successful",
+  wallet: user.wallet_address || "",
 
-        payment_id: null,
+  project,
 
-        txid: null
-      })
+  amount,
+
+  duration,
+
+  reward,
+
+  withdrawnReward: 0,
+
+  withdrawnCapital: 0,
+
+  unlockTime:
+    Date.now() +
+    (Number(duration) * 86400000),
+
+  type: "stake",
+
+  status: "pending",
+
+  network: "testnet",
+
+  payment_id: null,
+
+  txid: null
+
+})
     }
   );
 
@@ -156,7 +168,7 @@ async function updatePendingStake(
 ){
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stakes?id=eq.${id}`,
+    `${SUPABASE_URL}/rest/v1/stakes?id=eq.${id}&network=eq.testnet`,
     {
       method:"PATCH",
       headers:{
@@ -182,157 +194,224 @@ async function updatePendingStake(
 }
 
 /* ======================================
-   ADD STAKE
+   ADD STAKE (TESTNET)
 ====================================== */
 let __stakingLock = false;
 
-async function addStake({project,amount,duration}){
+async function addStake({ project, amount, duration }){
 
   if(__stakingLock){
-    return {error:"Processing..."};
+    return { error:"Processing..." };
   }
 
   __stakingLock = true;
 
   let user = null;
 
-try{
-
-  user = await ensurePiAuth();
-
-}catch(e){
-
-  console.error("AUTH ERROR:", e);
-
-}
-
-if(!user?.uid){
-
-  user = JSON.parse(
-    localStorage.getItem("pi_user")
-  );
-
-}
-
-if(!user?.uid){
-
-  __stakingLock = false;
-
-  alert(
-    "Pi login required. Please reopen inside Pi Browser."
-  );
-
-  return {
-    error:"Login required"
-  };
-
-}
-
-  if(!user?.uid){
-    __stakingLock = false;
-    return {error:"User not logged in"};
+  try{
+    user = await ensurePiAuth();
+  }catch(e){
+    console.error("AUTH ERROR:", e);
   }
 
-  /* 🔐 PI CHECK */
-  if(typeof window.Pi === "undefined"){
+  if(!user?.uid){
+    user = JSON.parse(
+      localStorage.getItem("pi_user")
+    );
+  }
+
+  if(!user?.uid){
+
     __stakingLock = false;
-    return {error:"Pi SDK not ready"};
+
+    alert(
+      "Pi login required. Please reopen inside Pi Browser."
+    );
+
+    return {
+      error:"Login required"
+    };
+
+  }
+
+  if(typeof window.Pi === "undefined"){
+
+    __stakingLock = false;
+
+    return {
+      error:"Pi SDK not ready"
+    };
+
   }
 
   const safeAmount = Number(amount);
   const safeDuration = Number(duration);
 
   if(!project || safeAmount <= 0){
+
     __stakingLock = false;
-    return {error:"Invalid input"};
+
+    return {
+      error:"Invalid input"
+    };
+
   }
 
   if(safeAmount < getMinStake(project)){
+
     __stakingLock = false;
-    return {error:"Minimum stake not reached"};
+
+    return {
+      error:"Minimum stake not reached"
+    };
+
+  }
+
+  /* ===============================
+     CREATE PENDING STAKE
+  ============================== */
+
+  let pending;
+
+  try{
+
+    pending = await createPendingStake({
+
+      user,
+
+      project,
+
+      amount:safeAmount,
+
+      duration:safeDuration
+
+    });
+
+  }catch(err){
+
+    __stakingLock = false;
+
+    return {
+      error:err.message
+    };
+
   }
 
   /* ===============================
      PI PAYMENT
-  =============================== */
+  ============================== */
+
   let payment;
 
   try{
 
     payment = await startPiPayment({
-  amount: safeAmount,
-  memo: `Stake in ${project}`
-});
+
+      amount:safeAmount,
+
+      memo:`Stake in ${project}`,
+
+      stakeId:pending.id
+
+    });
 
   }catch(err){
 
-  console.error("❌ REAL PAYMENT ERROR:", err);
+    console.error(err);
 
-  __stakingLock = false;
+    try{
 
-  alert(err.message || err);
+      await updatePendingStake(
+        pending.id,
+        {
+          status:"cancelled"
+        }
+      );
 
-  return {error:"Payment failed"};
+    }catch(e){
+      console.error(e);
+    }
+
+    __stakingLock = false;
+
+    return {
+      error:"Payment failed"
+    };
 
   }
 
-  console.log("PAYMENT RESULT:", payment);
+  if(!payment){
 
-if(!payment){
+    __stakingLock = false;
+
+    return {
+      error:"Invalid payment"
+    };
+
+  }
+
+  /* ===============================
+     UPDATE SUCCESS
+  ============================== */
+
+  try{
+
+    await updatePendingStake(
+
+      pending.id,
+
+      {
+
+        payment_id:
+        payment.paymentId,
+
+        txid:
+        payment.txid ||
+        payment.paymentId,
+
+        status:"paid",
+
+        network:"testnet"
+
+      }
+
+    );
+
+  }catch(e){
+
+    console.error(e);
+
+    __stakingLock = false;
+
+    return {
+      error:"Database update failed"
+    };
+
+  }
+
+  if(typeof recordTx === "function"){
+
+    recordTx({
+
+      type:"stake",
+
+      project,
+
+      amount:safeAmount,
+
+      timestamp:Date.now()
+
+    });
+
+  }
+
   __stakingLock = false;
-  return {error:"Invalid payment"};
-}
-
-   /* SEND TO BACKEND */
-try{
-
-console.log("SAVING TO SUPABASE...");
-   
-  const res = await fetch("https://qexmnghilahsvethlxem.supabase.co/rest/v1/stakes",{
-  method:"POST",
-  headers:{
-    "Content-Type":"application/json",
-    "apikey":"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
-    "Authorization":"Bearer sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-  },
-  body: JSON.stringify({
-  userid:user.uid,
-  project: project,
-  amount:safeAmount,
-  duration:safeDuration,
-  txid: payment.txid || payment.paymentId || ("PI-"+Date.now()),
-  reward: safeAmount * getRate(project, safeDuration),
-  withdrawnReward:0,
-  unlockTime: Date.now() + (safeDuration * 86400000),
-  type:"stake"
-})
-});
-
-  if(!res.ok){
-  const err = await res.text();
-
-console.error("❌ FULL SUPABASE ERROR:");
-console.error(err);
-
-alert(err);
-  __stakingLock = false; // 🔥 VERY IMPORTANT
-
-  return {error:"Database error"};
-}
-
-console.log("✅ Stake saved to Supabase");
-   
-}catch(e){
-
-  console.error("❌ Supabase error", e);
-
-  __stakingLock = false; // 🔥 ADD THIS
 
   return {
-    error:"Network error"
+    success:true
   };
 
-}
+     }
 
   /* ===============================
      RECORD TRANSACTION (FIX HISTORY)
@@ -370,7 +449,7 @@ async function getAllStakesMerged(){
   try{
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
+`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&network=eq.testnet`,
       {
         headers:{
           "apikey": SUPABASE_KEY,
@@ -387,14 +466,9 @@ async function getAllStakesMerged(){
 
     const data = await res.json();
 
-    console.log("📊 Supabase data:", data);
-
-    return Array.isArray(data) ? data : [];
-
-  }catch(e){
-
-    console.error("❌ Network error:", e);
-    return [];
+return Array.isArray(data)
+  ? data.filter(s => s.status === "paid")
+  : [];
 
   }
 
@@ -408,7 +482,7 @@ async function getGlobalStakes(){
   try{
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/stakes?select=*`,
+      `${SUPABASE_URL}/rest/v1/stakes?select=*&network=eq.testnet`
       {
         headers:{
           "apikey": SUPABASE_KEY,
@@ -500,7 +574,7 @@ const user = JSON.parse(
 if(user?.uid){
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${project}&type=eq.capital&status=eq.paid`,
+    `${SUPABASE_URL}/rest/v1/withdraw_requests?select=*&userid=eq.${user.uid}&project=eq.${project}&type=eq.capital&status=eq.paid&network=eq.testnet`,
     {
       headers:{
         "apikey": SUPABASE_KEY,
@@ -541,7 +615,7 @@ async function getUserStakes(){
   const user = getCurrentUser();
 
   const res = await fetch(
-  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}`,
+  `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&network=eq.testnet`,
   {
     headers:{
       "apikey": SUPABASE_KEY,
@@ -612,7 +686,7 @@ if(!user?.uid){
     if(!Number.isFinite(take)) continue;
 
     const updateRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/stakes?id=eq.${stake.id}`,
+      `${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&network=eq.testnet`,
       {
         method:"PATCH",
         headers:{
@@ -691,7 +765,7 @@ if(!user?.uid){
   }
 
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/stakes?project=eq.${project}&userid=eq.${user.uid}&order=created_at.asc`,
+    `${SUPABASE_URL}/rest/v1/stakes?project=eq.${project}&userid=eq.${user.uid}&network=eq.testnet&order=created_at.asc`,
     {
       headers:{
         "apikey": SUPABASE_KEY,
