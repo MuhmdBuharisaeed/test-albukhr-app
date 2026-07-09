@@ -1207,29 +1207,19 @@ error.message ||
    INITIAL LOAD
 ========================================== */
 
-document.addEventListener(
-
-"DOMContentLoaded",
-
-()=>{
+document.addEventListener("DOMContentLoaded",()=>{
 
 renderMarketplace();
 
 if(typeof renderMarketInsights==="function"){
-
 renderMarketInsights();
-
 }
 
 if(typeof renderDiscovery==="function"){
-
 renderDiscovery();
-
 }
 
-}
-
-);
+});
 
 /* ==========================================
    AUTO REFRESH
@@ -1240,9 +1230,11 @@ setInterval(()=>{
 renderMarketplace();
 
 if(typeof renderMarketInsights==="function"){
-
 renderMarketInsights();
+}
 
+if(typeof renderDiscovery==="function"){
+renderDiscovery();
 }
 
 },10000);
