@@ -317,22 +317,14 @@ Loading Marketplace...
 
 </div>
 
-<script src="js/project-config.js"></script>
-<script src="project-creation-engine.js"></script>
+<script src="projects-engine.js"></script>
+
 <script src="project-registry.js"></script>
-<script src="staking.js"></script>
-<script src="smart-liquidity-engine.js"></script>
-<script src="js/core-liquidity-engine.js"></script>
-<script src="risk-engine.js"></script>
+
+<script src="js/marketplace-data-engine.js"></script>
+
 <script src="marketplace-engine.js"></script>
-<script src="project-discovery-engine.js"></script>
-<script src="liquidity-pool-engine.js"></script>
-<script src="capital-protection-engine.js"></script>
-<script src="js/notifications.js"></script>
-<script src="js/ownership-engine.js"></script>
-<script src="js/marketplace-pro-engine.js"></script>
-<script src="js/project-discovery-algorithm.js"></script>
-<script src="albukhr-economic-intelligence-engine.js"></script>
+  
 <script>
 function renderMarketInsights(){
 
@@ -507,57 +499,22 @@ stakes=[];
 }
 
 /* ===============================
-   LOAD PROJECT CONFIG
+   LOAD MARKETPLACE DATA ENGINE
 ================================ */
 
 let allProjects=[];
 
-if(typeof PROJECT_CONFIG==="object"
-&& PROJECT_CONFIG){
+if(
 
-allProjects=
+window.AlbukhrMarketplace &&
 
-Object.keys(PROJECT_CONFIG)
+typeof AlbukhrMarketplace.getProjects==="function"
 
-.map(key=>{
+){
 
-const cfg=
+allProjects =
 
-PROJECT_CONFIG[key]||{};
-
-return{
-
-key,
-
-name:key,
-
-title:
-cfg.title||key,
-
-icon:
-cfg.icon||"📦",
-
-description:
-cfg.desc||"",
-
-roi:
-Number(cfg.roi)||0,
-
-minimum:
-Number(cfg.minimum)||1,
-
-target:
-Number(cfg.target)||1000,
-
-category:
-cfg.category||"General",
-
-duration:
-cfg.duration||"--"
-
-};
-
-});
+await AlbukhrMarketplace.getProjects();
 
 }
 
