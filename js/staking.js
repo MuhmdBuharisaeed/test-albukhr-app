@@ -721,6 +721,61 @@ return[];
    }
 
 /* ======================================
+   PROJECT TOTALS (TESTNET)
+====================================== */
+
+async function getProjectTotals(project){
+
+  const stakes = await getAllStakesMerged();
+
+  const projectData = stakes.filter(s=>
+
+    String(s.project).trim().toLowerCase()===
+
+    String(project).trim().toLowerCase()
+
+  );
+
+  let stake = 0;
+
+  let reward = 0;
+
+  projectData.forEach(s=>{
+
+    const amount = Number(s.amount)||0;
+
+    if(s.type==="stake"){
+
+      stake += amount;
+
+      const total =
+      Number(s.reward)||0;
+
+      const withdrawn =
+      Number(s.withdrawnReward)||0;
+
+      reward += Math.max(
+        0,
+        total-withdrawn
+      );
+
+    }
+
+  });
+
+  return{
+
+    stake,
+
+    reward,
+
+    stakes:projectData
+
+  };
+
+}
+
+/* ======================================
    USER STAKES (TESTNET)
 ====================================== */
 
