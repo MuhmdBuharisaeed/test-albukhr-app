@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Investor Dashboard</title>
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/albukhr-ui.css">
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/global-buttons.css">
+
+<style>
+
+body{
+margin:0;
+font-family:system-ui;
+background:#f4f7f6;
+padding-bottom:120px;
+}
+
+.header{
+background:#0f7a3d;
+height:60px;
+padding:0 16px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.header-left{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.header-right{
+display:flex;
+align-items:center;
+}
+
+.main-logo{
+height:58px;
+width:auto;
+display:block;
+object-fit:contain;
+
+filter:
+drop-shadow(0 0 0.8px #000)
+drop-shadow(0 0 1px #000);
+}
+
+.brand{
+color:white;
+font-weight:700;
+font-size:18px;
+letter-spacing:1px;
+}
+
+/* HEADER SPACE */
+.page{
+padding:16px;
+}
+
+/* SUMMARY CARDS */
+
+.summary-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-bottom:16px;
+}
+
+.summary-card{
+background:#fff;
+border-radius:16px;
+padding:16px;
+box-shadow:0 6px 16px rgba(0,0,0,0.06);
+}
+
+.summary-title{
+font-size:13px;
+color:#777;
+margin-bottom:6px;
+}
+
+.summary-value{
+font-size:22px;
+font-weight:800;
+color:#0f7a3d;
+}
+
+/* QUICK ACTIONS */
+
+.quick-actions{
+display:flex;
+gap:10px;
+margin-bottom:16px;
+}
+
+.action-btn{
+flex:1;
+background:#fff;
+border-radius:14px;
+padding:12px;
+text-align:center;
+box-shadow:0 6px 16px rgba(0,0,0,0.05);
+font-size:12px;
+font-weight:600;
+cursor:pointer;
+}
+
+/* INVESTMENTS */
+
+.section-title{
+font-weight:700;
+margin-bottom:10px;
+}
+
+.invest-card{
+background:#fff;
+border-radius:16px;
+padding:14px;
+margin-bottom:12px;
+box-shadow:0 6px 16px rgba(0,0,0,0.05);
+}
+
+.invest-header{
+display:flex;
+justify-content:space-between;
+font-weight:700;
+margin-bottom:6px;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+font-size:13px;
+margin-top:4px;
+}
+
+/* WALLET BUTTON */
+
+.wallet-btn{
+margin-top:18px;
+width:100%;
+background:#0f7a3d;
+color:#fff;
+border:none;
+border-radius:14px;
+padding:14px;
+font-weight:700;
+font-size:15px;
+cursor:pointer;
+}
+
+.market-wrapper{
+padding:16px;
+}
+
+.market-btn{
+width:100%;
+padding:16px;
+border:none;
+border-radius:18px;
+background:#1c7c3f;
+color:white;
+font-weight:700;
+font-size:16px;
+cursor:pointer;
+box-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.invest-title{
+padding:0 16px;
+margin-top:4px;
+margin-bottom:8px;
+  }
+
+.section-title{
+margin-top:18px;
+margin-bottom:10px;
+padding:0 16px;
+font-weight:700;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- ===== ALBUKHR HEADER ===== -->
+
+<header class="header">
+
+  <div class="header-left">
+  <span class="brand">ALBUKHR</span>
+  </div>
+
+<div class="header-right">
+
+<div class="header-btn notification-btn" onclick="openNotifications()">
+
+🔔
+
+<span id="notifBadge" class="notification-badge"></span>
+
+</div>
+
+</div>
+
+</header>
+
+<div class="page">
+
+<!-- SUMMARY -->
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="summary-title">
+Portfolio
+</div>
+
+<div class="summary-value" id="totalPortfolio">
+0.00 Pi
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-title">
+Invested
+</div>
+
+<div class="summary-value" id="totalInvest">
+0.00 Pi
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-title">
+Earnings
+</div>
+
+<div class="summary-value" id="totalEarn">
+0.00 Pi
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-title">
+Projects
+</div>
+
+<div class="summary-value" id="totalProjects">
+0
+</div>
+
+</div>
+
+</div>
+
+
+<!-- QUICK ACTIONS -->
+
+<div class="quick-actions">
+
+<div class="action-btn"
+onclick="location.href='projects.html'">
+Explore Projects
+</div>
+
+<div class="action-btn"
+onclick="location.href='marketplace.html'">
+Marketplace
+</div>
+
+</div>
+
+
+<!-- OPEN MARKET -->
+
+<button class="wallet-btn"
+onclick="location.href='marketplace.html'">
+
+Open Market Place
+
+</button>
+
+
+<!-- INVESTMENTS -->
+
+<div class="section-title">
+My Investments
+</div>
+
+<div id="investments"></div>
+
+</div>
+
+<!-- ===== ALBUKHR DOCK NAV ===== -->
+
+<div class="dock-nav">
+
+  <!-- HOME -->
+  <a href="index.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
+    </svg>
+    <span>Home</span>
+  </a>
+
+
+  <!-- INVESTORS -->
+  <a href="investor-dashboard.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
+    </svg>
+    <span>Investors</span>
+  </a>
+
+
+  <!-- TRANSPARENCY HUB -->
+  <a href="wallet.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      
+      <!-- Document -->
+      <path d="M6 3h8l4 4v14H6z"/>
+      
+      <!-- Fold -->
+      <path d="M14 3v4h4"/>
+      
+      <!-- Lines -->
+      <path d="M8 11h8"/>
+      <path d="M8 14h8"/>
+      
+      <!-- Eye -->
+      <ellipse cx="12" cy="18" rx="4" ry="2"/>
+      <circle cx="12" cy="18" r="0.8"/>
+      
+    </svg>
+    <span>Transparency</span>
+  </a>
+
+
+  <!-- SERVICES -->
+  <a href="services.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
+    </svg>
+    <span>Services</span>
+  </a>
+
+</div>
+
+<script src="js/staking.js"></script>
+<script src="js/notifications.js"></script>
+
+<script>
+
+let lastScroll = 0;
+let threshold = 10;
+
+const dock =
+document.querySelector(".dock-nav");
+
+window.addEventListener("scroll",()=>{
+
+const current =
+window.pageYOffset;
+
+if(Math.abs(current-lastScroll)<=threshold)
+return;
+
+if(current > lastScroll){
+
+/* scroll down */
+dock.classList.add("hide");
+
+}else{
+
+/* scroll up */
+dock.classList.remove("hide");
+
+}
+
+lastScroll = current;
+
+});
+
+</script>
+
+<script>
+
+const current = location.pathname.split("/").pop();
+
+document.querySelectorAll(".dock-item").forEach(link=>{
+
+if(link.getAttribute("href") === current){
+
+link.classList.add("active");
+
+}
+
+});
+
+</script>
+
+<script>
+
+async function renderInvestorDashboard(){
+
+const stakes = await getAllStakesMerged();
+
+let totalInvest = 0;
+let totalEarn = 0;
+
+const map = {};
+
+stakes.forEach(s=>{
+
+const amount = Number(s.amount) || 0;
+
+totalInvest += amount;
+
+if(s.type === "stake"){
+
+const remaining =
+(Number(s.reward)||0) -
+(Number(s.withdrawnReward)||0);
+
+totalEarn += Math.max(0, remaining);
+
+}
+
+if(!map[s.project]){
+map[s.project] = {invest:0, earn:0};
+}
+
+map[s.project].invest += amount;
+
+if(s.type === "stake"){
+
+const remaining =
+(Number(s.reward)||0) -
+(Number(s.withdrawnReward)||0);
+
+map[s.project].earn += Math.max(0, remaining);
+
+}
+
+});
+
+document.getElementById("totalInvest").innerText =
+totalInvest.toFixed(2)+" Pi";
+
+document.getElementById("totalEarn").innerText =
+totalEarn.toFixed(2)+" Pi";
+
+const container = document.getElementById("investments");
+container.innerHTML = "";
+
+Object.keys(map).forEach(project=>{
+
+const card = document.createElement("div");
+
+card.className="invest-card";
+
+card.innerHTML = `
+<div class="invest-header">
+<div>${project}</div>
+<div>${map[project].earn.toFixed(2)} Pi</div>
+</div>
+
+<div class="row">
+<div>Invested</div>
+<div>${map[project].invest.toFixed(2)} Pi</div>
+</div>
+
+<div class="row">
+<div>Earnings</div>
+<div>${map[project].earn.toFixed(2)} Pi</div>
+</div>
+`;
+
+container.appendChild(card);
+
+});
+
+}
+
+renderInvestorDashboard();
+
+</script>
+
+</body>
+
+  </html>
