@@ -992,15 +992,16 @@ container.appendChild(card);
 
 }catch(error){
 
-console.error(
-"Marketplace Error:",
-error
+console.error(error);
+
+alert(
+error.message +
+"\n\n" +
+(error.stack || "")
 );
 
 const container =
-document.getElementById(
-"projectList"
-);
+document.getElementById("projectList");
 
 container.innerHTML = `
 
