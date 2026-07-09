@@ -637,6 +637,21 @@ ${PROJECT_CONFIG[projectKey]?.icon || "📦"}
 
 ${PROJECT_CONFIG[projectKey]?.title || project.name}
 
+<span style="
+display:inline-block;
+margin-left:8px;
+padding:2px 8px;
+border-radius:999px;
+background:#e8f7ee;
+color:#0f7a3d;
+font-size:11px;
+font-weight:700;
+">
+
+ACTIVE
+
+</span>
+
 ${PROJECT_CONFIG[projectKey] ? 
 '<span class="core-badge">CORE</span>' : ''}
 
@@ -679,17 +694,26 @@ ${riskData.risk}
 </div>
 </div>
 
-<div class="row">
-<div>Pool Liquidity</div>
-<div>${
-(typeof getPoolStatus==="function"
-? getPoolStatus(project.name)?.liquidity || 0
-: 0).toFixed(2)
-} Pi</div>
+<div class="progress">
+
+<div
+class="progress-bar"
+style="width:${funded}%">
+
 </div>
 
-<div class="progress">
-<div class="progress-bar" style="width:${funded}%"></div>
+</div>
+
+<div
+style="
+font-size:11px;
+color:#666;
+margin-top:4px;
+text-align:right;
+">
+
+${funded.toFixed(0)}% Funded
+
 </div>
 
 <div class="roi-box">
