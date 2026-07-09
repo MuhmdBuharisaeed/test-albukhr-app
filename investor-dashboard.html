@@ -429,6 +429,7 @@ const stakes = await getAllStakesMerged();
 
 let totalInvest = 0;
 let totalEarn = 0;
+let totalPortfolio = 0;
 
 const map = {};
 
@@ -437,6 +438,8 @@ stakes.forEach(s=>{
 const amount = Number(s.amount) || 0;
 
 totalInvest += amount;
+
+totalPortfolio += amount;
 
 if(s.type === "stake"){
 
@@ -466,11 +469,17 @@ map[s.project].earn += Math.max(0, remaining);
 
 });
 
+document.getElementById("totalPortfolio").innerText =
+totalPortfolio.toFixed(2) + " Pi";
+
 document.getElementById("totalInvest").innerText =
-totalInvest.toFixed(2)+" Pi";
+totalInvest.toFixed(2) + " Pi";
 
 document.getElementById("totalEarn").innerText =
-totalEarn.toFixed(2)+" Pi";
+totalEarn.toFixed(2) + " Pi";
+
+document.getElementById("totalProjects").innerText =
+Object.keys(map).length;
 
 const container = document.getElementById("investments");
 container.innerHTML = "";
