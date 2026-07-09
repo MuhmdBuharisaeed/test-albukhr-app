@@ -453,131 +453,287 @@ return (amount * roi / 100).toFixed(2);
 
 async function renderMarketplace(){
 
-try{
+const container =
+document.getElementById("projectList");
 
-const container = document.getElementById("projectList");
-container.innerHTML = "";
-
-// ✅ FETCH ONCE ONLY
-let stakes = [];
-
-try{
-  if(typeof getAllStakesMerged === "function"){
-    stakes = await getAllStakesMerged();
-  }
-}catch(e){
-  console.error("Stake load failed", e);
-  stakes = [];
-}
-
-let allProjects = [];
-
-try{
-
-  if(typeof PROJECT_CONFIG === "object"){
-
-    allProjects = Object.keys(PROJECT_CONFIG).map(p => ({
-      name: p,
-      roi: PROJECT_CONFIG[p]?.roi || 0,
-      description: PROJECT_CONFIG[p]?.desc || ""
-    }));
-
-  }
-
-}catch(e){
-
-  console.error("PROJECT_CONFIG error", e);
-  allProjects = [];
-
-  }
-
-/* SEARCH */
-
-const search =
-document.getElementById("projectSearch")?.value
-?.toLowerCase() || "";
-
-let projects =
-allProjects.filter(p => {
-
-const key = normalizeProjectName(p.name);
-
-return (
-p.name.toLowerCase().includes(search) ||
-(PROJECT_CONFIG[key]?.title || "")
-.toLowerCase()
-.includes(search) ||
-
-(PROJECT_CONFIG[key]?.desc || "")
-.toLowerCase()
-.includes(search) ||
-
-(p.description || "")
-.toLowerCase()
-.includes(search)
-
-);
-
-});
-
-/* SORT */
-
-const sort =
-document.getElementById("sortProjects")?.value;
-
-if(sort === "roi"){
-projects.sort((a,b)=>(b.roi||0)-(a.roi||0));
-}
-
-if(sort === "liquidity"){
-projects.sort((a,b)=>
-(getProjectTreasuryStatus(
-normalizeProjectName(b.name)
-)?.liquidity||0) -
-
-(getProjectTreasuryStatus(
-normalizeProjectName(a.name)
-)?.liquidity||0)
-);
-}
-
-if(sort === "risk"){
-projects.sort((a,b)=>{
-
-const ra =
-getProjectRisk(
-normalizeProjectName(a.name)
-)?.score || 0;
-
-const rb =
-getProjectRisk(
-normalizeProjectName(b.name)
-)?.score || 0;
-
-return rb - ra;
-
-});
-}
-
-if(!projects.length){
-
-container.innerHTML = `
+container.innerHTML=`
 
 <div class="project-card">
 
 <div style="
 text-align:center;
-padding:25px;">
+padding:30px;
+color:#666;">
+
+Loading Marketplace...
+
+</div>
+
+</div>
+
+`;
+
+try{
+
+/* ===============================
+   LOAD STAKES
+================================ */
+
+let stakes=[];
+
+if(typeof getAllStakesMerged==="function"){
+
+try{
+
+stakes=await getAllStakesMerged();
+
+if(!Array.isArray(stakes)){
+
+stakes=[];
+
+}
+
+}catch(err){
+
+console.error(
+"Stake Engine Error",
+err
+);
+
+stakes=[];
+
+}
+
+}
+
+/* ===============================
+   LOAD PROJECT CONFIG
+================================ */
+
+let allProjects=[];
+
+if(typeof PROJECT_CONFIG==="object"
+&& PROJECT_CONFIG){
+
+allProjects=
+
+Object.keys(PROJECT_CONFIG)
+
+.map(key=>{
+
+const cfg=
+
+PROJECT_CONFIG[key]||{};
+
+return{
+
+key,
+
+name:key,
+
+title:
+cfg.title||key,
+
+icon:
+cfg.icon||"📦",
+
+description:
+cfg.desc||"",
+
+roi:
+Number(cfg.roi)||0,
+
+minimum:
+Number(cfg.minimum)||1,
+
+target:
+Number(cfg.target)||1000,
+
+category:
+cfg.category||"General",
+
+duration:
+cfg.duration||"--"
+
+};
+
+});
+
+}
+
+/* ===============================
+   SEARCH
+================================ */
+
+const keyword=
+
+document
+.getElementById(
+"projectSearch"
+)
+.value
+.trim()
+.toLowerCase();
+
+let projects=
+
+allProjects.filter(project=>{
+
+return(
+
+project.title
+.toLowerCase()
+.includes(keyword)
+
+||
+
+project.description
+.toLowerCase()
+.includes(keyword)
+
+||
+
+project.category
+.toLowerCase()
+.includes(keyword)
+
+);
+
+});
+
+/* ===============================
+   SORT
+================================ */
+
+const sort=
+
+document
+.getElementById(
+"sortProjects"
+)
+.value;
+
+/* ===============================
+   SORTING
+================================ */
+
+if(sort==="roi"){
+
+projects.sort(
+(a,b)=>b.roi-a.roi
+);
+
+}
+
+else if(sort==="liquidity"){
+
+projects.sort((a,b)=>{
+
+const la=
+
+typeof getProjectTreasuryStatus==="function"
+
+? Number(
+getProjectTreasuryStatus(
+b.key
+)?.liquidity
+)||0
+
+:0;
+
+const lb=
+
+typeof getProjectTreasuryStatus==="function"
+
+? Number(
+getProjectTreasuryStatus(
+a.key
+)?.liquidity
+)||0
+
+:0;
+
+return la-lb;
+
+});
+
+}
+
+else if(sort==="risk"){
+
+projects.sort((a,b)=>{
+
+const ra=
+
+typeof getProjectRisk==="function"
+
+?
+
+getProjectRisk(a.key)?.score||0
+
+:0;
+
+const rb=
+
+typeof getProjectRisk==="function"
+
+?
+
+getProjectRisk(b.key)?.score||0
+
+:0;
+
+return ra-rb;
+
+});
+
+}
+
+/* ===============================
+   EMPTY MARKET
+================================ */
+
+container.innerHTML="";
+
+if(projects.length===0){
+
+container.innerHTML=`
+
+<div class="project-card">
+
+<div style="
+
+padding:35px;
+
+text-align:center;
+
+">
+
+<div style="
+
+font-size:48px;
+
+">
+
+📦
+
+</div>
 
 <h3>
 
-No Projects Available
+No Projects Found
 
 </h3>
 
-<p style="color:#666;">
+<p style="
 
-There are currently no approved projects available for investment.
+color:#666;
+
+margin-top:8px;
+
+">
+
+There are no approved projects matching your search.
 
 </p>
 
@@ -589,57 +745,96 @@ There are currently no approved projects available for investment.
 
 return;
 
-  }
+}
 
-projects.forEach(project => {
+/* ===============================
+   START RENDER LOOP
+================================ */
 
-const projectKey = normalizeProjectName(project.name);
+projects.forEach(project=>{
 
-const card = document.createElement("div");
+const treasury=
 
-card.className = "project-card";
+typeof getProjectTreasuryStatus==="function"
 
-card.onclick = () =>
-location.href = `project.html?project=${projectKey}`;
+? getProjectTreasuryStatus(project.key)
 
-/* TREASURY */
-const treasury =
-typeof getProjectTreasuryStatus === "function"
-? getProjectTreasuryStatus(project.name)
-: {liquidity:0};
+: {};
 
-const liquidity =
-Number(treasury.liquidity) || 0;
+const liquidity=
 
-/* FUNDED */
-const funded =
-Math.min((liquidity / (project.target || 1000))*100,100);
+Number(
+treasury?.liquidity
+)||0;
 
-/* INVESTORS */
-const investors =
-stakes.filter(s => s.project === projectKey).length;
+const funded=
 
-/* RISK */
-const riskData =
-typeof getProjectRisk === "function"
-? getProjectRisk(projectKey)
-: {risk:"LOW"};
+Math.min(
 
-card.innerHTML = `
+(liquidity/project.target)*100,
+
+100
+
+);
+
+const investors=
+
+stakes.filter(
+
+s=>normalizeProjectName(
+s.project
+)===project.key
+
+).length;
+
+const risk=
+
+typeof getProjectRisk==="function"
+
+?
+
+getProjectRisk(project.key)
+
+:{
+
+risk:"LOW",
+
+score:0
+
+};
+
+const card=
+
+document.createElement("div");
+
+card.className="project-card";
+
+card.onclick=()=>{
+
+location.href=
+`project.html?project=${project.key}`;
+
+};
+
+card.innerHTML=`
 
 <div class="project-header">
 
 <div class="project-icon">
-${PROJECT_CONFIG[projectKey]?.icon || "📦"}
+
+${project.icon}
+
 </div>
+
+<div style="flex:1;">
 
 <div class="project-title">
 
-${PROJECT_CONFIG[projectKey]?.title || project.name}
+${project.title}
 
 <span style="
 display:inline-block;
-margin-left:8px;
+margin-left:6px;
 padding:2px 8px;
 border-radius:999px;
 background:#e8f7ee;
@@ -652,46 +847,114 @@ ACTIVE
 
 </span>
 
-${PROJECT_CONFIG[projectKey] ? 
-'<span class="core-badge">CORE</span>' : ''}
+${isCoreProject(project.key)
 
-${investors > 20 ? 
-'<span class="trend">🔥 Trending</span>' : ''}
+?'<span class="core-badge">CORE</span>'
+
+:''}
+
+${investors>=20
+
+?'<span class="trend">🔥 Trending</span>'
+
+:''}
 
 </div>
+
+<div style="
+font-size:12px;
+color:#777;
+margin-top:3px;
+">
+
+${project.category}
+
+</div>
+
+</div>
+
 </div>
 
 <div class="project-desc">
-${PROJECT_CONFIG[projectKey]?.desc || project.description || ""}
+
+${project.description}
+
 </div>
 
 <div class="row">
+
 <div>ROI</div>
-<div>${project.roi || PROJECT_CONFIG[projectKey]?.roi || 0}%</div>
+
+<div>
+
+<b>
+
+${project.roi}%
+
+</b>
+
+</div>
+
 </div>
 
 <div class="row">
+
+<div>Duration</div>
+
+<div>
+
+${project.duration}
+
+</div>
+
+</div>
+
+<div class="row">
+
 <div>Liquidity</div>
-<div>${liquidity.toFixed(2)} Pi</div>
+
+<div>
+
+${liquidity.toFixed(2)} Pi
+
+</div>
+
 </div>
 
 <div class="row">
+
 <div>Investors</div>
-<div>${investors}</div>
+
+<div>
+
+${investors}
+
+</div>
+
 </div>
 
 <div class="row">
-<div>Minimum</div>
-<div>${typeof getMinStake === "function"
-? getMinStake(projectKey)
-: (project.minimum || 1)} Pi</div>
+
+<div>Minimum Stake</div>
+
+<div>
+
+${project.minimum} Pi
+
+</div>
+
 </div>
 
 <div class="row">
+
 <div>Risk</div>
-<div class="risk ${riskData.risk.toLowerCase()}">
-${riskData.risk}
+
+<div class="risk ${String(risk.risk).toLowerCase()}">
+
+${risk.risk}
+
 </div>
+
 </div>
 
 <div class="progress">
@@ -704,42 +967,61 @@ style="width:${funded}%">
 
 </div>
 
-<div
-style="
+<div style="
 font-size:11px;
-color:#666;
-margin-top:4px;
+color:#777;
+margin-top:5px;
 text-align:right;
 ">
 
-${funded.toFixed(0)}% Funded
+${funded.toFixed(1)}% Funded
 
 </div>
 
 <div class="roi-box">
 
-ROI Calculator
-
-<input
-type="number"
-placeholder="Enter amount"
-oninput="this.nextElementSibling.innerText =
-calculateROI(this.value, ${project.roi || 0}) + ' Pi'
+<div style="
+font-weight:700;
+margin-bottom:6px;
 ">
 
-<div style="margin-top:4px;font-weight:600">
-0 Pi
-</div>
+ROI Calculator
 
 </div>
 
-<button  
-class="invest-btn"  
-onclick="event.stopPropagation(); invest('${projectKey}')">
+<input
 
-Invest
+type="number"
+
+min="${project.minimum}"
+
+placeholder="Minimum ${project.minimum} Pi"
+
+oninput="this.nextElementSibling.innerHTML='Expected Return: <b>'+calculateROI(this.value,${project.roi})+' Pi</b>'"
+
+>
+
+<div style="
+margin-top:6px;
+font-size:13px;
+">
+
+Expected Return:
+<b>0 Pi</b>
+
+</div>
+
+<button
+
+class="invest-btn"
+
+onclick="event.stopPropagation();invest('${project.key}')">
+
+Invest Now
 
 </button>
+
+</div>
 
 `;
 
@@ -747,19 +1029,38 @@ container.appendChild(card);
 
 });
 
-}
+/* ===============================
+   END TRY
+================================ */
 
 }catch(error){
 
-console.error(error);
+console.error(
+"Marketplace Error:",
+error
+);
+
+const container =
+document.getElementById(
+"projectList"
+);
 
 container.innerHTML = `
 
 <div class="project-card">
 
 <div style="
+padding:30px;
 text-align:center;
-padding:25px;">
+">
+
+<div style="
+font-size:48px;
+">
+
+⚠️
+
+</div>
 
 <h3>
 
@@ -767,9 +1068,14 @@ Marketplace Error
 
 </h3>
 
-<p style="color:#666;">
+<p style="
+color:#666;
+margin-top:8px;
+">
 
 Unable to load marketplace.
+
+Please try again.
 
 </p>
 
@@ -787,48 +1093,159 @@ Retry
 
 `;
 
-  }
+}
 
-function invest(project){
+}
 
-const amount =
-prompt("Enter investment amount (Pi)");
+/* ==========================================
+   INVEST ENGINE (TESTNET READY)
+========================================== */
 
-if(!amount || Number(amount)<=0){
+async function invest(projectKey){
 
-alert("Invalid amount");
+try{
+
+if(typeof getMinStake!=="function"){
+
+throw new Error(
+"Minimum stake engine missing."
+);
+
+}
+
+const minimum =
+Number(getMinStake(projectKey)) || 1;
+
+const amount = prompt(
+
+`Enter investment amount
+
+Minimum: ${minimum} Pi`
+
+);
+
+if(amount===null) return;
+
+const value = Number(amount);
+
+if(isNaN(value) || value<=0){
+
+alert("Please enter a valid amount.");
+
 return;
 
 }
 
-createStake({
-project: project,
-amount: Number(amount)
+if(value<minimum){
+
+alert(
+
+`Minimum investment is ${minimum} Pi`
+
+);
+
+return;
+
+}
+
+if(typeof createStake!=="function"){
+
+throw new Error(
+"Stake engine unavailable."
+);
+
+}
+
+await createStake({
+
+project:projectKey,
+
+amount:value
+
 });
 
-alert("Investment successful");
+alert(
 
-}
+"Investment submitted successfully."
 
-/* INITIAL RENDER */
+);
 
-renderMarketplace();
+await renderMarketplace();
+
+if(typeof renderMarketInsights==="function"){
+
 renderMarketInsights();
 
-if(typeof renderDiscovery === "function"){
-  renderDiscovery();
 }
 
-/* AUTO REFRESH */
+if(typeof renderDiscovery==="function"){
+
+renderDiscovery();
+
+}
+
+}catch(error){
+
+console.error(
+"Investment Error:",
+error
+);
+
+alert(
+
+error.message ||
+
+"Unable to complete investment."
+
+);
+
+}
+
+}
+
+/* ==========================================
+   INITIAL LOAD
+========================================== */
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+()=>{
+
+renderMarketplace();
+
+if(typeof renderMarketInsights==="function"){
+
+renderMarketInsights();
+
+}
+
+if(typeof renderDiscovery==="function"){
+
+renderDiscovery();
+
+}
+
+}
+
+);
+
+/* ==========================================
+   AUTO REFRESH
+========================================== */
+
 setInterval(()=>{
+
 renderMarketplace();
+
+if(typeof renderMarketInsights==="function"){
+
 renderMarketInsights();
 
-if(typeof renderDiscovery === "function"){
-  renderDiscovery();
 }
 
-},5000);
+},10000);
   
 </script>
 
