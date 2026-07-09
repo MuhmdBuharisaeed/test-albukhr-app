@@ -1,12 +1,18 @@
 /* =========================================================
    ALBUKHR MARKETPLACE DATA ENGINE
-   Testnet → Mainnet Bridge
    Version 1.0
+   Testnet → Mainnet Ready
 ========================================================= */
 
-(function(){
+(function(window){
 
 "use strict";
+
+/* =========================================================
+   ENGINE
+========================================================= */
+
+const AlbukhrMarketplace = {};
 
 /* =========================================================
    CACHE
@@ -22,15 +28,37 @@ const CACHE_TIME = 10000;
    HELPERS
 ========================================================= */
 
-function safe(fn,fallback){
+function normalizeText(value){
+
+return String(
+
+value || ""
+
+).trim();
+
+}
+
+function normalizeNumber(value){
+
+const number = Number(value);
+
+return Number.isFinite(number)
+
+? number
+
+: 0;
+
+}
+
+function safe(callback,fallback=null){
 
 try{
 
-return fn();
+return callback();
 
-}catch(e){
+}catch(error){
 
-console.warn(e);
+console.warn(error);
 
 return fallback;
 
@@ -38,55 +66,31 @@ return fallback;
 
 }
 
-function normalizeNumber(value){
-
-const n = Number(value);
-
-return isNaN(n) ? 0 : n;
-
-}
-
-function normalizeText(value){
-
-return String(value || "").trim();
-
-}
-
 /* =========================================================
-   PUBLIC API
+   PUBLIC ENGINE
 ========================================================= */
 
-window.AlbukhrMarketplace = {
+window.AlbukhrMarketplace =
+AlbukhrMarketplace;
 
-refresh,
-
-getProjects,
-
-getProject,
-
-getStats,
-
-search,
-
-sort,
-
-filter
-
-};
-
-})();
+})(window);
 
 /* =========================================================
-   REFRESH MARKETPLACE
+   LOAD MARKETPLACE PROJECTS
 ========================================================= */
 
-async function refresh(force=false){
+AlbukhrMarketplace.getProjects =
+async function(forceRefresh=false){
 
 const now = Date.now();
 
+/* ============================
+   CACHE
+============================ */
+
 if(
 
-!force &&
+!forceRefresh &&
 
 marketplaceCache.length &&
 
@@ -98,397 +102,567 @@ return marketplaceCache;
 
 }
 
+/* ============================
+   LOAD PROJECTS
+============================ */
+
 let projects=[];
 
-/* -----------------------------------------
-   LOAD PROJECTS ENGINE
------------------------------------------- */
+/* ---------- SOURCE 1 ---------- */
+
+if(typeof loadMarketplaceProjects==="function"){
 
 try{
 
-if(typeof getProjects==="function"){
+projects =
+await loadMarketplaceProjects();
 
-projects = await getProjects();
+}catch(error){
 
-}
+console.error(
 
-}catch(e){
+"Marketplace Loader",
 
-console.warn(
-
-"Projects Engine",
-
-e
+error
 
 );
 
 }
 
-/* -----------------------------------------
-   FALLBACK
------------------------------------------- */
+}
+
+/* ---------- SOURCE 2 ---------- */
 
 if(
 
-!Array.isArray(projects)
+(!projects || !projects.length)
 
-||
+&&
 
-projects.length===0
+typeof getMarketplaceProjects==="function"
 
 ){
 
-projects = safe(()=>{
+try{
 
-if(typeof PROJECT_CONFIG!=="object"){
+projects =
+await getMarketplaceProjects();
 
-return [];
+}catch(error){
+
+console.error(
+
+"Marketplace Projects",
+
+error
+
+);
 
 }
 
-return Object.keys(PROJECT_CONFIG).map(key=>({
+}
 
-project_code:key,
+/* ---------- SOURCE 3 ---------- */
 
-project_name:
+if(
 
-PROJECT_CONFIG[key]?.title||key,
+(!projects || !projects.length)
 
-description:
+&&
 
-PROJECT_CONFIG[key]?.desc||"",
+typeof fetchMarketplaceProjects==="function"
 
-icon:
+){
 
-PROJECT_CONFIG[key]?.icon||"📦",
+try{
 
-category:
+projects =
+await fetchMarketplaceProjects();
 
-PROJECT_CONFIG[key]?.category||"General",
+}catch(error){
 
-roi:
+console.error(
 
-normalizeNumber(
+"Marketplace Fetch",
 
-PROJECT_CONFIG[key]?.roi
+error
 
-),
-
-minimum:
-
-normalizeNumber(
-
-PROJECT_CONFIG[key]?.minimum
-
-),
-
-duration:
-
-PROJECT_CONFIG[key]?.duration||"--"
-
-}));
-
-},[]);
+);
 
 }
 
-/* -----------------------------------------
-   ENRICH PROJECTS
------------------------------------------- */
+}
 
-marketplaceCache = projects.map(project=>{
+/* ---------- EMPTY ---------- */
 
-const code =
+if(!Array.isArray(projects)){
 
-normalizeText(
-
-project.project_code ||
-
-project.code ||
-
-project.name
-
-);
-
-const treasury =
-
-safe(
-
-()=>getProjectTreasuryStatus(code),
-
-{}
-
-);
-
-const risk =
-
-safe(
-
-()=>getProjectRisk(code),
-
-{
-
-risk:"LOW",
-
-score:0
+projects=[];
 
 }
 
-);
+marketplaceCache = projects;
 
-const pool =
+lastRefresh = now;
 
-safe(
-
-()=>getPoolStatus(code),
-
-{}
-
-);
-
-const minimum =
-
-safe(
-
-()=>getMinStake(code),
-
-project.minimum||1
-
-);
-
-const investors =
-
-safe(()=>{
-
-if(typeof getAllStakesMerged!=="function"){
-
-return 0;
-
-}
-
-const stakes=
-
-getAllStakesMerged()||[];
-
-return stakes.filter(s=>{
-
-return normalizeText(
-
-s.project
-
-)===code;
-
-}).length;
-
-},0);
-
-const liquidity =
-
-normalizeNumber(
-
-treasury.liquidity ||
-
-pool.liquidity ||
-
-0
-
-);
-
-const target =
-
-normalizeNumber(
-
-project.target ||
-
-1000
-
-);
-
-const funded =
-
-target>0
-
-?
-
-Math.min(
-
-(liquidity/target)*100,
-
-100
-
-)
-
-:
-
-0;
-
-return{
-
-...project,
-
-project_code:code,
-
-liquidity,
-
-target,
-
-funded,
-
-minimum,
-
-investors,
-
-risk,
-
-treasury,
-
-pool
+return marketplaceCache;
 
 };
 
+/* ==========================================
+   LOAD MARKETPLACE PROJECTS
+========================================== */
+
+AlbukhrMarketplace.getProjects = async function(options={}){
+
+const activeOnly =
+options.activeOnly !== false;
+
+const forceRefresh =
+options.forceRefresh === true;
+
+let projects = [];
+
+try{
+
+if(typeof getActiveProjects==="function"){
+
+projects = await getActiveProjects({
+forceRefresh
 });
+
+}else if(typeof getAllProjects==="function"){
+
+projects = await getAllProjects({
+forceRefresh
+});
+
+}else if(typeof getProjects==="function"){
+
+projects = await getProjects({
+forceRefresh
+});
+
+}
+
+}catch(error){
+
+console.error(
+"Projects Engine:",
+error
+);
+
+projects=[];
+
+}
+
+if(!Array.isArray(projects)){
+
+projects=[];
+
+}
+
+const result=[];
+
+for(const project of projects){
+
+const code =
+project.project_code;
+
+result.push({
+
+key:code,
+
+code:code,
+
+title:
+project.project_name,
+
+name:
+project.project_name,
+
+icon:
+project.icon || "📦",
+
+description:
+project.description || "",
+
+info:
+project.info || "",
+
+type:
+project.project_type || "core",
+
+status:
+project.status || "active",
+
+category:
+project.project_type || "core",
+
+durations:
+project.durations || [30,60,90],
+
+minimum:
+project.min_liquidity || 100,
+
+rewardRate:
+project.reward_rate || 0,
+
+reserve:
+project.reserve_percent || 0,
+
+treasuryEnabled:
+project.treasury_enabled !== false,
+
+stakingEnabled:
+project.staking_enabled !== false,
+
+contributionsEnabled:
+project.contributions_enabled !== false,
+
+sortOrder:
+project.sort_order || 9999,
+
+raw:project
+
+});
+
+}
+
+marketplaceCache = result;
 
 lastRefresh = Date.now();
 
 return marketplaceCache;
 
-  }
+};
 
-/* =========================================================
-   GET ALL PROJECTS
-========================================================= */
+/* ==========================================
+   GET SINGLE MARKETPLACE PROJECT
+========================================== */
 
-async function getProjects(force=false){
+AlbukhrMarketplace.getProject =
+async function(projectCode){
 
-return await refresh(force);
+if(!projectCode){
 
-}
-
-/* =========================================================
-   GET SINGLE PROJECT
-========================================================= */
-
-async function getProject(projectCode){
-
-const projects =
-
-await refresh();
-
-const code =
-
-normalizeText(projectCode);
-
-return (
-
-projects.find(p=>
-
-normalizeText(
-
-p.project_code
-
-)===code
-
-)
-
-||
-
-null
-
-);
+return null;
 
 }
 
-/* =========================================================
-   MARKETPLACE STATS
-========================================================= */
-
-async function getStats(){
-
 const projects =
+await AlbukhrMarketplace.getProjects();
 
-await refresh();
+const project =
+projects.find(
 
-let totalLiquidity=0;
+p=>String(p.code).trim().toLowerCase()===
 
-let totalInvestors=0;
-
-let totalROI=0;
-
-projects.forEach(project=>{
-
-totalLiquidity+=
-
-normalizeNumber(
-
-project.liquidity
+String(projectCode).trim().toLowerCase()
 
 );
 
-totalInvestors+=
+if(!project){
 
-normalizeNumber(
+return null;
 
-project.investors
+}
 
-);
+/* ===========================
+   TREASURY
+=========================== */
 
-totalROI+=
+const treasury =
 
-normalizeNumber(
-
-project.roi
-
-);
-
-});
-
-return{
-
-projects:
-
-projects.length,
-
-liquidity:
-
-totalLiquidity,
-
-investors:
-
-totalInvestors,
-
-averageROI:
-
-projects.length
+typeof getProjectTreasuryStatus==="function"
 
 ?
 
-totalROI/projects.length
+getProjectTreasuryStatus(project.code)
 
-:
+:{};
 
-0
+/* ===========================
+   STAKING
+=========================== */
+
+let totals={
+
+stake:0,
+
+reward:0,
+
+stakes:[]
 
 };
 
+if(typeof getProjectTotals==="function"){
+
+try{
+
+totals =
+
+await getProjectTotals(
+
+project.code
+
+);
+
+}catch(error){
+
+console.warn(error);
+
 }
 
-/* =========================================================
-   SEARCH
-========================================================= */
+}
 
-async function search(keyword=""){
+/* ===========================
+   RISK
+=========================== */
 
-const projects=
+const risk =
 
-await refresh();
+typeof getProjectRisk==="function"
 
-const query=
+?
 
-normalizeText(keyword)
+getProjectRisk(project.code)
+
+:{
+
+risk:"LOW",
+
+score:0
+
+};
+
+/* ===========================
+   POOL
+=========================== */
+
+const pool =
+
+typeof getPoolStatus==="function"
+
+?
+
+getPoolStatus(project.code)
+
+:{
+
+liquidity:0
+
+};
+
+/* ===========================
+   RETURN
+=========================== */
+
+return{
+
+...project,
+
+treasury,
+
+pool,
+
+risk,
+
+totals,
+
+liquidity:
+
+Number(
+
+treasury?.liquidity
+
+)||0,
+
+investors:
+
+Array.isArray(
+
+totals.stakes
+
+)
+
+?
+
+totals.stakes.length
+
+:0,
+
+totalStake:
+
+Number(
+
+totals.stake
+
+)||0,
+
+totalReward:
+
+Number(
+
+totals.reward
+
+)||0
+
+};
+
+};
+
+/* ==========================================
+   GET MARKETPLACE LIST
+========================================== */
+
+AlbukhrMarketplace.getMarketplace =
+async function(options={}){
+
+const projects =
+await AlbukhrMarketplace.getProjects(options);
+
+const marketplace = [];
+
+for(const project of projects){
+
+const fullProject =
+
+await AlbukhrMarketplace.getProject(
+
+project.code
+
+);
+
+if(fullProject){
+
+marketplace.push(fullProject);
+
+}
+
+}
+
+/* ===========================
+   SORT
+=========================== */
+
+const sort =
+
+String(options.sort || "")
 
 .toLowerCase();
 
-if(!query){
+if(sort==="roi"){
+
+marketplace.sort(
+
+(a,b)=>
+
+(b.rewardRate||0)-
+
+(a.rewardRate||0)
+
+);
+
+}
+
+else if(sort==="liquidity"){
+
+marketplace.sort(
+
+(a,b)=>
+
+(b.liquidity||0)-
+
+(a.liquidity||0)
+
+);
+
+}
+
+else if(sort==="investors"){
+
+marketplace.sort(
+
+(a,b)=>
+
+(b.investors||0)-
+
+(a.investors||0)
+
+);
+
+}
+
+else if(sort==="risk"){
+
+marketplace.sort(
+
+(a,b)=>
+
+(a.risk?.score||0)-
+
+(b.risk?.score||0)
+
+);
+
+}
+
+else{
+
+marketplace.sort(
+
+(a,b)=>
+
+(a.sortOrder||9999)-
+
+(b.sortOrder||9999)
+
+);
+
+}
+
+return marketplace;
+
+};
+
+/* ==========================================
+   REFRESH MARKETPLACE CACHE
+========================================== */
+
+AlbukhrMarketplace.refresh =
+async function(){
+
+marketplaceCache = [];
+
+lastRefresh = 0;
+
+await AlbukhrMarketplace.getProjects({
+
+forceRefresh:true
+
+});
+
+return await AlbukhrMarketplace.getMarketplace();
+
+};
+
+/* ==========================================
+   SEARCH PROJECTS
+========================================== */
+
+AlbukhrMarketplace.search =
+async function(keyword=""){
+
+const projects =
+await AlbukhrMarketplace.getMarketplace();
+
+const search =
+String(keyword)
+.trim()
+.toLowerCase();
+
+if(!search){
 
 return projects;
 
@@ -498,84 +672,75 @@ return projects.filter(project=>{
 
 return(
 
-normalizeText(
-
-project.project_name
-
-)
-
+String(project.title)
 .toLowerCase()
-
-.includes(query)
+.includes(search)
 
 ||
 
-normalizeText(
-
-project.description
-
-)
-
+String(project.code)
 .toLowerCase()
-
-.includes(query)
+.includes(search)
 
 ||
 
-normalizeText(
-
-project.category
-
-)
-
+String(project.description)
 .toLowerCase()
+.includes(search)
 
-.includes(query)
+||
+
+String(project.category)
+.toLowerCase()
+.includes(search)
 
 );
 
 });
 
-}
+};
 
-/* =========================================================
-   FILTER
-========================================================= */
+/* ==========================================
+   MARKET SUMMARY
+========================================== */
 
-async function filter(callback){
+AlbukhrMarketplace.summary =
+async function(){
 
-const projects=
+const projects =
+await AlbukhrMarketplace.getMarketplace();
 
-await refresh();
+let totalLiquidity = 0;
+let totalInvestors = 0;
+let totalStake = 0;
 
-if(typeof callback!=="function"){
+projects.forEach(project=>{
 
-return projects;
+totalLiquidity +=
+Number(project.liquidity)||0;
 
-}
+totalInvestors +=
+Number(project.investors)||0;
 
-return projects.filter(callback);
+totalStake +=
+Number(project.totalStake)||0;
 
-}
+});
 
-/* =========================================================
-   SORT
-========================================================= */
+return{
 
-async function sort(compareFn){
+projects:
+projects.length,
 
-const projects=
+liquidity:
+totalLiquidity,
 
-await refresh();
+investors:
+totalInvestors,
 
-const cloned=[...projects];
+stake:
+totalStake
 
-if(typeof compareFn==="function"){
+};
 
-cloned.sort(compareFn);
-
-}
-
-return cloned;
-
-}
+};
