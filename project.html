@@ -775,42 +775,56 @@ return address.slice(0,6)
         }
 
         <div class="project-date">
-          ${new Date(
-            tx.created_at ||
-            tx.timestamp ||
-            Date.now()
-          ).toLocaleString()}
-        </div>
+  ${new Date(
+    tx.created_at ||
+    tx.timestamp ||
+    Date.now()
+  ).toLocaleString()}
+</div>
 
-        ${
-          tx.status
-          ? `
-          <div style="
-            font-size:11px;
-            margin-top:4px;
-            font-weight:600;
-          ">
+${(() => {
 
-            ${
-              tx.status === "pending"
-              ? "🟡 Pending"
+let statusText = "";
 
-              : tx.status === "approved"
-              ? "🔵 Approved"
+if(tx.type === "stake"){
 
-              : tx.status === "paid"
-              ? "🟢 Paid"
+  statusText =
+    tx.status === "pending"
+      ? "🟡 Pending"
+    : tx.status === "paid"
+      ? "✅ Successful"
+    : tx.status === "rejected"
+      ? "🔴 Failed"
+    : "✅ Successful";
 
-              : tx.status === "rejected"
-              ? "🔴 Rejected"
+}else{
 
-              : "✅ Successful"
-            }
+  statusText =
+    tx.status === "pending"
+      ? "🟡 Pending"
+    : tx.status === "approved"
+      ? "🔵 Approved"
+    : tx.status === "paid"
+      ? "🟢 Paid"
+    : tx.status === "rejected"
+      ? "🔴 Rejected"
+    : "";
 
-          </div>
-          `
-          : ""
-        }
+}
+
+return statusText
+? `
+<div style="
+font-size:11px;
+margin-top:4px;
+font-weight:600;
+">
+${statusText}
+</div>
+`
+: "";
+
+})()}
 
       </div>
 
