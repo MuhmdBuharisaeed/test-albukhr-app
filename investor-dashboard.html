@@ -425,6 +425,8 @@ link.classList.add("active");
 
 async function renderInvestorDashboard(){
 
+try{
+
 const stakes = await getAllStakesMerged();
 
 let totalInvest = 0;
@@ -482,7 +484,12 @@ document.getElementById("totalProjects").innerText =
 Object.keys(map).length;
 
 const container = document.getElementById("investments");
-container.innerHTML = "";
+
+container.innerHTML = `
+<div class="invest-card" style="text-align:center;color:#777;">
+Loading investments...
+</div>
+`;
 
 Object.keys(map).forEach(project=>{
 
