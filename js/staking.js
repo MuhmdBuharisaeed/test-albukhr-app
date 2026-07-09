@@ -124,7 +124,7 @@ async function createPendingStake({
 
         type: "stake",
 
-        status: "pending",
+        status: "successful",
 
         payment_id: null,
 
