@@ -278,6 +278,9 @@ code:code,
 title:
 project.project_name,
 
+roi:
+(project.reward_rate || 0) * 100,
+
 name:
 project.project_name,
 
@@ -742,5 +745,62 @@ stake:
 totalStake
 
 };
+
+};
+
+window.getHotProjects = async function(){
+
+const projects =
+await AlbukhrMarketplace.getMarketplace();
+
+return [...projects]
+.sort((a,b)=>
+(b.investors||0)-
+(a.investors||0)
+)
+.slice(0,5);
+
+};
+
+window.getLiquidityLeaderboard =
+async function(){
+
+const projects =
+await AlbukhrMarketplace.getMarketplace();
+
+return [...projects]
+.sort((a,b)=>
+(b.liquidity||0)-
+(a.liquidity||0)
+);
+
+};
+
+window.getTopInvestors =
+async function(){
+
+const stakes =
+await getGlobalStakes();
+
+const map = {};
+
+stakes.forEach(s=>{
+
+const id =
+s.userid || "Unknown";
+
+map[id] =
+(map[id]||0)+
+Number(s.amount||0);
+
+});
+
+return Object.entries(map)
+.map(([user,amount])=>({
+user,
+amount
+}))
+.sort((a,b)=>b.amount-a.amount)
+.slice(0,10);
 
 };
