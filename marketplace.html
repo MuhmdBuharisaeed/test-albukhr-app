@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/global-style.css">
 <link rel="stylesheet" href="css/marketplace.css">
 
+
 </head>
 
 <body>
@@ -21,658 +22,411 @@
 <header class="header">
 
   <div class="header-left">
-    <span class="brand">ALBUKHR</span>
+  <span class="brand">ALBUKHR</span>
   </div>
 
-  <div class="header-right">
-
-    <button
-      class="header-btn"
-      onclick="location.href='notifications.html'">
-
-      🔔
-
-      <span
-        id="notifBadge"
-        class="notification-badge">
-      </span>
-
-    </button>
-
-  </div>
+<div class="header-right">
+<div class="header-btn notification-btn">
+🔔
+<span id="notifBadge" class="notification-badge"></span>
+</div>
+</div>
 
 </header>
 
-<!-- SEARCH -->
-
 <div class="market-controls">
 
-  <input
-    id="projectSearch"
-    type="text"
-    placeholder="🔎 Search projects...">
+<input
+type="text"
+id="projectSearch"
+placeholder="🔎 Search projects..."
+oninput="renderMarketplace()">
 
-  <select id="sortProjects">
-
-    <option value="">
-      Sort Projects
-    </option>
-
-    <option value="roi">
-      Highest ROI
-    </option>
-
-    <option value="liquidity">
-      Highest Liquidity
-    </option>
-
-    <option value="risk">
-      Lowest Risk
-    </option>
-
-  </select>
+<select id="sortProjects" onchange="renderMarketplace()">
+<option value="">Sort</option>
+<option value="roi">Highest ROI</option>
+<option value="liquidity">Highest Liquidity</option>
+<option value="risk">Lowest Risk</option>
+</select>
 
 </div>
 
-<!-- MARKET INSIGHTS -->
-
-<div id="marketInsights"></div>
-
-<!-- DISCOVERY -->
-
-<div id="discoverySection"></div>
-
-<!-- PROJECTS -->
-
-<div
-  id="projectList"
-  class="marketplace">
-
-<div class="loading-card">
-
-Loading Marketplace...
-
-</div>
-
-</div>
-
-<!-- SCRIPTS -->
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="js/supabase-core.js"></script>
+<div id="marketInsights" style="padding:10px 12px"></div>
+<div id="discoverySection" style="padding:0 12px"></div>
+<div class="marketplace" id="projectList"></div>
 
 <script src="js/project-config.js"></script>
-
-<script src="js/projects-engine.js"></script>
-
-<script src="js/project-registry.js"></script>
-
-<script src="js/staking.js"></script>
-
-<script src="js/marketplace-data-engine.js"></script>
-
-<script src="js/app-alert.js"></script>
-
-<!-- Marketplace JS zai zo a Part 2 -->
+<script src="project-creation-engine.js"></script>
+<script src="project-registry.js"></script>
+<script src="staking.js"></script>
+<script src="smart-liquidity-engine.js"></script>
+<script src="js/core-liquidity-engine.js"></script>
+<script src="risk-engine.js"></script>
+<script src="marketplace-engine.js"></script>
+<script src="project-discovery-engine.js"></script>
+<script src="liquidity-pool-engine.js"></script>
+<script src="capital-protection-engine.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/ownership-engine.js"></script>
+<script src="js/marketplace-pro-engine.js"></script>
+<script src="js/project-discovery-algorithm.js"></script>
+<script src="albukhr-economic-intelligence-engine.js"></script>
 <script>
-/* ======================================
-   FEATURED PROJECT
-====================================== */
+function renderMarketInsights(){
 
-function renderFeaturedProject(projects){
-
-const box =
-document.getElementById(
-"discoverySection"
-);
+const box = document.getElementById("marketInsights");
 
 if(!box) return;
 
-if(!Array.isArray(projects) || !projects.length){
+const hot =
+typeof getHotProjects === "function"
+? getHotProjects()
+: [];
 
-box.innerHTML = "";
+const investors =
+typeof getTopInvestors === "function"
+? getTopInvestors()
+: [];
 
-return;
-
-}
-
-const featured =
-
-[...projects]
-
-.sort((a,b)=>{
-
-const scoreA =
-(Number(a.liquidity)||0) +
-((Number(a.investors)||0)*10);
-
-const scoreB =
-(Number(b.liquidity)||0) +
-((Number(b.investors)||0)*10);
-
-return scoreB-scoreA;
-
-})[0];
+const liquidity =
+typeof getLiquidityLeaderboard === "function"
+? getLiquidityLeaderboard()
+: [];
 
 box.innerHTML = `
 
-<div class="featured-project">
+<div style="background:#fff;padding:12px;border-radius:14px;margin-bottom:8px">
 
-<div class="featured-title">
+<b>🔥 Hot Projects</b><br>
+${hot.map(p=>{
 
-⭐ Featured Project
+const key = normalizeProjectName(p.name);
 
-</div>
-
-<div class="featured-name">
-
-${featured.icon}
-${featured.title}
-
-</div>
-
-<div class="featured-desc">
-
-${featured.description}
-
-</div>
-
-<div class="featured-stats">
-
-<div>
-
-ROI
-
-<b>
-
-${featured.roi}%
-
-</b>
-
-</div>
-
-<div>
-
-Liquidity
-
-<b>
-
-${Number(featured.liquidity).toFixed(2)} Pi
-
-</b>
-
-</div>
-
-<div>
-
-Investors
-
-<b>
-
-${featured.investors}
-
-</b>
-
-</div>
-
-</div>
-
-<button
-class="invest-btn"
-onclick="location.href='project.html?project=${featured.key}'">
-
-Open Project
-
-</button>
-
-</div>
-
+return `
+${PROJECT_CONFIG[key]?.icon || "📦"}
+${PROJECT_CONFIG[key]?.title || p.name}
 `;
+
+}).join("<br>")}
+
+</div>
+
+<div style="background:#fff;padding:12px;border-radius:14px;margin-bottom:8px">
+
+<b>🏆 Top Investors</b><br>
+${investors.map(i=>
+`${i.user} — ${i.amount.toFixed(2)} Pi`
+).join("<br>")}
+
+</div>
+
+<div style="background:#fff;padding:12px;border-radius:14px;margin-bottom:8px">
+
+<b>💧 Liquidity Leaders</b><br>
+${liquidity.map(p=>{
+
+const key = normalizeProjectName(p.name);
+
+return `
+${PROJECT_CONFIG[key]?.icon || "📦"}
+${PROJECT_CONFIG[key]?.title || p.name}
+ — ${p.liquidity.toFixed(2)} Pi
+`;
+
+}).join("<br>")}
+
+</div>
+`;
+}
+
+function isCoreProject(name){
+
+const key = normalizeProjectName(name);
+
+return ALBUKHR_CORE_PROJECTS.includes(key);
+
+}
+
+function normalizeProjectName(name){
+
+if(!name) return name;
+
+const map = {
+
+"Barsh Agro":"Barsh",
+"Barsh Agro & Livestock":"Barsh",
+
+"Labbaika Bakery":"Labbaika",
+"Labbaika Bakery Center":"Labbaika",
+
+"Raheem Pharma":"Raheem",
+"Raheem Pharmacy":"Raheem",
+
+"Urban Mobility":"Urban",
+"Urban Transport":"Urban",
+
+"Khairat Fertiliser":"Khairat",
+"Khairat Recycling":"Khairat",
+
+"Azman Futures Makers Lab":"Azman",
+"Azman Chemical":"Azman",
+
+"Hauwal Sumonviter":"Hauwal",
+"Hauwal Maize":"Hauwal"
+
+};
+
+return map[name] || name;
 
   }
 
-/* ======================================
-   MARKET INSIGHTS
-====================================== */
+function calculateROI(amount, roi){
 
-function renderMarketInsights(projects){
+amount = Number(amount) || 0;
+roi = Number(roi) || 0;
 
-const box =
-document.getElementById(
-"marketInsights"
-);
-
-if(!box) return;
-
-if(!Array.isArray(projects)){
-
-projects = [];
+return (amount * roi / 100).toFixed(2);
 
 }
-
-const hotProjects =
-
-[...projects]
-
-.sort((a,b)=>
-
-(Number(b.investors)||0)-
-
-(Number(a.investors)||0)
-
-)
-
-.slice(0,3);
-
-const liquidityLeaders =
-
-[...projects]
-
-.sort((a,b)=>
-
-(Number(b.liquidity)||0)-
-
-(Number(a.liquidity)||0)
-
-)
-
-.slice(0,3);
-
-box.innerHTML = `
-
-<div class="market-box">
-
-<h3>🔥 Hot Projects</h3>
-
-${
-hotProjects.length
-
-? hotProjects.map(p=>`
-
-<div class="market-item">
-
-<span>
-
-${p.icon}
-${p.title}
-
-</span>
-
-<b>
-
-${p.investors||0}
-
-Investors
-
-</b>
-
-</div>
-
-`).join("")
-
-: "<div>No data</div>"
-}
-
-</div>
-
-<div class="market-box">
-
-<h3>💧 Liquidity Leaders</h3>
-
-${
-liquidityLeaders.length
-
-? liquidityLeaders.map(p=>`
-
-<div class="market-item">
-
-<span>
-
-${p.icon}
-${p.title}
-
-</span>
-
-<b>
-
-${Number(p.liquidity||0).toFixed(2)}
-
-Pi
-
-</b>
-
-</div>
-
-`).join("")
-
-: "<div>No data</div>"
-}
-
-</div>
-
-`;
-
-}
-
-/* ======================================
-   MARKETPLACE ENGINE
-====================================== */
 
 async function renderMarketplace(){
 
-const container =
-document.getElementById("projectList");
+const container = document.getElementById("projectList");
+container.innerHTML = "";
 
-container.innerHTML = `
-<div class="loading-card">
-Loading Marketplace...
-</div>
-`;
+// ✅ FETCH ONCE ONLY
+let stakes = [];
+
+try{
+  if(typeof getAllStakesMerged === "function"){
+    stakes = await getAllStakesMerged();
+  }
+}catch(e){
+  console.error("Stake load failed", e);
+  stakes = [];
+}
+
+let allProjects = [];
 
 try{
 
-let projects = [];
+  if(typeof PROJECT_CONFIG === "object"){
 
-if(
-window.AlbukhrMarketplace &&
-typeof AlbukhrMarketplace.getProjects === "function"
-){
+    allProjects = Object.keys(PROJECT_CONFIG).map(p => ({
+      name: p,
+      roi: PROJECT_CONFIG[p]?.roi || 0,
+      description: PROJECT_CONFIG[p]?.desc || ""
+    }));
 
-projects =
-await AlbukhrMarketplace.getMarketplace();
+  }
 
-}
+}catch(e){
 
-if(!Array.isArray(projects)){
-projects = [];
-}
+  console.error("PROJECT_CONFIG error", e);
+  allProjects = [];
+
+  }
 
 /* SEARCH */
 
-const keyword =
-document
-.getElementById("projectSearch")
-.value
-.trim();
+const search =
+document.getElementById("projectSearch")?.value
+?.toLowerCase() || "";
 
-projects =
-await AlbukhrMarketplace.search(keyword);
+let projects =
+allProjects.filter(p => {
+
+const key = normalizeProjectName(p.name);
+
+return (
+p.name.toLowerCase().includes(search) ||
+(PROJECT_CONFIG[key]?.title || "")
+.toLowerCase()
+.includes(search) ||
+
+(PROJECT_CONFIG[key]?.desc || "")
+.toLowerCase()
+.includes(search) ||
+
+(p.description || "")
+.toLowerCase()
+.includes(search)
+
+);
+
+});
 
 /* SORT */
 
 const sort =
-document
-.getElementById("sortProjects")
-.value;
+document.getElementById("sortProjects")?.value;
 
-if(sort==="roi"){
-
-projects.sort(
-(a,b)=>
-(Number(b.roi)||0)-
-(Number(a.roi)||0)
-);
-
-}else if(sort==="liquidity"){
-
-projects.sort(
-(a,b)=>
-(Number(b.liquidity)||0)-
-(Number(a.liquidity)||0)
-);
-
-}else if(sort==="risk"){
-
-projects.sort(
-(a,b)=>
-(Number(a.riskScore)||0)-
-(Number(b.riskScore)||0)
-);
-
+if(sort === "roi"){
+projects.sort((a,b)=>(b.roi||0)-(a.roi||0));
 }
 
-container.innerHTML = "";
+if(sort === "liquidity"){
+projects.sort((a,b)=>
+(getProjectTreasuryStatus(
+normalizeProjectName(b.name)
+)?.liquidity||0) -
 
-if(projects.length===0){
+(getProjectTreasuryStatus(
+normalizeProjectName(a.name)
+)?.liquidity||0)
+);
+}
 
-container.innerHTML = `
+if(sort === "risk"){
+projects.sort((a,b)=>{
 
-<div class="loading-card">
+const ra =
+getProjectRisk(
+normalizeProjectName(a.name)
+)?.score || 0;
 
-No projects found.
+const rb =
+getProjectRisk(
+normalizeProjectName(b.name)
+)?.score || 0;
 
-</div>
+return rb - ra;
 
-`;
+});
+}
+
+if(!projects.length){
+
+container.innerHTML =
+'<div class="empty">No projects available</div>';
 
 return;
 
-}
-
-projects.forEach(project=>{
-
-renderProjectCard(project);
-
-});
-
-renderMarketInsights(projects);
-
-renderFeaturedProject(projects);
-
-}catch(err){
-
-console.error(err);
-
-container.innerHTML = `
-
-<div class="loading-card">
-
-Marketplace failed to load.
-
-</div>
-
-`;
-
-}
-
   }
 
-/* ======================================
-   PROJECT CARD
-====================================== */
+projects.forEach(project => {
 
-function renderProjectCard(project){
+const projectKey = normalizeProjectName(project.name);
 
-const container =
-document.getElementById("projectList");
-
-const liquidity =
-Number(project.liquidity) || 0;
-
-const target =
-Number(project.target) || 100;
-
-const funded =
-Math.min(
-(liquidity / target) * 100,
-100
-);
-
-const investors =
-Number(project.investors) || 0;
-
-/* ===============================
-   BADGES
-=============================== */
-
-let badges = "";
-
-if(investors >= 20){
-
-badges += `
-<span class="trend-badge">
-🔥 Trending
-</span>
-`;
-
-}
-
-if((Number(project.roi) || 0) >= 10){
-
-badges += `
-<span class="roi-badge">
-🏆 High ROI
-</span>
-`;
-
-}
-
-if((Number(project.liquidity) || 0) >= 1000){
-
-badges += `
-<span class="liquidity-badge">
-💧 Strong Liquidity
-</span>
-`;
-
-}
-
-if(project.project_type === "core"){
-
-badges += `
-<span class="core-badge">
-⭐ Core
-</span>
-`;
-
-}
-
-const card =
-document.createElement("div");
+const card = document.createElement("div");
 
 card.className = "project-card";
 
-card.onclick = ()=>{
+card.onclick = () =>
+location.href = `project.html?project=${projectKey}`;
 
-location.href =
-`project.html?project=${project.key}`;
+/* TREASURY */
+const treasury =
+typeof getProjectTreasuryStatus === "function"
+? getProjectTreasuryStatus(project.name)
+: {liquidity:0};
 
-};
+const liquidity =
+Number(treasury.liquidity) || 0;
+
+/* FUNDED */
+const funded =
+Math.min((liquidity / (project.target || 1000))*100,100);
+
+/* INVESTORS */
+const investors =
+stakes.filter(s => s.project === projectKey).length;
+
+/* RISK */
+const riskData =
+typeof getProjectRisk === "function"
+? getProjectRisk(projectKey)
+: {risk:"LOW"};
 
 card.innerHTML = `
 
 <div class="project-header">
 
 <div class="project-icon">
-
-${project.icon || "📦"}
-
+${PROJECT_CONFIG[projectKey]?.icon || "📦"}
 </div>
-
-<div style="flex:1">
 
 <div class="project-title">
 
-${project.title}
+${PROJECT_CONFIG[projectKey]?.title || project.name}
+
+${PROJECT_CONFIG[projectKey] ? 
+'<span class="core-badge">CORE</span>' : ''}
+
+${investors > 20 ? 
+'<span class="trend">🔥 Trending</span>' : ''}
 
 </div>
-
-<div
-style="
-margin-top:5px;
-display:flex;
-gap:6px;
-flex-wrap:wrap;
-">
-
-${badges}
-
-</div>
-
-<div class="project-category">
-
-${project.category || ""}
-
-</div>
-
-</div>
-
 </div>
 
 <div class="project-desc">
-
-${project.description || ""}
-
+${PROJECT_CONFIG[projectKey]?.desc || project.description || ""}
 </div>
 
 <div class="row">
-
-<span>ROI</span>
-
-<b>${Number(project.roi)||0}%</b>
-
+<div>ROI</div>
+<div>${project.roi || PROJECT_CONFIG[projectKey]?.roi || 0}%</div>
 </div>
 
 <div class="row">
-
-<span>Duration</span>
-
-<b>${project.durations || "-"}</b>
-
+<div>Liquidity</div>
+<div>${liquidity.toFixed(2)} Pi</div>
 </div>
 
 <div class="row">
-
-<span>Liquidity</span>
-
-<b>${liquidity.toFixed(2)} Pi</b>
-
+<div>Investors</div>
+<div>${investors}</div>
 </div>
 
 <div class="row">
-
-<span>Investors</span>
-
-<b>${investors}</b>
-
+<div>Minimum</div>
+<div>${typeof getMinStake === "function"
+? getMinStake(projectKey)
+: (project.minimum || 1)} Pi</div>
 </div>
 
 <div class="row">
+<div>Risk</div>
+<div class="risk ${riskData.risk.toLowerCase()}">
+${riskData.risk}
+</div>
+</div>
 
-<span>Minimum Stake</span>
-
-<b>${project.minimum || 10} Pi</b>
-
+<div class="row">
+<div>Pool Liquidity</div>
+<div>${
+(typeof getPoolStatus==="function"
+? getPoolStatus(project.name)?.liquidity || 0
+: 0).toFixed(2)
+} Pi</div>
 </div>
 
 <div class="progress">
-
-<div
-class="progress-bar"
-style="width:${funded}%">
-
+<div class="progress-bar" style="width:${funded}%"></div>
 </div>
 
-</div>
+<div class="roi-box">
 
-<div
-style="
-margin-top:6px;
-font-size:12px;
-color:#666;
-text-align:right;
+ROI Calculator
+
+<input
+type="number"
+placeholder="Enter amount"
+oninput="this.nextElementSibling.innerText =
+calculateROI(this.value, ${project.roi || 0}) + ' Pi'
 ">
 
-${funded.toFixed(1)}% Funded
+<div style="margin-top:4px;font-weight:600">
+0 Pi
+</div>
 
 </div>
 
-<button
-class="invest-btn"
-onclick="event.stopPropagation();invest('${project.key}')">
+<button  
+class="invest-btn"  
+onclick="event.stopPropagation(); invest('${projectKey}')">
 
-Invest Now
+Invest
 
 </button>
 
@@ -680,134 +434,52 @@ Invest Now
 
 container.appendChild(card);
 
-  }
-
-/* ======================================
-   INVEST ENGINE
-====================================== */
-
-async function invest(projectKey){
-
-try{
-
-const project =
-getProjectConfig(projectKey);
-
-if(!project){
-
-showAlert(
-"Project Not Found",
-"Unable to load project information."
-);
-
-return;
-
-}
-
-const minimum =
-Number(getMinStake(projectKey)) || 10;
-
-const amountText = prompt(
-
-`Enter stake amount
-
-Minimum: ${minimum} Pi`
-
-);
-
-if(amountText === null){
-
-return;
-
-}
-
-const amount =
-Number(amountText);
-
-if(
-!Number.isFinite(amount) ||
-amount < minimum
-){
-
-showAlert(
-"Invalid Amount",
-`Minimum stake is ${minimum} Pi`
-);
-
-return;
-
-}
-
-/* ===============================
-SELECT DURATION
-=============================== */
-
-const duration = Number(
-
-project.durations?.[0] || 30
-
-);
-
-/* ===============================
-CREATE STAKE
-=============================== */
-
-const result = await addStake({
-
-project:projectKey,
-
-amount,
-
-duration
-
 });
 
-if(result?.error){
+}
 
-showAlert(
+function invest(project){
 
-"Investment Failed",
+const amount =
+prompt("Enter investment amount (Pi)");
 
-result.error
+if(!amount || Number(amount)<=0){
 
-);
-
+alert("Invalid amount");
 return;
 
 }
 
-/* ===============================
-SUCCESS
-=============================== */
+createStake({
+project: project,
+amount: Number(amount)
+});
 
-showAlert(
-
-"Investment Successful",
-
-`You successfully invested ${amount} Pi in ${project.title}.`
-
-);
-
-await renderMarketplace();
-
-}catch(error){
-
-console.error(error);
-
-showAlert(
-
-"Marketplace Error",
-
-error.message || "Investment failed."
-
-);
+alert("Investment successful");
 
 }
 
-  }
+/* INITIAL RENDER */
+
 renderMarketplace();
+renderMarketInsights();
+
+if(typeof renderDiscovery === "function"){
+  renderDiscovery();
+}
+
+/* AUTO REFRESH */
+setInterval(()=>{
+renderMarketplace();
+renderMarketInsights();
+
+if(typeof renderDiscovery === "function"){
+  renderDiscovery();
+}
+
+},5000);
+  
 </script>
 
 </body>
 </html>
-
