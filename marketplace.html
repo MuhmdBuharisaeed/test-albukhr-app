@@ -363,14 +363,9 @@ box.innerHTML = `
 <b>🔥 Hot Projects</b><br>
 ${hot.map(p=>{
 
-${p.icon}
-
-${p.title}
-
 return `
-p.icon
-
-p.title
+${p.icon}
+${p.title}
 `;
 
 }).join("<br>")}
@@ -391,13 +386,10 @@ ${investors.map(i=>
 <b>💧 Liquidity Leaders</b><br>
 ${liquidity.map(p=>{
 
-const key = normalizeProjectName(p.name);
-
 return `
-p.icon
-
-p.title
- — ${p.liquidity.toFixed(2)} Pi
+${p.icon}
+${p.title}
+ — ${Number(p.liquidity || 0).toFixed(2)} Pi
 `;
 
 }).join("<br>")}
@@ -653,7 +645,14 @@ const funded=
 
 Math.min(
 
-(liquidity/project.target)*100,
+const target =
+Number(project.target) || 100;
+
+const funded =
+Math.min(
+(liquidity/target)*100,
+100
+);
 
 100
 
@@ -662,10 +661,8 @@ Math.min(
 const investors=
 
 stakes.filter(
-
-s=>normalizeProjectName(
-s.project
-)===project.key
+s => s.project === project.key
+)
 
 ).length;
 
@@ -713,10 +710,8 @@ ACTIVE
 
 </span>
 
-${isCoreProject(project.key)
-
+${project.project_type==="core"
 ?'<span class="core-badge">CORE</span>'
-
 :''}
 
 ${investors>=20
@@ -769,7 +764,7 @@ ${project.roi}%
 
 <div>
 
-${project.duration}
+${project.durations}
 
 </div>
 
