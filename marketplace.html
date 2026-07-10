@@ -117,70 +117,6 @@ Loading Marketplace...
 <!-- Marketplace JS zai zo a Part 2 -->
 <script>
 /* ======================================
-   LIVE MARKET DATA
-====================================== */
-
-async function loadLiveMarketData(){
-
-try{
-
-const stakes =
-await getGlobalStakes();
-
-const projects = {};
-
-stakes.forEach(s=>{
-
-if(
-s.type !== "stake" ||
-s.status !== "paid"
-){
-return;
-}
-
-const key = s.project;
-
-if(!projects[key]){
-
-projects[key]={
-
-liquidity:0,
-
-investors:new Set()
-
-};
-
-}
-
-projects[key].liquidity +=
-Number(s.amount) || 0;
-
-if(s.userid){
-
-projects[key]
-.investors
-.add(s.userid);
-
-}
-
-});
-
-return projects;
-
-}catch(e){
-
-console.error(
-"Live Market Error:",
-e
-);
-
-return {};
-
-}
-
-  }
-
-/* ======================================
    FEATURED PROJECT
 ====================================== */
 
@@ -438,16 +374,13 @@ try{
 
 let projects = [];
 
-const liveData =
-await loadLiveMarketData();
-
 if(
 window.AlbukhrMarketplace &&
 typeof AlbukhrMarketplace.getProjects === "function"
 ){
 
 projects =
-await AlbukhrMarketplace.getProjects();
+await AlbukhrMarketplace.getMarketplace();
 
 }
 
@@ -461,32 +394,10 @@ const keyword =
 document
 .getElementById("projectSearch")
 .value
-.trim()
-.toLowerCase();
+.trim();
 
-projects = projects.filter(p=>{
-
-return (
-
-(p.title || "")
-.toLowerCase()
-.includes(keyword)
-
-||
-
-(p.description || "")
-.toLowerCase()
-.includes(keyword)
-
-||
-
-(p.category || "")
-.toLowerCase()
-.includes(keyword)
-
-);
-
-});
+projects =
+await AlbukhrMarketplace.search(keyword);
 
 /* SORT */
 
@@ -503,9 +414,7 @@ projects.sort(
 (Number(a.roi)||0)
 );
 
-}
-
-else if(sort==="liquidity"){
+}else if(sort==="liquidity"){
 
 projects.sort(
 (a,b)=>
@@ -513,9 +422,7 @@ projects.sort(
 (Number(a.liquidity)||0)
 );
 
-}
-
-else if(sort==="risk"){
+}else if(sort==="risk"){
 
 projects.sort(
 (a,b)=>
@@ -544,25 +451,6 @@ return;
 }
 
 projects.forEach(project=>{
-
-const live =
-liveData[project.key];
-
-if(live){
-
-project.liquidity =
-live.liquidity;
-
-project.investors =
-live.investors.size;
-
-}else{
-
-project.liquidity = 0;
-
-project.investors = 0;
-
-}
 
 renderProjectCard(project);
 
