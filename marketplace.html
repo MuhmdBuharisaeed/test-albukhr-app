@@ -317,13 +317,17 @@ Loading Marketplace...
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-core.js"></script>
+
 <script src="js/projects-engine.js"></script>
 
 <script src="js/project-registry.js"></script>
 
 <script src="js/marketplace-data-engine.js"></script>
 
-<script src="jsmarketplace-engine.js"></script>
+<script src="js/marketplace-engine.js"></script>
   
 <script>
 function renderMarketInsights(){
@@ -582,69 +586,13 @@ projects.sort(
 
 }
 
-else if(sort==="liquidity"){
+projects.sort((a,b)=>
+(b.liquidity || 0) - (a.liquidity || 0)
+);
 
-projects.sort((a,b)=>{
-
-const la=
-
-typeof getProjectTreasuryStatus==="function"
-
-? Number(
-getProjectTreasuryStatus(
-b.key
-)?.liquidity
-)||0
-
-:0;
-
-const lb=
-
-typeof getProjectTreasuryStatus==="function"
-
-? Number(
-getProjectTreasuryStatus(
-a.key
-)?.liquidity
-)||0
-
-:0;
-
-return la-lb;
-
-});
-
-}
-
-else if(sort==="risk"){
-
-projects.sort((a,b)=>{
-
-const ra=
-
-typeof getProjectRisk==="function"
-
-?
-
-getProjectRisk(a.key)?.score||0
-
-:0;
-
-const rb=
-
-typeof getProjectRisk==="function"
-
-?
-
-getProjectRisk(b.key)?.score||0
-
-:0;
-
-return ra-rb;
-
-});
-
-}
+projects.sort((a,b)=>
+(a.riskScore || 0) - (b.riskScore || 0)
+);
 
 /* ===============================
    EMPTY MARKET
@@ -710,19 +658,8 @@ return;
 
 projects.forEach(project=>{
 
-const treasury=
-
-typeof getProjectTreasuryStatus==="function"
-
-? getProjectTreasuryStatus(project.key)
-
-: {};
-
-const liquidity=
-
-Number(
-treasury?.liquidity
-)||0;
+const liquidity =
+Number(project.liquidity) || 0;
 
 const funded=
 
@@ -743,22 +680,6 @@ s.project
 )===project.key
 
 ).length;
-
-const risk=
-
-typeof getProjectRisk==="function"
-
-?
-
-getProjectRisk(project.key)
-
-:{
-
-risk:"LOW",
-
-score:0
-
-};
 
 const card=
 
@@ -906,9 +827,9 @@ ${project.minimum} Pi
 
 <div>Risk</div>
 
-<div class="risk ${String(risk.risk).toLowerCase()}">
+<div class="risk ${String(project.risk).toLowerCase()}">
 
-${risk.risk}
+${project.risk}
 
 </div>
 
