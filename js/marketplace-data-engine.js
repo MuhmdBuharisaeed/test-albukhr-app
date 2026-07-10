@@ -1,225 +1,59 @@
 /* =========================================================
-   ALBUKHR MARKETPLACE DATA ENGINE
-   Version 1.0
-   Testnet → Mainnet Ready
+   ALBUKHR MARKETPLACE DATA ENGINE v2
 ========================================================= */
 
 (function(window){
 
 "use strict";
 
-/* =========================================================
-   ENGINE
-========================================================= */
-
 const AlbukhrMarketplace = {};
+
+window.AlbukhrMarketplace = AlbukhrMarketplace;
 
 /* =========================================================
    CACHE
 ========================================================= */
 
-let marketplaceCache = [];
-
+let cache = [];
 let lastRefresh = 0;
-
 const CACHE_TIME = 10000;
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function normalizeText(value){
+function toNumber(value){
 
-return String(
+const n = Number(value);
 
-value || ""
-
-).trim();
+return Number.isFinite(n) ? n : 0;
 
 }
 
-function normalizeNumber(value){
+function normalize(text){
 
-const number = Number(value);
-
-return Number.isFinite(number)
-
-? number
-
-: 0;
-
-}
-
-function safe(callback,fallback=null){
-
-try{
-
-return callback();
-
-}catch(error){
-
-console.warn(error);
-
-return fallback;
-
-}
+return String(text || "").trim();
 
 }
 
 /* =========================================================
-   PUBLIC ENGINE
+   GET PROJECTS
 ========================================================= */
-
-window.AlbukhrMarketplace =
-AlbukhrMarketplace;
-
-})(window);
-
-/* =========================================================
-   LOAD MARKETPLACE PROJECTS
-========================================================= */
-
-AlbukhrMarketplace.getProjects =
-async function(forceRefresh=false){
-
-const now = Date.now();
-
-/* ============================
-   CACHE
-============================ */
-
-if(
-
-!forceRefresh &&
-
-marketplaceCache.length &&
-
-(now-lastRefresh)<CACHE_TIME
-
-){
-
-return marketplaceCache;
-
-}
-
-/* ============================
-   LOAD PROJECTS
-============================ */
-
-let projects=[];
-
-/* ---------- SOURCE 1 ---------- */
-
-if(typeof loadMarketplaceProjects==="function"){
-
-try{
-
-projects =
-await loadMarketplaceProjects();
-
-}catch(error){
-
-console.error(
-
-"Marketplace Loader",
-
-error
-
-);
-
-}
-
-}
-
-/* ---------- SOURCE 2 ---------- */
-
-if(
-
-(!projects || !projects.length)
-
-&&
-
-typeof getMarketplaceProjects==="function"
-
-){
-
-try{
-
-projects =
-await getMarketplaceProjects();
-
-}catch(error){
-
-console.error(
-
-"Marketplace Projects",
-
-error
-
-);
-
-}
-
-}
-
-/* ---------- SOURCE 3 ---------- */
-
-if(
-
-(!projects || !projects.length)
-
-&&
-
-typeof fetchMarketplaceProjects==="function"
-
-){
-
-try{
-
-projects =
-await fetchMarketplaceProjects();
-
-}catch(error){
-
-console.error(
-
-"Marketplace Fetch",
-
-error
-
-);
-
-}
-
-}
-
-/* ---------- EMPTY ---------- */
-
-if(!Array.isArray(projects)){
-
-projects=[];
-
-}
-
-marketplaceCache = projects;
-
-lastRefresh = now;
-
-return marketplaceCache;
-
-};
-
-/* ==========================================
-   LOAD MARKETPLACE PROJECTS
-========================================== */
 
 AlbukhrMarketplace.getProjects = async function(options={}){
 
-const activeOnly =
-options.activeOnly !== false;
-
 const forceRefresh =
 options.forceRefresh === true;
+
+const now = Date.now();
+
+if(
+!forceRefresh &&
+cache.length &&
+(now-lastRefresh)<CACHE_TIME
+){
+return cache;
+}
 
 let projects = [];
 
@@ -227,21 +61,14 @@ try{
 
 if(typeof getActiveProjects==="function"){
 
-projects = await getActiveProjects({
-forceRefresh
-});
+projects =
+await getActiveProjects();
 
-}else if(typeof getAllProjects==="function"){
+}
+else if(typeof getAllProjects==="function"){
 
-projects = await getAllProjects({
-forceRefresh
-});
-
-}else if(typeof getProjects==="function"){
-
-projects = await getProjects({
-forceRefresh
-});
+projects =
+await getAllProjects();
 
 }
 
@@ -262,27 +89,16 @@ projects=[];
 
 }
 
-const result=[];
+cache = projects.map(project=>({
 
-for(const project of projects){
+key:
+normalize(project.project_code),
 
-const code =
-project.project_code;
-
-result.push({
-
-key:code,
-
-code:code,
+code:
+normalize(project.project_code),
 
 title:
-project.project_name,
-
-roi:
-(project.reward_rate || 0) * 100,
-
-name:
-project.project_name,
+normalize(project.project_name),
 
 icon:
 project.icon || "📦",
@@ -290,234 +106,40 @@ project.icon || "📦",
 description:
 project.description || "",
 
-info:
-project.info || "",
-
-type:
-project.project_type || "core",
-
-status:
-project.status || "active",
-
 category:
+project.project_type || "General",
+
+project_type:
 project.project_type || "core",
+
+roi:
+toNumber(project.reward_rate)*100,
+
+minimum:
+toNumber(project.min_liquidity),
 
 durations:
 project.durations || [30,60,90],
 
-minimum:
-project.min_liquidity || 100,
-
-rewardRate:
-project.reward_rate || 0,
-
-reserve:
-project.reserve_percent || 0,
-
-treasuryEnabled:
-project.treasury_enabled !== false,
-
-stakingEnabled:
-project.staking_enabled !== false,
-
-contributionsEnabled:
-project.contributions_enabled !== false,
+status:
+project.status || "active",
 
 sortOrder:
-project.sort_order || 9999,
+toNumber(project.sort_order)
 
-raw:project
+}));
 
-});
+lastRefresh = now;
 
-}
-
-marketplaceCache = result;
-
-lastRefresh = Date.now();
-
-return marketplaceCache;
+return cache;
 
 };
 
-/* ==========================================
-   GET SINGLE MARKETPLACE PROJECT
-========================================== */
-
-AlbukhrMarketplace.getProject =
-async function(projectCode){
-
-if(!projectCode){
-
-return null;
-
-}
-
-const projects =
-await AlbukhrMarketplace.getProjects();
-
-const project =
-projects.find(
-
-p=>String(p.code).trim().toLowerCase()===
-
-String(projectCode).trim().toLowerCase()
-
-);
-
-if(!project){
-
-return null;
-
-}
-
-/* ===========================
-   TREASURY
-=========================== */
-
-const treasury =
-
-typeof getProjectTreasuryStatus==="function"
-
-?
-
-getProjectTreasuryStatus(project.code)
-
-:{};
-
-/* ===========================
-   STAKING
-=========================== */
-
-let totals={
-
-stake:0,
-
-reward:0,
-
-stakes:[]
-
-};
-
-if(typeof getProjectTotals==="function"){
-
-try{
-
-totals =
-
-await getProjectTotals(
-
-project.code
-
-);
-
-}catch(error){
-
-console.warn(error);
-
-}
-
-}
-
-/* ===========================
-   RISK
-=========================== */
-
-const risk =
-
-typeof getProjectRisk==="function"
-
-?
-
-getProjectRisk(project.code)
-
-:{
-
-risk:"LOW",
-
-score:0
-
-};
-
-/* ===========================
-   POOL
-=========================== */
-
-const pool =
-
-typeof getPoolStatus==="function"
-
-?
-
-getPoolStatus(project.code)
-
-:{
-
-liquidity:0
-
-};
-
-/* ===========================
-   RETURN
-=========================== */
-
-return{
-
-...project,
-
-treasury,
-
-pool,
-
-risk,
-
-totals,
-
-liquidity:
-
-Number(
-
-treasury?.liquidity
-
-)||0,
-
-investors:
-
-Array.isArray(
-
-totals.stakes
-
-)
-
-?
-
-totals.stakes.length
-
-:0,
-
-totalStake:
-
-Number(
-
-totals.stake
-
-)||0,
-
-totalReward:
-
-Number(
-
-totals.reward
-
-)||0
-
-};
-
-};
-
-/* ==========================================
-   GET MARKETPLACE LIST
-========================================== */
+})(window);
+
+/* =========================================================
+   GET MARKETPLACE
+========================================================= */
 
 AlbukhrMarketplace.getMarketplace =
 async function(options={}){
@@ -525,134 +147,119 @@ async function(options={}){
 const projects =
 await AlbukhrMarketplace.getProjects(options);
 
-const marketplace = [];
+let stakes = [];
+
+try{
+
+if(typeof getGlobalStakes==="function"){
+
+stakes =
+await getGlobalStakes();
+
+}
+
+}catch(error){
+
+console.error(
+"Stake Engine:",
+error
+);
+
+stakes=[];
+
+}
+
+const result = [];
 
 for(const project of projects){
 
-const fullProject =
+const projectStakes =
 
-await AlbukhrMarketplace.getProject(
+stakes.filter(s=>
 
-project.code
+String(s.project).trim().toLowerCase()===
 
-);
+String(project.key).trim().toLowerCase()
 
-if(fullProject){
+&&
 
-marketplace.push(fullProject);
+s.type==="stake"
 
-}
+&&
 
-}
-
-/* ===========================
-   SORT
-=========================== */
-
-const sort =
-
-String(options.sort || "")
-
-.toLowerCase();
-
-if(sort==="roi"){
-
-marketplace.sort(
-
-(a,b)=>
-
-(b.rewardRate||0)-
-
-(a.rewardRate||0)
+s.status==="paid"
 
 );
 
-}
+const liquidity =
+projectStakes.reduce(
 
-else if(sort==="liquidity"){
+(total,s)=>
 
-marketplace.sort(
+total + (Number(s.amount)||0),
 
-(a,b)=>
-
-(b.liquidity||0)-
-
-(a.liquidity||0)
+0
 
 );
 
-}
+const investors =
+new Set(
 
-else if(sort==="investors"){
+projectStakes.map(s=>s.userid)
 
-marketplace.sort(
+).size;
 
-(a,b)=>
+result.push({
 
-(b.investors||0)-
+...project,
 
-(a.investors||0)
+liquidity,
 
-);
+investors,
 
-}
+totalStake:liquidity,
 
-else if(sort==="risk"){
+totalReward:
+projectStakes.reduce(
 
-marketplace.sort(
+(total,s)=>
 
-(a,b)=>
+total + (Number(s.reward)||0),
 
-(a.risk?.score||0)-
+0
 
-(b.risk?.score||0)
+)
 
-);
-
-}
-
-else{
-
-marketplace.sort(
-
-(a,b)=>
-
-(a.sortOrder||9999)-
-
-(b.sortOrder||9999)
-
-);
+});
 
 }
 
-return marketplace;
+return result;
 
 };
 
-/* ==========================================
-   REFRESH MARKETPLACE CACHE
-========================================== */
+/* =========================================================
+   REFRESH MARKETPLACE
+========================================================= */
 
 AlbukhrMarketplace.refresh =
 async function(){
 
-marketplaceCache = [];
+cache = [];
 
 lastRefresh = 0;
 
-await AlbukhrMarketplace.getProjects({
+return await AlbukhrMarketplace.getMarketplace({
 
 forceRefresh:true
 
 });
 
-return await AlbukhrMarketplace.getMarketplace();
-
 };
 
-/* ==========================================
+/* =========================================================
    SEARCH PROJECTS
-========================================== */
+========================================================= */
 
 AlbukhrMarketplace.search =
 async function(keyword=""){
@@ -703,9 +310,9 @@ String(project.category)
 
 };
 
-/* ==========================================
+/* =========================================================
    MARKET SUMMARY
-========================================== */
+========================================================= */
 
 AlbukhrMarketplace.summary =
 async function(){
@@ -716,6 +323,7 @@ await AlbukhrMarketplace.getMarketplace();
 let totalLiquidity = 0;
 let totalInvestors = 0;
 let totalStake = 0;
+let totalReward = 0;
 
 projects.forEach(project=>{
 
@@ -728,79 +336,135 @@ Number(project.investors)||0;
 totalStake +=
 Number(project.totalStake)||0;
 
+totalReward +=
+Number(project.totalReward)||0;
+
 });
 
 return{
 
-projects:
-projects.length,
+projects:projects.length,
 
-liquidity:
-totalLiquidity,
+liquidity:totalLiquidity,
 
-investors:
-totalInvestors,
+investors:totalInvestors,
 
-stake:
-totalStake
+stake:totalStake,
+
+reward:totalReward
 
 };
 
 };
 
-window.getHotProjects = async function(){
+/* =========================================================
+   GET SINGLE PROJECT
+========================================================= */
+
+AlbukhrMarketplace.getProject =
+async function(projectCode){
+
+if(!projectCode){
+
+return null;
+
+}
+
+const projects =
+await AlbukhrMarketplace.getMarketplace();
+
+return projects.find(project=>
+
+String(project.key)
+.toLowerCase()
+
+===
+
+String(projectCode)
+.toLowerCase()
+
+) || null;
+
+};
+
+/* =========================================================
+   HOT PROJECTS
+========================================================= */
+
+window.getHotProjects =
+async function(limit=5){
 
 const projects =
 await AlbukhrMarketplace.getMarketplace();
 
 return [...projects]
+
 .sort((a,b)=>
-(b.investors||0)-
-(a.investors||0)
+
+(Number(b.investors)||0)-
+
+(Number(a.investors)||0)
+
 )
-.slice(0,5);
+
+.slice(0,limit);
 
 };
+
+/* =========================================================
+   LIQUIDITY LEADERBOARD
+========================================================= */
 
 window.getLiquidityLeaderboard =
-async function(){
+async function(limit=5){
 
 const projects =
 await AlbukhrMarketplace.getMarketplace();
 
 return [...projects]
+
 .sort((a,b)=>
-(b.liquidity||0)-
-(a.liquidity||0)
-);
+
+(Number(b.liquidity)||0)-
+
+(Number(a.liquidity)||0)
+
+)
+
+.slice(0,limit);
 
 };
+
+/* =========================================================
+   TOP INVESTORS
+========================================================= */
 
 window.getTopInvestors =
-async function(){
+async function(limit=10){
 
-const stakes =
+let stakes=[];
+
+try{
+
+stakes =
 await getGlobalStakes();
 
-const map = {};
+}catch(e){
 
-stakes.forEach(s=>{
+console.error(e);
 
-const id =
-s.userid || "Unknown";
+return [];
 
-map[id] =
-(map[id]||0)+
-Number(s.amount||0);
+}
 
-});
+const users = {};
 
-return Object.entries(map)
-.map(([user,amount])=>({
-user,
-amount
-}))
-.sort((a,b)=>b.amount-a.amount)
-.slice(0,10);
+stakes.forEach(stake=>{
 
-};
+if(
+
+stake.type!=="stake"
+
+||
+
+stake.status!
