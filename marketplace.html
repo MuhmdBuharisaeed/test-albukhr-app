@@ -330,6 +330,11 @@ Loading Marketplace...
 <script src="js/marketplace-engine.js"></script>
   
 <script>
+
+/* ===============================
+   RENDER MARKET INSIGHTS
+================================ */
+
 function renderMarketInsights(){
 
 const box = document.getElementById("marketInsights");
@@ -358,11 +363,14 @@ box.innerHTML = `
 <b>🔥 Hot Projects</b><br>
 ${hot.map(p=>{
 
-const key = normalizeProjectName(p.name);
+${p.icon}
+
+${p.title}
 
 return `
-${PROJECT_CONFIG[key]?.icon || "📦"}
-${PROJECT_CONFIG[key]?.title || p.name}
+p.icon
+
+p.title
 `;
 
 }).join("<br>")}
@@ -386,8 +394,9 @@ ${liquidity.map(p=>{
 const key = normalizeProjectName(p.name);
 
 return `
-${PROJECT_CONFIG[key]?.icon || "📦"}
-${PROJECT_CONFIG[key]?.title || p.name}
+p.icon
+
+p.title
  — ${p.liquidity.toFixed(2)} Pi
 `;
 
@@ -396,47 +405,10 @@ ${PROJECT_CONFIG[key]?.title || p.name}
 </div>
 `;
 }
-
-function isCoreProject(name){
-
-const key = normalizeProjectName(name);
-
-return ALBUKHR_CORE_PROJECTS.includes(key);
-
-}
-
-function normalizeProjectName(name){
-
-if(!name) return name;
-
-const map = {
-
-"Barsh Agro":"Barsh",
-"Barsh Agro & Livestock":"Barsh",
-
-"Labbaika Bakery":"Labbaika",
-"Labbaika Bakery Center":"Labbaika",
-
-"Raheem Pharma":"Raheem",
-"Raheem Pharmacy":"Raheem",
-
-"Urban Mobility":"Urban",
-"Urban Transport":"Urban",
-
-"Khairat Fertiliser":"Khairat",
-"Khairat Recycling":"Khairat",
-
-"Azman Futures Makers Lab":"Azman",
-"Azman Chemical":"Azman",
-
-"Hauwal Sumonviter":"Hauwal",
-"Hauwal Maize":"Hauwal"
-
-};
-
-return map[name] || name;
-
-  }
+  
+/* ===============================
+   CALCULATE ROI
+================================ */
 
 function calculateROI(amount, roi){
 
@@ -446,6 +418,10 @@ roi = Number(roi) || 0;
 return (amount * roi / 100).toFixed(2);
 
 }
+  
+/* ===============================
+   RENDER MARKETPLACE
+================================ */
 
 async function renderMarketplace(){
 
@@ -586,13 +562,25 @@ projects.sort(
 
 }
 
-projects.sort((a,b)=>
-(b.liquidity || 0) - (a.liquidity || 0)
+else if(sort==="liquidity"){
+
+projects.sort(
+(a,b)=>
+(b.liquidity||0)-
+(a.liquidity||0)
 );
 
-projects.sort((a,b)=>
-(a.riskScore || 0) - (b.riskScore || 0)
+}
+
+else if(sort==="risk"){
+
+projects.sort(
+(a,b)=>
+(a.riskScore||0)-
+(b.riskScore||0)
 );
+
+  }
 
 /* ===============================
    EMPTY MARKET
