@@ -72,41 +72,45 @@ CACHE.loading = true;
 
 try{
 
-const stakes =
-await getAllStakesMerged();
+    const stakes =
+    await getAllStakesMerged();
 
-CACHE.stakes =
+    CACHE.stakes =
+    Array.isArray(stakes)
+    ? stakes
+    : [];
 
-Array.isArray(stakes)
+    buildProjects();
 
-? stakes
+    buildSummary();
 
-: [];
+    buildTopInvestors();
 
-buildProjects();
+    buildRankings();
 
-buildSummary();
+    CACHE.loaded = true;
 
-buildTopInvestors();
+    CACHE.lastUpdate = now;
 
-buildRankings();
+} catch(error){
 
-CACHE.loaded = true;
+    console.error("Ecosystem Load Error:", error);
 
-CACHE.lastUpdate = now;
+    throw error;
 
-catch(error){
+} finally {
 
-console.error("Ecosystem Load Error:", error);
-
-throw error;
+    CACHE.loading = false;
 
 }
 
-CACHE.loading = false;
-
 return CACHE;
 
+finally{
+
+    CACHE.loading = false;
+
+}
 };
 
 function buildProjects(){
