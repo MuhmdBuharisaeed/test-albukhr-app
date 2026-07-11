@@ -95,9 +95,11 @@ CACHE.loaded = true;
 
 CACHE.lastUpdate = now;
 
-}catch(error){
+catch(error){
 
-console.error(error);
+console.error("Ecosystem Load Error:", error);
+
+throw error;
 
 }
 
@@ -124,23 +126,11 @@ stake.project ||
 
 if(!map[name]){
 
+const meta = resolveProject(name);
+
 map[name]={
 
-code:name,
-
-title:name,
-
-description:"",
-
-icon:"📦",
-
-category:"Project",
-
-roi:0,
-
-minimum:1,
-
-target:1000,
+...meta,
 
 investors:new Set(),
 
