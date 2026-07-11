@@ -19,41 +19,116 @@
 
 <body>
 
+<!-- ===========================
+     HEADER
+=========================== -->
+
 <header class="header">
 
-  <div class="header-left">
-  <span class="brand">ALBUKHR</span>
-  </div>
+    <div class="header-left">
 
-<div class="header-right">
-<div class="header-btn notification-btn">
-🔔
-<span id="notifBadge" class="notification-badge"></span>
-</div>
-</div>
+        <span class="brand">
+
+            ALBUKHR
+
+        </span>
+
+    </div>
+
+    <div class="header-right">
+
+        <button
+            class="header-btn notification-btn"
+            onclick="location.href='notifications.html'">
+
+            🔔
+
+            <span
+                id="notifBadge"
+                class="notification-badge">
+            </span>
+
+        </button>
+
+    </div>
 
 </header>
 
-<div class="market-controls">
+<!-- ===========================
+     MARKET CONTROLS
+=========================== -->
 
-<input
-type="text"
-id="projectSearch"
-placeholder="🔎 Search projects..."
-oninput="renderMarketplace()">
+<section class="market-controls">
 
-<select id="sortProjects" onchange="renderMarketplace()">
-<option value="">Sort</option>
-<option value="roi">Highest ROI</option>
-<option value="liquidity">Highest Liquidity</option>
-<option value="risk">Lowest Risk</option>
-</select>
+    <input
 
-</div>
+        id="projectSearch"
 
-<div id="marketInsights" style="padding:10px 12px"></div>
-<div id="discoverySection" style="padding:0 12px"></div>
-<div class="marketplace" id="projectList"></div>
+        type="search"
+
+        placeholder="🔎 Search projects..."
+
+        autocomplete="off"
+
+    >
+
+    <select id="sortProjects">
+
+        <option value="">
+            Sort Projects
+        </option>
+
+        <option value="roi">
+            Highest ROI
+        </option>
+
+        <option value="liquidity">
+            Highest Liquidity
+        </option>
+
+        <option value="risk">
+            Lowest Risk
+        </option>
+
+    </select>
+
+</section>
+
+<!-- ===========================
+     MARKET INSIGHTS
+=========================== -->
+
+<section
+    id="marketInsights"
+    class="market-insights">
+</section>
+
+<!-- ===========================
+     FEATURED PROJECT
+=========================== -->
+
+<section
+    id="discoverySection"
+    class="featured-section">
+</section>
+
+<!-- ===========================
+     PROJECT LIST
+=========================== -->
+
+<main
+
+    id="projectList"
+
+    class="marketplace">
+
+    <div class="loading-card">
+
+        Loading Marketplace...
+
+    </div>
+
+</main>
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
