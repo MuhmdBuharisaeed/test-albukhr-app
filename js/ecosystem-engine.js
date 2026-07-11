@@ -756,4 +756,4 @@ async function(forceRefresh=false){
     };
 
 };
-
+})(window);
