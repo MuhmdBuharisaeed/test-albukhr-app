@@ -555,19 +555,43 @@ project.risk?.risk || "LOW";
 
 let badges = "";
 
-if(project.type === "core"){
+if(project.type==="core"){
 
 badges +=
 '<span class="core-badge">⭐ CORE</span>';
 
 }
 
-if(investors >= 20){
+if(investors>=20){
 
 badges +=
 '<span class="trend">🔥 Trending</span>';
 
 }
+
+if(roi>=15){
+
+badges +=
+'<span class="roi-badge">📈 High ROI</span>';
+
+}
+
+if(liquidity>=1000){
+
+badges +=
+'<span class="liquidity-badge">💧 Strong Liquidity</span>';
+
+}
+
+badges += `
+
+<span class="risk-badge ${risk.toLowerCase()}">
+
+⚠ ${risk}
+
+</span>
+
+`;
 
 card.innerHTML = `
 
@@ -593,12 +617,7 @@ ${project.category}
 
 </div>
 
-<div style="
-margin-top:8px;
-display:flex;
-gap:6px;
-flex-wrap:wrap;
-">
+<div class="badge-group">
 
 ${badges}
 
