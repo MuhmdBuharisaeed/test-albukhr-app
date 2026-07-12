@@ -77,51 +77,143 @@ class="market-insights-slider">
      INVEST MODAL
 ========================================= -->
 
-<div id="investModal" class="app-alert">
+<div id="investModal" class="invest-modal">
 
-  <div class="app-alert-box">
+<div class="invest-dialog">
 
-    <div class="app-alert-header">
+<div class="invest-top">
 
-      <h3>Invest in Project</h3>
+<div class="invest-project">
 
-      <button
-        class="app-alert-close"
-        onclick="closeInvestModal()">
-        ✕
-      </button>
+<div id="investProjectIcon"
+class="invest-icon">
 
-    </div>
+📦
 
-    <p id="investProjectName"></p>
+</div>
 
-    <input
-      type="number"
-      id="investAmount"
-      placeholder="Enter amount (Pi)"
-      min="0"
-      style="
-      width:100%;
-      padding:12px;
-      margin:15px 0;
-      border:1px solid #ddd;
-      border-radius:10px;
-      box-sizing:border-box;
-      ">
+<div>
 
-    <div class="app-alert-actions">
+<div class="invest-title">
 
-      <button
-        class="app-alert-btn"
-        onclick="confirmInvestment()">
+Invest in Project
 
-        Invest Now
+</div>
 
-      </button>
+<div id="investProjectName"
+class="invest-project-name">
 
-    </div>
+Project
 
-  </div>
+</div>
+
+</div>
+
+</div>
+
+<button
+class="invest-close"
+onclick="closeInvestModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div class="invest-info">
+
+<div class="invest-stat">
+
+<span>Minimum</span>
+
+<b id="investMinimum">
+
+1 Pi
+
+</b>
+
+</div>
+
+<div class="invest-stat">
+
+<span>ROI</span>
+
+<b id="investROI">
+
+0%
+
+</b>
+
+</div>
+
+</div>
+
+<input
+
+id="investAmount"
+
+class="invest-input"
+
+type="number"
+
+placeholder="Enter amount (Pi)"
+
+oninput="previewInvestment()"
+
+>
+
+<div class="preview-box">
+
+<div>
+
+You Invest
+
+</div>
+
+<b id="previewAmount">
+
+0 Pi
+
+</b>
+
+</div>
+
+<div class="preview-box">
+
+<div>
+
+Expected Return
+
+</div>
+
+<b id="previewROI">
+
+0 Pi
+
+</b>
+
+</div>
+
+<div class="secure-box">
+
+🔒 Protected by ALBUKHR Treasury
+
+</div>
+
+<button
+
+class="confirm-invest"
+
+onclick="confirmInvestment()">
+
+Invest Now
+
+</button>
+
+</div>
+
+</div>
 
 </div>
 
@@ -1176,23 +1268,66 @@ function openInvestModal(project){
 
 CURRENT_PROJECT = project;
 
-document.getElementById(
-"investProjectName"
-).innerHTML =
+document
+.getElementById("investProjectIcon")
+.innerHTML = project.icon || "📦";
 
-`Project: <b>${project.title}</b><br>
-Minimum: ${project.minimum} Pi`;
+document
+.getElementById("investProjectName")
+.innerHTML = project.title;
 
-document.getElementById(
-"investAmount"
-).value = "";
+document
+.getElementById("investMinimum")
+.innerHTML =
+project.minimum + " Pi";
+
+document
+.getElementById("investROI")
+.innerHTML =
+project.roi + "%";
+
+document
+.getElementById("investAmount")
+.value = "";
+
+previewInvestment();
 
 document
 .getElementById("investModal")
-.classList
-.add("show");
+.classList.add("show");
 
   }
+
+  function previewInvestment(){
+
+if(!CURRENT_PROJECT) return;
+
+const amount =
+Number(
+
+document
+.getElementById("investAmount")
+.value
+
+) || 0;
+
+document
+.getElementById("previewAmount")
+.innerHTML =
+amount.toFixed(2) + " Pi";
+
+const roi =
+
+(amount * CURRENT_PROJECT.roi) / 100;
+
+document
+.getElementById("previewROI")
+.innerHTML =
+roi.toFixed(2) + " Pi";
+
+  }
+
+  
 
   function closeInvestModal(){
 
