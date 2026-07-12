@@ -352,3 +352,95 @@ font-size:18px;
 margin-top:4px;
 
 }
+
+/* ===============================
+   MARKET INSIGHTS
+=============================== */
+
+.market-section{
+
+padding:16px;
+
+}
+
+.section-header{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+
+}
+
+.section-header h2{
+
+margin:0;
+font-size:22px;
+font-weight:700;
+color:#222;
+
+}
+
+.market-insights-slider{
+
+display:flex;
+gap:14px;
+overflow-x:auto;
+scroll-snap-type:x mandatory;
+padding-bottom:8px;
+
+}
+
+.market-insights-slider::-webkit-scrollbar{
+
+display:none;
+
+}
+
+.market-box{
+
+min-width:290px;
+background:#fff;
+border-radius:22px;
+padding:18px;
+box-shadow:0 10px 30px rgba(0,0,0,.08);
+scroll-snap-align:start;
+flex-shrink:0;
+
+}
+
+.market-box h3{
+
+margin:0 0 14px;
+font-size:20px;
+font-weight:700;
+
+}
+
+.market-item{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px 0;
+border-bottom:1px solid #f0f0f0;
+
+}
+
+.market-item:last-child{
+
+border-bottom:none;
+
+}
+
+.market-item span{
+
+font-weight:600;
+
+}
+
+.market-item b{
+
+color:#0f7a3d;
+
+}
