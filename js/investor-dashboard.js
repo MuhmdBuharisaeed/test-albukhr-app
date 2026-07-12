@@ -27,3 +27,16 @@ dock.classList.remove("hide");
 lastScroll = current;
 
 });
+
+
+const current = location.pathname.split("/").pop();
+
+document.querySelectorAll(".dock-item").forEach(link=>{
+
+if(link.getAttribute("href") === current){
+
+link.classList.add("active");
+
+}
+
+});
