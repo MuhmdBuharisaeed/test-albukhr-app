@@ -201,16 +201,56 @@ margin-top:4px;
 box-sizing:border-box;
 }
 
+/* ===============================
+   INVEST BUTTON
+=============================== */
+
 .invest-btn{
-margin-top:8px;
-padding:9px;
-border:none;
-border-radius:10px;
-background:#0f7a3d;
-color:#fff;
-font-weight:600;
-cursor:pointer;
+
 width:100%;
+
+margin-top:18px;
+
+padding:15px;
+
+border:none;
+
+border-radius:16px;
+
+background:linear-gradient(
+135deg,
+#0f7a3d,
+#18a558
+);
+
+color:#fff;
+
+font-size:15px;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.25s;
+
+box-shadow:
+0 8px 18px rgba(15,122,61,.25);
+
+}
+
+.invest-btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:
+0 12px 24px rgba(15,122,61,.35);
+
+}
+
+.invest-btn:active{
+
+transform:scale(.98);
+
 }
 
 .empty{
@@ -774,5 +814,93 @@ color:#d97706;
 background:#ffeaea;
 
 color:#c62828;
+
+}
+
+/* ===============================
+   ROI CALCULATOR
+=============================== */
+
+.roi-box{
+
+margin-top:18px;
+
+padding:16px;
+
+background:#f8fafc;
+
+border:1px solid #edf2f7;
+
+border-radius:18px;
+
+}
+
+.roi-title{
+
+font-size:14px;
+
+font-weight:700;
+
+margin-bottom:12px;
+
+color:#222;
+
+}
+
+.roi-input{
+
+width:100%;
+
+padding:13px 14px;
+
+border:1px solid #d9e2ec;
+
+border-radius:14px;
+
+font-size:15px;
+
+outline:none;
+
+box-sizing:border-box;
+
+transition:.25s;
+
+}
+
+.roi-input:focus{
+
+border-color:#0f7a3d;
+
+box-shadow:0 0 0 3px rgba(15,122,61,.12);
+
+}
+
+.roi-result{
+
+margin-top:12px;
+
+padding:12px;
+
+border-radius:14px;
+
+background:#eef8f1;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+font-size:14px;
+
+font-weight:600;
+
+}
+
+.roi-result b{
+
+font-size:18px;
+
+color:#0f7a3d;
 
 }
