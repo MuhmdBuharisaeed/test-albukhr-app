@@ -222,107 +222,98 @@ card.className =
 
 card.innerHTML = `
 
-<div class="invest-header">
+<div class="investment-top">
 
-<div>${project}</div>
+<div class="investment-project">
 
-<div style="
-color:#0f7a3d;
-font-weight:700;">
+<div class="investment-icon">
 
-${data.earn.toFixed(2)} Pi
+📦
 
 </div>
-
-</div>
-
-<div class="row">
-
-<div>Invested</div>
 
 <div>
 
-${data.invest.toFixed(2)} Pi
+<div class="investment-name">
+
+${project}
+
+</div>
+
+<div class="investment-status">
+
+🟢 Active
 
 </div>
 
 </div>
 
-<div class="row">
+</div>
 
-<div>Earnings</div>
+<div class="investment-profit">
 
-<div style="
-color:#0f7a3d;">
-
-${data.earn.toFixed(2)} Pi
++${data.earn.toFixed(2)} Pi
 
 </div>
 
 </div>
 
-<div class="row">
-
-<div>Status</div>
-
-<div style="
-color:#1c7c3f;
-font-weight:700;">
-
-${data.status}
-
-</div>
-
-</div>
-
-<div class="row">
-
-<div>Records</div>
+<div class="investment-grid">
 
 <div>
 
-${data.count}
+<span>Invested</span>
+
+<b>${data.invest.toFixed(2)} Pi</b>
+
+</div>
+
+<div>
+
+<span>Earnings</span>
+
+<b>${data.earn.toFixed(2)} Pi</b>
+
+</div>
+
+<div>
+
+<span>Records</span>
+
+<b>${data.count}</b>
+
+</div>
+
+<div>
+
+<span>Status</span>
+
+<b>Running</b>
 
 </div>
 
 </div>
 
-<div
-style="
-margin-top:12px;
+<div class="investment-progress">
+
+<div class="investment-progress-bar">
+
+</div>
+
+</div>
+
+<button
+
+class="investment-btn"
+
+onclick="
+event.stopPropagation();
+location.href='project.html?project=${encodeURIComponent(project)}';
 ">
 
-<div
-style="
-font-size:12px;
-margin-bottom:6px;
-color:#777;
-">
+View Details →
 
-Investment Progress
-
-</div>
-
-<div
-style="
-height:8px;
-background:#e5e5e5;
-border-radius:999px;
-overflow:hidden;
-">
-
-<div
-style="
-width:100%;
-height:100%;
-background:#0f7a3d;
-">
-
-</div>
-
-</div>
-
-</div>
+</button>
 
 `;
 
