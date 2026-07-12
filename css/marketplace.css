@@ -660,3 +660,119 @@ background:linear-gradient(90deg,#0f7a3d,#21b35b);
 border-radius:999px;
 
 }
+
+/* ===============================
+   BADGES
+=============================== */
+
+.badge-group{
+
+display:flex;
+
+flex-wrap:wrap;
+
+gap:8px;
+
+margin-top:10px;
+
+}
+
+.core-badge,
+.trend,
+.roi-badge,
+.liquidity-badge,
+.risk-badge{
+
+display:inline-flex;
+
+align-items:center;
+
+justify-content:center;
+
+padding:5px 10px;
+
+border-radius:999px;
+
+font-size:11px;
+
+font-weight:700;
+
+letter-spacing:.3px;
+
+white-space:nowrap;
+
+}
+
+/* Core */
+
+.core-badge{
+
+background:#fff7d6;
+
+color:#9a6b00;
+
+border:1px solid #f4d35e;
+
+}
+
+/* Trending */
+
+.trend{
+
+background:#ffe8e8;
+
+color:#d62828;
+
+border:1px solid #ffb3b3;
+
+}
+
+/* High ROI */
+
+.roi-badge{
+
+background:#e8fff0;
+
+color:#087f23;
+
+border:1px solid #7bd389;
+
+}
+
+/* Strong Liquidity */
+
+.liquidity-badge{
+
+background:#e8f4ff;
+
+color:#1565c0;
+
+border:1px solid #90caf9;
+
+}
+
+/* Risk */
+
+.risk-badge.low{
+
+background:#e8fff0;
+
+color:#087f23;
+
+}
+
+.risk-badge.medium{
+
+background:#fff7e6;
+
+color:#d97706;
+
+}
+
+.risk-badge.high{
+
+background:#ffeaea;
+
+color:#c62828;
+
+}
