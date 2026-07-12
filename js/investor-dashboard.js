@@ -41,6 +41,20 @@ link.classList.add("active");
 
 });
 
+/* =========================================
+   HERO
+========================================= */
+
+const user =
+AlbukhrEcosystem.currentUser?.() || {};
+
+document.getElementById(
+"heroUserName"
+).innerText =
+
+user.username ||
+user.name ||
+"Investor";
 
 async function renderInvestorDashboard(){
 
@@ -147,6 +161,20 @@ document.getElementById(
 "totalProjects"
 ).innerText =
 Object.keys(map).length;
+
+/* HERO PORTFOLIO */
+
+const heroPortfolio =
+document.getElementById(
+"heroPortfolio"
+);
+
+if(heroPortfolio){
+
+heroPortfolio.innerText =
+totalPortfolio.toFixed(2) + " Pi";
+
+}
 
 container.innerHTML="";
 
