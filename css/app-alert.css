@@ -1,164 +1,40 @@
-/* =========================================
-   ALBUKHR APP ALERT
-========================================= */
-
 .app-alert{
-
-position:fixed;
-inset:0;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-background:rgba(0,0,0,.55);
-
-opacity:0;
-visibility:hidden;
-
-transition:.25s;
-
-z-index:999999;
-
-}
-
-.app-alert.show{
-
-opacity:1;
-visibility:visible;
-
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
 }
 
 .app-alert-box{
-
-width:90%;
-max-width:360px;
-
-background:#fff;
-
-border-radius:18px;
-
-padding:22px;
-
-box-shadow:0 15px 40px rgba(0,0,0,.20);
-
-animation:popup .25s ease;
-
+  width:85%;
+  max-width:340px;
+  background:#fff;
+  border-radius:18px;
+  padding:22px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
 }
 
-.app-alert-header{
-
-display:flex;
-justify-content:space-between;
-align-items:center;
-
-margin-bottom:10px;
-
-}
-
-.app-alert-header h3{
-
-margin:0;
-
-font-size:20px;
-
-color:#0f7a3d;
-
-}
-
-.app-alert-close{
-
-border:none;
-background:none;
-
-font-size:22px;
-
-cursor:pointer;
-
-color:#888;
-
-}
-
-.app-alert-close:hover{
-
-color:#000;
-
-}
-
-.app-alert-icon{
-
-font-size:50px;
-
-text-align:center;
-
-margin:10px 0 15px;
-
+.app-alert-box h3{
+  margin:0 0 12px;
+  color:#b02a37;
 }
 
 .app-alert-box p{
-
-margin:0;
-
-text-align:center;
-
-font-size:15px;
-
-line-height:1.6;
-
-color:#555;
-
+  margin:0 0 18px;
+  color:#444;
+  line-height:1.5;
 }
 
-.app-alert-actions{
-
-margin-top:22px;
-
-}
-
-.app-alert-btn{
-
-width:100%;
-
-padding:12px;
-
-border:none;
-
-border-radius:12px;
-
-background:#0f7a3d;
-
-color:#fff;
-
-font-size:15px;
-
-font-weight:600;
-
-cursor:pointer;
-
-transition:.2s;
-
-}
-
-.app-alert-btn:hover{
-
-background:#0c6633;
-
-}
-
-@keyframes popup{
-
-from{
-
-transform:scale(.90);
-opacity:0;
-
-}
-
-to{
-
-transform:scale(1);
-opacity:1;
-
-}
-
+.app-alert-box button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#0f7a3d;
+  color:#fff;
+  font-weight:600;
 }
