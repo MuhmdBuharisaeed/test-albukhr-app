@@ -923,90 +923,109 @@ function renderFeaturedProject(){
 
 if(!discoverySection || !MARKET) return;
 
-const project =
-MARKET.featured;
+const project = MARKET.featured;
 
 if(!project){
 
-discoverySection.innerHTML="";
+    discoverySection.innerHTML = "";
 
-return;
+    return;
 
 }
+
+const liquidity =
+Number(project.liquidity) || 0;
+
+const target =
+Number(project.target) || 100;
+
+const funded =
+Math.min((liquidity / target) * 100, 100);
 
 discoverySection.innerHTML = `
 
 <div class="featured-project">
 
-<div class="featured-title">
+    <div class="featured-title">
 
-⭐ Featured Project
+        ⭐ FEATURED PROJECT
 
-</div>
+    </div>
 
-<div class="featured-name">
+    <div class="featured-name">
 
-${project.icon}
+        ${project.icon || "📦"}
 
-${project.title}
+        ${project.title}
 
-</div>
+    </div>
 
-<div class="featured-desc">
+    <div class="featured-desc">
 
-${project.description}
+        ${project.description || "No description available."}
 
-</div>
+    </div>
 
-<div class="featured-stats">
+    <div class="featured-stats">
 
-<div>
+        <div class="featured-stat">
 
-ROI
+            <span>ROI</span>
 
-<b>
+            <b>${Number(project.roi || 0)}%</b>
 
-${project.roi}%
+        </div>
 
-</b>
+        <div class="featured-stat">
 
-</div>
+            <span>Liquidity</span>
 
-<div>
+            <b>${liquidity.toFixed(2)} Pi</b>
 
-Liquidity
+        </div>
 
-<b>
+        <div class="featured-stat">
 
-${Number(project.liquidity).toFixed(2)} Pi
+            <span>Investors</span>
 
-</b>
+            <b>${project.investors || 0}</b>
 
-</div>
+        </div>
 
-<div>
+    </div>
 
-Investors
+    <div class="featured-progress">
 
-<b>
+        <div
 
-${project.investors}
+            class="featured-progress-bar"
 
-</b>
+            style="width:${funded}%">
 
-</div>
+        </div>
 
-</div>
+    </div>
 
-<button
+    <div style="
+        text-align:right;
+        font-size:12px;
+        margin-bottom:14px;
+        opacity:.9;
+    ">
 
-class="invest-btn"
+        ${funded.toFixed(1)}% Funded
 
-onclick="location.href='project.html?project=${project.code}'">
+    </div>
 
-Open Project
+    <button
 
-</button>
+        class="featured-btn"
+
+        onclick="location.href='project.html?project=${project.code}'">
+
+        Open Project →
+
+    </button>
 
 </div>
 
