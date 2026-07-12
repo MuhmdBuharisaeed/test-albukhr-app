@@ -59,6 +59,58 @@ oninput="renderMarketplace()">
 <div class="marketplace" id="projectList"></div>
 
 <!-- =========================================
+     INVEST MODAL
+========================================= -->
+
+<div id="investModal" class="app-alert">
+
+  <div class="app-alert-box">
+
+    <div class="app-alert-header">
+
+      <h3>Invest in Project</h3>
+
+      <button
+        class="app-alert-close"
+        onclick="closeInvestModal()">
+        ✕
+      </button>
+
+    </div>
+
+    <p id="investProjectName"></p>
+
+    <input
+      type="number"
+      id="investAmount"
+      placeholder="Enter amount (Pi)"
+      min="0"
+      style="
+      width:100%;
+      padding:12px;
+      margin:15px 0;
+      border:1px solid #ddd;
+      border-radius:10px;
+      box-sizing:border-box;
+      ">
+
+    <div class="app-alert-actions">
+
+      <button
+        class="app-alert-btn"
+        onclick="confirmInvestment()">
+
+        Invest Now
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- =========================================
      ALBUKHR APP ALERT
 ========================================= -->
 
@@ -129,6 +181,7 @@ oninput="renderMarketplace()">
 <script src="js/app-alert.js"></script>
 
 <script>
+let CURRENT_PROJECT = null;
 /* =========================================
    ALBUKHR MARKETPLACE v2
    UI Controller
@@ -674,7 +727,7 @@ Expected Return:
 
 class="invest-btn"
 
-onclick="event.stopPropagation();invest('${project.code}')">
+onclick="event.stopPropagation();openInvestModal(MARKET.projects.find(p=>p.code==='${project.code}'))">
 
 Invest Now
 
@@ -1068,6 +1121,100 @@ error.message
 );
 
 }
+
+  }
+
+function openInvestModal(project){
+
+CURRENT_PROJECT = project;
+
+document.getElementById(
+"investProjectName"
+).innerHTML =
+
+`Project: <b>${project.title}</b><br>
+Minimum: ${project.minimum} Pi`;
+
+document.getElementById(
+"investAmount"
+).value = "";
+
+document
+.getElementById("investModal")
+.classList
+.add("show");
+
+  }
+
+  function closeInvestModal(){
+
+document
+.getElementById("investModal")
+.classList
+.remove("show");
+
+CURRENT_PROJECT = null;
+
+  }
+
+  async function confirmInvestment(){
+
+if(!CURRENT_PROJECT) return;
+
+const amount = Number(
+document.getElementById(
+"investAmount"
+).value
+);
+
+if(
+!Number.isFinite(amount) ||
+amount < CURRENT_PROJECT.minimum
+){
+
+showAlert(
+"Invalid Amount",
+`Minimum investment is ${CURRENT_PROJECT.minimum} Pi`,
+"warning"
+);
+
+return;
+
+}
+
+closeInvestModal();
+
+const result =
+await AlbukhrEcosystem.invest({
+
+project:CURRENT_PROJECT.code,
+
+amount,
+
+duration:
+CURRENT_PROJECT.durations?.[0] || 30
+
+});
+
+if(result?.error){
+
+showAlert(
+"Investment Failed",
+result.error,
+"error"
+);
+
+return;
+
+}
+
+showAlert(
+"Investment Successful",
+`${amount} Pi invested in ${CURRENT_PROJECT.title}.`,
+"success"
+);
+
+await refreshMarketplace();
 
   }
 
