@@ -793,145 +793,139 @@ input.nextElementSibling.innerHTML =
 /* =========================================
    MARKET INSIGHTS
 ========================================= */
+
 function renderMarketInsights(){
 
 if(!marketInsights || !MARKET) return;
 
-const sections = [
+const hot =
+MARKET.hotProjects || [];
 
-{
-title:"🔥 Hot Projects",
-items:MARKET.hotProjects || [],
-type:"projects"
-},
+const liquidity =
+MARKET.liquidityLeaders || [];
 
-{
-title:"💧 Liquidity Leaders",
-items:MARKET.liquidityLeaders || [],
-type:"liquidity"
-},
+const investors =
+MARKET.topInvestors || [];
 
-{
-title:"🏆 Top Investors",
-items:MARKET.topInvestors || [],
-type:"investors"
-}
+marketInsights.innerHTML = `
 
-];
+<div class="market-box">
 
-marketInsights.innerHTML = sections.map(section=>`
-
-<div class="insight-section">
-
-<div class="insight-header">
-
-${section.title}
-
-</div>
-
-<div class="insight-slider">
+<h3>🔥 Hot Projects</h3>
 
 ${
-
-section.items.length
+hot.length
 
 ?
 
-section.items.map(item=>{
+hot.map(project=>`
 
-if(section.type==="investors"){
+<div class="market-item">
 
-return `
+<span>
 
-<div class="insight-card">
+${project.icon}
+${project.title}
 
-<div class="insight-avatar">
+</span>
 
-👤
+<b>
 
-</div>
+${project.investors}
 
-<div class="insight-name">
+Investors
 
-${item.user}
-
-</div>
-
-<div class="insight-value">
-
-${Number(item.amount).toFixed(2)} Pi
+</b>
 
 </div>
 
-</div>
-
-`;
-
-}
-
-let value="";
-
-if(section.type==="projects"){
-
-value=`${item.investors} Investors`;
-
-}
-
-if(section.type==="liquidity"){
-
-value=`${Number(item.liquidity).toFixed(2)} Pi`;
-
-}
-
-return `
-
-<div class="insight-card"
-
-onclick="location.href='project.html?project=${item.code}'">
-
-<div class="insight-icon">
-
-${item.icon || "📦"}
-
-</div>
-
-<div class="insight-name">
-
-${item.title}
-
-</div>
-
-<div class="insight-value">
-
-${value}
-
-</div>
-
-</div>
-
-`;
-
-}).join("")
+`).join("")
 
 :
 
-`
-
-<div class="insight-empty">
-
-No Data
-
-</div>
-
-`
+"<div>No data available</div>"
 
 }
 
 </div>
 
+<div class="market-box">
+
+<h3>💧 Liquidity Leaders</h3>
+
+${
+liquidity.length
+
+?
+
+liquidity.map(project=>`
+
+<div class="market-item">
+
+<span>
+
+${project.icon}
+${project.title}
+
+</span>
+
+<b>
+
+${Number(project.liquidity).toFixed(2)} Pi
+
+</b>
+
 </div>
 
-`).join("");
+`).join("")
+
+:
+
+"<div>No data available</div>"
+
+}
+
+</div>
+
+<div class="market-box">
+
+<h3>🏆 Top Investors</h3>
+
+${
+
+investors.length
+
+?
+
+investors.map(user=>`
+
+<div class="market-item">
+
+<span>
+
+${user.user}
+
+</span>
+
+<b>
+
+${Number(user.amount).toFixed(2)} Pi
+
+</b>
+
+</div>
+
+`).join("")
+
+:
+
+"<div>No data available</div>"
+
+}
+
+</div>
+
+`;
 
 }
 
