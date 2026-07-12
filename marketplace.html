@@ -77,143 +77,51 @@ class="market-insights-slider">
      INVEST MODAL
 ========================================= -->
 
-<div id="investModal" class="invest-modal">
+<div id="investModal" class="app-alert">
 
-<div class="invest-dialog">
+  <div class="app-alert-box">
 
-<div class="invest-top">
+    <div class="app-alert-header">
 
-<div class="invest-project">
+      <h3>Invest in Project</h3>
 
-<div id="investProjectIcon"
-class="invest-icon">
+      <button
+        class="app-alert-close"
+        onclick="closeInvestModal()">
+        ✕
+      </button>
 
-📦
+    </div>
 
-</div>
+    <p id="investProjectName"></p>
 
-<div>
+    <input
+      type="number"
+      id="investAmount"
+      placeholder="Enter amount (Pi)"
+      min="0"
+      style="
+      width:100%;
+      padding:12px;
+      margin:15px 0;
+      border:1px solid #ddd;
+      border-radius:10px;
+      box-sizing:border-box;
+      ">
 
-<div class="invest-title">
+    <div class="app-alert-actions">
 
-Invest in Project
+      <button
+        class="app-alert-btn"
+        onclick="confirmInvestment()">
 
-</div>
+        Invest Now
 
-<div id="investProjectName"
-class="invest-project-name">
+      </button>
 
-Project
+    </div>
 
-</div>
-
-</div>
-
-</div>
-
-<button
-class="invest-close"
-onclick="closeInvestModal()">
-
-✕
-
-</button>
-
-</div>
-
-<div class="invest-info">
-
-<div class="invest-stat">
-
-<span>Minimum</span>
-
-<b id="investMinimum">
-
-1 Pi
-
-</b>
-
-</div>
-
-<div class="invest-stat">
-
-<span>ROI</span>
-
-<b id="investROI">
-
-0%
-
-</b>
-
-</div>
-
-</div>
-
-<input
-
-id="investAmount"
-
-class="invest-input"
-
-type="number"
-
-placeholder="Enter amount (Pi)"
-
-oninput="previewInvestment()"
-
->
-
-<div class="preview-box">
-
-<div>
-
-You Invest
-
-</div>
-
-<b id="previewAmount">
-
-0 Pi
-
-</b>
-
-</div>
-
-<div class="preview-box">
-
-<div>
-
-Expected Return
-
-</div>
-
-<b id="previewROI">
-
-0 Pi
-
-</b>
-
-</div>
-
-<div class="secure-box">
-
-🔒 Protected by ALBUKHR Treasury
-
-</div>
-
-<button
-
-class="confirm-invest"
-
-onclick="confirmInvestment()">
-
-Invest Now
-
-</button>
-
-</div>
-
-</div>
+  </div>
 
 </div>
 
@@ -885,139 +793,145 @@ input.nextElementSibling.innerHTML =
 /* =========================================
    MARKET INSIGHTS
 ========================================= */
-
 function renderMarketInsights(){
 
 if(!marketInsights || !MARKET) return;
 
-const hot =
-MARKET.hotProjects || [];
+const sections = [
 
-const liquidity =
-MARKET.liquidityLeaders || [];
+{
+title:"🔥 Hot Projects",
+items:MARKET.hotProjects || [],
+type:"projects"
+},
 
-const investors =
-MARKET.topInvestors || [];
+{
+title:"💧 Liquidity Leaders",
+items:MARKET.liquidityLeaders || [],
+type:"liquidity"
+},
 
-marketInsights.innerHTML = `
-
-<div class="market-box">
-
-<h3>🔥 Hot Projects</h3>
-
-${
-hot.length
-
-?
-
-hot.map(project=>`
-
-<div class="market-item">
-
-<span>
-
-${project.icon}
-${project.title}
-
-</span>
-
-<b>
-
-${project.investors}
-
-Investors
-
-</b>
-
-</div>
-
-`).join("")
-
-:
-
-"<div>No data available</div>"
-
+{
+title:"🏆 Top Investors",
+items:MARKET.topInvestors || [],
+type:"investors"
 }
 
-</div>
+];
 
-<div class="market-box">
+marketInsights.innerHTML = sections.map(section=>`
 
-<h3>💧 Liquidity Leaders</h3>
+<div class="insight-section">
 
-${
-liquidity.length
+<div class="insight-header">
 
-?
-
-liquidity.map(project=>`
-
-<div class="market-item">
-
-<span>
-
-${project.icon}
-${project.title}
-
-</span>
-
-<b>
-
-${Number(project.liquidity).toFixed(2)} Pi
-
-</b>
+${section.title}
 
 </div>
 
-`).join("")
-
-:
-
-"<div>No data available</div>"
-
-}
-
-</div>
-
-<div class="market-box">
-
-<h3>🏆 Top Investors</h3>
+<div class="insight-slider">
 
 ${
 
-investors.length
+section.items.length
 
 ?
 
-investors.map(user=>`
+section.items.map(item=>{
 
-<div class="market-item">
+if(section.type==="investors"){
 
-<span>
+return `
 
-${user.user}
+<div class="insight-card">
 
-</span>
+<div class="insight-avatar">
 
-<b>
-
-${Number(user.amount).toFixed(2)} Pi
-
-</b>
+👤
 
 </div>
 
-`).join("")
+<div class="insight-name">
 
-:
+${item.user}
 
-"<div>No data available</div>"
+</div>
 
-}
+<div class="insight-value">
+
+${Number(item.amount).toFixed(2)} Pi
+
+</div>
 
 </div>
 
 `;
+
+}
+
+let value="";
+
+if(section.type==="projects"){
+
+value=`${item.investors} Investors`;
+
+}
+
+if(section.type==="liquidity"){
+
+value=`${Number(item.liquidity).toFixed(2)} Pi`;
+
+}
+
+return `
+
+<div class="insight-card"
+
+onclick="location.href='project.html?project=${item.code}'">
+
+<div class="insight-icon">
+
+${item.icon || "📦"}
+
+</div>
+
+<div class="insight-name">
+
+${item.title}
+
+</div>
+
+<div class="insight-value">
+
+${value}
+
+</div>
+
+</div>
+
+`;
+
+}).join("")
+
+:
+
+`
+
+<div class="insight-empty">
+
+No Data
+
+</div>
+
+`
+
+}
+
+</div>
+
+</div>
+
+`).join("");
 
 }
 
@@ -1268,66 +1182,23 @@ function openInvestModal(project){
 
 CURRENT_PROJECT = project;
 
-document
-.getElementById("investProjectIcon")
-.innerHTML = project.icon || "📦";
+document.getElementById(
+"investProjectName"
+).innerHTML =
 
-document
-.getElementById("investProjectName")
-.innerHTML = project.title;
+`Project: <b>${project.title}</b><br>
+Minimum: ${project.minimum} Pi`;
 
-document
-.getElementById("investMinimum")
-.innerHTML =
-project.minimum + " Pi";
-
-document
-.getElementById("investROI")
-.innerHTML =
-project.roi + "%";
-
-document
-.getElementById("investAmount")
-.value = "";
-
-previewInvestment();
+document.getElementById(
+"investAmount"
+).value = "";
 
 document
 .getElementById("investModal")
-.classList.add("show");
+.classList
+.add("show");
 
   }
-
-  function previewInvestment(){
-
-if(!CURRENT_PROJECT) return;
-
-const amount =
-Number(
-
-document
-.getElementById("investAmount")
-.value
-
-) || 0;
-
-document
-.getElementById("previewAmount")
-.innerHTML =
-amount.toFixed(2) + " Pi";
-
-const roi =
-
-(amount * CURRENT_PROJECT.roi) / 100;
-
-document
-.getElementById("previewROI")
-.innerHTML =
-roi.toFixed(2) + " Pi";
-
-  }
-
-  
 
   function closeInvestModal(){
 
@@ -1485,4 +1356,4 @@ return(
 </script>
 
 </body>
-</html>
+  </html>
