@@ -904,3 +904,140 @@ font-size:18px;
 color:#0f7a3d;
 
 }
+
+/* ===============================
+   CARD ANIMATION
+=============================== */
+
+@keyframes fadeUp{
+
+0%{
+
+opacity:0;
+
+transform:
+translateY(18px);
+
+}
+
+100%{
+
+opacity:1;
+
+transform:
+translateY(0);
+
+}
+
+}
+
+.project-card{
+
+animation:
+fadeUp .35s ease;
+
+}
+
+.market-box{
+
+animation:
+fadeUp .35s ease;
+
+}
+
+.featured-project{
+
+animation:
+fadeUp .35s ease;
+
+}
+
+.project-card{
+
+transition:
+transform .25s,
+box-shadow .25s;
+
+}
+
+.project-card:hover{
+
+transform:
+translateY(-4px);
+
+box-shadow:
+0 18px 35px rgba(0,0,0,.15);
+
+}
+
+.market-box{
+
+transition:.25s;
+
+}
+
+.market-box:hover{
+
+transform:
+translateY(-3px);
+
+}
+
+.progress-bar,
+.featured-progress-bar{
+
+transition:
+width .8s ease;
+
+}
+
+.loading-card{
+
+background:#fff;
+
+border-radius:20px;
+
+padding:18px;
+
+margin-bottom:16px;
+
+box-shadow:
+0 8px 20px rgba(0,0,0,.05);
+
+}
+
+.skeleton{
+
+height:14px;
+
+background:#ececec;
+
+border-radius:8px;
+
+margin:10px 0;
+
+animation:
+pulse 1.2s infinite;
+
+}
+
+@keyframes pulse{
+
+0%{
+
+opacity:.4;
+
+}
+
+50%{
+
+opacity:1;
+
+}
+
+100%{
+
+opacity:.4;
+
+}
+
