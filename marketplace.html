@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/global-layout.css">
 <link rel="stylesheet" href="css/global-components.css">
 <link rel="stylesheet" href="css/global-style.css">
+<link rel="stylesheet" href="css/app-alert.css">
 <link rel="stylesheet" href="css/marketplace.css">
 
 
@@ -54,6 +55,55 @@ oninput="renderMarketplace()">
 <div id="marketInsights" style="padding:10px 12px"></div>
 <div id="discoverySection" style="padding:0 12px"></div>
 <div class="marketplace" id="projectList"></div>
+
+<!-- =========================================
+     ALBUKHR APP ALERT
+========================================= -->
+
+<div id="appAlert" class="app-alert">
+
+  <div class="app-alert-box">
+
+    <div class="app-alert-header">
+
+      <h3 id="appAlertTitle">
+        Notice
+      </h3>
+
+      <button
+        class="app-alert-close"
+        onclick="closeAppAlert()">
+        ✕
+      </button>
+
+    </div>
+
+    <div
+      id="appAlertIcon"
+      class="app-alert-icon">
+      ℹ️
+    </div>
+
+    <p id="appAlertText">
+      Message...
+    </p>
+
+    <div class="app-alert-actions">
+
+      <button
+        id="appAlertButton"
+        class="app-alert-btn"
+        onclick="closeAppAlert()">
+
+        OK
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1018,6 +1068,62 @@ error.message
 }
 
   }
+
+/* =========================================
+   ALBUKHR ALERT ENGINE
+========================================= */
+
+function showAlert(title, message, type = "info"){
+
+    const alert = document.getElementById("appAlert");
+
+    const titleBox =
+    document.getElementById("appAlertTitle");
+
+    const textBox =
+    document.getElementById("appAlertText");
+
+    const icon =
+    document.getElementById("appAlertIcon");
+
+    titleBox.textContent = title || "Notice";
+
+    textBox.textContent = message || "";
+
+    switch(type){
+
+        case "success":
+            icon.innerHTML = "✅";
+            break;
+
+        case "error":
+            icon.innerHTML = "❌";
+            break;
+
+        case "warning":
+            icon.innerHTML = "⚠️";
+            break;
+
+        default:
+            icon.innerHTML = "ℹ️";
+
+    }
+
+    alert.classList.add("show");
+
+}
+
+function closeAppAlert(){
+
+    document
+    .getElementById("appAlert")
+    .classList
+    .remove("show");
+
+}
+
+window.showAlert = showAlert;
+window.closeAppAlert = closeAppAlert;
 
 /* =========================================
    REFRESH
