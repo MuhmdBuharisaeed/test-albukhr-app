@@ -1,51 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>ALBUKHR Admin Access</title>
 
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/albukhr-ui.css">
 <link rel="stylesheet" href="css/admin-login.css">
-  
+
 </head>
 
 <body>
 
-<!-- ===== HEADER (Like Unified Admin) ===== -->
+<!-- HEADER -->
+
 <header class="header">
-  <img src="ALBUKHR_Logo_Optimized_1024x1024.png" class="main-logo">
+
+<img
+src="ALBUKHR_Logo_Optimized_1024x1024.png"
+class="main-logo"
+alt="ALBUKHR Logo">
+
 </header>
 
+<!-- LOGIN -->
+
 <div class="login-wrap">
-  <div class="login-card">
 
-    <div class="brand">ALBUKHR • Admin Portal</div>
-    <div class="subtitle">Role-based ecosystem access</div>
+<div class="login-card">
 
-    <div class="form-group">
-      <label>Admin Role</label>
-      
-    </div>
+<div class="brand">
 
-    <div class="form-group">
-      <label>Access Key</label>
-      <input id="key" type="password" placeholder="Enter secure access key">
-    </div>
+ALBUKHR • Admin Portal
 
-    <button class="login-btn" onclick="login()">Access Control Center</button>
+</div>
 
-    <div class="note">
-      Unauthorized access is strictly prohibited.
-    </div>
+<div class="subtitle">
 
-  </div>
+Secure administrator sign in
+
 </div>
 
 <div class="form-group">
 
-<label>Email</label>
+<label>
+
+Administrator Email
+
+</label>
 
 <input
 
@@ -53,21 +59,73 @@ id="email"
 
 type="email"
 
-placeholder="Administrator Email"
+autocomplete="username"
+
+placeholder="Enter administrator email"
 
 >
 
 </div>
-  
-<!-- Supabase -->
+
+<div class="form-group">
+
+<label>
+
+Access Key
+
+</label>
+
+<input
+
+id="key"
+
+type="password"
+
+autocomplete="current-password"
+
+placeholder="Enter secure access key"
+
+>
+
+</div>
+
+<button
+
+class="login-btn"
+
+onclick="login()">
+
+Access Control Center
+
+</button>
+
+<div class="note">
+
+Unauthorized access is strictly prohibited.
+All login activities are monitored.
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SUPABASE -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="js/supabase-core.js"></script>
 
+<!-- ADMIN AUTH -->
+
 <script src="js/supabase-admin-auth/admin-logs.js"></script>
+
 <script src="js/supabase-admin-auth/admin-session.js"></script>
+
 <script src="js/supabase-admin-auth/admin-auth.js"></script>
+
 <script src="js/supabase-admin-auth/admin-login.js"></script>
 
 </body>
+
 </html>
