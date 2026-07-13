@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR SUPABASE ADMIN AUTH ENGINE
-   Version 3.0
+   Version 3.1
 ========================================== */
 
 (function(window){
@@ -15,12 +15,19 @@ const TABLE = "admin_users";
 
 function getClient(){
 
-    if(window.supabaseClient){
-        return window.supabaseClient;
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
+
+        const client =
+        window.getAlbukhrSupabaseClient();
+
+        if(client){
+            return client;
+        }
+
     }
 
     throw new Error(
-        "Supabase client not initialized."
+        "ALBUKHR Supabase Core not initialized."
     );
 
 }
@@ -60,9 +67,7 @@ password:accessKey
 if(error){
 
 return{
-
 error:error.message
-
 };
 
 }
@@ -95,13 +100,13 @@ await supabase.auth.signOut();
 
 return{
 
-error:"Admin account not found."
+error:"Admin account not found or inactive."
 
 };
 
 }
 
-/* ---------- UPDATE LOGIN ---------- */
+/* ---------- UPDATE LAST LOGIN ---------- */
 
 await supabase
 
@@ -127,9 +132,9 @@ target:"admin_auth",
 
 details:{
 
-role:admin.role_code,
+username:admin.username,
 
-username:admin.username
+role:admin.role_code
 
 }
 
@@ -147,9 +152,13 @@ admin
 
 }catch(error){
 
+console.error(error);
+
 return{
 
-error:error.message
+error:error.message ||
+
+"Login failed."
 
 };
 
@@ -183,7 +192,9 @@ target:"admin_auth",
 
 details:{
 
-username:admin.username
+username:admin.username,
+
+role:admin.role_code
 
 }
 
