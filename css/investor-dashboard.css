@@ -172,19 +172,6 @@ cursor:pointer;
 
 /* INVESTMENTS */
 
-.section-title{
-font-weight:700;
-margin-bottom:10px;
-}
-
-.invest-card{
-background:#fff;
-border-radius:16px;
-padding:14px;
-margin-bottom:12px;
-box-shadow:0 6px 16px rgba(0,0,0,0.05);
-}
-
 .invest-header{
 display:flex;
 justify-content:space-between;
@@ -212,23 +199,6 @@ padding:14px;
 font-weight:700;
 font-size:15px;
 cursor:pointer;
-}
-
-.market-wrapper{
-padding:16px;
-}
-
-.market-btn{
-width:100%;
-padding:16px;
-border:none;
-border-radius:18px;
-background:#1c7c3f;
-color:white;
-font-weight:700;
-font-size:16px;
-cursor:pointer;
-box-shadow:0 8px 20px rgba(0,0,0,.08);
 }
 
 .invest-title{
@@ -334,15 +304,17 @@ margin-bottom:8px;
 
 margin:0;
 
-font-size:clamp(15px,5vw,24px);
+font-size:clamp(18px,5vw,28px);
 
 font-weight:700;
 
-line-height:1.25;
+line-height:1.2;
 
-letter-spacing:-0.3px;
+letter-spacing:-0.4px;
 
-max-width:100%;
+max-width:190px;
+
+white-space:normal;
 
 word-break:break-word;
 
@@ -585,5 +557,40 @@ transition:.25s;
 .investment-btn:hover{
 
 background:#18a558;
+
+}
+
+.page{
+
+max-width:500px;
+
+margin:auto;
+
+}
+
+.summary-card,
+.invest-card,
+.dashboard-hero{
+
+transition:all .25s ease;
+
+}
+
+.summary-card:active,
+.invest-card:active{
+
+transform:scale(.98);
+
+}
+
+button{
+
+-webkit-tap-highlight-color:transparent;
+
+}
+
+body{
+
+scroll-behavior:smooth;
 
 }
