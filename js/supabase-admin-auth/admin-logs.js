@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR SUPABASE ADMIN LOG ENGINE
-   Version 3.0
+   Version 3.1
 ========================================== */
 
 (function(window){
@@ -10,20 +10,25 @@
 const TABLE = "admin_activity_logs";
 
 /* ==========================================
-   GET SUPABASE
+   GET CLIENT
 ========================================== */
 
 function getClient(){
 
-if(window.supabaseClient){
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
 
-return window.supabaseClient;
+        const client =
+        window.getAlbukhrSupabaseClient();
 
-}
+        if(client){
+            return client;
+        }
 
-throw new Error(
-"Supabase client not initialized."
-);
+    }
+
+    throw new Error(
+        "ALBUKHR Supabase Core not initialized."
+    );
 
 }
 
@@ -33,143 +38,150 @@ throw new Error(
 
 async function logAdminAction({
 
-action,
+    action,
 
-target = null,
+    target = null,
 
-details = {},
+    details = {},
 
-ipAddress = null
+    ipAddress = null
 
 }){
 
-try{
+    try{
 
-const supabase = getClient();
+        const supabase = getClient();
 
-/* Current User */
+        /* CURRENT USER */
 
-const {
+        const {
 
-data:{user},
+            data:{user},
 
-error:userError
+            error:userError
 
-} = await supabase.auth.getUser();
+        } = await supabase.auth.getUser();
 
-if(userError){
+        if(userError){
 
-throw userError;
+            throw userError;
 
-}
+        }
 
-if(!user){
+        if(!user){
 
-return {
-error:"No authenticated admin."
-};
+            return{
 
-}
+                error:"No authenticated admin."
 
-/* Insert */
+            };
 
-const {error} = await supabase
+        }
 
-.from(TABLE)
+        /* INSERT */
 
-.insert({
+        const { error } = await supabase
 
-admin_id:user.id,
+        .from(TABLE)
 
-action,
+        .insert({
 
-target,
+            admin_id:user.id,
 
-details,
+            action,
 
-ip_address:ipAddress
+            target,
 
-});
+            details,
 
-if(error){
+            ip_address:ipAddress
 
-throw error;
+        });
 
-}
+        if(error){
 
-return{
+            throw error;
 
-success:true
+        }
 
-};
+        return{
 
-}catch(error){
+            success:true
 
-console.error(
+        };
 
-"[ADMIN LOG]",
+    }catch(error){
 
-error
+        console.error(
 
-);
+            "[ADMIN LOG]",
 
-return{
+            error
 
-error:error.message
+        );
 
-};
+        return{
 
-}
+            error:error.message
+
+        };
+
+    }
 
 }
 
 /* ==========================================
-   GET LOGS
+   GET ALL LOGS
 ========================================== */
 
 async function getAdminLogs(limit = 100){
 
-try{
+    try{
 
-const supabase = getClient();
+        const supabase =
+        getClient();
 
-const {
+        const {
 
-data,
+            data,
 
-error
+            error
 
-} = await supabase
+        } = await supabase
 
-.from(TABLE)
+        .from(TABLE)
 
-.select("*")
+        .select("*")
 
-.order(
+        .order(
 
-"created_at",
+            "created_at",
 
-{ascending:false}
+            {
 
-)
+                ascending:false
 
-.limit(limit);
+            }
 
-if(error){
+        )
 
-throw error;
+        .limit(limit);
 
-}
+        if(error){
 
-return data || [];
+            throw error;
 
-}catch(error){
+        }
 
-console.error(error);
+        return data || [];
 
-return [];
+    }catch(error){
 
-}
+        console.error(error);
+
+        return [];
+
+    }
 
 }
 
@@ -179,67 +191,141 @@ return [];
 
 async function getMyAdminLogs(limit = 50){
 
-try{
+    try{
 
-const supabase = getClient();
+        const supabase =
+        getClient();
 
-const {
+        const {
 
-data:{user}
+            data:{user},
 
-} = await supabase.auth.getUser();
+            error:userError
 
-if(!user){
+        } = await supabase.auth.getUser();
 
-return [];
+        if(userError){
+
+            throw userError;
+
+        }
+
+        if(!user){
+
+            return [];
+
+        }
+
+        const {
+
+            data,
+
+            error
+
+        } = await supabase
+
+        .from(TABLE)
+
+        .select("*")
+
+        .eq(
+
+            "admin_id",
+
+            user.id
+
+        )
+
+        .order(
+
+            "created_at",
+
+            {
+
+                ascending:false
+
+            }
+
+        )
+
+        .limit(limit);
+
+        if(error){
+
+            throw error;
+
+        }
+
+        return data || [];
+
+    }catch(error){
+
+        console.error(error);
+
+        return [];
+
+    }
 
 }
 
-const {
+/* ==========================================
+   CLEAR OLD LOGS
+   (OPTIONAL MAINTENANCE)
+========================================== */
 
-data,
+async function clearOldLogs(days = 90){
 
-error
+    try{
 
-} = await supabase
+        const supabase =
+        getClient();
 
-.from(TABLE)
+        const date =
+        new Date();
 
-.select("*")
+        date.setDate(
 
-.eq(
+            date.getDate() - days
 
-"admin_id",
+        );
 
-user.id
+        const { error } = await supabase
 
-)
+        .from(TABLE)
 
-.order(
+        .delete()
 
-"created_at",
+        .lt(
 
-{ascending:false}
+            "created_at",
 
-)
+            date.toISOString()
 
-.limit(limit);
+        );
 
-if(error){
+        if(error){
 
-throw error;
+            throw error;
 
-}
+        }
 
-return data || [];
+        return{
 
-}catch(error){
+            success:true
 
-console.error(error);
+        };
 
-return [];
+    }catch(error){
 
-}
+        console.error(error);
+
+        return{
+
+            error:error.message
+
+        };
+
+    }
 
 }
 
@@ -248,15 +334,15 @@ return [];
 ========================================== */
 
 window.logAdminAction =
-
 logAdminAction;
 
 window.getAdminLogs =
-
 getAdminLogs;
 
 window.getMyAdminLogs =
-
 getMyAdminLogs;
+
+window.clearOldLogs =
+clearOldLogs;
 
 })(window);
