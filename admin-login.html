@@ -178,13 +178,24 @@ location.replace(
 
 /* LOGIN */
 
-function login(){
+async function login(){
+
+const btn =
+document.querySelector(".login-btn");
 
 const role =
 document.getElementById("role").value;
 
 const key =
 document.getElementById("key").value.trim();
+
+if(!key){
+
+alert("Access Key Required");
+
+return;
+
+}
 
 /* USERNAME MAP */
 
@@ -200,8 +211,12 @@ viewer_admin:"viewer"
 const username =
 USERNAMES[role];
 
-const result =
-await adminLogin({
+btn.disabled = true;
+btn.textContent = "Signing In...";
+
+try{
+
+const result = await adminLogin({
 
 username,
 role,
@@ -219,25 +234,18 @@ return;
 
 location.replace(
 "unified-admin-buttons.html"
+);
 
-const btn =
-document.querySelector(".login-btn");
+}catch(error){
 
-btn.disabled = true;
+alert(error.message || "Login failed");
 
-btn.textContent =
-"Signing In...";
+}finally{
 
 btn.disabled = false;
+btn.textContent = "Access Control Center";
 
-btn.textContent =
-"Access Control Center";
-
-if(!key){
-
-alert("Access Key Required");
-
-return;
+}
 
   }
   
