@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN GUARD ENGINE
-   Version 3.0
+   Version 3.1
 ========================================== */
 
 (function(window){
@@ -8,25 +8,63 @@
 "use strict";
 
 /* ==========================================
+   REDIRECT
+========================================== */
+
+function redirect(url){
+
+    location.replace(url);
+
+}
+
+/* ==========================================
+   ACCESS DENIED
+========================================== */
+
+function accessDenied(message = "Access denied."){
+
+    alert(message);
+
+    redirect(
+        "unified-admin-buttons.html"
+    );
+
+}
+
+/* ==========================================
    REQUIRE LOGIN
 ========================================== */
 
 async function requireAdmin(){
 
-    const admin =
-    await getCurrentAdmin();
+    try{
 
-    if(!admin){
+        const admin =
+        await getCurrentAdmin();
 
-        location.replace(
+        if(!admin){
+
+            redirect(
+                "admin-login.html"
+            );
+
+            return null;
+
+        }
+
+        return admin;
+
+    }catch(error){
+
+        console.error(error);
+
+        redirect(
             "admin-login.html"
         );
 
         return null;
 
     }
-
-    return admin;
 
 }
 
@@ -47,13 +85,7 @@ async function requireRole(roleCode){
 
     if(admin.role_code !== roleCode){
 
-        alert(
-            "Access denied."
-        );
-
-        location.replace(
-            "unified-admin-buttons.html"
-        );
+        accessDenied();
 
         return false;
 
@@ -67,7 +99,7 @@ async function requireRole(roleCode){
    REQUIRE ANY ROLE
 ========================================== */
 
-async function requireAnyRole(roles=[]){
+async function requireAnyRole(roles = []){
 
     const admin =
     await requireAdmin();
@@ -80,13 +112,7 @@ async function requireAnyRole(roles=[]){
 
     if(!roles.includes(admin.role_code)){
 
-        alert(
-            "Access denied."
-        );
-
-        location.replace(
-            "unified-admin-buttons.html"
-        );
+        accessDenied();
 
         return false;
 
@@ -116,12 +142,8 @@ async function requirePermission(permission){
 
     if(!allowed){
 
-        alert(
-            "You don't have permission."
-        );
-
-        location.replace(
-            "unified-admin-buttons.html"
+        accessDenied(
+            "You don't have permission to access this page."
         );
 
         return false;
@@ -129,6 +151,54 @@ async function requirePermission(permission){
     }
 
     return true;
+
+}
+
+/* ==========================================
+   REQUIRE ALL PERMISSIONS
+========================================== */
+
+async function requirePermissions(permissions = []){
+
+    const admin =
+    await requireAdmin();
+
+    if(!admin){
+
+        return false;
+
+    }
+
+    for(const permission of permissions){
+
+        const allowed =
+        await hasPermission(permission);
+
+        if(!allowed){
+
+            accessDenied(
+                "Required permission missing."
+            );
+
+            return false;
+
+        }
+
+    }
+
+    return true;
+
+}
+
+/* ==========================================
+   REQUIRE SUPER ADMIN
+========================================== */
+
+async function requireSuperAdmin(){
+
+    return await requireRole(
+        "super_admin"
+    );
 
 }
 
@@ -147,5 +217,11 @@ requireAnyRole;
 
 window.requirePermission =
 requirePermission;
+
+window.requirePermissions =
+requirePermissions;
+
+window.requireSuperAdmin =
+requireSuperAdmin;
 
 })(window);
