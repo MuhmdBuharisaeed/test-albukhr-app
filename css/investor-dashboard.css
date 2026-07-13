@@ -535,11 +535,13 @@ color:#1c7c3f;
 
 .investment-profit{
 
-font-size:20px;
+font-size:24px;
 
 font-weight:800;
 
-color:#0f7a3d;
+color:#118c4f;
+
+text-align:right;
 
 }
 
@@ -600,8 +602,30 @@ background:
 linear-gradient(
 90deg,
 #0f7a3d,
-#27c96f
+#34d87b
 );
+
+background-size:200% 100%;
+
+animation:progressMove 2.5s linear infinite;
+
+   }
+
+
+
+@keyframes progressMove{
+
+0%{
+
+background-position:0%;
+
+}
+
+100%{
+
+background-position:200%;
+
+}
 
 }
 
@@ -609,13 +633,19 @@ linear-gradient(
 
 width:100%;
 
-padding:14px;
+padding:15px;
 
 border:none;
 
-border-radius:16px;
+border-radius:18px;
 
-background:#0f7a3d;
+background:
+
+linear-gradient(
+135deg,
+#0f7a3d,
+#18a558
+);
 
 color:#fff;
 
@@ -626,6 +656,22 @@ font-weight:700;
 cursor:pointer;
 
 transition:.25s;
+
+}
+
+.investment-btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:
+
+0 10px 20px rgba(15,122,61,.25);
+
+}
+
+.investment-btn:active{
+
+transform:scale(.98);
 
 }
 
@@ -667,5 +713,23 @@ button{
 body{
 
 scroll-behavior:smooth;
+
+}
+
+.investment-status{
+
+display:flex;
+
+align-items:center;
+
+gap:5px;
+
+color:#35a853;
+
+font-size:14px;
+
+font-weight:600;
+
+margin-top:4px;
 
 }
