@@ -1,241 +1,277 @@
 /* ==========================================
-   ALBUKHR – SECURE ADMIN AUTH ENGINE v2
+   ALBUKHR ADMIN AUTH ENGINE v3
+   Supabase Powered
 ========================================== */
 
-const ADMIN_SESSION_KEY = "albukhr_admin_session";
-const ADMIN_LOG_KEY = "albukhr_admin_logs";
-const SESSION_DURATION = 2 * 60 * 60 * 1000;
-
-/* ==========================================
-   ADMIN DATABASE
-========================================== */
-
-const ADMIN_USERS = {
-
-super_admin:{
-username:"admin",
-secret:"ALBUKHR_SUPER_2026"
-},
-
-finance_admin:{
-username:"finance",
-secret:"ALBUKHR_FINANCE_2026"
-},
-
-review_admin:{
-username:"review",
-secret:"ALBUKHR_REVIEW_2026"
-},
-
-compliance_admin:{
-username:"compliance",
-secret:"ALBUKHR_COMPLIANCE_2026"
-}
-
-};
+const ADMIN_TABLE = "admin_users";
+const ADMIN_LOGS = "admin_activity_logs";
 
 /* ==========================================
    LOGIN
 ========================================== */
 
-function adminLogin(username, role, secret){
+async function adminLogin({
 
-const admin = ADMIN_USERS[role];
+    username,
+    role,
+    accessKey
 
-if(!admin) return false;
+}){
 
-if(
-admin.username !== username ||
-admin.secret !== secret
-){
-return false;
-}
+    try{
 
-/* CREATE SESSION */
+        const { data: admin, error } = await supabaseClient
 
-const session = {
-username,
-role,
-loginTime: Date.now(),
-expiresAt: Date.now() + SESSION_DURATION
-};
+        .from(ADMIN_TABLE)
 
-localStorage.setItem(
-ADMIN_SESSION_KEY,
-JSON.stringify(session)
-);
+        .select("*")
 
-/* GLOBAL ADMIN SESSION */
+        .eq("username", username)
 
-localStorage.setItem(
-  "albukhr_current_username",
-  username
-);
+        .eq("role", role)
 
-localStorage.setItem(
-  "albukhr_current_role",
-  role
-);
+        .eq("status", "active")
 
-localStorage.setItem(
-  "albukhr_current_email",
-  username + "@albukhr.admin"
-);
-   
-/* LOG LOGIN */
+        .single();
 
-logAdminAction("login", username, role);
+        if(error || !admin){
 
-return true;
+            return {
+                error:"Invalid administrator."
+            };
+
+        }
+
+        /* Temporary access-key check.
+           Za mu maye gurbinsa da hash verification daga baya. */
+
+        if(admin.access_key !== accessKey){
+
+            return{
+                error:"Incorrect access key."
+            };
+
+        }
+
+        /* Update last login */
+
+        await supabaseClient
+
+        .from(ADMIN_TABLE)
+
+        .update({
+
+            last_login:new Date().toISOString()
+
+        })
+
+        .eq("id",admin.id);
+
+        /* Save session */
+
+        sessionStorage.setItem(
+
+            "albukhr_admin",
+
+            JSON.stringify(admin)
+
+        );
+
+        await logAdminAction(
+
+            admin,
+
+            "login",
+
+            "Administrator signed in."
+
+        );
+
+        return{
+
+            success:true,
+
+            admin
+
+        };
+
+    }catch(error){
+
+        console.error(error);
+
+        return{
+
+            error:error.message
+
+        };
+
+    }
 
 }
 
 /* ==========================================
-   GET SESSION
+   GET CURRENT ADMIN
 ========================================== */
+async function getCurrentAdmin(){
 
-function getAdminSession(){
+    try{
 
-const raw =
-localStorage.getItem(ADMIN_SESSION_KEY);
+        const raw =
 
-if(!raw) return null;
+        sessionStorage.getItem(
 
-try{
+            "albukhr_admin"
 
-const session = JSON.parse(raw);
+        );
 
-/* Expiry */
+        if(!raw){
 
-if(Date.now() > session.expiresAt){
+            return null;
 
-localStorage.removeItem(ADMIN_SESSION_KEY);
-return null;
+        }
 
-}
+        return JSON.parse(raw);
 
-/* Auto Refresh */
+    }catch{
 
-session.expiresAt =
-Date.now() + SESSION_DURATION;
+        return null;
 
-localStorage.setItem(
-ADMIN_SESSION_KEY,
-JSON.stringify(session)
-);
-
-return session;
-
-}catch{
-
-localStorage.removeItem(ADMIN_SESSION_KEY);
-return null;
+    }
 
 }
+
+/* ==========================================
+  ADMIN LONGOUT 
+========================================== */
+async function adminLogout(){
+
+    const admin =
+
+    await getCurrentAdmin();
+
+    if(admin){
+
+        await logAdminAction(
+
+            admin,
+
+            "logout",
+
+            "Administrator signed out."
+
+        );
+
+    }
+
+    sessionStorage.removeItem(
+
+        "albukhr_admin"
+
+    );
+
+    location.replace(
+
+        "admin-login.html"
+
+    );
+
+           }
+
+/* ==========================================
+   REQUIRE ADMIN
+========================================== */
+async function requireAdmin(){
+
+    const admin =
+
+    await getCurrentAdmin();
+
+    if(!admin){
+
+        location.replace(
+
+            "admin-login.html"
+
+        );
+
+        return false;
+
+    }
+
+    return true;
 
 }
 
 /* ==========================================
    REQUIRE ROLE
 ========================================== */
+async function requireRole(...roles){
 
-function requireRole(allowedRoles){
+    const admin =
 
-const session = getAdminSession();
+    await getCurrentAdmin();
 
-if(!session){
+    if(!admin){
 
-alert("Admin login required");
-window.location.href = "admin-login.html";
-return;
+        location.replace(
 
-}
+            "admin-login.html"
 
-if(!allowedRoles.includes(session.role)){
+        );
 
-alert("Access denied");
-window.location.href =
-"unified-admin-buttons.html";
+        return false;
 
-return;
+    }
 
-}
+    if(!roles.includes(admin.role)){
 
-}
+        alert("Access denied.");
 
-/* ==========================================
-   LOGOUT
-========================================== */
+        location.replace(
 
-function adminLogout(){
+            "unified-admin-buttons.html"
 
-const session = getAdminSession();
+        );
 
-if(session){
+        return false;
 
-logAdminAction(
-"logout",
-session.username,
-session.role
-);
+    }
 
-}
+    return true;
 
-localStorage.removeItem(ADMIN_SESSION_KEY);
-
-window.location.href =
-"admin-login.html";
-
-}
-
-localStorage.removeItem("albukhr_current_username");
-localStorage.removeItem("albukhr_current_role");
-localStorage.removeItem("albukhr_current_email");
+           }
 
 /* ==========================================
-   LOGGING
+   LOG ADMIN ACTION
 ========================================== */
+async function logAdminAction(
 
-function logAdminAction(action,user,role){
+    admin,
 
-const logs =
-JSON.parse(
-localStorage.getItem(ADMIN_LOG_KEY)
-) || [];
+    action,
 
-logs.unshift({
+    details=""
 
-action,
-user,
-role,
-time: Date.now()
+){
 
-});
+    await supabaseClient
 
-localStorage.setItem(
-ADMIN_LOG_KEY,
-JSON.stringify(logs.slice(0,100))
-);
+    .from(ADMIN_LOGS)
 
-}
+    .insert({
 
-/* ==========================================
-   HELPERS
-========================================== */
+        admin_id:admin.id,
 
-function getAdminRole(){
+        username:admin.username,
 
-const session =
-getAdminSession();
+        role:admin.role,
 
-return session
-? session.role
-: null;
+        action,
 
-}
+        details,
 
-function getAdmin(){
+        created_at:new Date().toISOString()
 
-return getAdminSession();
+    });
 
 }
