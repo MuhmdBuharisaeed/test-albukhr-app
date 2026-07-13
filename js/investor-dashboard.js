@@ -56,6 +56,25 @@ user.username ||
 user.name ||
 "Investor";
 
+const avatar =
+document.getElementById(
+"heroAvatar"
+);
+
+if(avatar){
+
+const username =
+user.username ||
+"Investor";
+
+avatar.innerText =
+
+username
+.substring(0,2)
+.toUpperCase();
+
+}
+
 async function renderInvestorDashboard(){
 
 const container =
