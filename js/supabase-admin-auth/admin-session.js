@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 3.0
+   Version 3.1
 ========================================== */
 
 (function(window){
@@ -10,20 +10,25 @@
 const TABLE = "admin_users";
 
 /* ==========================================
-   GET SUPABASE
+   GET CLIENT
 ========================================== */
 
 function getClient(){
 
-if(window.supabaseClient){
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
 
-return window.supabaseClient;
+        const client =
+        window.getAlbukhrSupabaseClient();
 
-}
+        if(client){
+            return client;
+        }
 
-throw new Error(
-"Supabase client not initialized."
-);
+    }
+
+    throw new Error(
+        "ALBUKHR Supabase Core not initialized."
+    );
 
 }
 
@@ -33,24 +38,34 @@ throw new Error(
 
 async function getCurrentSession(){
 
-const supabase = getClient();
+    try{
 
-const {
+        const supabase = getClient();
 
-data:{session},
-error
+        const {
 
-} = await supabase.auth.getSession();
+            data:{session},
+            error
 
-if(error){
+        } = await supabase.auth.getSession();
 
-console.error(error);
+        if(error){
 
-return null;
+            console.error(error);
 
-}
+            return null;
 
-return session;
+        }
+
+        return session;
+
+    }catch(error){
+
+        console.error(error);
+
+        return null;
+
+    }
 
 }
 
@@ -60,11 +75,10 @@ return session;
 
 async function isAdminLoggedIn(){
 
-const session =
+    const session =
+    await getCurrentSession();
 
-await getCurrentSession();
-
-return !!session;
+    return !!session;
 
 }
 
@@ -74,68 +88,60 @@ return !!session;
 
 async function getCurrentAdmin(){
 
-try{
+    try{
 
-const supabase = getClient();
+        const session =
+        await getCurrentSession();
 
-const session =
+        if(!session){
 
-await getCurrentSession();
+            return null;
 
-if(!session){
+        }
 
-return null;
+        const supabase =
+        getClient();
 
-}
+        const {
 
-const user = session.user;
+            data,
+            error
 
-const {
+        } = await supabase
 
-data,
-error
+        .from(TABLE)
 
-} = await supabase
+        .select("*")
 
-.from(TABLE)
+        .eq(
+            "auth_user_id",
+            session.user.id
+        )
 
-.select("*")
+        .eq(
+            "status",
+            "active"
+        )
 
-.eq(
+        .single();
 
-"auth_user_id",
+        if(error){
 
-user.id
+            console.error(error);
 
-)
+            return null;
 
-.eq(
+        }
 
-"status",
+        return data;
 
-"active"
+    }catch(error){
 
-)
+        console.error(error);
 
-.single();
+        return null;
 
-if(error){
-
-console.error(error);
-
-return null;
-
-}
-
-return data;
-
-}catch(error){
-
-console.error(error);
-
-return null;
-
-}
+    }
 
 }
 
@@ -145,15 +151,12 @@ return null;
 
 async function getCurrentRole(){
 
-const admin =
+    const admin =
+    await getCurrentAdmin();
 
-await getCurrentAdmin();
-
-return admin
-
-? admin.role_code
-
-: null;
+    return admin
+    ? admin.role_code
+    : null;
 
 }
 
@@ -163,24 +166,58 @@ return admin
 
 async function refreshAdminSession(){
 
-const supabase = getClient();
+    try{
 
-const {
+        const supabase =
+        getClient();
 
-data,
-error
+        const {
 
-} = await supabase.auth.refreshSession();
+            data,
+            error
 
-if(error){
+        } = await supabase.auth.refreshSession();
 
-console.error(error);
+        if(error){
 
-return false;
+            console.error(error);
+
+            return false;
+
+        }
+
+        return !!data.session;
+
+    }catch(error){
+
+        console.error(error);
+
+        return false;
+
+    }
 
 }
 
-return !!data.session;
+/* ==========================================
+   REQUIRE LOGIN
+========================================== */
+
+async function requireAdminSession(){
+
+    const admin =
+    await getCurrentAdmin();
+
+    if(!admin){
+
+        location.replace(
+            "admin-login.html"
+        );
+
+        return null;
+
+    }
+
+    return admin;
 
 }
 
@@ -189,23 +226,21 @@ return !!data.session;
 ========================================== */
 
 window.getCurrentSession =
-
 getCurrentSession;
 
 window.getCurrentAdmin =
-
 getCurrentAdmin;
 
 window.getCurrentRole =
-
 getCurrentRole;
 
 window.refreshAdminSession =
-
 refreshAdminSession;
 
 window.isAdminLoggedIn =
-
 isAdminLoggedIn;
+
+window.requireAdminSession =
+requireAdminSession;
 
 })(window);
