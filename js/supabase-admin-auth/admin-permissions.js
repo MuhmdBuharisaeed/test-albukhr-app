@@ -7,7 +7,7 @@
 
 "use strict";
 
-const TABLE = "admin_roles";
+const TABLE = "admin_permissions";
 
 /* ==========================================
    GET CLIENT
@@ -26,51 +26,36 @@ function getClient(){
 }
 
 /* ==========================================
-   GET ROLE
+   GET ROLE PERMISSIONS
 ========================================== */
 
 async function getRolePermissions(roleCode){
 
     if(!roleCode){
-
-        return null;
-
+        return [];
     }
 
     try{
 
         const supabase = getClient();
 
-        const {
-
-            data,
-            error
-
-        } = await supabase
-
+        const { data, error } = await supabase
         .from(TABLE)
-
-        .select("*")
-
-        .eq("role_code",roleCode)
-
-        .single();
+        .select("permission")
+        .eq("role_code", roleCode);
 
         if(error){
-
             console.error(error);
-
-            return null;
-
+            return [];
         }
 
-        return data;
+        return data || [];
 
     }catch(error){
 
         console.error(error);
 
-        return null;
+        return [];
 
     }
 
@@ -126,41 +111,31 @@ async function hasAnyRole(roles=[]){
 
 async function hasPermission(permission){
 
-    const admin =
-
-    await getCurrentAdmin();
+    const admin = await getCurrentAdmin();
 
     if(!admin){
-
         return false;
-
-    }
-
-    const role =
-
-    await getRolePermissions(
-
-        admin.role_code
-
-    );
-
-    if(!role){
-
-        return false;
-
     }
 
     const permissions =
+    await getRolePermissions(admin.role_code);
 
-    Array.isArray(role.permissions)
+    if(!permissions.length){
+        return false;
+    }
 
-    ? role.permissions
+    const list =
+    permissions.map(p => p.permission);
 
-    : [];
+    /* Super Admin */
 
-    return permissions.includes(permission);
+    if(list.includes("*")){
+        return true;
+    }
 
-}
+    return list.includes(permission);
+
+   }
 
 /* ==========================================
    FINANCE
