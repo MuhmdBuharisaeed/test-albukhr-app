@@ -296,20 +296,13 @@ ${project}
 
 <div class="investment-progress">
 
-<div class="investment-progress-bar">
-
-</div>
+<div class="investment-progress-bar"></div>
 
 </div>
 
 <button
-
 class="investment-btn"
-
-onclick="
-event.stopPropagation();
-location.href='project.html?project=${encodeURIComponent(project)}';
-">
+onclick="location.href='project.html?project=${encodeURIComponent(project)}'">
 
 View Details →
 
