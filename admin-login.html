@@ -26,12 +26,7 @@
 
     <div class="form-group">
       <label>Admin Role</label>
-      <select id="role">
-        <option value="super_admin">Super Admin</option>
-        <option value="finance_admin">Finance Admin</option>
-        <option value="review_admin">Review Admin</option>
-        <option value="viewer_admin">Viewer Admin</option>
-      </select>
+      
     </div>
 
     <div class="form-group">
@@ -48,112 +43,31 @@
   </div>
 </div>
 
+<div class="form-group">
+
+<label>Email</label>
+
+<input
+
+id="email"
+
+type="email"
+
+placeholder="Administrator Email"
+
+>
+
+</div>
+  
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="js/supabase-core.js"></script>
 
-<!-- Admin -->
 <script src="js/supabase-admin-auth/admin-logs.js"></script>
-
 <script src="js/supabase-admin-auth/admin-session.js"></script>
-
 <script src="js/supabase-admin-auth/admin-auth.js"></script>
-
-<script>
-
-/* AUTO SESSION REDIRECT */
-
-document.addEventListener("DOMContentLoaded", async ()=>{
-
-const session =
-await getCurrentAdmin();
-
-if(session){
-
-location.replace(
-"unified-admin-buttons.html"
-);
-
-}
-
-});
-
-/* LOGIN */
-
-async function login(){
-
-const btn =
-document.querySelector(".login-btn");
-
-const role =
-document.getElementById("role").value;
-
-const key =
-document.getElementById("key").value.trim();
-
-if(!key){
-
-alert("Access Key Required");
-
-return;
-
-}
-
-/* USERNAME MAP */
-
-const USERNAMES = {
-
-super_admin:"admin",
-finance_admin:"finance",
-review_admin:"review",
-viewer_admin:"viewer"
-
-};
-
-const username =
-USERNAMES[role];
-
-btn.disabled = true;
-btn.textContent = "Signing In...";
-
-try{
-
-const result = await adminLogin({
-
-email:
-"albukhrinvestmentlimited@gmail.com",
-
-accessKey:key
-
-});
-
-if(result.error){
-
-alert(result.error);
-
-return;
-
-}
-
-location.replace(
-"unified-admin-buttons.html"
-);
-
-}catch(error){
-
-alert(error.message || "Login failed");
-
-}finally{
-
-btn.disabled = false;
-btn.textContent = "Access Control Center";
-
-}
-
-}
-
-</script>
+<script src="js/supabase-admin-auth/admin-login.js"></script>
 
 </body>
 </html>
