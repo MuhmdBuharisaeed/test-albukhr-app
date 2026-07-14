@@ -162,3 +162,140 @@ feeBox.textContent =
 }
 
    }
+
+/* =========================================
+   DASHBOARD CHARTS
+========================================= */
+
+function renderCharts(data){
+
+const growth =
+
+Math.min(
+
+100,
+
+(data.netFlow/1000)*100
+
+);
+
+const bar =
+
+document.getElementById(
+
+"growthBar"
+
+);
+
+const text =
+
+document.getElementById(
+
+"growthText"
+
+);
+
+if(bar){
+
+bar.style.width =
+
+growth+"%";
+
+}
+
+if(text){
+
+text.innerHTML =
+
+growth.toFixed(1)+"%";
+
+}
+
+const liquidity =
+
+Math.min(
+
+100,
+
+(data.received/
+
+Math.max(
+
+1,
+
+data.received+data.sent
+
+)
+
+)*100
+
+);
+
+const circle =
+
+document.querySelector(
+
+".progress-circle"
+
+);
+
+const percent =
+
+document.getElementById(
+
+"liquidityPercent"
+
+);
+
+const status =
+
+document.getElementById(
+
+"liquidityText"
+
+);
+
+if(circle){
+
+circle.style.background=
+
+`conic-gradient(
+#18a558 ${liquidity*3.6}deg,
+#e5e5e5 0deg
+)`;
+
+}
+
+if(percent){
+
+percent.innerHTML=
+
+liquidity.toFixed(0)+"%";
+
+}
+
+if(status){
+
+status.innerHTML=
+
+liquidity>=70
+
+?
+
+"Excellent"
+
+:
+
+liquidity>=40
+
+?
+
+"Healthy"
+
+:
+
+"Low";
+
+}
+
+}
