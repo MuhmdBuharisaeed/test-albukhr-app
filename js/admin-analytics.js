@@ -299,3 +299,4 @@ liquidity>=40
 }
 
 }
+renderCharts(data);
