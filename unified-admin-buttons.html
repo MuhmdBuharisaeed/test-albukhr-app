@@ -32,86 +32,133 @@
 
 <div class="container">
 
-<button class="admin-btn" onclick="go('Albukhr-core-projects-dashboard.html')">
+<button
+id="coreProjectsBtn"
+class="admin-btn"
+data-page="Albukhr-core-projects-dashboard.html">
 🧩 Core Projects Dashboard
 <span id="coreBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-dashboard.html')">
-🏢 Albukhr ecosystem Dashboard
+<button
+id="ecosystemBtn"
+class="admin-btn"
+data-page="ALBUKHR-ecosystem-dashboard.html">
+🏢 Albukhr Ecosystem Dashboard
 <span id="ecosystemBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-dapp-requests.html')">
+<button
+id="dappBtn"
+class="admin-btn"
+data-page="admin-dapp-requests.html">
 📥 DApp Requests
 <span id="dappBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-contributors.html')">
+<button
+id="contributorsBtn"
+class="admin-btn"
+data-page="admin-contributors.html">
 👥 Contributors Management
 <span id="contributorsBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-transactions.html')">
+<button
+id="transactionsBtn"
+class="admin-btn"
+data-page="admin-transactions.html">
 💳 Transactions Monitor
 <span id="txBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-risk.html')">
+<button
+id="riskBtn"
+class="admin-btn"
+data-page="admin-risk.html">
 ⚠️ Risk Monitor
 <span id="riskBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-internal-projects.html')">
+<button
+id="internalProjectsBtn"
+class="admin-btn"
+data-page="admin-internal-projects.html">
 🏢 Internal Admin Panel
 <span id="internalBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('external-admin-panel.html')">
+<button
+id="externalAdminBtn"
+class="admin-btn"
+data-page="external-admin-panel.html">
 🌍 External Admin Panel
 <span id="externalAdminBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('external-admin-dashboard.html')">
+<button
+id="externalDashboardBtn"
+class="admin-btn"
+data-page="external-admin-dashboard.html">
 📊 External Dashboard
 <span id="externalDashBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('external-project-view.html')">
+<button
+id="externalReviewBtn"
+class="admin-btn"
+data-page="external-project-view.html">
 🔍 External Project Reviews
 <span id="externalReviewBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('escrow-admin.html')">
+<button
+id="escrowBtn"
+class="admin-btn"
+data-page="escrow-admin.html">
 🔐 Escrow Admin
 <span id="escrowBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('super-admin-dashboard.html')">
+<button
+id="superAdminBtn"
+class="admin-btn"
+data-page="super-admin-dashboard.html">
 👑 Super Admin Dashboard
 <span id="superBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-permissions.html')">
-👁 Admin Permissions 
+<button
+id="permissionsBtn"
+class="admin-btn"
+data-page="admin-permissions.html">
+👁 Admin Permissions
 <span id="permissionsBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('admin-wallet.html')">
+<button
+id="walletBtn"
+class="admin-btn"
+data-page="admin-wallet.html">
 💼 Admin Wallet
 <span id="walletBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-control-center.html')">
+<button
+id="controlCenterBtn"
+class="admin-btn"
+data-page="ALBUKHR-ecosystem-control-center.html">
 🕹 Control Center
 <span id="controlBadge" class="badge" style="display:none"></span>
 </button>
 
-<button class="logout-btn" onclick="adminLogout()">
+<button
+id="logoutBtn"
+class="logout-btn">
 🚪 Logout
 </button>
 
-  </div>
+</div>
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
