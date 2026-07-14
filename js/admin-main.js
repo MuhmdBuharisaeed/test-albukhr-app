@@ -1,30 +1,67 @@
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+/* =========================================
+   ALBUKHR ADMIN MAIN
+========================================= */
 
-    renderTreasuryOverview();
-    loadRecentTransactions();
-    checkLiquidity();
-    loadAnalytics();
+const ADMIN_REFRESH_INTERVAL = 60000;
 
-    // Withdraw Sections
-    renderPendingRequests();
-    renderApprovedRequests();
-    renderPaidRequests();
+/* =========================================
+   LOAD ALL MODULES
+========================================= */
 
-    setInterval(() => {
+async function loadAdminDashboard(){
 
-      renderTreasuryOverview();
-      loadRecentTransactions();
-      checkLiquidity();
-      loadAnalytics();
+try{
 
-      // Refresh Withdraw Sections
-      renderPendingRequests();
-      renderApprovedRequests();
-      renderPaidRequests();
+await Promise.all([
 
-    }, 60000);
+renderTreasuryOverview(),
 
-  }
+loadRecentTransactions(),
+
+checkLiquidity(),
+
+loadAnalytics(),
+
+renderPendingRequests(),
+
+renderApprovedRequests(),
+
+renderPaidRequests()
+
+]);
+
+}catch(error){
+
+console.error(
+
+"Admin Dashboard Error:",
+
+error
+
 );
+
+}
+
+}
+
+/* =========================================
+   INITIALIZE
+========================================= */
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+async ()=>{
+
+await loadAdminDashboard();
+
+setInterval(
+
+loadAdminDashboard,
+
+ADMIN_REFRESH_INTERVAL
+
+);
+
+});
