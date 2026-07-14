@@ -10,24 +10,28 @@
 const TABLE = "admin_users";
 
 /* ==========================================
-   GET CLIENT
+   GET AUTH CLIENT
 ========================================== */
 
 function getClient(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(typeof window.getAlbukhrAuthClient === "function"){
 
         const client =
-        window.getAlbukhrSupabaseClient();
+        window.getAlbukhrAuthClient();
 
         if(client){
+
             return client;
+
         }
 
     }
 
     throw new Error(
-        "ALBUKHR Supabase Core not initialized."
+
+        "ALBUKHR Auth Core not initialized."
+
     );
 
 }
