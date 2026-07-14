@@ -1,244 +1,320 @@
-/* Allow all main admin roles */
-requireRole(["super_admin","finance_admin","review_admin","viewer_admin"]);
+/* ==========================================
+   ALBUKHR ADMIN DASHBOARD ENGINE
+   Version 1.0
+========================================== */
 
-/* Get current admin */
-const admin = getAdmin();
+(function(window){
 
-/* Show role badge */
-if(admin){
-  document.getElementById("adminRoleBadge").innerText =
-    admin.role.replace("_"," ").toUpperCase();
+"use strict";
 
-  /* Show Super Admin button only if role is super_admin */
-  if(admin.role === "super_admin"){
-    document.getElementById("superAdminBtn").style.display = "block";
-  }
+let refreshTimer = null;
+
+/* ==========================================
+   ADMIN READY
+========================================== */
+
+document.addEventListener(
+
+    "admin-ready",
+
+    async(event)=>{
+
+        const admin = event.detail.user;
+
+        await initDashboard(admin);
+
+    }
+
+);
+
+/* ==========================================
+   INIT
+========================================== */
+
+async function initDashboard(admin){
+
+    showRoleBadge(admin);
+
+    showSuperAdminButton(admin);
+
+    bindButtons();
+
+    await updateAdminAlerts();
+
+    await checkCriticalRisk();
+
+    startRefresh();
+
 }
+
+/* ==========================================
+   ROLE BADGE
+========================================== */
+
+function showRoleBadge(admin){
+
+    const badge =
+
+    document.getElementById(
+
+        "adminRoleBadge"
+
+    );
+
+    if(!badge) return;
+
+    badge.textContent =
+
+    String(admin.role_code || "")
+
+    .replaceAll("_"," ")
+
+    .toUpperCase();
+
+}
+
+/* ==========================================
+   SUPER ADMIN
+========================================== */
+
+function showSuperAdminButton(admin){
+
+    const btn =
+
+    document.getElementById(
+
+        "superAdminBtn"
+
+    );
+
+    if(!btn) return;
+
+    btn.style.display =
+
+    admin.role_code ===
+
+    "super_admin"
+
+    ? ""
+
+    : "none";
+
+}
+
+/* ==========================================
+   BUTTONS
+========================================== */
+
+function bindButtons(){
+
+    document
+
+    .querySelectorAll(
+
+        ".admin-btn[data-page]"
+
+    )
+
+    .forEach(button=>{
+
+        button.addEventListener(
+
+            "click",
+
+            ()=>{
+
+                go(
+
+                    button.dataset.page
+
+                );
+
+            }
+
+        );
+
+    });
+
+    const logout =
+
+    document.getElementById(
+
+        "logoutBtn"
+
+    );
+
+    if(logout){
+
+        logout.addEventListener(
+
+            "click",
+
+            adminLogout
+
+        );
+
+    }
+
+}
+
+/* ==========================================
+   NAVIGATION
+========================================== */
 
 function go(page){
-  window.location.href = page;
-}
 
-/* ===============================
-UNIFIED ALERT ENGINE
-=============================== */
+    if(
 
-function updateAdminAlerts(){
+        !window.Admin ||
 
-updateRiskBadge();
-updateTxBadge();
-updateWalletBadge();
-updateExternalBadge();
-updateDappBadge();
+        !window.Admin.ready
 
-}
+    ){
 
-/* ===============================
-TRANSACTION ALERT
-=============================== */
+        location.replace(
 
-function updateTxBadge(){
+            "admin-login.html"
 
-const badge =
-document.getElementById("txBadge");
+        );
 
-if(!badge) return;
+        return;
 
-const tx =
-getTransactions
-? getTransactions()
-: [];
+    }
 
-const pending =
-tx.filter(t=>t.flag==="risk");
-
-if(pending.length){
-
-badge.style.display="inline-block";
-badge.innerText = pending.length;
-
-}else{
-
-badge.style.display="none";
+    location.href = page;
 
 }
 
-}
+/* ==========================================
+   ALERTS
+========================================== */
 
-/* ===============================
-WALLET ALERT
-=============================== */
+async function updateAdminAlerts(){
 
-function updateWalletBadge(){
+    if(
 
-const badge =
-document.getElementById("walletBadge");
+        typeof updateTxBadge ===
 
-if(!badge) return;
+        "function"
 
-if(typeof getAdminTreasury !== "function")
-return;
+    ){
 
-const t = getAdminTreasury();
+        await updateTxBadge();
 
-if(t.treasury < 100){
+    }
 
-badge.style.display="inline-block";
-badge.innerText = "!";
+    if(
 
-}else{
+        typeof updateWalletBadge ===
 
-badge.style.display="none";
+        "function"
 
-}
+    ){
 
-}
+        await updateWalletBadge();
 
-/* ===============================
-EXTERNAL PROJECT ALERT
-=============================== */
+    }
 
-function updateExternalBadge(){
+    if(
 
-const badge =
-document.getElementById("externalBadge");
+        typeof updateExternalBadge ===
 
-if(!badge) return;
+        "function"
 
-const external =
-JSON.parse(
-localStorage.getItem("albukhr_external_projects")
-)||[];
+    ){
 
-const pending =
-external.filter(p=>p.status==="pending");
+        await updateExternalBadge();
 
-if(pending.length){
+    }
 
-badge.style.display="inline-block";
-badge.innerText = pending.length;
+    if(
 
-}else{
+        typeof updateDappBadge ===
 
-badge.style.display="none";
+        "function"
+
+    ){
+
+        await updateDappBadge();
+
+    }
 
 }
 
-}
+/* ==========================================
+   CRITICAL
+========================================== */
 
-/* ===============================
-DAPP ALERT
-=============================== */
+async function checkCriticalRisk(){
 
-function updateDappBadge(){
+    if(
 
-const badge =
-document.getElementById("dappBadge");
+        typeof window.checkCriticalRisk
 
-if(!badge) return;
+        === "function"
 
-const dapps =
-JSON.parse(
-localStorage.getItem("albukhr_dapp_requests")
-)||[];
+    ){
 
-const pending =
-dapps.filter(d=>!d.reviewed);
+        await window.checkCriticalRisk();
 
-if(pending.length){
-
-badge.style.display="inline-block";
-badge.innerText = pending.length;
-
-}else{
-
-badge.style.display="none";
+    }
 
 }
 
-}
+/* ==========================================
+   REFRESH
+========================================== */
 
-/* ===============================
-CRITICAL ALERT ENGINE
-=============================== */
+function startRefresh(){
 
-function checkCriticalRisk(){
+    stopRefresh();
 
-let critical = false;
+    refreshTimer =
 
-/* Treasury */
+    setInterval(
 
-if(typeof getAdminTreasury === "function"){
+        async()=>{
 
-const t = getAdminTreasury();
+            await updateAdminAlerts();
 
-if(t.treasury < 50){
-critical = true;
-}
+            await checkCriticalRisk();
 
-}
+        },
 
-/* Projects */
+        5000
 
-const projects = [
-"Barsh",
-"Labbaika",
-"Raheem",
-"Urban",
-"Khairat",
-"Azman",
-"Hauwal"
-];
-
-projects.forEach(p=>{
-
-if(typeof getProjectTreasuryStatus !== "function")
-return;
-
-const status =
-getProjectTreasuryStatus(p);
-
-if(status.liquidity < 30){
-critical = true;
-}
-
-});
-
-triggerCriticalAlert(critical);
+    );
 
 }
 
-/* ===============================
-TRIGGER ALERT
-=============================== */
+function stopRefresh(){
 
-function triggerCriticalAlert(active){
+    if(refreshTimer){
 
-const alert =
-document.getElementById("criticalAlert");
+        clearInterval(
 
-const sound =
-document.getElementById("alertSound");
+            refreshTimer
 
-if(!alert) return;
+        );
 
-if(active){
+        refreshTimer = null;
 
-alert.style.display="block";
-
-if(sound){
-sound.play().catch(()=>{});
-}
-
-}else{
-
-alert.style.display="none";
+    }
 
 }
 
-}
+/* ==========================================
+   EXPORT
+========================================== */
 
-/* INIT */
+window.go = go;
 
-updateAdminAlerts();
-setInterval(updateAdminAlerts,4000);
+window.startDashboardRefresh =
+
+startRefresh;
+
+window.stopDashboardRefresh =
+
+stopRefresh;
+
+})(window);
