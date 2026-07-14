@@ -683,3 +683,691 @@ box.appendChild(wrap);
 
    }
 
+/* =========================================
+   APPROVE REQUEST
+========================================= */
+
+async function approveRequest(id){
+
+try{
+
+const { data:req, error } =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.select("*")
+
+.eq("id",id)
+
+.single();
+
+if(error || !req){
+
+showAlert(
+
+"Error",
+
+"Request not found",
+
+"error"
+
+);
+
+return;
+
+}
+
+/* Fraud Check */
+
+const { data:stakes } =
+
+await supabaseClient
+
+.from("stakes")
+
+.select("*")
+
+.eq("userid",req.userid)
+
+.eq("project",req.project);
+
+let totalReward = 0;
+
+(stakes || []).forEach(stake=>{
+
+const reward =
+
+Number(stake.reward || 0);
+
+const withdrawn =
+
+Number(stake.withdrawnReward || 0);
+
+totalReward +=
+
+Math.max(0,reward-withdrawn);
+
+});
+
+if(
+
+req.type==="reward"
+
+&&
+
+Number(req.amount) > totalReward
+
+){
+
+showAlert(
+
+"Fraud Detected",
+
+"Requested reward exceeds available reward.",
+
+"error"
+
+);
+
+return;
+
+}
+
+/* Fee */
+
+const fee =
+
+Number(req.amount) * 0.01;
+
+const receive =
+
+Number(req.amount) - fee;
+
+/* Create Transaction */
+
+const { error:txError } =
+
+await supabaseClient
+
+.from("transactions")
+
+.insert({
+
+userid:req.userid,
+
+project:req.project,
+
+wallet:req.wallet,
+
+amount:receive,
+
+fee,
+
+type:req.type,
+
+status:"approved",
+
+txid:null,
+
+created_at:new Date().toISOString()
+
+});
+
+if(txError){
+
+throw txError;
+
+}
+
+/* Update Request */
+
+const { error:updateError } =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.update({
+
+status:"approved"
+
+})
+
+.eq("id",id);
+
+if(updateError){
+
+throw updateError;
+
+}
+
+showAlert(
+
+"Approved",
+
+"Withdraw request approved.",
+
+"success"
+
+);
+
+await refreshWithdrawSections();
+
+renderTreasuryOverview();
+
+loadAnalytics();
+
+}catch(error){
+
+console.error(error);
+
+showAlert(
+
+"Approve Failed",
+
+error.message,
+
+"error"
+
+);
+
+}
+
+   }
+
+/* =========================================
+   REJECT REQUEST
+========================================= */
+
+async function rejectRequest(id){
+
+try{
+
+const { error } =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.update({
+
+status:"rejected",
+
+processed_at:new Date().toISOString()
+
+})
+
+.eq("id",id);
+
+if(error){
+
+throw error;
+
+}
+
+showAlert(
+
+"Rejected",
+
+"Withdraw request rejected.",
+
+"success"
+
+);
+
+await refreshWithdrawSections();
+
+renderTreasuryOverview();
+
+loadAnalytics();
+
+}catch(error){
+
+console.error(error);
+
+showAlert(
+
+"Reject Failed",
+
+error.message,
+
+"error"
+
+);
+
+}
+
+   }
+
+/* =========================================
+   PAY REQUEST
+========================================= */
+
+async function payRequest(id, button){
+
+try{
+
+if(button){
+
+button.disabled = true;
+button.innerHTML = "⏳ Processing...";
+
+}
+
+/* Call Payment API */
+
+const response = await fetch(
+
+"https://test-albukhr-api.onrender.com/pay-withdraw",
+
+{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":"application/json"
+
+},
+
+body:JSON.stringify({
+
+requestId:id
+
+})
+
+}
+
+);
+
+const result = await response.json();
+
+if(!result.success){
+
+throw new Error(
+
+result.error ||
+
+"Payment failed."
+
+);
+
+}
+
+/* Load Request */
+
+const { data:req, error } =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.select("*")
+
+.eq("id",id)
+
+.single();
+
+if(error || !req){
+
+throw new Error(
+
+"Request not found."
+
+);
+
+}
+
+/* Mark Reward */
+
+if(req.type==="reward"){
+
+const paid =
+
+await markRewardAsPaid(
+
+req.userid,
+
+req.project,
+
+Number(req.amount)+
+
+Number(req.fee||0)
+
+);
+
+if(paid.error){
+
+throw new Error(
+
+paid.error
+
+);
+
+}
+
+}
+
+/* Mark Capital */
+
+if(req.type==="capital"){
+
+const paid =
+
+await markCapitalAsPaid(
+
+req.userid,
+
+req.project,
+
+Number(req.amount)+
+
+Number(req.fee||0)
+
+);
+
+if(paid.error){
+
+throw new Error(
+
+paid.error
+
+);
+
+}
+
+}
+
+/* Update Withdraw */
+
+const { error:updateError } =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.update({
+
+status:"paid",
+
+txid:
+
+result.txid ||
+
+result.transactionId ||
+
+null,
+
+processed_at:
+
+new Date().toISOString()
+
+})
+
+.eq("id",id);
+
+if(updateError){
+
+throw updateError;
+
+}
+
+showAlert(
+
+"Payment Complete",
+
+"Withdraw has been paid successfully.",
+
+"success"
+
+);
+
+await refreshWithdrawSections();
+
+renderTreasuryOverview();
+
+loadAnalytics();
+
+loadRecentTransactions();
+
+}catch(error){
+
+console.error(error);
+
+if(button){
+
+button.disabled = false;
+
+button.innerHTML =
+
+"💸 Pay Now";
+
+}
+
+showAlert(
+
+"Payment Failed",
+
+error.message,
+
+"error"
+
+);
+
+}
+
+}
+
+/* =========================================
+   MARK REWARD AS PAID
+========================================= */
+
+async function markRewardAsPaid(userid, project, amount){
+
+let remaining = Number(amount);
+
+const { data: stakes, error } =
+
+await supabaseClient
+
+.from("stakes")
+
+.select("*")
+
+.eq("userid", userid)
+
+.eq("project", project)
+
+.order("created_at",{ ascending:true });
+
+if(error){
+
+return {
+
+error:error.message
+
+};
+
+}
+
+for(const stake of (stakes || [])){
+
+const reward =
+Number(stake.reward) || 0;
+
+const withdrawn =
+Number(stake.withdrawnReward) || 0;
+
+const available =
+reward - withdrawn;
+
+if(available <= 0){
+
+continue;
+
+}
+
+const take =
+Math.min(remaining, available);
+
+const { error:updateError } =
+
+await supabaseClient
+
+.from("stakes")
+
+.update({
+
+withdrawnReward:
+
+withdrawn + take
+
+})
+
+.eq("id", stake.id);
+
+if(updateError){
+
+return {
+
+error:updateError.message
+
+};
+
+}
+
+remaining -= take;
+
+if(remaining <= 0){
+
+break;
+
+}
+
+}
+
+if(remaining > 0){
+
+return {
+
+error:"Insufficient reward balance."
+
+};
+
+}
+
+return {
+
+success:true
+
+};
+
+}
+
+/* =========================================
+   MARK CAPITAL AS PAID
+========================================= */
+
+async function markCapitalAsPaid(userid, project, amount){
+
+let remaining = Number(amount);
+
+const { data: stakes, error } =
+
+await supabaseClient
+
+.from("stakes")
+
+.select("*")
+
+.eq("userid", userid)
+
+.eq("project", project)
+
+.order("created_at",{ ascending:true });
+
+if(error){
+
+return {
+
+error:error.message
+
+};
+
+}
+
+for(const stake of (stakes || [])){
+
+const capital =
+Number(stake.amount) || 0;
+
+const withdrawn =
+Number(stake.withdrawnCapital) || 0;
+
+const available =
+capital - withdrawn;
+
+if(available <= 0){
+
+continue;
+
+}
+
+const take =
+Math.min(remaining, available);
+
+const { error:updateError } =
+
+await supabaseClient
+
+.from("stakes")
+
+.update({
+
+withdrawnCapital:
+
+withdrawn + take
+
+})
+
+.eq("id", stake.id);
+
+if(updateError){
+
+return {
+
+error:updateError.message
+
+};
+
+}
+
+remaining -= take;
+
+if(remaining <= 0){
+
+break;
+
+}
+
+}
+
+if(remaining > 0){
+
+return {
+
+error:"Insufficient capital balance."
+
+};
+
+}
+
+return {
+
+success:true
+
+};
+
+}
