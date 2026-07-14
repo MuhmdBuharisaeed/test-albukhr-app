@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN CORE
-   Version 2.0
+   Version 3.0
 ========================================== */
 
 (function(window){
@@ -11,33 +11,66 @@
    START
 ========================================== */
 
-document.addEventListener(
+window.addEventListener(
 
-    "DOMContentLoaded",
+    "load",
 
     async ()=>{
 
         try{
 
-            if(typeof initializeAdmin !== "function"){
+            if(
+
+                typeof initializeAdmin !==
+
+                "function"
+
+            ){
 
                 throw new Error(
+
                     "initializeAdmin() not found."
+
                 );
 
             }
 
+            const ready =
+
             await initializeAdmin();
 
+            if(!ready){
+
+                return;
+
+            }
+
+            if(
+
+                !window.Admin ||
+
+                !window.Admin.ready
+
+            ){
+
+                return;
+
+            }
+
             console.log(
+
                 "✅ ALBUKHR Admin Core Ready"
+
             );
 
         }catch(error){
 
             console.error(
+
                 "[ADMIN CORE]",
+
                 error
+
             );
 
         }
