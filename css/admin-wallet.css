@@ -856,3 +856,111 @@ padding:12px 24px;
 background:#dceee3;
 
    }
+
+/* ==========================================
+   DASHBOARD CHARTS
+========================================== */
+
+.dashboard-charts{
+
+display:grid;
+
+grid-template-columns:1fr;
+
+gap:18px;
+
+padding:0 18px;
+
+margin-bottom:20px;
+
+}
+
+.mini-chart{
+
+height:14px;
+
+background:#edf1ef;
+
+border-radius:999px;
+
+overflow:hidden;
+
+margin:18px 0;
+
+}
+
+.chart-bar{
+
+height:100%;
+
+width:0%;
+
+background:
+
+linear-gradient(
+90deg,
+#0f7a3d,
+#28c76f
+);
+
+transition:1s;
+
+}
+
+.chart-value{
+
+text-align:center;
+
+font-weight:700;
+
+font-size:18px;
+
+color:#0f7a3d;
+
+}
+
+.progress-circle{
+
+width:140px;
+
+height:140px;
+
+border-radius:50%;
+
+margin:20px auto;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:26px;
+
+font-weight:800;
+
+background:
+
+conic-gradient(
+
+#18a558 0deg,
+
+#18a558 0deg,
+
+#e5e5e5 0deg
+
+);
+
+transition:1s;
+
+}
+
+@media(min-width:900px){
+
+.dashboard-charts{
+
+grid-template-columns:1fr 1fr;
+
+}
+
+}
