@@ -1,93 +1,174 @@
+/* =========================================
+   ALBUKHR TREASURY OVERVIEW
+========================================= */
+
 async function renderTreasuryOverview(){
 
-  const balance =
-    await getWalletBalance();
+try{
 
-  /* =========================
-     PENDING TOTAL
-  ========================= */
+const balance =
+Number(await getWalletBalance()) || 0;
 
-  const { data: pendingRows } =
-    await supabaseClient
-      .from("withdraw_requests")
-      .select("amount")
-      .eq("status","pending");
+/* Load Pending + Approved Together */
 
-  let pendingTotal = 0;
+const [
 
-  (pendingRows || []).forEach(r=>{
+pendingResult,
 
-    pendingTotal +=
-      Number(r.amount) || 0;
+approvedResult
 
-  });
+] = await Promise.all([
 
-  /* =========================
-     APPROVED TOTAL
-  ========================= */
+supabaseClient
+.from("withdraw_requests")
+.select("amount")
+.eq("status","pending"),
 
-  const { data: approvedRows } =
-    await supabaseClient
-      .from("withdraw_requests")
-      .select("amount")
-      .eq("status","approved");
+supabaseClient
+.from("withdraw_requests")
+.select("amount")
+.eq("status","approved")
 
-  let approvedTotal = 0;
+]);
 
-  (approvedRows || []).forEach(r=>{
+const pendingRows =
+pendingResult.data || [];
 
-    approvedTotal +=
-      Number(r.amount) || 0;
+const approvedRows =
+approvedResult.data || [];
 
-  });
+const pendingTotal =
+pendingRows.reduce(
 
-  /* =========================
-     AVAILABLE LIQUIDITY
-  ========================= */
+(sum,row)=>
 
-  const availableLiquidity =
-    balance -
-    pendingTotal -
-    approvedTotal;
+sum + (Number(row.amount)||0),
 
-  /* =========================
-     TOP CARD
-  ========================= */
+0
 
-  document.getElementById(
-    "adminBalance"
-  ).innerText =
-    balance.toFixed(2) + " Pi";
+);
 
-  /* =========================
-     TREASURY CARD
-  ========================= */
+const approvedTotal =
+approvedRows.reduce(
 
-  document.getElementById(
-    "treasuryBalance"
-  ).innerText =
-    balance.toFixed(2) + " Pi";
+(sum,row)=>
 
-  document.getElementById(
-    "pendingTotal"
-  ).innerText =
-    pendingTotal.toFixed(2) + " Pi";
+sum + (Number(row.amount)||0),
 
-  document.getElementById(
-    "approvedTotal"
-  ).innerText =
-    approvedTotal.toFixed(2) + " Pi";
+0
 
-  document.getElementById(
-    "availableLiquidity"
-  ).innerText =
-    availableLiquidity.toFixed(2) + " Pi";
+);
 
-  document.getElementById(
-    "liquidityStatus"
-  ).innerText =
-    availableLiquidity > 20
-      ? "🟢 SAFE"
-      : "🔴 LOW";
+const availableLiquidity =
+
+balance -
+
+pendingTotal -
+
+approvedTotal;
+
+/* Update Numbers */
+
+const update = (id,value)=>{
+
+const el =
+document.getElementById(id);
+
+if(el){
+
+el.textContent = value;
+
+}
+
+};
+
+update(
+
+"adminBalance",
+
+`${balance.toFixed(2)} Pi`
+
+);
+
+update(
+
+"treasuryBalance",
+
+`${balance.toFixed(2)} Pi`
+
+);
+
+update(
+
+"pendingTotal",
+
+`${pendingTotal.toFixed(2)} Pi`
+
+);
+
+update(
+
+"approvedTotal",
+
+`${approvedTotal.toFixed(2)} Pi`
+
+);
+
+update(
+
+"availableLiquidity",
+
+`${availableLiquidity.toFixed(2)} Pi`
+
+);
+
+/* Liquidity Status */
+
+const status =
+document.getElementById(
+"liquidityStatus"
+);
+
+if(status){
+
+if(availableLiquidity <= 20){
+
+status.textContent =
+"🔴 CRITICAL";
+
+status.style.color =
+"#e53935";
+
+}else if(availableLiquidity <= 100){
+
+status.textContent =
+"🟠 WARNING";
+
+status.style.color =
+"#f39c12";
+
+}else{
+
+status.textContent =
+"🟢 SAFE";
+
+status.style.color =
+"#18a558";
+
+}
+
+}
+
+}catch(error){
+
+console.error(
+
+"Treasury Overview Error:",
+
+error
+
+);
+
+}
 
 }
