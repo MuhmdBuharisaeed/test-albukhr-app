@@ -55,92 +55,425 @@ font-weight:700;
 
 <body>
 
-<div class="header">
-  🔐 ALBUKHR – Admin Wallet Monitor
+<header class="admin-header">
+
+<div class="header-left">
+
+<div class="brand">
+
+ALBUKHR
+
 </div>
 
-<!-- WALLET SUMMARY -->
+<div class="page-title">
+
+Admin Wallet
+
+</div>
+
+</div>
+
+<div class="header-right">
+
+<button
+class="refresh-btn"
+onclick="location.reload()">
+
+⟳
+
+</button>
+
+<div class="notification-btn">
+
+🔔
+
+<span
+id="adminNotifBadge"
+class="notification-badge">
+
+0
+
+</span>
+
+</div>
+
+</div>
+
+</header>
+
+
+<!-- HERO -->
+
+<section class="treasury-hero">
+
+<div class="hero-info">
+
+<div class="hero-label">
+
+Main Treasury Wallet
+
+</div>
+
+<div
+class="hero-balance"
+id="adminBalance">
+
+0.00 Pi
+
+</div>
+
+<div
+id="walletStatus"
+class="hero-status">
+
+🟢 SAFE
+
+</div>
+
+</div>
+
+<div class="hero-icon">
+
+💼
+
+</div>
+
+</section>
+
+
+<!-- SUMMARY -->
+
+<section class="summary-grid">
+
+<div class="summary-card">
+
+<div class="summary-icon">
+
+💰
+
+</div>
+
+<div>
+
+<span>
+
+Treasury
+
+</span>
+
+<b
+id="treasuryBalance">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-icon">
+
+🟡
+
+</div>
+
+<div>
+
+<span>
+
+Pending
+
+</span>
+
+<b
+id="pendingTotal">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-icon">
+
+✅
+
+</div>
+
+<div>
+
+<span>
+
+Approved
+
+</span>
+
+<b
+id="approvedTotal">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="summary-icon">
+
+📊
+
+</div>
+
+<div>
+
+<span>
+
+Transactions
+
+</span>
+
+<b
+id="totalTransactions">
+
+0
+
+</b>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ANALYTICS -->
+
+<section class="analytics-grid">
+
 <div class="card">
-  <small>Admin Treasury</small>
-  <div class="stat" id="adminBalance">0.00 Pi</div>
 
-  <small>Status</small>
-  <div id="walletStatus">ACTIVE</div>
-</div>
+<h3>
 
-<div class="dashboard-row">
+📈 Wallet Analytics
 
-  <!-- Wallet Analytics -->
-  <div class="card half-card">
+</h3>
 
-    <h3>📈 Wallet Analytics</h3>
+<div class="analytics-row">
 
-    <p><strong>Total Received:</strong>
-    <span id="totalReceived">0.00 Pi</span></p>
+<span>
 
-    <p><strong>Total Sent:</strong>
-    <span id="totalSent">0.00 Pi</span></p>
+Received
 
-    <p><strong>Total Transactions:</strong>
-    <span id="totalTransactions">0</span></p>
+</span>
 
-    <p><strong>Net Flow:</strong>
-    <span id="netFlow">0.00 Pi</span></p>
+<b
+id="totalReceived">
 
-    <p><strong>Fees Collected:</strong>
-    <span id="totalFees">0.00 Pi</span></p>
+0.00 Pi
 
-  </div>
-
-  <!-- Treasury Overview -->
-  <div class="card half-card">
-
-    <h3>📊 Treasury Overview</h3>
-
-    <p><strong>Treasury:</strong>
-    <span id="treasuryBalance">0.00 Pi</span></p>
-
-    <p><strong>Pending:</strong>
-    <span id="pendingTotal">0.00 Pi</span></p>
-
-    <p><strong>Approved:</strong>
-    <span id="approvedTotal">0.00 Pi</span></p>
-
-    <p><strong>Liquidity Status:</strong>
-    <span id="liquidityStatus">🟢 SAFE</span></p>
-
-    <p><strong>Available Liquidity:</strong>
-    <span id="availableLiquidity">0.00 Pi</span></p>
-
-  </div>
+</b>
 
 </div>
+
+<div class="analytics-row">
+
+<span>
+
+Sent
+
+</span>
+
+<b
+id="totalSent">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+<div class="analytics-row">
+
+<span>
+
+Net Flow
+
+</span>
+
+<b
+id="netFlow">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+<div class="analytics-row">
+
+<span>
+
+Fees
+
+</span>
+
+<b
+id="totalFees">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+
+🏦 Treasury Overview
+
+</h3>
+
+<div class="analytics-row">
+
+<span>
+
+Liquidity
+
+</span>
+
+<b
+id="availableLiquidity">
+
+0.00 Pi
+
+</b>
+
+</div>
+
+<div class="analytics-row">
+
+<span>
+
+Status
+
+</span>
+
+<b
+id="liquidityStatus">
+
+SAFE
+
+</b>
+
+</div>
+
+</div>
+
+</section>
+
 
 <!-- WITHDRAWALS -->
+
+<section class="withdraw-section">
+
 <div class="card">
-  <h4>🟡 Pending Withdraw Requests</h4>
-  <div id="pendingRequests"></div>
+
+<h3>
+
+🟡 Pending Requests
+
+</h3>
+
+<div id="pendingRequests">
+
+</div>
+
 </div>
 
 <div class="card">
-  <h4>🟢 Approved Withdrawals</h4>
-  <div id="approvedRequests"></div>
+
+<h3>
+
+✅ Approved
+
+</h3>
+
+<div id="approvedRequests">
+
+</div>
+
 </div>
 
 <div class="card">
-  <h4>💰 Paid Withdrawals</h4>
-  <div id="paidRequests"></div>
+
+<h3>
+
+💰 Paid
+
+</h3>
+
+<div id="paidRequests">
+
 </div>
+
+</div>
+
+</section>
+
 
 <!-- TRANSACTIONS -->
-<div class="card">
-  <h4>📜 Recent Transactions</h4>
-  <div id="adminTxList"></div>
+
+<section class="card">
+
+<div class="transactions-header">
+
+<h3>
+
+📜 Recent Transactions
+
+</h3>
+
+<input
+
+type="search"
+
+placeholder="Search wallet..."
+
+id="txSearch"
+
+>
+
 </div>
 
+<div id="adminTxList">
+
+</div>
+
+</section>
+
+
 <audio id="alertSound">
-  <source src="alert.mp3" type="audio/mpeg">
+
+<source
+src="alert.mp3"
+type="audio/mpeg">
+
 </audio>
 
 </body>
+  
 </html>
