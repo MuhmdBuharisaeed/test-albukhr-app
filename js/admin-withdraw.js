@@ -1,643 +1,685 @@
-/* ===============================
-   EXPAND / COLLAPSE STATE
-=============================== */
-let pendingExpanded = false;
-let approvedExpanded = false;
-let paidExpanded = false;
-let transactionsExpanded = false;
+/* =========================================
+   ALBUKHR ADMIN WITHDRAW ENGINE v3
+========================================= */
 
-/* ===============================
-   FETCH WITHDRAW REQUESTS
-=============================== */
-async function fetchWithdrawRequests(){
+const WITHDRAW_STATE = {
 
-  const { data, error } = await supabaseClient
-    .from("withdraw_requests")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending:false });
+pendingExpanded:false,
 
-  if(error){
-    console.error(error);
-    return [];
-  }
+approvedExpanded:false,
 
-  return data || [];
+paidExpanded:false
+
+};
+
+/* =========================================
+   SHORT WALLET
+========================================= */
+
+function shortWallet(wallet=""){
+
+wallet = String(wallet);
+
+if(wallet.length <= 14){
+
+return wallet;
 
 }
 
-/* ===============================
+return `${wallet.slice(0,6)}...${wallet.slice(-6)}`;
+
+}
+
+/* =========================================
+   FORMAT DATE
+========================================= */
+
+function formatDate(date){
+
+if(!date){
+
+return "-";
+
+}
+
+return new Date(date)
+
+.toLocaleString([],{
+
+dateStyle:"medium",
+
+timeStyle:"short"
+
+});
+
+}
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+function renderEmpty(container,message){
+
+container.innerHTML = `
+
+<div class="empty-state">
+
+<div class="icon">
+
+📭
+
+</div>
+
+<h4>
+
+${message}
+
+</h4>
+
+</div>
+
+`;
+
+}
+
+/* =========================================
+   REFRESH ALL
+========================================= */
+
+async function refreshWithdrawSections(){
+
+await Promise.all([
+
+renderPendingRequests(),
+
+renderApprovedRequests(),
+
+renderPaidRequests()
+
+]);
+
+}
+
+/* =========================================
+   FETCH REQUESTS
+========================================= */
+
+async function fetchRequests(status){
+
+try{
+
+const {data,error} =
+
+await supabaseClient
+
+.from("withdraw_requests")
+
+.select("*")
+
+.eq("status",status)
+
+.order("created_at",{
+
+ascending:false
+
+});
+
+if(error){
+
+throw error;
+
+}
+
+return data || [];
+
+}catch(error){
+
+console.error(
+
+"Withdraw Fetch Error:",
+
+error
+
+);
+
+return [];
+
+}
+
+}
+
+/* =========================================
    RENDER PENDING REQUESTS
-=============================== */
+========================================= */
+
 async function renderPendingRequests(){
 
-  const box =
-    document.getElementById("pendingRequests");
+const box =
+document.getElementById("pendingRequests");
 
-  box.innerHTML = "Loading...";
+if(!box) return;
 
-  const requests =
-    await fetchWithdrawRequests();
+box.innerHTML =
 
-  if(!requests.length){
+`<div class="empty-state">
 
-    box.innerHTML =
-      "<small>No pending requests</small>";
+Loading pending requests...
 
-    return;
-  }
+</div>`;
 
-  box.innerHTML = "";
+const requests =
+await fetchRequests("pending");
 
-  const visible =
-  pendingExpanded
-    ? requests
-    : requests.slice(0,3);
+if(!requests.length){
 
-visible.forEach(req => {
+renderEmpty(
+
+box,
+
+"No Pending Requests"
+
+);
+
+return;
+
+}
+
+const visible =
+
+WITHDRAW_STATE.pendingExpanded
+
+? requests
+
+: requests.slice(0,3);
+
+box.innerHTML = "";
+
+visible.forEach(req=>{
+
+const card =
+document.createElement("div");
+
+card.className =
+"withdraw-item";
+
+card.innerHTML = `
+
+<div class="withdraw-left">
+
+<div class="withdraw-user">
+
+📦 ${req.project}
+
+</div>
+
+<div class="withdraw-date">
+
+👤 ${req.userid || "Unknown"}
+
+</div>
+
+<div class="withdraw-date">
+
+💼 ${shortWallet(req.wallet)}
+
+</div>
+
+<div class="withdraw-date">
+
+📅 ${formatDate(req.created_at)}
+
+</div>
+
+<span class="status pending">
+
+Pending
+
+</span>
+
+</div>
+
+<div class="withdraw-right">
+
+<div class="withdraw-amount">
+
+${Number(req.amount).toFixed(2)} Pi
+
+</div>
+
+<div class="withdraw-type">
+
+${req.type}
+
+</div>
+
+<div class="withdraw-actions">
+
+<button
+
+class="approve-btn"
+
+onclick="approveRequest('${req.id}')">
+
+✅ Approve
+
+</button>
+
+<button
+
+class="reject-btn"
+
+onclick="rejectRequest('${req.id}')">
+
+❌ Reject
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+box.appendChild(card);
+
+});
+
+/* See More */
 
 if(requests.length > 3){
 
-  box.innerHTML += `
-    <div style="text-align:center;margin-top:10px;">
-      <button onclick="
-        pendingExpanded=!pendingExpanded;
-        renderPendingRequests();
-      ">
-        ${pendingExpanded ? "Show Less" : "See More"}
-      </button>
-    </div>
-  `;
-}
-   
-    box.innerHTML += `
-      <div class="tx">
+const wrap =
+document.createElement("div");
 
-        <strong>${req.project}</strong><br>
+wrap.style.textAlign="center";
 
-        Type: ${req.type}<br>
+wrap.style.marginTop="14px";
 
-        Amount:
-        ${Number(req.amount).toFixed(2)} Pi<br>
+wrap.innerHTML = `
 
-        Wallet:
-        ${req.wallet}<br>
+<button
 
-        User ID:
-        ${req.userid || "N/A"}<br>
+class="see-more-btn"
 
-        <small>
-        ${new Date(req.created_at).toLocaleString()}
-        </small><br><br>
+onclick="
 
-        <button
-        onclick="approveRequest('${req.id}')">
+WITHDRAW_STATE.pendingExpanded=
 
-        ✅ Approve
+!WITHDRAW_STATE.pendingExpanded;
 
-        </button>
+renderPendingRequests();
 
-        <button
-        onclick="rejectRequest('${req.id}')">
+">
 
-        ❌ Reject
+${
 
-        </button>
+WITHDRAW_STATE.pendingExpanded
 
-      </div>
-    `;
+?
 
-  });
+"Show Less"
+
+:
+
+"See More"
 
 }
 
-/* ===============================
-   APPROVE REQUEST
-=============================== */
-async function approveRequest(id){
+</button>
 
-  const { data, error } = await supabaseClient
-    .from("withdraw_requests")
-    .select("*")
-    .eq("id", id)
-    .single();
+`;
 
-  if(error || !data){
-
-    alert("Request not found");
-    return;
-
-  }
-
-  const { data: stakes } = await supabaseClient
-    .from("stakes")
-    .select("*")
-    .eq("userid", data.userid)
-    .eq("project", data.project);
-
-  let totalReward = 0;
-
-  (stakes || []).forEach(s => {
-
-    const remaining =
-      (Number(s.reward) || 0) -
-      (Number(s.withdrawnReward) || 0);
-
-    totalReward += Math.max(0, remaining);
-
-  });
-
-  if(
-    data.type === "reward" &&
-    data.amount > totalReward
-  ){
-
-    alert("Fraud detected 🚨");
-    return;
-
-  }
-
-  const fee =
-    Number(data.amount) * 0.01;
-
-  const receive =
-    Number(data.amount) - fee;
-
-  const { data: txData, error: txError } =
-    await supabaseClient
-      .from("transactions")
-      .insert([{
-
-        userid: data.userid,
-
-        project: data.project,
-
-        amount: receive,
-
-        fee: fee,
-
-        wallet: data.wallet,
-
-        type: data.type,
-
-        status: "approved",
-
-        txid: null,
-
-        created_at:
-          new Date().toISOString()
-
-      }])
-      .select();
-
-  if(txError){
-
-    alert(txError.message);
-
-    console.error(txError);
-
-    return;
-
-  }
-
-  const { error: updateError } =
-    await supabaseClient
-      .from("withdraw_requests")
-      .update({
-        status: "approved"
-      })
-      .eq("id", id);
-
-  if(updateError){
-
-    alert(updateError.message);
-
-    return;
-
-  }
-
-  alert("Approved ✅");
-
-  renderPendingRequests();
-  renderApprovedRequests();
-  renderPaidRequests();
-
- }
-
-/* ===============================
-   REJECT REQUEST
-=============================== */
-async function rejectRequest(id){
-
-  await supabaseClient
-    .from("withdraw_requests")
-    .update({
-      status: "rejected"
-    })
-    .eq("id", id);
-
-  alert("Rejected");
-
-  renderPendingRequests();
+box.appendChild(wrap);
 
 }
 
-/* ===============================
-   FETCH APPROVED
-=============================== */
-async function fetchApprovedRequests(){
-
-  const { data, error } = await supabaseClient
-    .from("withdraw_requests")
-    .select("*")
-    .eq("status","approved")
-    .order("created_at",{ascending:false});
-
-  if(error){
-    console.error(error);
-    return [];
-  }
-
-  return data || [];
-
 }
 
-/* ===============================
-   RENDER APPROVED
-=============================== */
+/* =========================================
+   RENDER APPROVED REQUESTS
+========================================= */
+
 async function renderApprovedRequests(){
 
-  const box =
-    document.getElementById("approvedRequests");
+const box =
+document.getElementById("approvedRequests");
 
-  box.innerHTML = "Loading...";
+if(!box) return;
 
-  const requests =
-    await fetchApprovedRequests();
+box.innerHTML =
 
-  if(!requests.length){
+`<div class="empty-state">
 
-    box.innerHTML =
-      "<small>No approved requests</small>";
+Loading approved requests...
 
-    return;
-  }
+</div>`;
 
-  box.innerHTML = "";
+const requests =
+await fetchRequests("approved");
 
-  const visible =
-  approvedExpanded
-    ? requests
-    : requests.slice(0,3);
+if(!requests.length){
 
-visible.forEach(req => {
+renderEmpty(
 
-   if(requests.length > 3){
+box,
 
-  box.innerHTML += `
-    <div style="text-align:center;margin-top:10px;">
-      <button onclick="
-        approvedExpanded=!approvedExpanded;
-        renderApprovedRequests();
-      ">
-        ${approvedExpanded ? "Show Less" : "See More"}
-      </button>
-    </div>
-  `;
-   }
+"No Approved Requests"
 
-    box.innerHTML += `
-      <div class="tx">
+);
 
-        <strong>${req.project}</strong><br>
+return;
 
-        Type: ${req.type}<br>
+}
 
-        Amount:
-        ${Number(req.amount).toFixed(2)} Pi<br>
+const visible =
 
-        Wallet:
-        ${req.wallet}<br><br>
+WITHDRAW_STATE.approvedExpanded
 
-        <button
-onclick="payRequest('${req.id}')">
+? requests
+
+: requests.slice(0,3);
+
+box.innerHTML = "";
+
+visible.forEach(req=>{
+
+const card =
+document.createElement("div");
+
+card.className =
+"withdraw-item";
+
+card.innerHTML = `
+
+<div class="withdraw-left">
+
+<div class="withdraw-user">
+
+📦 ${req.project}
+
+</div>
+
+<div class="withdraw-date">
+
+👤 ${req.userid || "Unknown"}
+
+</div>
+
+<div class="withdraw-date">
+
+💼 ${shortWallet(req.wallet)}
+
+</div>
+
+<div class="withdraw-date">
+
+📅 ${formatDate(req.created_at)}
+
+</div>
+
+<span class="status approved">
+
+Approved
+
+</span>
+
+</div>
+
+<div class="withdraw-right">
+
+<div class="withdraw-amount">
+
+${Number(req.amount).toFixed(2)} Pi
+
+</div>
+
+<div class="withdraw-type">
+
+${req.type}
+
+</div>
+
+<div class="withdraw-actions">
+
+<button
+
+class="pay-btn"
+
+onclick="payRequest('${req.id}',this)">
 
 💸 Pay Now
 
 </button>
 
-      </div>
-    `;
+</div>
 
-  });
+</div>
 
-}
+`;
 
-/* ===============================
-   PAY WITHDRAW
-=============================== */
-async function payRequest(id){
+box.appendChild(card);
 
-  try{
+});
 
-    const response = await fetch(
-      "https://test-albukhr-api.onrender.com/pay-withdraw",
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body: JSON.stringify({
-          requestId: id
-        })
-      }
-    );
+/* See More */
 
-    const result = await response.json();
+if(requests.length > 3){
 
-    if(!result.success){
-      alert(result.error || "Payment failed");
-      return;
-    }
+const wrap =
+document.createElement("div");
 
-    /* Get request details */
-    const { data:req, error } = await supabaseClient
-      .from("withdraw_requests")
-      .select("*")
-      .eq("id", id)
-      .single();
+wrap.style.textAlign="center";
 
-    if(error || !req){
-      alert("Unable to load request details");
-      return;
-    }
+wrap.style.marginTop="14px";
 
-    /* Deduct reward only for reward withdrawals */
-     if(req.type === "reward"){
+wrap.innerHTML = `
 
-      const deduct =
-        await markRewardAsPaid(
-  req.userid,
-  req.project,
-  Number(req.amount) + Number(req.fee || 0)
-);
+<button
 
-      if(deduct?.error){
+class="see-more-btn"
 
-        alert(
-          "Payment sent, but reward update failed:\n" +
-          deduct.error
-        );
+onclick="
 
-        return;
-      }
-}
+WITHDRAW_STATE.approvedExpanded=
 
-if(req.type === "capital"){
+!WITHDRAW_STATE.approvedExpanded;
 
-      const deduct =
-        await markCapitalAsPaid(
-  req.userid,
-  req.project,
-  Number(req.amount) + Number(req.fee || 0)
-);
+renderApprovedRequests();
 
-      if(deduct?.error){
+">
 
-        alert(
-          "Payment sent, but capital update failed:\n" +
-          deduct.error
-        );
+${
 
-        return;
-      }
-}
+WITHDRAW_STATE.approvedExpanded
 
-alert("Payment completed ✅");
+?
 
-     
-    renderPendingRequests();
-    renderApprovedRequests();
-    renderPaidRequests();
+"Show Less"
 
-  }catch(error){
+:
 
-    alert(error.message);
-
-  }
+"See More"
 
 }
 
-/* ===============================
-   FETCH PAID
-=============================== */
-async function fetchPaidRequests(){
+</button>
 
-  const { data, error } = await supabaseClient
-    .from("withdraw_requests")
-    .select("*")
-    .eq("status","paid")
-    .order("processed_at",{ascending:false});
+`;
 
-  if(error){
-    console.error(error);
-    return [];
-  }
-
-  return data || [];
+box.appendChild(wrap);
 
 }
 
-/* ===============================
-   RENDER PAID
-=============================== */
+}
+
+/* =========================================
+   RENDER PAID REQUESTS
+========================================= */
+
 async function renderPaidRequests(){
 
-  const box =
-    document.getElementById("paidRequests");
+const box =
+document.getElementById("paidRequests");
 
-  box.innerHTML = "Loading...";
+if(!box) return;
 
-  const requests =
-    await fetchPaidRequests();
+box.innerHTML =
 
-  if(!requests.length){
+`<div class="empty-state">
 
-    box.innerHTML =
-      "<small>No paid withdrawals</small>";
+Loading paid withdrawals...
 
-    return;
-  }
+</div>`;
 
-  box.innerHTML = "";
+const requests =
+await fetchRequests("paid");
 
-  const visible =
-  paidExpanded
-    ? requests
-    : requests.slice(0,3);
+if(!requests.length){
 
-visible.forEach(req => {
+renderEmpty(
 
-   if(requests.length > 3){
+box,
 
-  box.innerHTML += `
-    <div style="text-align:center;margin-top:10px;">
-      <button onclick="
-        paidExpanded=!paidExpanded;
-        renderPaidRequests();
-      ">
-        ${paidExpanded ? "Show Less" : "See More"}
-      </button>
-    </div>
-  `;
-   }
+"No Paid Withdrawals"
 
-    box.innerHTML += `
-      <div class="tx">
+);
 
-        <strong>${req.project}</strong><br>
-
-        Type: ${req.type}<br>
-
-        Amount:
-        ${Number(req.amount).toFixed(2)} Pi<br>
-
-        Wallet:
-        ${req.wallet}<br>
-
-        <small>
-        Paid:
-        ${new Date(req.processed_at)
-          .toLocaleString()}
-        </small>
-
-      </div>
-    `;
-
-  });
-
-     }
-
-async function markRewardAsPaid(userid, project, amount){
-
-   let remaining = Number(amount);
-
-   const { data: stakes, error } = await supabaseClient
-      .from("stakes")
-      .select("*")
-      .eq("userid", userid)
-      .eq("project", project);
-
-   if(error){
-      return { error:error.message };
-   }
-
-   for(const stake of stakes){
-
-      const reward =
-         Number(stake.reward) || 0;
-
-      const withdrawn =
-         Number(stake.withdrawnReward) || 0;
-
-      const available =
-         reward - withdrawn;
-
-      if(available <= 0) continue;
-
-      const take =
-         Math.min(remaining, available);
-
-      const { error:updateError } =
-         await supabaseClient
-            .from("stakes")
-            .update({
-               withdrawnReward:
-                  withdrawn + take
-            })
-            .eq("id", stake.id);
-
-      if(updateError){
-         return { error:updateError.message };
-      }
-
-      remaining -= take;
-
-      if(remaining <= 0){
-         break;
-      }
-   }
-
-   if(remaining > 0){
-      return { error:"Insufficient reward" };
-   }
-
-   return { success:true };
-}
-
-async function markCapitalAsPaid(
-  userid,
-  project,
-  amount
-){
-
-  let remaining = Number(amount);
-
-  const { data: stakes, error } =
-    await supabaseClient
-      .from("stakes")
-      .select("*")
-      .eq("userid", userid)
-      .eq("project", project);
-
-  if(error){
-    return { error:error.message };
-  }
-
-  for(const stake of stakes){
-
-    const available =
-      (Number(stake.amount) || 0)
-      -
-      (Number(stake.withdrawnCapital) || 0);
-
-    if(available <= 0){
-      continue;
-    }
-
-    const take =
-      Math.min(remaining, available);
-
-    const { error:updateError } =
-      await supabaseClient
-        .from("stakes")
-        .update({
-          withdrawnCapital:
-            (Number(stake.withdrawnCapital) || 0)
-            + take
-        })
-        .eq("id", stake.id);
-
-    if(updateError){
-      return {
-        error:updateError.message
-      };
-    }
-
-    remaining -= take;
-
-    if(remaining <= 0){
-      break;
-    }
-
-  }
-
-  if(remaining > 0){
-    return {
-      error:"Insufficient capital"
-    };
-  }
-
-  return { success:true };
+return;
 
 }
+
+const visible =
+
+WITHDRAW_STATE.paidExpanded
+
+? requests
+
+: requests.slice(0,3);
+
+box.innerHTML = "";
+
+visible.forEach(req=>{
+
+const card =
+document.createElement("div");
+
+card.className =
+"withdraw-item";
+
+card.innerHTML = `
+
+<div class="withdraw-left">
+
+<div class="withdraw-user">
+
+📦 ${req.project}
+
+</div>
+
+<div class="withdraw-date">
+
+👤 ${req.userid || "Unknown"}
+
+</div>
+
+<div class="withdraw-date">
+
+💼 ${shortWallet(req.wallet)}
+
+</div>
+
+<div class="withdraw-date">
+
+📅 ${formatDate(req.processed_at || req.created_at)}
+
+</div>
+
+<span class="status paid">
+
+Paid
+
+</span>
+
+</div>
+
+<div class="withdraw-right">
+
+<div class="withdraw-amount">
+
+${Number(req.amount).toFixed(2)} Pi
+
+</div>
+
+<div class="withdraw-type">
+
+${req.type}
+
+</div>
+
+<div class="withdraw-date">
+
+Tx:
+
+${shortWallet(req.txid || "Pending")}
+
+</div>
+
+</div>
+
+`;
+
+box.appendChild(card);
+
+});
+
+/* See More */
+
+if(requests.length > 3){
+
+const wrap =
+document.createElement("div");
+
+wrap.style.textAlign="center";
+
+wrap.style.marginTop="14px";
+
+wrap.innerHTML = `
+
+<button
+
+class="see-more-btn"
+
+onclick="
+
+WITHDRAW_STATE.paidExpanded=
+
+!WITHDRAW_STATE.paidExpanded;
+
+renderPaidRequests();
+
+">
+
+${
+
+WITHDRAW_STATE.paidExpanded
+
+?
+
+"Show Less"
+
+:
+
+"See More"
+
+}
+
+</button>
+
+`;
+
+box.appendChild(wrap);
+
+}
+
+   }
+
