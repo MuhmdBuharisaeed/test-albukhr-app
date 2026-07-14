@@ -101,6 +101,34 @@ renderPaidRequests()
 }
 
 /* =========================================
+   REMOVE CARD (OPTIMISTIC UI)
+========================================= */
+
+function removeWithdrawCard(button){
+
+const card =
+
+button.closest(".withdraw-item");
+
+if(!card) return;
+
+card.style.transition =
+".25s";
+
+card.style.opacity = "0";
+
+card.style.transform =
+"translateX(30px)";
+
+setTimeout(()=>{
+
+card.remove();
+
+},250);
+
+}
+
+/* =========================================
    FETCH REQUESTS
 ========================================= */
 
@@ -258,7 +286,7 @@ ${req.type}
 
 class="approve-btn"
 
-onclick="approveRequest('${req.id}')">
+onclick="approveRequest('${req.id}',this)">
 
 ✅ Approve
 
@@ -268,7 +296,7 @@ onclick="approveRequest('${req.id}')">
 
 class="reject-btn"
 
-onclick="rejectRequest('${req.id}')">
+onclick="rejectRequest('${req.id}',this)">
 
 ❌ Reject
 
@@ -687,7 +715,7 @@ box.appendChild(wrap);
    APPROVE REQUEST
 ========================================= */
 
-async function approveRequest(id){
+async function approveRequest(id,button){
 
 try{
 
@@ -853,6 +881,8 @@ showAlert(
 
 );
 
+removeWithdrawCard(button);
+
 await refreshWithdrawSections();
 
 renderTreasuryOverview();
@@ -881,7 +911,7 @@ error.message,
    REJECT REQUEST
 ========================================= */
 
-async function rejectRequest(id){
+async function rejectRequest(id,button){
 
 try{
 
@@ -917,6 +947,8 @@ showAlert(
 
 );
 
+removeWithdrawCard(button);
+   
 await refreshWithdrawSections();
 
 renderTreasuryOverview();
@@ -1124,6 +1156,8 @@ showAlert(
 
 );
 
+removeWithdrawCard(button);
+   
 await refreshWithdrawSections();
 
 renderTreasuryOverview();
