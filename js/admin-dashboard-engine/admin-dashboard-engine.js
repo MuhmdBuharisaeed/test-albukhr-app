@@ -1,13 +1,11 @@
 /* ==========================================
    ALBUKHR ADMIN DASHBOARD ENGINE
-   Version 1.0
+   Version 2.0
 ========================================== */
 
 (function(window){
 
 "use strict";
-
-let refreshTimer = null;
 
 /* ==========================================
    ADMIN READY
@@ -19,137 +17,147 @@ document.addEventListener(
 
     async(event)=>{
 
-        const admin = event.detail.user;
+        try{
 
-        await initDashboard(admin);
+            const admin =
+
+            event.detail.user;
+
+            await initializeDashboard(
+
+                admin
+
+            );
+
+        }catch(error){
+
+            console.error(
+
+                "[Dashboard Engine]",
+
+                error
+
+            );
+
+        }
 
     }
 
 );
 
 /* ==========================================
-   INIT
+   INITIALIZE
 ========================================== */
 
-async function initDashboard(admin){
+async function initializeDashboard(
 
-    showRoleBadge(admin);
+    admin
 
-    showSuperAdminButton(admin);
+){
 
-    bindButtons();
+    try{
 
-    await updateAdminAlerts();
+        /* Header */
 
-    await checkCriticalRisk();
+        if(
 
-    startRefresh();
+            window.AdminDashboardHeader &&
 
-}
+            typeof window.AdminDashboardHeader.init ===
 
-/* ==========================================
-   ROLE BADGE
-========================================== */
+            "function"
 
-function showRoleBadge(admin){
+        ){
 
-    const badge =
+            window.AdminDashboardHeader.init(
 
-    document.getElementById(
+                admin
 
-        "adminRoleBadge"
+            );
 
-    );
+        }
 
-    if(!badge) return;
+        /* Navigation */
 
-    badge.textContent =
+        if(
 
-    String(admin.role_code || "")
+            window.AdminDashboardNavigation &&
 
-    .replaceAll("_"," ")
+            typeof window.AdminDashboardNavigation.init ===
 
-    .toUpperCase();
+            "function"
 
-}
+        ){
 
-/* ==========================================
-   SUPER ADMIN
-========================================== */
+            window.AdminDashboardNavigation.init();
 
-function showSuperAdminButton(admin){
+        }
 
-    const btn =
+        /* Widgets */
 
-    document.getElementById(
+        if(
 
-        "superAdminBtn"
+            window.AdminDashboardWidgets &&
 
-    );
+            typeof window.AdminDashboardWidgets.init ===
 
-    if(!btn) return;
+            "function"
 
-    btn.style.display =
+        ){
 
-    admin.role_code ===
+            await window.AdminDashboardWidgets.init(
 
-    "super_admin"
+                admin
 
-    ? ""
+            );
 
-    : "none";
+        }
 
-}
+        /* Alerts */
 
-/* ==========================================
-   BUTTONS
-========================================== */
+        if(
 
-function bindButtons(){
+            window.AdminDashboardAlerts &&
 
-    document
+            typeof window.AdminDashboardAlerts.init ===
 
-    .querySelectorAll(
+            "function"
 
-        ".admin-btn[data-page]"
+        ){
 
-    )
+            await window.AdminDashboardAlerts.init();
 
-    .forEach(button=>{
+        }
 
-        button.addEventListener(
+        /* Refresh */
 
-            "click",
+        if(
 
-            ()=>{
+            window.AdminDashboardRefresh &&
 
-                go(
+            typeof window.AdminDashboardRefresh.start ===
 
-                    button.dataset.page
+            "function"
 
-                );
+        ){
 
-            }
+            window.AdminDashboardRefresh.start();
+
+        }
+
+        console.log(
+
+            "✅ Dashboard Ready"
 
         );
 
-    });
+    }catch(error){
 
-    const logout =
+        console.error(
 
-    document.getElementById(
+            "[Dashboard Engine]",
 
-        "logoutBtn"
-
-    );
-
-    if(logout){
-
-        logout.addEventListener(
-
-            "click",
-
-            adminLogout
+            error
 
         );
 
@@ -158,146 +166,22 @@ function bindButtons(){
 }
 
 /* ==========================================
-   NAVIGATION
+   DESTROY
 ========================================== */
 
-function go(page){
+function destroyDashboard(){
 
     if(
 
-        !window.Admin ||
+        window.AdminDashboardRefresh &&
 
-        !window.Admin.ready
-
-    ){
-
-        location.replace(
-
-            "admin-login.html"
-
-        );
-
-        return;
-
-    }
-
-    location.href = page;
-
-}
-
-/* ==========================================
-   ALERTS
-========================================== */
-
-async function updateAdminAlerts(){
-
-    if(
-
-        typeof updateTxBadge ===
+        typeof window.AdminDashboardRefresh.stop ===
 
         "function"
 
     ){
 
-        await updateTxBadge();
-
-    }
-
-    if(
-
-        typeof updateWalletBadge ===
-
-        "function"
-
-    ){
-
-        await updateWalletBadge();
-
-    }
-
-    if(
-
-        typeof updateExternalBadge ===
-
-        "function"
-
-    ){
-
-        await updateExternalBadge();
-
-    }
-
-    if(
-
-        typeof updateDappBadge ===
-
-        "function"
-
-    ){
-
-        await updateDappBadge();
-
-    }
-
-}
-
-/* ==========================================
-   CRITICAL
-========================================== */
-
-async function checkCriticalRisk(){
-
-    if(
-
-        typeof window.checkCriticalRisk
-
-        === "function"
-
-    ){
-
-        await window.checkCriticalRisk();
-
-    }
-
-}
-
-/* ==========================================
-   REFRESH
-========================================== */
-
-function startRefresh(){
-
-    stopRefresh();
-
-    refreshTimer =
-
-    setInterval(
-
-        async()=>{
-
-            await updateAdminAlerts();
-
-            await checkCriticalRisk();
-
-        },
-
-        5000
-
-    );
-
-}
-
-function stopRefresh(){
-
-    if(refreshTimer){
-
-        clearInterval(
-
-            refreshTimer
-
-        );
-
-        refreshTimer = null;
+        window.AdminDashboardRefresh.stop();
 
     }
 
@@ -307,14 +191,16 @@ function stopRefresh(){
    EXPORT
 ========================================== */
 
-window.go = go;
+window.AdminDashboardEngine = {
 
-window.startDashboardRefresh =
+    initialize:
 
-startRefresh;
+    initializeDashboard,
 
-window.stopDashboardRefresh =
+    destroy:
 
-stopRefresh;
+    destroyDashboard
+
+};
 
 })(window);
