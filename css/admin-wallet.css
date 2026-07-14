@@ -964,3 +964,313 @@ grid-template-columns:1fr 1fr;
 }
 
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE
+========================================== */
+
+@media (max-width:768px){
+
+/* General */
+
+body{
+
+font-size:14px;
+
+overflow-x:hidden;
+
+}
+
+.page{
+
+padding:12px;
+
+}
+
+/* Header */
+
+.header{
+
+padding:0 14px;
+
+height:58px;
+
+}
+
+.header h1,
+.header-title{
+
+font-size:18px;
+
+}
+
+/* Hero */
+
+.dashboard-hero{
+
+margin:12px;
+
+padding:18px;
+
+border-radius:20px;
+
+}
+
+.hero-content{
+
+flex-direction:column;
+
+gap:16px;
+
+}
+
+.hero-balance{
+
+width:100%;
+
+text-align:center;
+
+min-width:auto;
+
+}
+
+/* Summary */
+
+.summary-grid{
+
+grid-template-columns:1fr 1fr;
+
+gap:12px;
+
+margin:12px;
+
+}
+
+.summary-card{
+
+padding:16px;
+
+}
+
+.summary-value{
+
+font-size:20px;
+
+}
+
+.summary-icon{
+
+width:46px;
+
+height:46px;
+
+font-size:20px;
+
+}
+
+/* Dashboard Row */
+
+.dashboard-row{
+
+display:flex;
+
+flex-direction:column;
+
+gap:14px;
+
+}
+
+.half-card{
+
+width:100%;
+
+}
+
+/* Withdraw Cards */
+
+.withdraw-item{
+
+display:flex;
+
+flex-direction:column;
+
+gap:14px;
+
+}
+
+.withdraw-right{
+
+align-items:flex-start;
+
+width:100%;
+
+}
+
+.withdraw-actions{
+
+width:100%;
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:10px;
+
+}
+
+.approve-btn,
+.reject-btn,
+.pay-btn{
+
+width:100%;
+
+}
+
+/* Transaction */
+
+.tx-card{
+
+display:flex;
+
+flex-direction:column;
+
+gap:12px;
+
+}
+
+.tx-right{
+
+align-items:flex-start;
+
+}
+
+/* Charts */
+
+.dashboard-charts{
+
+grid-template-columns:1fr;
+
+padding:0 12px;
+
+}
+
+/* Tables */
+
+table{
+
+display:block;
+
+overflow-x:auto;
+
+white-space:nowrap;
+
+}
+
+/* Buttons */
+
+button{
+
+min-height:44px;
+
+}
+
+/* Wallet Address */
+
+.tx-meta,
+.withdraw-date{
+
+font-size:12px;
+
+word-break:break-word;
+
+}
+
+}
+
+/* ==========================================
+   SMALL PHONES
+========================================== */
+
+@media (max-width:480px){
+
+.summary-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.dashboard-hero{
+
+padding:16px;
+
+}
+
+.hero-text h1{
+
+font-size:20px;
+
+}
+
+.hero-value{
+
+font-size:22px;
+
+}
+
+.card{
+
+padding:16px;
+
+}
+
+.progress-circle{
+
+width:110px;
+
+height:110px;
+
+font-size:22px;
+
+}
+
+.summary-value{
+
+font-size:18px;
+
+}
+
+.withdraw-amount{
+
+font-size:20px;
+
+}
+
+}
+
+/* ==========================================
+   LARGE TABLETS
+========================================== */
+
+@media (min-width:769px){
+
+.dashboard-row{
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:18px;
+
+}
+
+.dashboard-charts{
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+gap:18px;
+
+}
+
+   }
