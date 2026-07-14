@@ -178,17 +178,6 @@ function redirectDashboard(){
 
 }
 
-/* ==========================================
-   AUTO START
-========================================== */
-
-document.addEventListener(
-
-    "DOMContentLoaded",
-
-    initializeAdmin
-
-);
 
 /* ==========================================
    EXPORT
