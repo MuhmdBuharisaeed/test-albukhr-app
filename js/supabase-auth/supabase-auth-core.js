@@ -8,7 +8,22 @@
 "use strict";
 
 /* ==========================================
-   INTERNAL CLIENT
+   CONFIG
+========================================== */
+
+const CONFIG =
+window.ALBUKHR_AUTH_CONFIG;
+
+if(!CONFIG){
+
+    throw new Error(
+        "ALBUKHR_AUTH_CONFIG not loaded."
+    );
+
+}
+
+/* ==========================================
+   CLIENT
 ========================================== */
 
 let client = null;
@@ -29,47 +44,27 @@ function createClient(){
 
         !window.supabase ||
 
-        typeof window.supabase.createClient !== "function"
+        typeof window.supabase.createClient !==
+        "function"
 
     ){
 
         throw new Error(
-
             "Supabase SDK not loaded."
-
         );
 
     }
-
-    if(
-
-        !window.ALBUKHR_AUTH_CONFIG
-
-    ){
-
-        throw new Error(
-
-            "Auth Config not loaded."
-
-        );
-
-    }
-
-    const config =
-
-    window.ALBUKHR_AUTH_CONFIG;
 
     client =
-
     window.supabase.createClient(
 
-        config.url,
+        CONFIG.url,
 
-        config.anonKey,
+        CONFIG.anonKey,
 
         {
 
-            auth:config.auth
+            auth:CONFIG.auth
 
         }
 
@@ -86,6 +81,116 @@ function createClient(){
 function getClient(){
 
     return createClient();
+
+}
+
+/* ==========================================
+   SIGN IN
+========================================== */
+
+async function signIn(
+
+    email,
+
+    password
+
+){
+
+    return await getClient()
+
+    .auth
+
+    .signInWithPassword({
+
+        email,
+
+        password
+
+    });
+
+}
+
+/* ==========================================
+   SIGN OUT
+========================================== */
+
+async function signOut(){
+
+    return await getClient()
+
+    .auth
+
+    .signOut();
+
+}
+
+/* ==========================================
+   SESSION
+========================================== */
+
+async function getSession(){
+
+    const {
+
+        data,
+
+        error
+
+    } = await getClient()
+
+    .auth
+
+    .getSession();
+
+    if(error){
+
+        throw error;
+
+    }
+
+    return data.session;
+
+}
+
+/* ==========================================
+   USER
+========================================== */
+
+async function getUser(){
+
+    const {
+
+        data,
+
+        error
+
+    } = await getClient()
+
+    .auth
+
+    .getUser();
+
+    if(error){
+
+        throw error;
+
+    }
+
+    return data.user;
+
+}
+
+/* ==========================================
+   REFRESH
+========================================== */
+
+async function refreshSession(){
+
+    return await getClient()
+
+    .auth
+
+    .refreshSession();
 
 }
 
@@ -125,7 +230,7 @@ function health(){
 
         config:
 
-        !!window.ALBUKHR_AUTH_CONFIG,
+        !!CONFIG,
 
         client:
 
@@ -139,9 +244,25 @@ function health(){
    EXPORT
 ========================================== */
 
-window.AlbukhrAuthCore = {
+window.AlbukhrAuth = {
+
+    get client(){
+
+        return getClient();
+
+    },
 
     getClient,
+
+    signIn,
+
+    signOut,
+
+    getSession,
+
+    getUser,
+
+    refreshSession,
 
     isReady,
 
@@ -151,7 +272,7 @@ window.AlbukhrAuthCore = {
 
 console.log(
 
-    "✅ ALBUKHR Auth Core Ready"
+"✅ ALBUKHR Auth Core Ready"
 
 );
 
