@@ -14,11 +14,9 @@
 const CONFIG = {
 
     url:
-
     "https://qexmnghilahsvethlxem.supabase.co",
 
     anonKey:
-
     "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2",
 
     auth:{
@@ -34,17 +32,20 @@ const CONFIG = {
 };
 
 /* ==========================================
-   EXPORT
+   FREEZE CONFIG
 ========================================== */
 
+Object.freeze(CONFIG.auth);
 Object.freeze(CONFIG);
+
+/* ==========================================
+   EXPORT
+========================================== */
 
 window.ALBUKHR_AUTH_CONFIG = CONFIG;
 
 console.log(
-
-    "✅ Auth Config Ready"
-
+    "✅ ALBUKHR Auth Config Ready"
 );
 
 })(window);
