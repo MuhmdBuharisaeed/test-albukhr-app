@@ -159,6 +159,12 @@ console.log(
 
 "✅ ALBUKHR Auth Core Ready"
 
+console.log("=== AUTH CORE ===");
+console.log("URL:", ALBUKHR_AUTH_URL);
+console.log("KEY:", ALBUKHR_AUTH_KEY);
+console.log("CLIENT:", __authClient);
+console.log("FUNCTION:", typeof window.getAlbukhrAuthClient);
+   
 );
 
 })(window);
