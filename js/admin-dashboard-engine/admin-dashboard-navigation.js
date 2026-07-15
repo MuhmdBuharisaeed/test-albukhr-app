@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN DASHBOARD NAVIGATION
-   Version 1.0
+   Version 2.0
 ========================================== */
 
 (function(window){
@@ -23,20 +23,18 @@ function init(){
 }
 
 /* ==========================================
-   BUTTONS
+   BIND DASHBOARD BUTTONS
 ========================================== */
 
 function bindButtons(){
 
-    document
-
-    .querySelectorAll(
+    const buttons = document.querySelectorAll(
 
         ".admin-btn[data-page]"
 
-    )
+    );
 
-    .forEach(button=>{
+    buttons.forEach(button=>{
 
         button.addEventListener(
 
@@ -44,17 +42,39 @@ function bindButtons(){
 
             ()=>{
 
-                navigate(
+                const page =
 
-                    button.dataset.page
+                button.dataset.page;
 
-                );
+                navigate(page);
 
             }
 
         );
 
     });
+
+}
+
+/* ==========================================
+   NAVIGATE
+========================================== */
+
+function navigate(page){
+
+    if(!page){
+
+        console.warn(
+
+            "[NAVIGATION] Page not defined."
+
+        );
+
+        return;
+
+    }
+
+    window.location.href = page;
 
 }
 
@@ -84,15 +104,39 @@ function bindLogout(){
 
         async ()=>{
 
-            if(
+            try{
 
-                typeof adminLogout ===
+                if(
 
-                "function"
+                    typeof adminLogout ===
 
-            ){
+                    "function"
 
-                await adminLogout();
+                ){
+
+                    await adminLogout();
+
+                }
+
+                else{
+
+                    window.location.href =
+
+                    Config.PAGES.LOGIN;
+
+                }
+
+            }
+
+            catch(error){
+
+                console.error(
+
+                    "[LOGOUT]",
+
+                    error
+
+                );
 
             }
 
@@ -103,35 +147,7 @@ function bindLogout(){
 }
 
 /* ==========================================
-   NAVIGATE
-========================================== */
-
-function navigate(page){
-
-    if(
-
-        !window.Admin ||
-
-        !window.Admin.ready
-
-    ){
-
-        location.replace(
-
-            Config.PAGES.LOGIN
-
-        );
-
-        return;
-
-    }
-
-    location.href = page;
-
-}
-
-/* ==========================================
-   SUPER ADMIN
+   ROLE BUTTONS
 ========================================== */
 
 function updateRoleButtons(admin){
@@ -152,6 +168,8 @@ function updateRoleButtons(admin){
 
     if(
 
+        admin &&
+
         admin.role_code ===
 
         "super_admin"
@@ -171,7 +189,7 @@ function updateRoleButtons(admin){
 }
 
 /* ==========================================
-   SHOW BUTTON
+   BUTTON VISIBILITY
 ========================================== */
 
 function show(id){
@@ -179,10 +197,6 @@ function show(id){
     Utils.show(id);
 
 }
-
-/* ==========================================
-   HIDE BUTTON
-========================================== */
 
 function hide(id){
 
@@ -198,6 +212,10 @@ window.AdminDashboardNavigation = {
 
     init,
 
+    bindButtons,
+
+    bindLogout,
+
     navigate,
 
     updateRoleButtons,
@@ -207,5 +225,13 @@ window.AdminDashboardNavigation = {
     hide
 
 };
+
+document.addEventListener(
+
+    "DOMContentLoaded",
+
+    init
+
+);
 
 })(window);
