@@ -15,23 +15,19 @@ const TABLE = "admin_activity_logs";
 
 function getClient(){
 
-    if(typeof window.getAlbukhrAuthClient === "function"){
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
 
         const client =
-        window.getAlbukhrAuthClient();
+        window.getAlbukhrSupabaseClient();
 
         if(client){
-
             return client;
-
         }
 
     }
 
     throw new Error(
-
-        "ALBUKHR Auth Core not initialized."
-
+        "ALBUKHR Supabase Core not initialized."
     );
 
 }
