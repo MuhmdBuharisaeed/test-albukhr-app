@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN CORE
-   Version 3.0
+   Version 4.0
 ========================================== */
 
 (function(window){
@@ -8,75 +8,29 @@
 "use strict";
 
 /* ==========================================
-   START
+   WAIT FOR BOOTSTRAP
 ========================================== */
 
-window.addEventListener(
+document.addEventListener(
 
-    "load",
+    "admin-ready",
 
-    async ()=>{
+    (event)=>{
 
-        try{
+        console.log(
 
-            if(
+            "✅ ALBUKHR Admin Core Ready"
 
-                typeof initializeAdmin !==
+        );
 
-                "function"
+        console.log(
 
-            ){
+            event.detail
 
-                throw new Error(
-
-                    "initializeAdmin() not found."
-
-                );
-
-            }
-
-            const ready =
-
-            await initializeAdmin();
-
-            if(!ready){
-
-                return;
-
-            }
-
-            if(
-
-                !window.Admin ||
-
-                !window.Admin.ready
-
-            ){
-
-                return;
-
-            }
-
-            console.log(
-
-                "✅ ALBUKHR Admin Core Ready"
-
-            );
-
-        }catch(error){
-
-            console.error(
-
-                "[ADMIN CORE]",
-
-                error
-
-            );
-
-        }
+        );
 
     }
 
 );
 
-})(window);
+})();
