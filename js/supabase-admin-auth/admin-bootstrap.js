@@ -1,13 +1,13 @@
 /* ==========================================
    ALBUKHR ADMIN BOOTSTRAP ENGINE
-   Version 1.0
+   Version 2.0
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-let Admin = {
+const Admin = {
 
     session:null,
 
@@ -29,19 +29,17 @@ async function initializeAdmin(){
 
     try{
 
-        /* Supabase Core */
+        /* ---------- Auth ---------- */
 
-        if(
-            typeof getAlbukhrSupabaseClient !== "function"
-        ){
+        if(!window.AlbukhrAuth){
 
             throw new Error(
-                "Supabase Core not loaded."
+                "AlbukhrAuth not initialized."
             );
 
         }
 
-        /* Session */
+        /* ---------- Session ---------- */
 
         const session =
         await getCurrentSession();
@@ -54,10 +52,9 @@ async function initializeAdmin(){
 
         }
 
-        Admin.session =
-        session;
+        Admin.session = session;
 
-        /* Current Admin */
+        /* ---------- Current Admin ---------- */
 
         const admin =
         await getCurrentAdmin();
@@ -72,47 +69,29 @@ async function initializeAdmin(){
 
         Admin.user = admin;
 
-        Admin.role =
-        admin.role_code;
+        Admin.role = admin.role_code;
 
-        /* Permissions */
+        /* ---------- Permissions ---------- */
 
-        const permissions =
-        await getRolePermissions(
-            admin.role_code
-        );
+        try{
 
-        Admin.permissions =
-        permissions;
+            Admin.permissions =
+            await getRolePermissions(
+                admin.role_code
+            );
 
-        /* Router */
+        }catch(error){
 
-        if(
-            typeof getRequiredPermission ===
-            "function"
-        ){
+            console.warn(
+                "[BOOTSTRAP] Permissions unavailable.",
+                error
+            );
 
-            const permission =
-            getRequiredPermission();
-
-            if(permission){
-
-                const allowed =
-                await hasPermission(
-                    permission
-                );
-
-                if(!allowed){
-
-                    redirectDashboard();
-
-                    return false;
-
-                }
-
-            }
+            Admin.permissions = [];
 
         }
+
+        /* ---------- Ready ---------- */
 
         Admin.ready = true;
 
@@ -134,19 +113,32 @@ async function initializeAdmin(){
 
         );
 
+        console.log(
+            "✅ Admin Bootstrap Ready"
+        );
+
         return true;
 
     }catch(error){
 
         console.error(
-
             "[ADMIN BOOTSTRAP]",
-
             error
-
         );
 
-        redirectLogin();
+        /* Redirect idan SESSION ce kawai ta ɓace */
+
+        if(
+            error.message &&
+            (
+                error.message.includes("session") ||
+                error.message.includes("Auth")
+            )
+        ){
+
+            redirectLogin();
+
+        }
 
         return false;
 
@@ -161,31 +153,26 @@ async function initializeAdmin(){
 function redirectLogin(){
 
     location.replace(
-
         "admin-login.html"
-
     );
 
 }
-
-function redirectDashboard(){
-
-    location.replace(
-
-        "unified-admin-buttons.html"
-
-    );
-
-}
-
 
 /* ==========================================
    EXPORT
 ========================================== */
 
+window.Admin = Admin;
+
 window.initializeAdmin =
 initializeAdmin;
 
-window.Admin = Admin;
+document.addEventListener(
+
+    "DOMContentLoaded",
+
+    initializeAdmin
+
+);
 
 })(window);
