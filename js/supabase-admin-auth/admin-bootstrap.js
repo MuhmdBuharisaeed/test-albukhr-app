@@ -78,9 +78,10 @@ async function initializeAdmin(){
 
         /* ---------- SESSION ---------- */
 
-        const session =
-
-        await getCurrentSession();
+        const {
+    data: { user },
+    error
+} = await supabase.auth.getUser();
 
         if(!session){
 
