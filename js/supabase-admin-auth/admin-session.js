@@ -12,7 +12,10 @@ const TABLE = "admin_users";
 /* ==========================================
    GET AUTH CLIENT
 ========================================== */
+console.log("SESSION ENGINE");
+console.log(typeof window.getAlbukhrAuthClient);
 
+   
 function getClient(){
 
     if(typeof window.getAlbukhrAuthClient === "function"){
