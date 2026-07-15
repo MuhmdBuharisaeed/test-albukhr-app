@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN PERMISSIONS ENGINE
-   Version 3.1
+   Version 4.0
 ========================================== */
 
 (function(window){
@@ -9,96 +9,73 @@
 
 const TABLE = "admin_permissions";
 
+let permissionCache = [];
+
 /* ==========================================
-   GET CLIENT
+   AUTH
 ========================================== */
 
-function getClient(){
+function getAuth(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(window.AlbukhrAuth){
 
-        const client =
-        window.getAlbukhrSupabaseClient();
-
-        if(client){
-            return client;
-        }
+        return window.AlbukhrAuth;
 
     }
 
     throw new Error(
-        "ALBUKHR Supabase Core not initialized."
+        "AlbukhrAuth not initialized."
     );
 
 }
 
 /* ==========================================
-   GET ROLE PERMISSIONS
+   LOAD ROLE PERMISSIONS
 ========================================== */
 
 async function getRolePermissions(roleCode){
 
-    if(!roleCode){
-        return [];
-    }
-
     try{
 
-        const supabase = getClient();
+        const { data, error } =
 
-        const { data, error } = await supabase
+        await getAuth()
+
+        .client
+
         .from(TABLE)
-        .select("permission")
-        .eq("role_code", roleCode);
+
+        .select("*")
+
+        .eq("role_code", roleCode)
+
+        .eq("enabled", true);
 
         if(error){
-            console.error(error);
-            return [];
+
+            throw error;
+
         }
 
-        return data || [];
+        permissionCache = data || [];
+
+        return permissionCache;
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+
+            "[PERMISSIONS]",
+
+            error
+
+        );
+
+        permissionCache = [];
 
         return [];
 
     }
-
-}
-
-/* ==========================================
-   HAS ROLE
-========================================== */
-
-async function hasRole(roleCode){
-
-    const admin =
-    await getCurrentAdmin();
-
-    if(!admin){
-        return false;
-    }
-
-    return admin.role_code === roleCode;
-
-}
-
-/* ==========================================
-   HAS ANY ROLE
-========================================== */
-
-async function hasAnyRole(roles = []){
-
-    const admin =
-    await getCurrentAdmin();
-
-    if(!admin){
-        return false;
-    }
-
-    return roles.includes(admin.role_code);
 
 }
 
@@ -108,55 +85,74 @@ async function hasAnyRole(roles = []){
 
 async function hasPermission(permission){
 
-    const admin =
-    await getCurrentAdmin();
+    if(!permission){
 
-    if(!admin){
-        return false;
-    }
-
-    const permissions =
-    await getRolePermissions(admin.role_code);
-
-    if(!permissions.length){
-        return false;
-    }
-
-    const list =
-    permissions.map(item => item.permission);
-
-    /* Super Admin */
-
-    if(list.includes("*")){
         return true;
+
     }
 
-    return list.includes(permission);
+    if(permissionCache.length === 0){
+
+        const admin =
+
+        await getCurrentAdmin();
+
+        if(!admin){
+
+            return false;
+
+        }
+
+        await getRolePermissions(
+
+            admin.role_code
+
+        );
+
+    }
+
+    return permissionCache.some(
+
+        p => p.permission_code === permission
+
+    );
 
 }
 
 /* ==========================================
-   COMMON HELPERS
+   REQUIRE PERMISSION
 ========================================== */
 
-async function canManageFinance(){
-    return hasPermission("finance.manage");
+async function requirePermission(permission){
+
+    const allowed =
+
+    await hasPermission(permission);
+
+    if(!allowed){
+
+        location.replace(
+
+            "unified-admin-buttons.html"
+
+        );
+
+        return false;
+
+    }
+
+    return true;
+
 }
 
-async function canManageProjects(){
-    return hasPermission("projects.manage");
-}
+/* ==========================================
+   CLEAR CACHE
+========================================== */
 
-async function canManageUsers(){
-    return hasPermission("users.manage");
-}
+function clearPermissionCache(){
 
-async function canApprove(){
-    return hasPermission("approvals.manage");
-}
+    permissionCache = [];
 
-async function canManageSettings(){
-    return hasPermission("settings.manage");
 }
 
 /* ==========================================
@@ -166,28 +162,13 @@ async function canManageSettings(){
 window.getRolePermissions =
 getRolePermissions;
 
-window.hasRole =
-hasRole;
-
-window.hasAnyRole =
-hasAnyRole;
-
 window.hasPermission =
 hasPermission;
 
-window.canManageFinance =
-canManageFinance;
+window.requirePermission =
+requirePermission;
 
-window.canManageProjects =
-canManageProjects;
-
-window.canManageUsers =
-canManageUsers;
-
-window.canApprove =
-canApprove;
-
-window.canManageSettings =
-canManageSettings;
+window.clearPermissionCache =
+clearPermissionCache;
 
 })(window);
