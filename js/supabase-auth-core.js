@@ -162,3 +162,6 @@ console.log(
 );
 
 })(window);
+
+console.log("AUTH CORE FILE LOADED");
+console.log(typeof window.getAlbukhrAuthClient);
