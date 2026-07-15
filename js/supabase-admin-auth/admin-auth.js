@@ -1,28 +1,33 @@
 /* ==========================================
-   ALBUKHR ADMIN AUTH ENGINE
-   Version 4.0
+   ALBUKHR SUPABASE ADMIN AUTH ENGINE
+   Version 3.1
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-const ADMIN_TABLE = "admin_users";
+const TABLE = "admin_users";
 
 /* ==========================================
-   AUTH
+   GET CLIENT
 ========================================== */
 
-function getAuth(){
+function getClient(){
 
-    if(window.AlbukhrAuth){
+    if(typeof window.getAlbukhrSupabaseClient === "function"){
 
-        return window.AlbukhrAuth;
+        const client =
+        window.getAlbukhrSupabaseClient();
+
+        if(client){
+            return client;
+        }
 
     }
 
     throw new Error(
-        "AlbukhrAuth not initialized."
+        "ALBUKHR Supabase Core not initialized."
     );
 
 }
@@ -33,181 +38,131 @@ function getAuth(){
 
 async function adminLogin({
 
-    email,
+email,
 
-    accessKey
+accessKey
 
 }){
 
-    try{
+try{
 
-        /* Auth Login */
+const supabase = getClient();
 
-        const {
+/* ---------- SIGN IN ---------- */
 
-            data,
+const {
 
-            error
+data,
 
-        } = await getAuth()
+error
 
-        .signIn(
+} = await supabase.auth.signInWithPassword({
 
-            email,
+email,
 
-            accessKey
+password:accessKey
 
-        );
+});
 
-        if(error){
+if(error){
 
-            return{
+return{
+error:error.message
+};
 
-                error:error.message
+}
 
-            };
+const user = data.user;
 
-        }
+/* ---------- ADMIN PROFILE ---------- */
 
-        const user = data.user;
+const {
 
-        /* Admin Record */
+data:admin,
 
-        const {
+error:adminError
 
-            data:admin,
+} = await supabase
 
-            error:adminError
+.from(TABLE)
 
-        } = await getAuth()
+.select("*")
 
-        .client
+.eq("auth_user_id",user.id)
 
-        .from(ADMIN_TABLE)
+.eq("status","active")
 
-        .select("*")
+.single();
 
-        .eq(
+if(adminError || !admin){
 
-            "auth_user_id",
+await supabase.auth.signOut();
 
-            user.id
+return{
 
-        )
+error:"Admin account not found or inactive."
 
-        .eq(
+};
 
-            "status",
+}
 
-            "active"
+/* ---------- UPDATE LAST LOGIN ---------- */
 
-        )
+await supabase
 
-        .single();
+.from(TABLE)
 
-        if(adminError || !admin){
+.update({
 
-            await getAuth()
+last_login:new Date().toISOString()
 
-            .signOut();
+})
 
-            return{
+.eq("id",admin.id);
 
-                error:
+/* ---------- LOG ---------- */
 
-                "Admin account not found or inactive."
+if(typeof logAdminAction==="function"){
 
-            };
+await logAdminAction({
 
-        }
+action:"login",
 
-        /* Last Login */
+target:"admin_auth",
 
-        await getAuth()
+details:{
 
-        .client
+username:admin.username,
 
-        .from(ADMIN_TABLE)
+role:admin.role_code
 
-        .update({
+}
 
-            last_login:
+});
 
-            new Date()
+}
 
-            .toISOString()
+return{
 
-        })
+success:true,
 
-        .eq(
+admin
 
-            "id",
+};
 
-            admin.id
+}catch(error){
 
-        );
+console.error(error);
 
-        /* Activity Log */
+return{
 
-        if(
+error:error.message ||
 
-            typeof logAdminAction ===
+"Login failed."
 
-            "function"
+};
 
-        ){
-
-            await logAdminAction({
-
-                action:"login",
-
-                target:"admin_auth",
-
-                details:{
-
-                    username:
-
-                    admin.username,
-
-                    role:
-
-                    admin.role_code
-
-                }
-
-            });
-
-        }
-
-        return{
-
-            success:true,
-
-            admin
-
-        };
-
-    }catch(error){
-
-        console.error(
-
-            "[ADMIN LOGIN]",
-
-            error
-
-        );
-
-        return{
-
-            error:
-
-            error.message ||
-
-            "Login failed."
-
-        };
-
-    }
+}
 
 }
 
@@ -217,71 +172,51 @@ async function adminLogin({
 
 async function adminLogout(){
 
-    try{
+try{
 
-        const admin =
+const admin =
 
-        typeof getCurrentAdmin ===
+typeof getCurrentAdmin==="function"
 
-        "function"
+? await getCurrentAdmin()
 
-        ? await getCurrentAdmin()
+: null;
 
-        : null;
+if(admin && typeof logAdminAction==="function"){
 
-        if(
+await logAdminAction({
 
-            admin &&
+action:"logout",
 
-            typeof logAdminAction ===
+target:"admin_auth",
 
-            "function"
+details:{
 
-        ){
+username:admin.username,
 
-            await logAdminAction({
+role:admin.role_code
 
-                action:"logout",
+}
 
-                target:"admin_auth",
+});
 
-                details:{
+}
 
-                    username:
+const supabase = getClient();
 
-                    admin.username,
+await supabase.auth.signOut();
 
-                    role:
+location.replace(
 
-                    admin.role_code
+"admin-login.html"
 
-                }
+);
 
-            });
+}catch(error){
 
-        }
+console.error(error);
 
-        await getAuth()
-
-        .signOut();
-
-        location.replace(
-
-            "admin-login.html"
-
-        );
-
-    }catch(error){
-
-        console.error(
-
-            "[ADMIN LOGOUT]",
-
-            error
-
-        );
-
-    }
+}
 
 }
 
@@ -289,12 +224,8 @@ async function adminLogout(){
    EXPORT
 ========================================== */
 
-window.adminLogin =
+window.adminLogin = adminLogin;
 
-adminLogin;
-
-window.adminLogout =
-
-adminLogout;
+window.adminLogout = adminLogout;
 
 })(window);
