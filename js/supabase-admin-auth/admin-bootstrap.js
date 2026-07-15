@@ -1,11 +1,16 @@
 /* ==========================================
    ALBUKHR ADMIN BOOTSTRAP ENGINE
-   Version 2.0
+   Version 2.1
+   Direct Supabase Authentication
 ========================================== */
 
 (function(window){
 
 "use strict";
+
+/* ==========================================
+   ADMIN STATE
+========================================== */
 
 const Admin = {
 
@@ -22,26 +27,59 @@ const Admin = {
 };
 
 /* ==========================================
-   INIT
+   GET CLIENT
+========================================== */
+
+function getClient(){
+
+    if(
+
+        typeof window.getAlbukhrSupabaseClient !==
+
+        "function"
+
+    ){
+
+        throw new Error(
+
+            "Supabase Core not loaded."
+
+        );
+
+    }
+
+    return window.getAlbukhrSupabaseClient();
+
+}
+
+/* ==========================================
+   REDIRECT
+========================================== */
+
+function redirectLogin(){
+
+    location.replace(
+
+        "admin-login.html"
+
+    );
+
+}
+
+/* ==========================================
+   INITIALIZE
 ========================================== */
 
 async function initializeAdmin(){
 
     try{
 
-        /* ---------- Auth ---------- */
+        const supabase = getClient();
 
-        if(!window.AlbukhrAuth){
-
-            throw new Error(
-                "AlbukhrAuth not initialized."
-            );
-
-        }
-
-        /* ---------- Session ---------- */
+        /* ---------- SESSION ---------- */
 
         const session =
+
         await getCurrentSession();
 
         if(!session){
@@ -54,12 +92,49 @@ async function initializeAdmin(){
 
         Admin.session = session;
 
-        /* ---------- Current Admin ---------- */
+        /* ---------- ADMIN RECORD ---------- */
 
-        const admin =
-        await getCurrentAdmin();
+        const {
 
-        if(!admin){
+            data:admin,
+
+            error
+
+        } = await supabase
+
+        .from("admin_users")
+
+        .select("*")
+
+        .eq(
+
+            "auth_user_id",
+
+            session.user.id
+
+        )
+
+        .eq(
+
+            "status",
+
+            "active"
+
+        )
+
+        .single();
+
+        if(error || !admin){
+
+            console.warn(
+
+                "[BOOTSTRAP] Admin not found.",
+
+                error
+
+            );
+
+            await supabase.auth.signOut();
 
             redirectLogin();
 
@@ -71,27 +146,43 @@ async function initializeAdmin(){
 
         Admin.role = admin.role_code;
 
-        /* ---------- Permissions ---------- */
+        /* ---------- PERMISSIONS ---------- */
 
         try{
 
-            Admin.permissions =
-            await getRolePermissions(
-                admin.role_code
-            );
+            if(
 
-        }catch(error){
+                typeof getRolePermissions ===
+
+                "function"
+
+            ){
+
+                Admin.permissions =
+
+                await getRolePermissions(
+
+                    admin.role_code
+
+                );
+
+            }
+
+        }catch(e){
 
             console.warn(
-                "[BOOTSTRAP] Permissions unavailable.",
-                error
+
+                "[BOOTSTRAP] Permission load failed.",
+
+                e
+
             );
 
             Admin.permissions = [];
 
         }
 
-        /* ---------- Ready ---------- */
+        /* ---------- READY ---------- */
 
         Admin.ready = true;
 
@@ -114,47 +205,38 @@ async function initializeAdmin(){
         );
 
         console.log(
-            "✅ Admin Bootstrap Ready"
+
+            "✅ ALBUKHR Admin Bootstrap Ready"
+
         );
+
+        console.table({
+
+            email:admin.email,
+
+            role:admin.role_code,
+
+            status:admin.status
+
+        });
 
         return true;
 
     }catch(error){
 
         console.error(
+
             "[ADMIN BOOTSTRAP]",
+
             error
+
         );
 
-        /* Redirect idan SESSION ce kawai ta ɓace */
-
-        if(
-            error.message &&
-            (
-                error.message.includes("session") ||
-                error.message.includes("Auth")
-            )
-        ){
-
-            redirectLogin();
-
-        }
+        redirectLogin();
 
         return false;
 
     }
-
-}
-
-/* ==========================================
-   HELPERS
-========================================== */
-
-function redirectLogin(){
-
-    location.replace(
-        "admin-login.html"
-    );
 
 }
 
@@ -165,14 +247,7 @@ function redirectLogin(){
 window.Admin = Admin;
 
 window.initializeAdmin =
+
 initializeAdmin;
-
-document.addEventListener(
-
-    "DOMContentLoaded",
-
-    initializeAdmin
-
-);
 
 })(window);
