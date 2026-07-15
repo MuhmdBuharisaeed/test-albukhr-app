@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 3.1
+   Version 4.0
 ========================================== */
 
 (function(window){
@@ -10,30 +10,20 @@
 const TABLE = "admin_users";
 
 /* ==========================================
-   GET AUTH CLIENT
+   GET AUTH
 ========================================== */
-console.log("SESSION ENGINE");
-console.log(typeof window.getAlbukhrAuthClient);
 
-   
-function getClient(){
+function getAuth(){
 
-    if(typeof window.getAlbukhrAuthClient === "function"){
+    if(window.AlbukhrAuth){
 
-        const client =
-        window.getAlbukhrAuthClient();
-
-        if(client){
-
-            return client;
-
-        }
+        return window.AlbukhrAuth;
 
     }
 
     throw new Error(
 
-        "ALBUKHR Auth Core not initialized."
+        "AlbukhrAuth not initialized."
 
     );
 
@@ -47,28 +37,19 @@ async function getCurrentSession(){
 
     try{
 
-        const supabase = getClient();
+        return await getAuth()
 
-        const {
-
-            data:{session},
-            error
-
-        } = await supabase.auth.getSession();
-
-        if(error){
-
-            console.error(error);
-
-            return null;
-
-        }
-
-        return session;
+        .getSession();
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+
+            "[SESSION]",
+
+            error
+
+        );
 
         return null;
 
@@ -77,15 +58,30 @@ async function getCurrentSession(){
 }
 
 /* ==========================================
-   IS LOGGED IN
+   GET CURRENT USER
 ========================================== */
 
-async function isAdminLoggedIn(){
+async function getCurrentUser(){
 
-    const session =
-    await getCurrentSession();
+    try{
 
-    return !!session;
+        return await getAuth()
+
+        .getUser();
+
+    }catch(error){
+
+        console.error(
+
+            "[USER]",
+
+            error
+
+        );
+
+        return null;
+
+    }
 
 }
 
@@ -97,46 +93,51 @@ async function getCurrentAdmin(){
 
     try{
 
-        const session =
-        await getCurrentSession();
+        const user =
 
-        if(!session){
+        await getCurrentUser();
+
+        if(!user){
 
             return null;
 
         }
 
-        const supabase =
-        getClient();
-
         const {
 
             data,
+
             error
 
-        } = await supabase
+        } = await getAuth()
+
+        .client
 
         .from(TABLE)
 
         .select("*")
 
         .eq(
+
             "auth_user_id",
-            session.user.id
+
+            user.id
+
         )
 
         .eq(
+
             "status",
+
             "active"
+
         )
 
         .single();
 
         if(error){
 
-            console.error(error);
-
-            return null;
+            throw error;
 
         }
 
@@ -144,7 +145,13 @@ async function getCurrentAdmin(){
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+
+            "[CURRENT ADMIN]",
+
+            error
+
+        );
 
         return null;
 
@@ -159,11 +166,28 @@ async function getCurrentAdmin(){
 async function getCurrentRole(){
 
     const admin =
+
     await getCurrentAdmin();
 
     return admin
-    ? admin.role_code
-    : null;
+
+        ? admin.role_code
+
+        : null;
+
+}
+
+/* ==========================================
+   IS LOGGED IN
+========================================== */
+
+async function isAdminLoggedIn(){
+
+    const session =
+
+    await getCurrentSession();
+
+    return !!session;
 
 }
 
@@ -175,21 +199,19 @@ async function refreshAdminSession(){
 
     try{
 
-        const supabase =
-        getClient();
-
         const {
 
             data,
+
             error
 
-        } = await supabase.auth.refreshSession();
+        } = await getAuth()
+
+        .refreshSession();
 
         if(error){
 
-            console.error(error);
-
-            return false;
+            throw error;
 
         }
 
@@ -197,7 +219,13 @@ async function refreshAdminSession(){
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+
+            "[REFRESH]",
+
+            error
+
+        );
 
         return false;
 
@@ -206,18 +234,21 @@ async function refreshAdminSession(){
 }
 
 /* ==========================================
-   REQUIRE LOGIN
+   REQUIRE SESSION
 ========================================== */
 
 async function requireAdminSession(){
 
     const admin =
+
     await getCurrentAdmin();
 
     if(!admin){
 
         location.replace(
+
             "admin-login.html"
+
         );
 
         return null;
@@ -235,17 +266,20 @@ async function requireAdminSession(){
 window.getCurrentSession =
 getCurrentSession;
 
+window.getCurrentUser =
+getCurrentUser;
+
 window.getCurrentAdmin =
 getCurrentAdmin;
 
 window.getCurrentRole =
 getCurrentRole;
 
-window.refreshAdminSession =
-refreshAdminSession;
-
 window.isAdminLoggedIn =
 isAdminLoggedIn;
+
+window.refreshAdminSession =
+refreshAdminSession;
 
 window.requireAdminSession =
 requireAdminSession;
