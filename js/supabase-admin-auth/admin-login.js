@@ -104,6 +104,16 @@ return;
 
 }
 
+/* Mark successful admin entry */
+
+sessionStorage.setItem(
+
+    "albukhr_admin_entry",
+
+    "granted"
+
+);
+
 location.replace(
 "unified-admin-buttons.html"
 );
