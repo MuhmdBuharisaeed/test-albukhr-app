@@ -204,6 +204,12 @@ role:admin.role_code
 
 const supabase = getClient();
 
+   sessionStorage.removeItem(
+
+    "albukhr_admin_entry"
+
+);
+
 await supabase.auth.signOut();
 
 location.replace(
