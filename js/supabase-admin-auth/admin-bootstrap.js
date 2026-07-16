@@ -75,23 +75,50 @@ async function initializeAdmin(){
     try{
 
         const supabase = getClient();
+/* ==========================================
+   ENTRY CHECK
+========================================== */
 
+const entry =
+
+sessionStorage.getItem(
+
+    "albukhr_admin_entry"
+
+);
+
+if(entry !== "granted"){
+
+    await supabase.auth.signOut();
+
+    redirectLogin();
+
+    return false;
+
+}
         /* ---------- SESSION ---------- */
 
-        const {
-    data: { user },
+       const {
+
+    data:{session},
+
     error
-} = await supabase.auth.getUser();
 
-        if(!session){
+} = await supabase.auth.getSession();
 
-            redirectLogin();
+if(error || !session){
 
-            return false;
+    await supabase.auth.signOut();
 
-        }
+    redirectLogin();
 
-        Admin.session = session;
+    return false;
+
+}
+
+const user = session.user;
+
+Admin.session = session;
 
         /* ---------- ADMIN RECORD ---------- */
 
@@ -109,9 +136,11 @@ async function initializeAdmin(){
 
         .eq(
 
-            "auth_user_id",
+    "auth_user_id",
 
-            session.user.id
+    user.id
+
+)
 
         )
 
