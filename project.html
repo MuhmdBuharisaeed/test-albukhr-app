@@ -133,7 +133,12 @@ Stake
     <h3>Withdraw Rewards</h3>
 
     <label>Amount</label>
-    <input type="number" id="withdrawAmount">
+
+<input
+    type="number"
+    id="withdrawAmount"
+    min="0.01"
+    step="0.0000001">
 
     <small id="availableBalance"></small>
 
@@ -169,7 +174,12 @@ Wallet Receive:
 <h3>Withdraw Capital</h3>
 
 <label>Amount</label>
-<input type="number" id="capitalWithdrawAmount">
+
+<input
+    type="number"
+    id="capitalWithdrawAmount"
+    min="0.01"
+    step="0.0000001">
 
 <small id="capitalAvailable"></small>
 
@@ -889,16 +899,16 @@ data.stakes.forEach(s=>{
    VALIDATION
 =============================== */
 
-if(!Number.isFinite(amount) || amount <= 0){
+if(!Number.isFinite(amount) || amount < 0.01){
 
   showAlert(
-    "Invalid Amount",
-    "Please enter a valid withdrawal amount."
+    "Minimum Withdrawal",
+    "The minimum withdrawal amount is 0.01 Pi."
   );
 
   __withdrawLock = false;
   return;
-}
+  }
 
 if(!wallet){
 
@@ -1175,11 +1185,11 @@ async function confirmCapitalWithdraw(){
   const wallet = capitalWallet.value;
 
   // 🔥 VALIDATION
-  if(!Number.isFinite(amount) || amount <= 0){
+  if(!Number.isFinite(amount) || amount < 0.01){
 
   showAlert(
-    "Invalid Amount",
-    "Please enter a valid capital withdrawal amount greater than zero."
+    "Minimum Withdrawal",
+    "The minimum capital withdrawal amount is 0.01 Pi."
   );
 
   __capitalLock = false;
