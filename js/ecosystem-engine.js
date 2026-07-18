@@ -124,23 +124,11 @@ stake.project ||
 
 if(!map[name]){
 
+const meta = resolveProject(name);
+
 map[name]={
 
-code:name,
-
-title:name,
-
-description:"",
-
-icon:"📦",
-
-category:"Project",
-
-roi:0,
-
-minimum:1,
-
-target:1000,
+...meta,
 
 investors:new Set(),
 
@@ -174,13 +162,22 @@ stake.wallet ||
 
 );
 
-project.liquidity +=
+/* ONLY REAL STAKES */
+if(stake.type === "stake"){
 
-Number(stake.amount)||0;
+    project.liquidity +=
+    Number(stake.amount) || 0;
 
-project.reward +=
+    project.reward +=
+    Number(stake.reward) || 0;
 
-Number(stake.reward)||0;
+    project.investors.add(
+        stake.userid ||
+        stake.wallet ||
+        "unknown"
+    );
+
+}
 
 });
 
@@ -211,6 +208,12 @@ let invested = 0;
 let earnings = 0;
 
 CACHE.projects.forEach(project=>{
+
+invested += Number(project.liquidity)||0;
+
+earnings += Number(project.reward)||0;
+
+});
 
 invested +=
 Number(project.liquidity)||0;
@@ -248,8 +251,9 @@ function buildTopInvestors(){
 
 const map = {};
 
-CACHE.stakes.forEach(stake=>{
-
+CACHE.stakes
+.filter(s=>s.type==="stake")
+.forEach(stake=>{
 const user =
 
 stake.userid ||
