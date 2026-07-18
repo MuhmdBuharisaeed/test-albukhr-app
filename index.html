@@ -418,25 +418,8 @@ async function loadHome(){
 await getGlobalStakes();
 
 /* ✅ FALLBACK FOR NEW USERS */
-if(!Array.isArray(stakes) || stakes.length === 0){
-
-  console.warn("No staking data, using default projects");
-
-  const globalMap = {};
-
-  /* 👇 fill from PROJECT_CONFIG */
-  Object.keys(PROJECT_CONFIG).forEach(p=>{
-    globalMap[p] = {
-      total: 0,
-      investors: 0
-    };
-  });
-
-  /* 👇 render immediately */
-  renderPopular(globalMap);
-  renderAssets({}, globalMap);
-
-  return; // ⛔ stop rest
+if(!Array.isArray(stakes)){
+    stakes = [];
 }
 
     // ===== MAPS =====
