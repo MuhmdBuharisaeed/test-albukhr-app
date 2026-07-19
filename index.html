@@ -670,41 +670,47 @@ userAmount: Math.max(
     div.onclick = () =>
       location.href = `project.html?project=${item.name}`;
 
-    div.innerHTML = `
-      <div class="asset-icon">
-        ${item.config.icon}
-      </div>
+div.innerHTML = `
 
-      <div class="asset-left">
+<div class="asset-icon">
+    ${item.config.icon}
+</div>
 
-        <div class="asset-name">
-          ${item.config.title}
+<div class="asset-left">
+
+    <div class="asset-header">
+
+        <div class="asset-info">
+
+            <div class="asset-name">
+                ${item.config.title}
+            </div>
+
+            <div class="asset-stake">
+                ${
+                    item.userAmount > 0
+                    ? item.userAmount.toFixed(2) + " Pi Staked"
+                    : "Not Staked"
+                }
+            </div>
+
         </div>
 
-        <div class="asset-stake">
-          ${
-            item.userAmount > 0
-            ? item.userAmount.toFixed(2) + " Pi Staked"
-            : "Not Staked"
-          }
-        </div>
+        <div class="asset-mini-chart">
 
-        <div class="asset-chart-box">
+            <svg
+                viewBox="0 0 120 36"
+                preserveAspectRatio="none">
 
-    <svg class="asset-chart"
-         viewBox="0 0 120 36"
-         preserveAspectRatio="none">
-
-        <polyline
-            fill="none"
-            stroke="${
-                item.userAmount > 0
-                ? '#19b36b'
-                : '#b8b8b8'
-            }"
-            stroke-width="2"
-
-            points="
+                <polyline
+                    fill="none"
+                    stroke="${
+                        item.userAmount > 0
+                        ? "#19b36b"
+                        : "#b8b8b8"
+                    }"
+                    stroke-width="2.2"
+                    points="
 0,28
 15,26
 30,24
@@ -716,37 +722,26 @@ userAmount: Math.max(
 120,8
 "/>
 
-    </svg>
+            </svg>
+
+        </div>
+
+    </div>
+
+    <div class="asset-status">
+
+        ${
+            item.userAmount > 0
+            ? "🟢 Active"
+            : "⚪ Inactive"
+        }
+
+    </div>
 
 </div>
 
-<div class="asset-footer">
-
-<div>
-
-Liquidity
-
-<b>${item.globalTotal.toFixed(2)} Pi</b>
-
-</div>
-
-<div>
-
-Status
-
-<b>${
-item.userAmount>0
-?"🟢 Active"
-:"⚪ Inactive"
-}</b>
-
-</div>
-
-</div>
-
-      </div>
-    `;
-
+`;
+    
     container.appendChild(div);
 
   });
