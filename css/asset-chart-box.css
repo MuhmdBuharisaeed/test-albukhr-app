@@ -1,49 +1,73 @@
 .asset-item{
     display:flex;
     align-items:center;
-    gap:14px;
+    gap:16px;
 
-    padding:16px 18px;
-
-    background:#fff;
-    border-radius:22px;
+    padding:16px 20px;
     margin-bottom:14px;
 
-    box-shadow:0 8px 22px rgba(0,0,0,.08);
+    background:#fff;
+    border-radius:24px;
+    border-left:6px solid #18b25b;
 
-    border-left:6px solid #18a957;
+    box-shadow:0 10px 24px rgba(0,0,0,.08);
+}
+
+.asset-icon{
+    width:64px;
+    height:64px;
+
+    border-radius:50%;
+    background:#eef9f2;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:34px;
+
+    flex-shrink:0;
 }
 
 .asset-left{
     flex:1;
+    min-width:0;
 }
 
 .asset-header{
     display:flex;
     justify-content:space-between;
-    align-items:center;
-    gap:12px;
+    align-items:flex-start;
+    gap:18px;
 }
 
 .asset-info{
     flex:1;
+    min-width:0;
 }
 
 .asset-name{
-    font-size:17px;
+    font-size:18px;
     font-weight:700;
     color:#111;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
 .asset-stake{
     margin-top:4px;
-    font-size:14px;
+
     color:#18a957;
+
+    font-size:15px;
 }
 
 .asset-mini-chart{
-    width:120px;
-    height:34px;
+    width:150px;
+    height:42px;
+
     flex-shrink:0;
 }
 
@@ -53,8 +77,19 @@
 }
 
 .asset-status{
-    margin-top:8px;
-    font-size:14px;
+    display:flex;
+    justify-content:flex-end;
+
+    margin-top:10px;
+
+    font-size:15px;
     font-weight:600;
+}
+
+.asset-status.active{
     color:#18a957;
+}
+
+.asset-status.inactive{
+    color:#b6b6b6;
 }
