@@ -660,52 +660,10 @@ userAmount: Math.max(
 
   });
 
-  const historyMap = {};
-
-globalStakes.forEach(s=>{
-
-    if(!s) return;
-    if(s.type !== "stake") return;
-
-    const project = s.project;
-
-    if(!historyMap[project]){
-        historyMap[project] = [];
-    }
-
-    historyMap[project].push({
-        amount:Number(s.amount)||0,
-        time:new Date(s.created_at).getTime()
-    });
-
-});
-
-/* Sort oldest → newest */
-
-Object.keys(historyMap).forEach(project=>{
-
-    historyMap[project].sort(
-        (a,b)=>a.time-b.time
-    );
-
-});
-
   merged.forEach(item => {
 
     if(!item.config) return;
-  // ==========================
-    // BUILD CHART DATA
-    // ==========================
 
-    const history =
-    historyMap[item.name] || [];
-
-    const chart =
-    buildSparkline(history);
-
-    // ==========================
-    // CREATE CARD
-    // ==========================
     const div = document.createElement("div");
     div.className = "asset-item";
 
@@ -733,28 +691,32 @@ Object.keys(historyMap).forEach(project=>{
 
         <div class="asset-chart-box">
 
-<svg
-class="asset-chart"
-viewBox="0 0 120 36"
-preserveAspectRatio="none">
+    <svg class="asset-chart"
+         viewBox="0 0 120 36"
+         preserveAspectRatio="none">
 
-<polyline
+        <polyline
+            fill="none"
+            stroke="${
+                item.userAmount > 0
+                ? '#19b36b'
+                : '#b8b8b8'
+            }"
+            stroke-width="2"
 
-fill="none"
+            points="
+0,28
+15,26
+30,24
+45,22
+60,18
+75,20
+90,14
+105,12
+120,8
+"/>
 
-stroke="${
-item.userAmount>0
-?"#16c784"
-:"#cccccc"
-}"
-
-stroke-width="2.5"
-
-points="${chart}"
-
-/>
-
-</svg>
+    </svg>
 
 </div>
 
@@ -764,11 +726,7 @@ points="${chart}"
 
 Liquidity
 
-<b>
-
-${item.globalTotal.toFixed(2)} Pi
-
-</b>
+<b>${item.globalTotal.toFixed(2)} Pi</b>
 
 </div>
 
@@ -776,15 +734,11 @@ ${item.globalTotal.toFixed(2)} Pi
 
 Status
 
-<b>
-
-${
+<b>${
 item.userAmount>0
 ?"🟢 Active"
 :"⚪ Inactive"
-}
-
-</b>
+}</b>
 
 </div>
 
@@ -799,42 +753,6 @@ item.userAmount>0
 
    }
 
-function buildSparkline(history){
-
-    if(!history || !history.length){
-
-        return "0,30 20,30 40,30 60,30 80,30 100,30 120,30";
-
-    }
-
-    let total = 0;
-
-    const values = [];
-
-    history.forEach(h=>{
-
-        total += h.amount;
-        values.push(total);
-
-    });
-
-    const max =
-    Math.max(...values,1);
-
-    return values.map((v,i)=>{
-
-        const x =
-        (i/(values.length-1||1))*120;
-
-        const y =
-        30-(v/max)*24;
-
-        return `${x},${y}`;
-
-    }).join(" ");
-
-}
-  
 /* ASSETS VISIBILITY */
 const VISIBILITY_KEY="albukhr_assets_visibility";
 function isAssetsHidden(){return localStorage.getItem(VISIBILITY_KEY)==="hidden";}
