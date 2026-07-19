@@ -1,133 +1,60 @@
-/* ===========================
-   ASSET CARD
-=========================== */
-
 .asset-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
 
-display:flex;
-align-items:center;
-gap:14px;
+    padding:16px 18px;
 
-padding:12px 14px;
-margin-bottom:14px;
+    background:#fff;
+    border-radius:22px;
+    margin-bottom:14px;
 
-background:#fff;
-border-radius:18px;
+    box-shadow:0 8px 22px rgba(0,0,0,.08);
 
-box-shadow:0 6px 18px rgba(0,0,0,.08);
-
+    border-left:6px solid #18a957;
 }
-
-/* LEFT SIDE */
-
-.asset-icon{
-
-width:56px;
-height:56px;
-
-border-radius:50%;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-font-size:30px;
-
-background:#eef9f3;
-
-flex-shrink:0;
-
-}
-
-/* RIGHT SIDE */
 
 .asset-left{
-
-flex:1;
-
-display:flex;
-flex-direction:column;
-
+    flex:1;
 }
 
-/* PROJECT NAME */
+.asset-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+}
+
+.asset-info{
+    flex:1;
+}
 
 .asset-name{
-
-font-size:17px;
-font-weight:700;
-
-line-height:1.2;
-
-margin-bottom:2px;
-
+    font-size:17px;
+    font-weight:700;
+    color:#111;
 }
-
-/* STAKED */
 
 .asset-stake{
-
-font-size:14px;
-
-color:#169b5f;
-
-margin-bottom:4px;
-
+    margin-top:4px;
+    font-size:14px;
+    color:#18a957;
 }
 
-/* CHART */
-
-.asset-chart-box{
-
-height:28px;
-
-margin:2px 0 6px;
-
-display:flex;
-align-items:center;
-
+.asset-mini-chart{
+    width:120px;
+    height:34px;
+    flex-shrink:0;
 }
 
-.asset-chart{
-
-width:100%;
-height:28px;
-
+.asset-mini-chart svg{
+    width:100%;
+    height:100%;
 }
 
-/* FOOTER */
-
-.asset-footer{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-font-size:12px;
-
-}
-
-.asset-footer div{
-
-display:flex;
-flex-direction:column;
-
-}
-
-.asset-footer b{
-
-font-size:14px;
-
-margin-top:2px;
-
-}
-
-/* ACTIVE */
-
-.asset-footer b:last-child{
-
-color:#1ca860;
-
+.asset-status{
+    margin-top:8px;
+    font-size:14px;
+    font-weight:600;
+    color:#18a957;
 }
