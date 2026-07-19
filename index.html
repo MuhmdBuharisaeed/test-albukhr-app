@@ -728,7 +728,11 @@ div.innerHTML = `
 
     </div>
 
-    <div class="asset-status">
+    <div class="asset-status ${
+item.userAmount > 0
+? "active"
+: "inactive"
+}">
 
         ${
             item.userAmount > 0
