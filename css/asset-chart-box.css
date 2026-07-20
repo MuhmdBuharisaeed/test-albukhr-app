@@ -65,9 +65,9 @@
 }
 
 .asset-mini-chart{
-    width:104px;      /* daga 110 zuwa 105 */
-    height:30px;
-    margin-left:25px; /* ya ɗan matsa daga sunan */
+    width:85px;      /* daga 105 zuwa 85 */
+    height:20px;
+    margin-left:15px; /* ya ɗan matsa daga sunan */
     flex-shrink:0;
 }
 
