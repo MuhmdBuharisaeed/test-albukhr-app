@@ -47,7 +47,7 @@
 }
 
 .asset-name{
-    font-size:18px;
+    font-size:28px;
     font-weight:700;
     color:#111;
 
@@ -65,8 +65,8 @@
 }
 
 .asset-mini-chart{
-    width:85px;      /* daga 105 zuwa 85 */
-    height:20px;
+    width:80px;      /* daga 85 zuwa 80 */
+    height:18px;
     margin-left:15px; /* ya ɗan matsa daga sunan */
     flex-shrink:0;
 }
