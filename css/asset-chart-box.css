@@ -14,8 +14,8 @@
 }
 
 .asset-icon{
-    width:56px;
-    height:56px;
+    width:52px;
+    height:52px;
 
     border-radius:50%;
     background:#eef9f2;
@@ -24,7 +24,7 @@
     align-items:center;
     justify-content:center;
 
-    font-size:26px;
+    font-size:24px;
 
     flex-shrink:0;
 }
