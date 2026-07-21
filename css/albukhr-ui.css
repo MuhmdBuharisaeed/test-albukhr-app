@@ -265,83 +265,118 @@ body::before{
    SIDE DRAWER
 ================================ */
 .side-drawer{
-  position: fixed;
-  top:0;
-  right:-55%;
-  width:50%;
-  max-width:340px;
-  height:100%;
+    position:fixed;
+    top:0;
+    right:-82%;
 
-  /* Premium glass */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,0.95),
-    rgba(255,255,255,0.90)
-  );
+    width:82%;
+    max-width:420px;
+    height:100%;
 
-  /* Rounded Telegram edge */
-  border-top-left-radius:22px;
-  border-bottom-left-radius:22px;
+    display:flex;
+    flex-direction:column;
 
-  /* Soft green accent glow */
-  box-shadow:
-    -8px 0 28px rgba(0,0,0,0.08),
-    -2px 0 0 rgba(15,122,61,0.15);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
 
-  transition: right 0.4s cubic-bezier(.22,.9,.24,1);
-  z-index:1001;
-  display:flex;
-  flex-direction:column;
+    background:linear-gradient(
+        180deg,
+        rgba(255,255,255,.96),
+        rgba(255,255,255,.92)
+    );
+
+    border-top-left-radius:24px;
+    border-bottom-left-radius:24px;
+
+    box-shadow:
+        -8px 0 30px rgba(0,0,0,.10),
+        -2px 0 0 rgba(15,122,61,.15);
+
+    transition:right .35s cubic-bezier(.22,.9,.24,1);
+
+    overflow-y:auto;
+    z-index:1001;
 }
 
 .side-drawer.open{
-  right:0;
-}
-   
-.side-drawer.open{
-  right:0;
+    right:0;
 }
 
+/* HEADER */
 .drawer-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:16px;
-  border-bottom:1px solid #eee;
-  font-weight:700;
-  background:#f4fff8;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    padding:18px 20px;
+
+    background:#f4fff8;
+    border-bottom:1px solid #e8ece9;
+
+    font-size:22px;
+    font-weight:700;
+
+    position:sticky;
+    top:0;
+    z-index:2;
 }
 
+/* BODY */
 .drawer-body{
-  display:flex;
-  flex-direction:column;
-  padding:12px 16px;
-  gap:10px;
+    display:flex;
+    flex-direction:column;
+
+    padding:16px 20px;
+    gap:6px;
 }
 
 .drawer-body a{
-  text-decoration:none;
-  color:#0f7a3d;
-  font-weight:600;
-  padding:8px 0;
-  border-bottom:1px solid #eee;
+    display:flex;
+    align-items:center;
+
+    padding:14px 0;
+
+    text-decoration:none;
+    color:#0f7a3d;
+
+    font-size:17px;
+    font-weight:600;
+
+    border-bottom:1px solid #f0f0f0;
+
+    transition:.2s ease;
 }
 
+.drawer-body a:hover{
+    padding-left:8px;
+    color:#18b25b;
+}
+
+/* Overlay */
 .drawer-overlay{
-  background: rgba(0,0,0,0.15);
-  }
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,.18);
+
+    opacity:0;
+    visibility:hidden;
+
+    transition:.3s ease;
+
+    z-index:1000;
+}
 
 .drawer-overlay.show{
-  opacity:1;
-  visibility:visible;
+    opacity:1;
+    visibility:visible;
 }
 
+/* Hidden Amount */
 .hidden-amount{
-  filter: blur(6px);
-  user-select:none;
-}
+    filter:blur(6px);
+    user-select:none;
+   }
 
 /* ======================
    EXPLORE BUTTON (DASHBOARD)
