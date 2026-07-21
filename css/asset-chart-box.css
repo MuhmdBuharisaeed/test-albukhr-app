@@ -46,7 +46,7 @@
 }
 
 .asset-name{
-    font-size:18px;      /* daga 21px */
+    font-size:12px;      /* daga 18px */
     font-weight:700;
     line-height:1.2;
 
@@ -62,7 +62,7 @@
 }
 
 .asset-mini-chart{
-    width:60px;          /* daga 70px */
+    width:59px;          /* daga 60px */
     height:16px;
     margin-left:4px;
     flex-shrink:0;
