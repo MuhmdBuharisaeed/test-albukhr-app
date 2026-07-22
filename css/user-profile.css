@@ -1,0 +1,1278 @@
+/* ==========================================
+   ALBUKHR USER PROFILE
+   PART 1
+========================================== */
+
+/* =========================
+   ROOT
+========================= */
+
+:root{
+
+    --primary:#0E8A43;
+
+    --primary-dark:#06642F;
+
+    --light:#F8FFF9;
+
+    --white:#FFFFFF;
+
+    --border:#DDEBDD;
+
+    --text:#1A1A1A;
+
+    --text-light:#777777;
+
+    --danger:#E53935;
+
+    --shadow:
+
+    0 10px 30px
+
+    rgba(0,0,0,.08);
+
+}
+
+/* =========================
+   BODY
+========================= */
+
+body{
+
+    margin:0;
+
+    padding:0;
+
+    background:#F3F7F4;
+
+    font-family:
+
+    "Segoe UI",
+
+    sans-serif;
+
+    color:var(--text);
+
+}
+
+/* =========================
+   PROFILE PAGE
+========================= */
+
+.profile-page{
+
+    width:100%;
+
+    max-width:650px;
+
+    margin:auto;
+
+    min-height:100vh;
+
+    background:#F3F7F4;
+
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.profile-header{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:100;
+
+    height:70px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:
+
+    0 18px;
+
+    background:var(--white);
+
+    box-shadow:
+
+    0 2px 12px
+
+    rgba(0,0,0,.05);
+
+}
+
+.profile-header h2{
+
+    margin:0;
+
+    font-size:20px;
+
+    font-weight:700;
+
+    color:var(--primary);
+
+}
+
+.back-btn,
+
+.close-btn{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:#EEF7F1;
+
+    color:var(--primary);
+
+    cursor:pointer;
+
+    font-size:18px;
+
+}
+
+/* =========================
+   HERO
+========================= */
+
+.profile-hero{
+
+    margin:18px;
+
+    padding:30px 20px;
+
+    background:
+
+    linear-gradient(
+
+    135deg,
+
+    #0E8A43,
+
+    #11A34F
+
+    );
+
+    border-radius:22px;
+
+    text-align:center;
+
+    color:#FFF;
+
+    box-shadow:var(--shadow);
+
+}
+
+/* =========================
+   AVATAR
+========================= */
+
+.avatar-wrapper{
+
+    position:relative;
+
+    width:130px;
+
+    height:130px;
+
+    margin:auto;
+
+}
+
+.avatar-wrapper img{
+
+    width:130px;
+
+    height:130px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:
+
+    5px solid
+
+    rgba(255,255,255,.9);
+
+    background:#FFF;
+
+}
+
+.change-photo{
+
+    position:absolute;
+
+    right:0;
+
+    bottom:0;
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:#FFF;
+
+    color:var(--primary);
+
+    box-shadow:
+
+    0 5px 18px
+
+    rgba(0,0,0,.18);
+
+    cursor:pointer;
+
+}
+
+/* =========================
+   HERO DETAILS
+========================= */
+
+.hero-details{
+
+    margin-top:20px;
+
+}
+
+.hero-details h2{
+
+    margin:0;
+
+    font-size:28px;
+
+    font-weight:700;
+
+}
+
+.hero-details p{
+
+    margin-top:8px;
+
+    opacity:.95;
+
+    font-size:15px;
+
+}
+
+/* =========================
+   VERIFIED
+========================= */
+
+.verified-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    margin-top:12px;
+
+    padding:
+
+    8px 16px;
+
+    border-radius:50px;
+
+    background:
+
+    rgba(255,255,255,.18);
+
+    backdrop-filter:
+
+    blur(10px);
+
+    font-size:14px;
+
+    font-weight:600;
+
+}
+
+/* =========================
+   CONTRIBUTOR ID
+========================= */
+
+.contributor-id{
+
+    margin-top:20px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:12px;
+
+    flex-wrap:wrap;
+
+}
+
+.contributor-id span{
+
+    font-size:13px;
+
+    opacity:.85;
+
+}
+
+.contributor-id strong{
+
+    font-size:16px;
+
+    letter-spacing:1px;
+
+}
+
+.copy-btn{
+
+    border:none;
+
+    background:#FFF;
+
+    color:var(--primary);
+
+    width:36px;
+
+    height:36px;
+
+    border-radius:50%;
+
+    cursor:pointer;
+
+}
+
+/* =========================
+   HERO ACTIONS
+========================= */
+
+.hero-actions{
+
+    display:flex;
+
+    gap:15px;
+
+    margin:20px 18px;
+
+}
+
+.hero-actions button{
+
+    flex:1;
+
+    height:50px;
+
+    border:none;
+
+    border-radius:14px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+}
+
+.edit-profile-btn{
+
+    background:var(--primary);
+
+    color:#FFF;
+
+}
+
+.share-profile-btn{
+
+    background:#FFF;
+
+    color:var(--primary);
+
+    border:
+
+    1px solid
+
+    var(--border);
+
+  }
+
+/* ==========================================
+PROFILE CARDS
+========================================== */
+
+.profile-card{
+
+    width:100%;
+
+    background:#ffffff;
+
+    border-radius:22px;
+
+    padding:22px;
+
+    margin-bottom:18px;
+
+    box-shadow:
+
+    0 8px 24px rgba(0,0,0,.08);
+
+    border:1px solid rgba(0,128,0,.08);
+
+}
+
+.card-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin-bottom:18px;
+
+}
+
+.card-title i{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:12px;
+
+    background:#0d8a2a;
+
+    color:#fff;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:18px;
+
+}
+
+.card-title span{
+
+    font-size:18px;
+
+    font-weight:700;
+
+    color:#1a1a1a;
+
+}
+
+/* ==========================================
+ACCOUNT INFORMATION
+========================================== */
+
+.profile-info-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.info-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:14px 0;
+
+    border-bottom:1px solid #eeeeee;
+
+}
+
+.info-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.info-row span{
+
+    font-size:15px;
+
+    color:#666;
+
+}
+
+.info-row strong{
+
+    font-size:15px;
+
+    font-weight:700;
+
+    color:#0d8a2a;
+
+}
+
+/* ==========================================
+STATUS BADGES
+========================================== */
+
+.status-badge{
+
+    padding:6px 14px;
+
+    border-radius:30px;
+
+    font-size:13px;
+
+    font-weight:700;
+
+}
+
+.status-active{
+
+    background:#e7f8eb;
+
+    color:#0d8a2a;
+
+}
+
+.status-pending{
+
+    background:#fff7d8;
+
+    color:#b88600;
+
+}
+
+.status-danger{
+
+    background:#ffe5e5;
+
+    color:#d40000;
+
+}
+
+/* ==========================================
+WALLET SUMMARY
+========================================== */
+
+.wallet-grid{
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(2,1fr);
+
+    gap:16px;
+
+}
+
+.wallet-item{
+
+    background:
+
+    linear-gradient(
+
+    135deg,
+
+    #0d8a2a,
+
+    #16b347);
+
+    color:#ffffff;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    box-shadow:
+
+    0 8px 18px rgba(13,138,42,.20);
+
+}
+
+.wallet-label{
+
+    display:block;
+
+    font-size:13px;
+
+    opacity:.9;
+
+    margin-bottom:8px;
+
+}
+
+.wallet-item h2{
+
+    font-size:26px;
+
+    font-weight:800;
+
+    margin:0;
+
+  }
+
+/* ==========================================
+   ALBUKHR USER PROFILE
+   PART 3
+========================================== */
+
+/* =========================
+   WALLET GRID
+========================= */
+
+.wallet-grid{
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(2,1fr);
+
+    gap:15px;
+
+    margin-top:18px;
+
+}
+
+.wallet-item{
+
+    background:#FFFFFF;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    text-align:center;
+
+    box-shadow:
+
+    0 8px 25px
+
+    rgba(0,0,0,.05);
+
+    border:
+
+    1px solid
+
+    rgba(14,138,67,.08);
+
+    transition:.25s;
+
+}
+
+.wallet-item:hover{
+
+    transform:translateY(-3
+
+
+
+/* ==========================================
+PERSONAL INFORMATION
+========================================== */
+
+.personal-info{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+}
+
+.personal-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px 0;
+
+    border-bottom:1px solid #ececec;
+
+}
+
+.personal-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.personal-label{
+
+    color:#666;
+
+    font-size:15px;
+
+    font-weight:500;
+
+}
+
+.personal-value{
+
+    color:#111;
+
+    font-size:15px;
+
+    font-weight:700;
+
+    text-align:right;
+
+    max-width:60%;
+
+    word-break:break-word;
+
+}
+
+/* ==========================================
+MENU LIST
+========================================== */
+
+.menu-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.menu-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px 0;
+
+    border-bottom:1px solid #efefef;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.menu-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.menu-item:hover{
+
+    transform:translateX(6px);
+
+}
+
+.menu-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.menu-left i{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:12px;
+
+    background:#f1fff3;
+
+    color:#0d8a2a;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:18px;
+
+}
+
+.menu-left span{
+
+    font-size:16px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+.menu-item .fa-angle-right{
+
+    color:#999;
+
+    font-size:18px;
+
+}
+
+/* ==========================================
+LINKED WALLET
+========================================== */
+
+.wallet-address{
+
+    font-family:monospace;
+
+    font-size:13px;
+
+    color:#0d8a2a;
+
+    word-break:break-all;
+
+    background:#f7fff8;
+
+    padding:10px;
+
+    border-radius:10px;
+
+    border:1px solid #dff5e4;
+
+}
+
+/* ==========================================
+COPY BUTTON
+========================================== */
+
+.copy-button{
+
+    margin-top:12px;
+
+    border:none;
+
+    background:#0d8a2a;
+
+    color:#fff;
+
+    padding:10px 18px;
+
+    border-radius:10px;
+
+    font-size:14px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.copy-button:hover{
+
+    background:#0b7424;
+
+}
+
+/* ==========================================
+   ALBUKHR USER PROFILE
+   PART 5
+========================================== */
+
+/* =========================
+   SECURITY SECTION
+========================= */
+
+.security-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:15px;
+
+    margin-top:18px;
+
+}
+
+.security-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px;
+
+    background:#FFFFFF;
+
+    border-radius:18px;
+
+    border:1px solid rgba(14,138,67,.08);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.04);
+
+    transition:.25s;
+
+}
+
+.security-item:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 12px 28px rgba(14,138,67,.15);
+
+}
+
+.security-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+}
+
+.security-left i{
+
+    width:45px;
+
+    height:45px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:#EAF
+
+/* ==========================================
+SETTINGS
+========================================== */
+
+.settings-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+}
+
+.setting-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px 0;
+
+    border-bottom:1px solid #efefef;
+
+}
+
+.setting-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.setting-label{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.setting-label i{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:12px;
+
+    background:#f1fff3;
+
+    color:#0d8a2a;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+.setting-label span{
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+/* ==========================================
+SWITCH
+========================================== */
+
+.switch{
+
+    position:relative;
+
+    display:inline-block;
+
+    width:52px;
+
+    height:28px;
+
+}
+
+.switch input{
+
+    display:none;
+
+}
+
+.slider{
+
+    position:absolute;
+
+    inset:0;
+
+    background:#cccccc;
+
+    border-radius:40px;
+
+    transition:.3s;
+
+}
+
+.slider::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:22px;
+
+    height:22px;
+
+    left:3px;
+
+    top:3px;
+
+    border-radius:50%;
+
+    background:#ffffff;
+
+    transition:.3s;
+
+}
+
+.switch input:checked + .slider{
+
+    background:#0d8a2a;
+
+}
+
+.switch input:checked + .slider::before{
+
+    transform:translateX(24px);
+
+}
+
+/* ==========================================
+LOGOUT
+========================================== */
+
+.logout-section{
+
+    margin-top:25px;
+
+}
+
+.logout-button{
+
+    width:100%;
+
+    border:none;
+
+    border-radius:18px;
+
+    padding:18px;
+
+    background:#d60000;
+
+    color:#ffffff;
+
+    font-size:17px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.logout-button:hover{
+
+    background:#b40000;
+
+}
+
+/* ==========================================
+FOOTER
+========================================== */
+
+.profile-footer{
+
+    text-align:center;
+
+    margin:40px 0 20px;
+
+    color:#666666;
+
+}
+
+.footer-logo{
+
+    width:90px;
+
+    margin-bottom:15px;
+
+}
+
+.profile-footer p{
+
+    font-weight:700;
+
+    color:#111111;
+
+    margin-bottom:6px;
+
+}
+
+.profile-footer small{
+
+    display:block;
+
+    line-height:1.6;
+
+}
+
+/* ==========================================
+RESPONSIVE
+========================================== */
+
+@media(max-width:768px){
+
+.wallet-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.stats-grid{
+
+grid-template-columns:1fr 1fr;
+
+}
+
+.hero-actions{
+
+flex-direction:column;
+
+}
+
+.edit-profile-btn,
+
+.share-profile-btn{
+
+width:100%;
+
+}
+
+}
+
+@media(max-width:480px){
+
+.profile-page{
+
+padding:15px;
+
+}
+
+.profile-card{
+
+padding:18px;
+
+}
+
+.profile-header h2{
+
+font-size:18px;
+
+}
+
+.hero-details h2{
+
+font-size:24px;
+
+}
+
+.stats-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.wallet-item h2{
+
+font-size:22px;
+
+}
+
+}
+
+/* ==========================================
+END
+========================================== */
