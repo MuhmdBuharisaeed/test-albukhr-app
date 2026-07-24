@@ -7,19 +7,12 @@
 
 <meta
 name="viewport"
-content="width=device-width,initial-scale=1.0">
+content="width=device-width, initial-scale=1.0">
 
-<title>
-ALBUKHR Profile
-</title>
+<title>ALBUKHR Profile</title>
 
-<link
-rel="stylesheet"
-href="css/style.css">
-
-<link
-rel="stylesheet"
-href="css/user-profile.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/user-profile.css">
 
 <link
 rel="stylesheet"
@@ -29,1119 +22,603 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 
 <body>
 
-<!-- ======================================
-PROFILE PAGE
-====================================== -->
-
 <div class="profile-page">
 
-    <!-- ==============================
-    HEADER
-    =============================== -->
+<!-- ===========================
+PROFILE HEADER
+=========================== -->
 
-    <header class="profile-header">
+<header class="profile-header">
 
-        <button
-        class="back-btn"
-        onclick="history.back()">
+<button
+class="back-btn"
+onclick="history.back()">
 
-            <i
-            class="fa-solid fa-arrow-left"></i>
+<i class="fa-solid fa-arrow-left"></i>
 
-        </button>
+</button>
 
-        <h2>
+<h2>My Profile</h2>
 
-            My Profile
+<button
+class="close-btn"
+onclick="closeProfile()">
 
-        </h2>
+<i class="fa-solid fa-xmark"></i>
 
-        <button
-        class="close-btn"
-        onclick="closeProfile()">
+</button>
 
-            <i
-            class="fa-solid fa-xmark"></i>
+</header>
 
-        </button>
+<!-- ===========================
+PROFILE HERO
+=========================== -->
 
-    </header>
+<section class="profile-hero">
 
-    <!-- ==============================
-    PROFILE HERO
-    =============================== -->
+<div class="avatar-wrapper">
 
-    <section
-    class="profile-hero">
+<img
 
-        <!-- Avatar -->
+id="profileAvatar"
 
-        <div
-        class="avatar-wrapper">
+src="images/albukhr-logo.png"
 
-            <img
+alt="Profile">
 
-            id="profileAvatar"
+<button class="change-photo">
 
-            src="images/albukhr-logo.png"
+<i class="fa-solid fa-camera"></i>
 
-            alt="Profile">
-
-            <button
-
-            class="change-photo">
-
-                <i
-                class="fa-solid fa-camera">
-
-                </i>
-
-            </button>
-
-        </div>
-
-        <!-- User Details -->
-
-        <div
-        class="hero-details">
-
-            <h2
-            id="fullName">
-
-                Loading...
-
-            </h2>
-
-            <div
-            class="verified-badge">
-
-                <i
-                class="fa-solid fa-circle-check">
-
-                </i>
-
-                Verified Contributor
-
-            </div>
-
-            <p
-            id="email">
-
-                loading@email.com
-
-            </p>
-
-            <!-- Contributor ID -->
-
-            <div
-            class="contributor-id">
-
-                <span>
-
-                    Contributor ID
-
-                </span>
-
-                <strong
-                id="contributorID">
-
-                    ALB-000000
-
-                </strong>
-
-                <button
-                class="copy-btn">
-
-                    <i
-                    class="fa-regular fa-copy">
-
-                    </i>
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </section>
-
-    <!-- ==============================
-    PROFILE ACTIONS
-    =============================== -->
-
-    <section
-    class="hero-actions">
-
-        <button
-        class="edit-profile-btn">
-
-            <i
-            class="fa-solid fa-user-pen">
-
-            </i>
-
-            Edit Profile
-
-        </button>
-
-        <button
-        class="share-profile-btn">
-
-            <i
-            class="fa-solid fa-share-nodes">
-
-            </i>
-
-            Share
-
-        </button>
-
-    </section>
-
-    <!-- ==============================
-    ACCOUNT OVERVIEW
-    =============================== -->
-
-    <section
-    class="profile-card">
-
-        <div
-        class="card-title">
-
-            <i
-            class="fa-solid fa-address-card">
-
-            </i>
-
-            <span>
-
-                Account Overview
-
-            </span>
-
-          </div>
-
-          <div class="profile-info-list">
-
-            <div class="info-row">
-
-                <span>
-
-                    Account Status
-
-                </span>
-
-                <strong
-                id="accountStatus">
-
-                    Active
-
-                </strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>
-
-                    KYC Status
-
-                </span>
-
-                <strong
-                id="kycStatus">
-
-                    Verified
-
-                </strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>
-
-                    Membership
-
-                </span>
-
-                <strong
-                id="membershipType">
-
-                    Contributor
-
-                </strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>
-
-                    Wallet Linked
-
-                </span>
-
-                <strong
-                id="walletLinked">
-
-                    Yes
-
-                </strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>
-
-                    Total Referrals
-
-                </span>
-
-                <strong
-                id="totalReferrals">
-
-                    0
-
-                </strong>
-
-            </div>
-
-            <div class="info-row">
-
-                <span>
-
-                    Referral Bonus
-
-                </span>
-
-                <strong
-                id="referralBonus">
-
-                    0.00 π
-
-                </strong>
-
-            </div>
-
-        </div>
-
-    </section>
-
-        <!-- ==============================
-        WALLET SUMMARY
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-wallet"></i>
-
-                <span>
-
-                    Wallet Summary
-
-                </span>
-
-            </div>
-
-            <div class="wallet-grid">
-
-                <div class="wallet-item">
-
-                    <span class="wallet-label">
-
-                        Available Pi
-
-                    </span>
-
-                    <h2 id="availablePi">
-
-                        0.00 π
-
-                    </h2>
-
-                </div>
-
-                <div class="wallet-item">
-
-                    <span class="wallet-label">
-
-                        Staked Pi
-
-                    </span>
-
-                    <h2 id="stakedPi">
-
-                        0.00 π
-
-                    </h2>
-
-                </div>
-
-                <div class="wallet-item">
-
-                    <span class="wallet-label">
-
-                        Rewards
-
-                    </span>
-
-                    <h2 id="rewardPi">
-
-                        0.00 π
-
-                    </h2>
-
-                </div>
-
-                <div class="wallet-item">
-
-                    <span class="wallet-label">
-
-                        Total Assets
-
-                    </span>
-
-                    <h2 id="totalAssets">
-
-                        0.00 π
-
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        INVESTMENT STATISTICS
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-chart-column"></i>
-
-                <span>
-
-                    Investment Statistics
-
-                </span>
-
-            </div>
-
-            <div class="stats-grid">
-
-                <div class="stat-box">
-
-                    <i class="fa-solid fa-briefcase"></i>
-
-                    <h3 id="activeProjects">
-
-                        0
-
-                    </h3>
-
-                    <span>
-
-                        Active Projects
-
-                    </span>
-
-                </div>
-
-                <div class="stat-box">
-
-                    <i class="fa-solid fa-chart-line"></i>
-
-                    <h3 id="totalInvestments">
-
-                        0.00 π
-
-                    </h3>
-
-                    <span>
-
-                        Total Investment
-
-                    </span>
-
-                </div>
-
-                <div class="stat-box">
-
-                    <i class="fa-solid fa-coins"></i>
-
-                    <h3 id="totalRewards">
-
-                        0.00 π
-
-                    </h3>
-
-                    <span>
-
-                        Total Rewards
-
-                    </span>
-
-                </div>
-
-                <div class="stat-box">
-
-                    <i class="fa-solid fa-calendar-check"></i>
-
-                    <h3 id="completedProjects">
-
-                        0
-
-                    </h3>
-
-                    <span>
-
-                        Completed
-
-                    </span>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        PERSONAL INFORMATION
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-user"></i>
-
-                <span>
-
-                    Personal Information
-
-                </span>
-
-            </div>
-
-                    <div class="profile-info-list">
-
-                <div class="info-row">
-
-                    <span>
-
-                        Full Name
-
-                    </span>
-
-                    <strong id="profileFullName">
-
-                        Loading...
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Username
-
-                    </span>
-
-                    <strong id="profileUsername">
-
-                        @loading
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Email Address
-
-                    </span>
-
-                    <strong id="profileEmail">
-
-                        loading@email.com
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Phone Number
-
-                    </span>
-
-                    <strong id="profilePhone">
-
-                        Not Added
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Country
-
-                    </span>
-
-                    <strong id="profileCountry">
-
-                        Nigeria
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        State
-
-                    </span>
-
-                    <strong id="profileState">
-
-                        Not Available
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        City
-
-                    </span>
-
-                    <strong id="profileCity">
-
-                        Not Available
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Date Joined
-
-                    </span>
-
-                    <strong id="joinedDate">
-
-                        Loading...
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        PI WALLET INFORMATION
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-brands fa-pied-piper"></i>
-
-                <span>
-
-                    Pi Wallet Information
-
-                </span>
-
-            </div>
-
-            <div class="profile-info-list">
-
-                <div class="info-row">
-
-                    <span>
-
-                        Wallet Address
-
-                    </span>
-
-                    <strong
-                    id="walletAddress">
-
-                        Loading...
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Wallet Status
-
-                    </span>
-
-                    <strong
-                    id="walletStatus">
-
-                        Connected
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Wallet Verification
-
-                    </span>
-
-                    <strong
-                    id="walletVerification">
-
-                        Verified
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        SECURITY
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-shield-halved"></i>
-
-                <span>
-
-                    Security
-
-                </span>
-
-            </div>
-
-                <!-- ==============================
-        SECURITY
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-shield-halved"></i>
-
-                <span>
-
-                    Security
-
-                </span>
-
-            </div>
-
-            <div class="menu-list">
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-key"></i>
-
-                        <span>
-
-                            Change Password
-
-                        </span>
-
-                    </div>
-
-                    <i class="fa-solid fa-angle-right"></i>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-mobile-screen-button"></i>
-
-                        <span>
-
-                            Two-Factor Authentication
-
-                        </span>
-
-                    </div>
-
-                    <span
-                    class="status-badge success">
-
-                        Enabled
-
-                    </span>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-fingerprint"></i>
-
-                        <span>
-
-                            Biometric Login
-
-                        </span>
-
-                    </div>
-
-                    <span
-                    class="status-badge success">
-
-                        Active
-
-                    </span>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-
-                        <span>
-
-                            Login History
-
-                        </span>
-
-                    </div>
-
-                    <i class="fa-solid fa-angle-right"></i>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        QUICK ACTIONS
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-bolt"></i>
-
-                <span>
-
-                    Quick Actions
-
-                </span>
-
-            </div>
-
-            <div class="quick-actions-grid">
-
-                <button class="quick-btn">
-
-                    <i class="fa-solid fa-wallet"></i>
-
-                    <span>
-
-                        Wallet
-
-                    </span>
-
-                </button>
-
-                <button class="quick-btn">
-
-                    <i class="
-                    <div class="menu-list">
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-language"></i>
-
-                        <span>
-
-                            Language
-
-                        </span>
-
-                    </div>
-
-                    <span>
-
-                        English
-
-                    </span>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-palette"></i>
-
-                        <span>
-
-                            Theme
-
-                        </span>
-
-                    </div>
-
-                    <span>
-
-                        Green
-
-                    </span>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-globe"></i>
-
-                        <span>
-
-                            Region
-
-                        </span>
-
-                    </div>
-
-                    <span
-                    id="userCountry">
-
-                        Nigeria
-
-                    </span>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-bell"></i>
-
-                        <span>
-
-                            Notifications
-
-                        </span>
-
-                    </div>
-
-                    <label class="switch">
-
-                        <input
-                        type="checkbox"
-                        checked>
-
-                        <span class="slider"></span>
-
-                    </label>
-
-                </div>
-
-                <div class="menu-item">
-
-                    <div class="menu-left">
-
-                        <i class="fa-solid fa-user-shield"></i>
-
-                        <span>
-
-                            Privacy
-
-                        </span>
-
-                    </div>
-
-                    <i
-                    class="fa-solid fa-angle-right"></i>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        APP INFORMATION
-        =============================== -->
-
-        <section class="profile-card">
-
-            <div class="card-title">
-
-                <i class="fa-solid fa-circle-info"></i>
-
-                <span>
-
-                    App Information
-
-                </span>
-
-            </div>
-
-            <div class="profile-info-list">
-
-                <div class="info-row">
-
-                    <span>
-
-                        App Version
-
-                    </span>
-
-                    <strong>
-
-                        1.0.0
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Platform
-
-                    </span>
-
-                    <strong>
-
-                        Pi Network
-
-                    </strong>
-
-                </div>
-
-                <div class="info-row">
-
-                    <span>
-
-                        Company
-
-                    </span>
-
-                    <strong>
-
-                        ALBUKHR Investment Limited
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ==============================
-        LOGOUT
-        =============================== -->
-
-        <section class="logout-section">
-
-            <button
-            class="logout-button"
-            onclick="logoutUser()">
-
-                <i
-                class="fa-solid fa-right-from-bracket">
-
-                </i>
-
-                Logout
-
-            </button>
-
-        </section>
-
-        <!-- ==============================
-        FOOTER
-        =============================== -->
-
-        <footer class="profile-footer">
-
-            <img
-            src="images/albukhr-logo.png"
-            class="footer-logo"
-            alt="ALBUKHR">
-
-            <p>
-
-                © 2026 ALBUKHR Investment Limited
-
-            </p>
-
-            <small>
-
-                Building the Future of
-                Community Investment
-                Through Pi Network
-
-            </small>
-
-        </footer>
+</button>
 
 </div>
 
-<!-- ==============================
+<div class="hero-details">
+
+<h2 id="fullName">
+
+Loading...
+
+</h2>
+
+<div class="verified-badge">
+
+<i class="fa-solid fa-circle-check"></i>
+
+Verified Contributor
+
+</div>
+
+<p id="email">
+
+loading@email.com
+
+</p>
+
+<div class="contributor-id">
+
+<span>
+
+Contributor ID
+
+</span>
+
+<strong id="contributorID">
+
+ALB-000000
+
+</strong>
+
+<button
+class="copy-btn"
+id="copyContributorID">
+
+<i class="fa-regular fa-copy"></i>
+
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- ===========================
+PROFILE ACTIONS
+=========================== -->
+
+<section class="hero-actions">
+
+<button
+class="edit-profile-btn">
+
+<i class="fa-solid fa-user-pen"></i>
+
+<span>
+
+Edit Profile
+
+</span>
+
+</button>
+
+    </section>
+
+<!-- ===========================
+ACCOUNT OVERVIEW
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-address-card"></i>
+
+        <span>Account Overview</span>
+
+    </div>
+
+    <div class="profile-info-list">
+
+        <div class="info-row">
+            <span>Account Status</span>
+            <strong id="accountStatus">Active</strong>
+        </div>
+
+        <div class="info-row">
+            <span>KYC Status</span>
+            <strong id="kycStatus">Verified</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Membership</span>
+            <strong id="membershipType">Contributor</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Wallet Linked</span>
+            <strong id="walletLinked">Yes</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Total Referrals</span>
+            <strong id="totalReferrals">0</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Referral Bonus</span>
+            <strong id="referralBonus">0.00 π</strong>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+WALLET SUMMARY
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-wallet"></i>
+
+        <span>Wallet Summary</span>
+
+    </div>
+
+    <div class="wallet-grid">
+
+        <div class="wallet-item">
+
+            <span class="wallet-label">
+                Available Pi
+            </span>
+
+            <h2 id="availablePi">
+                0.00 π
+            </h2>
+
+        </div>
+
+        <div class="wallet-item">
+
+            <span class="wallet-label">
+                Staked Pi
+            </span>
+
+            <h2 id="stakedPi">
+                0.00 π
+            </h2>
+
+        </div>
+
+        <div class="wallet-item">
+
+            <span class="wallet-label">
+                Rewards
+            </span>
+
+            <h2 id="rewardPi">
+                0.00 π
+            </h2>
+
+        </div>
+
+        <div class="wallet-item">
+
+            <span class="wallet-label">
+                Total Assets
+            </span>
+
+            <h2 id="totalAssets">
+                0.00 π
+            </h2>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+INVESTMENT STATISTICS
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-chart-column"></i>
+
+        <span>Investment Statistics</span>
+
+    </div>
+
+    <div class="stats-grid">
+
+        <div class="stat-box">
+
+            <i class="fa-solid fa-briefcase"></i>
+
+            <h3 id="activeProjects">0</h3>
+
+            <span>Active Projects</span>
+
+        </div>
+
+        <div class="stat-box">
+
+            <i class="fa-solid fa-chart-line"></i>
+
+            <h3 id="totalInvestments">0.00 π</h3>
+
+            <span>Total Investment</span>
+
+        </div>
+
+        <div class="stat-box">
+
+            <i class="fa-solid fa-coins"></i>
+
+            <h3 id="totalRewards">0.00 π</h3>
+
+            <span>Total Rewards</span>
+
+        </div>
+
+        <div class="stat-box">
+
+            <i class="fa-solid fa-circle-check"></i>
+
+            <h3 id="completedProjects">0</h3>
+
+            <span>Completed Projects</span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+PERSONAL INFORMATION
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-user"></i>
+
+        <span>Personal Information</span>
+
+    </div>
+
+    <div class="profile-info-list">
+
+        <div class="info-row">
+            <span>Full Name</span>
+            <strong id="profileFullName">Loading...</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Username</span>
+            <strong id="profileUsername">@loading</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Email Address</span>
+            <strong id="profileEmail">loading@email.com</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Phone Number</span>
+            <strong id="profilePhone">Not Added</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Country</span>
+            <strong id="profileCountry">Nigeria</strong>
+        </div>
+
+        <div class="info-row">
+            <span>State</span>
+            <strong id="profileState">Not Available</strong>
+        </div>
+
+        <div class="info-row">
+            <span>City</span>
+            <strong id="profileCity">Not Available</strong>
+        </div>
+
+        <div class="info-row">
+            <span>Date Joined</span>
+            <strong id="joinedDate">Loading...</strong>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+PI WALLET INFORMATION
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-brands fa-pied-piper"></i>
+
+        <span>Pi Wallet Information</span>
+
+    </div>
+
+    <div class="profile-info-list">
+
+        <div class="info-row">
+
+            <span>Wallet Address</span>
+
+            <strong id="walletAddress">
+                Loading...
+            </strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>Wallet Status</span>
+
+            <strong id="walletStatus">
+                Connected
+            </strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>Wallet Verification</span>
+
+            <strong id="walletVerification">
+                Verified
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+SECURITY
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-shield-halved"></i>
+
+        <span>Security</span>
+
+    </div>
+
+    <div class="menu-list">
+
+        <div class="menu-item">
+
+            <div class="menu-left">
+
+                <i class="fa-solid fa-mobile-screen-button"></i>
+
+                <span>Two-Factor Authentication</span>
+
+            </div>
+
+            <span class="status-badge success">
+
+                Enabled
+
+            </span>
+
+        </div>
+
+        <div class="menu-item">
+
+            <div class="menu-left">
+
+                <i class="fa-solid fa-fingerprint"></i>
+
+                <span>Biometric Login</span>
+
+            </div>
+
+            <span class="status-badge success">
+
+                Active
+
+            </span>
+
+        </div>
+
+        <div class="menu-item">
+
+            <div class="menu-left">
+
+                <i class="fa-solid fa-wallet"></i>
+
+                <span>Pi Wallet Security</span>
+
+            </div>
+
+            <span class="status-badge success">
+
+                Verified
+
+            </span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+QUICK ACTIONS
+=========================== -->
+
+<section class="profile-card">
+
+    <div class="card-title">
+
+        <i class="fa-solid fa-bolt"></i>
+
+        <span>Quick Actions</span>
+
+    </div>
+
+    <div class="quick-actions-grid">
+
+        <button
+        class="quick-btn"
+        onclick="location.href='wallet.html'">
+
+            <i class="fa-solid fa-wallet"></i>
+
+            <span>Wallet</span>
+
+        </button>
+
+        <button
+        class="quick-btn"
+        onclick="location.href='staking.html'">
+
+            <i class="fa-solid fa-chart-line"></i>
+
+            <span>Staking</span>
+
+        </button>
+
+        <button
+        class="quick-btn"
+        onclick="location.href='transactions.html'">
+
+            <i class="fa-solid fa-clock-rotate-left"></i>
+
+            <span>Transactions</span>
+
+        </button>
+
+        <button
+        class="quick-btn"
+        onclick="location.href='preferences.html'">
+
+            <i class="fa-solid fa-gear"></i>
+
+            <span>Settings</span>
+
+        </button>
+
+    </div>
+
+</section>
+
+<!-- ===========================
+LOGOUT
+=========================== -->
+
+<section class="logout-section">
+
+    <button
+        class="logout-button"
+        onclick="logoutUser()">
+
+        <i class="fa-solid fa-right-from-bracket"></i>
+
+        <span>Logout</span>
+
+    </button>
+
+</section>
+
+<!-- ===========================
+FOOTER
+=========================== -->
+
+<footer class="profile-footer">
+
+    <img
+        src="images/albukhr-logo.png"
+        class="footer-logo"
+        alt="ALBUKHR Logo">
+
+    <h4>ALBUKHR Investment Limited</h4>
+
+    <p>
+
+        Community Investment Platform
+        Powered by Pi Network
+
+    </p>
+
+    <small>
+
+        © 2026 ALBUKHR Investment Limited.
+        All Rights Reserved.
+
+    </small>
+
+</footer>
+
+</div>
+
+<!-- ===========================
 SCRIPTS
-============================== -->
+=========================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1159,31 +636,33 @@ function closeProfile(){
 
 }
 
-function logoutUser(){
+async function logoutUser(){
 
-    if(confirm(
-
+    const ok = confirm(
         "Are you sure you want to logout?"
+    );
 
-    )){
+    if(!ok) return;
 
-        if(window.Pi){
+    try{
 
-            try{
+        if(window.Pi && Pi.logout){
 
-                Pi.logout();
-
-            }catch(e){}
+            await Pi.logout();
 
         }
 
-        localStorage.clear();
+    }catch(err){
 
-        sessionStorage.clear();
-
-        location.href="index.html";
+        console.log(err);
 
     }
+
+    localStorage.clear();
+
+    sessionStorage.clear();
+
+    location.replace("index.html");
 
 }
 
@@ -1191,4 +670,4 @@ function logoutUser(){
 
 </body>
 
-    </html>
+</html>
