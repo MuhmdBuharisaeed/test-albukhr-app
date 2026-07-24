@@ -491,24 +491,19 @@ function initCopyButton() {
 /* ===========================
    CHANGE PHOTO
 =========================== */
-
-function initAvatar() {
+function initAvatar(){
 
     const button =
         document.querySelector(".change-photo");
 
-    if (!button) return;
+    if(!button) return;
 
-    button.onclick = () => {
-
-        alert(
-            "Profile photo upload will be enabled in a future update."
-        );
-
-    };
+    button.disabled = true;
+    button.style.opacity = ".5";
+    button.style.cursor = "default";
+    button.style.pointerEvents = "none";
 
 }
-
 /* ===========================
    LOGOUT
 =========================== */
