@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1.0">
+
+<title>Preferences</title>
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/preferences.css">
+
+<link
+rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<div class="preferences-page">
+
+<!-- =========================
+HEADER
+========================= -->
+
+<header class="preferences-header">
+
+<button
+class="back-btn"
+onclick="history.back()">
+
+<i class="fa-solid fa-arrow-left"></i>
+
+</button>
+
+<h2>
+
+Preferences
+
+</h2>
+
+<button
+class="save-btn"
+onclick="savePreferences()">
+
+Save
+
+</button>
+
+</header>
+
+<!-- =========================
+APPEARANCE
+========================= -->
+
+<section class="pref-card">
+
+<div class="pref-title">
+
+<i class="fa-solid fa-palette"></i>
+
+<span>
+
+Appearance
+
+</span>
+
+</div>
+
+<div class="pref-item">
+
+<div>
+
+<h4>
+
+Theme
+
+</h4>
+
+<p>
+
+Application Theme
+
+</p>
+
+</div>
+
+<select id="themeSelect">
+
+<option value="green">
+
+Green
+
+</option>
+
+<option value="light">
+
+Light
+
+</option>
+
+<option value="dark">
+
+Dark (Coming Soon)
+
+</option>
+
+</select>
+
+</div>
+
+<div class="pref-item">
+
+<div>
+
+<h4>
+
+Accent Color
+
+</h4>
+
+<p>
+
+Application Color
+
+</p>
+
+</div>
+
+<select id="accentColor">
+
+<option value="green">
+
+Green
+
+</option>
+
+<option value="blue">
+
+Blue
+
+</option>
+
+<option value="gold">
+
+Gold
+
+</option>
+
+</select>
+
+</div>
+
+</section>
+
+<!-- =========================
+LANGUAGE
+========================= -->
+
+<section class="pref-card">
+
+<div class="pref-title">
+
+<i class="fa-solid fa-language"></i>
+
+<span>
+
+Language
+
+</span>
+
+</div>
+
+<div class="pref-item">
+
+<div>
+
+<h4>
+
+Language
+
+</h4>
+
+<p>
+
+Application Language
+
+</p>
+
+</div>
+
+<select id="languageSelect">
+
+<option value="en">
+
+English
+
+</option>
+
+<option value="ha">
+
+Hausa (Coming Soon)
+
+</option>
+
+<option value="fr">
+
+French (Coming Soon)
+
+</option>
+
+</select>
+
+</div>
+
+</section>
+
+<!-- =========================
+NOTIFICATIONS
+========================= -->
+
+<section class="pref-card">
+
+<div class="pref-title">
+
+<i class="fa-solid fa-bell"></i>
+
+<span>
+
+Notifications
+
+</span>
+
+</div>
+
+<div class="switch-row">
+
+<span>
+
+Project Updates
+
+</span>
+
+<label class="switch">
+
+<input
+type="checkbox"
+id="notifyProjects"
+checked>
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="switch-row">
+
+<span>
+
+Rewards
+
+</span>
+
+<label class="switch">
+
+<input
+type="checkbox"
+id="notifyRewards"
+checked>
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="switch-row">
+
+<span>
+
+Transactions
+
+</span>
+
+<label class="switch">
+
+<input
+type="checkbox"
+id="notifyTransactions"
+checked>
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="switch-row">
+
+<span>
+
+Marketing
+
+</span>
+
+<label class="switch">
+
+<input
+type="checkbox"
+id="notifyMarketing">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+  </section>
+
+<!-- =========================
+PRIVACY
+========================= -->
+
+<section class="pref-card">
+
+    <div class="pref-title">
+
+        <i class="fa-solid fa-user-shield"></i>
+
+        <span>Privacy</span>
+
+    </div>
+
+    <div class="switch-row">
+
+        <span>Hide Wallet Balance</span>
+
+        <label class="switch">
+
+            <input
+            type="checkbox"
+            id="hideBalance">
+
+            <span class="slider"></span>
+
+        </label>
+
+    </div>
+
+    <div class="switch-row">
+
+        <span>Hide Assets</span>
+
+        <label class="switch">
+
+            <input
+            type="checkbox"
+            id="hideAssets">
+
+            <span class="slider"></span>
+
+        </label>
+
+    </div>
+
+    <div class="switch-row">
+
+        <span>Show Online Status</span>
+
+        <label class="switch">
+
+            <input
+            type="checkbox"
+            id="onlineStatus"
+            checked>
+
+            <span class="slider"></span>
+
+        </label>
+
+    </div>
+
+</section>
+
+<!-- =========================
+SECURITY
+========================= -->
+
+<section class="pref-card">
+
+    <div class="pref-title">
+
+        <i class="fa-solid fa-shield-halved"></i>
+
+        <span>Security</span>
+
+    </div>
+
+    <div class="switch-row">
+
+        <span>Biometric Login</span>
+
+        <label class="switch">
+
+            <input
+            type="checkbox"
+            id="biometric"
+            checked>
+
+            <span class="slider"></span>
+
+        </label>
+
+    </div>
+
+    <div class="switch-row">
+
+        <span>Two-Factor Authentication</span>
+
+        <label class="switch">
+
+            <input
+            type="checkbox"
+            id="twoFactor"
+            checked>
+
+            <span class="slider"></span>
+
+        </label>
+
+    </div>
+
+</section>
+
+<!-- =========================
+REGION
+========================= -->
+
+<section class="pref-card">
+
+    <div class="pref-title">
+
+        <i class="fa-solid fa-earth-africa"></i>
+
+        <span>Region</span>
+
+    </div>
+
+    <div class="pref-item">
+
+        <div>
+
+            <h4>Country</h4>
+
+            <p>Your Current Country</p>
+
+        </div>
+
+        <select id="country">
+
+            <option>Nigeria</option>
+
+        </select>
+
+    </div>
+
+    <div class="pref-item">
+
+        <div>
+
+            <h4>Time Zone</h4>
+
+            <p>Current Time Zone</p>
+
+        </div>
+
+        <select id="timezone">
+
+            <option>GMT +1</option>
+
+        </select>
+
+    </div>
+
+    <div class="pref-item">
+
+        <div>
+
+            <h4>Currency</h4>
+
+            <p>Display Currency</p>
+
+        </div>
+
+        <select id="currency">
+
+            <option>Pi (π)</option>
+
+        </select>
+
+    </div>
+
+</section>
+
+<!-- =========================
+APP SETTINGS
+========================= -->
+
+<section class="pref-card">
+
+    <div class="pref-title">
+
+        <i class="fa-solid fa-mobile-screen"></i>
+
+        <span>App Settings</span>
+
+    </div>
+
+    <div
+    class="pref-link"
+    onclick="clearCache()">
+
+        <i class="fa-solid fa-broom"></i>
+
+        <span>Clear Cache</span>
+
+        <i class="fa-solid fa-angle-right"></i>
+
+    </div>
+
+    <div
+    class="pref-link"
+    onclick="resetPreferences()">
+
+        <i class="fa-solid fa-rotate-left"></i>
+
+        <span>Reset Preferences</span>
+
+        <i class="fa-solid fa-angle-right"></i>
+
+    </div>
+
+</section>
+
+<!-- =========================
+ABOUT APP
+========================= -->
+
+<section class="pref-card">
+
+    <div class="pref-title">
+
+        <i class="fa-solid fa-circle-info"></i>
+
+        <span>About ALBUKHR</span>
+
+    </div>
+
+    <div class="pref-info">
+
+        <div class="info-row">
+
+            <span>Version</span>
+
+            <strong>1.0.0</strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>Platform</span>
+
+            <strong>Pi Network</strong>
+
+        </div>
+
+        <div class="info-row">
+
+            <span>Company</span>
+
+            <strong>ALBUKHR Investment Limited</strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- =========================
+SAVE BUTTON
+========================= -->
+
+<section class="save-section">
+
+    <button
+    class="save-preferences-btn"
+    onclick="savePreferences()">
+
+        <i class="fa-solid fa-floppy-disk"></i>
+
+        Save Changes
+
+    </button>
+
+</section>
+
+<!-- =========================
+FOOTER
+========================= -->
+
+<footer class="preferences-footer">
+
+    <img
+    src="images/IMG_20260717_164019_385 (1).png"
+    class="footer-logo"
+    alt="ALBUKHR">
+
+    <h3>
+
+        ALBUKHR Investment Limited
+
+    </h3>
+
+    <p>
+
+        Community Investment Platform
+        Powered by Pi Network
+
+    </p>
+
+    <small>
+
+        © 2026 ALBUKHR Investment Limited.
+        All Rights Reserved.
+
+    </small>
+
+</footer>
+
+</div>
+
+<!-- =========================
+ALBUKHR APP ALERT
+========================= -->
+
+<div
+id="appAlert"
+class="app-alert">
+
+    <div class="app-alert-box">
+
+        <h3 id="appAlertTitle">
+
+            Notice
+
+        </h3>
+
+        <p id="appAlertText">
+
+        </p>
+
+        <button
+        onclick="closeAppAlert()">
+
+            OK
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- =========================
+SCRIPTS
+========================= -->
+
+<script src="js/preferences.js"></script>
+
+<script src="js/app-alert.js"></script>
+
+<script>
+
+function savePreferences(){
+
+    if(window.savePreferencesData){
+
+        savePreferencesData();
+
+    }
+
+}
+
+</script>
+
+</body>
+
+</html>
