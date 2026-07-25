@@ -1,0 +1,643 @@
+/* ==========================================
+   ALBUKHR PREFERENCES
+   MODERN UI
+========================================== */
+
+/* ========= PAGE ========= */
+
+.preferences-page{
+
+    min-height:100vh;
+
+    background:#f5f7f6;
+
+    padding-bottom:120px;
+
+}
+
+/* ========= HEADER ========= */
+
+.preferences-header{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:50;
+
+    height:64px;
+
+    padding:0 18px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    background:#0f7a3d;
+
+    color:#fff;
+
+    box-shadow:0 3px 12px rgba(0,0,0,.08);
+
+}
+
+.preferences-header h2{
+
+    font-size:19px;
+
+    font-weight:700;
+
+}
+
+.back-btn,
+.save-btn{
+
+    border:none;
+
+    background:none;
+
+    color:#fff;
+
+    cursor:pointer;
+
+}
+
+.back-btn{
+
+    font-size:20px;
+
+}
+
+.save-btn{
+
+    background:#18b25b;
+
+    padding:9px 18px;
+
+    border-radius:10px;
+
+    font-size:14px;
+
+    font-weight:700;
+
+}
+
+/* ========= CARD ========= */
+
+.pref-card{
+
+    margin:16px;
+
+    background:#fff;
+
+    border-radius:18px;
+
+    overflow:hidden;
+
+    box-shadow:
+
+    0 8px 24px rgba(0,0,0,.06);
+
+}
+
+/* ========= SECTION TITLE ========= */
+
+.pref-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:16px 18px;
+
+    border-bottom:1px solid #edf1ef;
+
+    color:#0f7a3d;
+
+    font-weight:700;
+
+    font-size:16px;
+
+}
+
+.pref-title i{
+
+    font-size:18px;
+
+}
+
+/* ========= ROW ========= */
+
+.pref-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:16px;
+
+    padding:16px 18px;
+
+    border-bottom:1px solid #f1f3f2;
+
+}
+
+.pref-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.pref-item h4{
+
+    font-size:15px;
+
+    color:#222;
+
+    margin-bottom:4px;
+
+}
+
+.pref-item p{
+
+    font-size:12px;
+
+    color:#888;
+
+}
+
+/* ========= SELECT ========= */
+
+.pref-item select{
+
+    min-width:130px;
+
+    padding:9px 12px;
+
+    border-radius:10px;
+
+    border:1px solid #d8e3dd;
+
+    background:#fafafa;
+
+    font-size:13px;
+
+    outline:none;
+
+}
+
+/* ==========================================
+   SWITCH ROW
+========================================== */
+
+.switch-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px 18px;
+
+    border-bottom:1px solid #eef2ef;
+
+}
+
+.switch-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.switch-row span{
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+/* ==========================================
+   MODERN SWITCH
+========================================== */
+
+.switch{
+
+    position:relative;
+
+    display:inline-block;
+
+    width:52px;
+
+    height:30px;
+
+}
+
+.switch input{
+
+    opacity:0;
+
+    width:0;
+
+    height:0;
+
+}
+
+.slider{
+
+    position:absolute;
+
+    inset:0;
+
+    cursor:pointer;
+
+    background:#d7d7d7;
+
+    border-radius:40px;
+
+    transition:.25s;
+
+}
+
+.slider::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:24px;
+
+    height:24px;
+
+    left:3px;
+
+    top:3px;
+
+    background:#fff;
+
+    border-radius:50%;
+
+    transition:.25s;
+
+    box-shadow:0 3px 8px rgba(0,0,0,.18);
+
+}
+
+.switch input:checked + .slider{
+
+    background:#18b25b;
+
+}
+
+.switch input:checked + .slider::before{
+
+    transform:translateX(22px);
+
+}
+
+/* ==========================================
+   SETTINGS LINKS
+========================================== */
+
+.pref-link{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:16px 18px;
+
+    border-bottom:1px solid #eef2ef;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.pref-link:last-child{
+
+    border-bottom:none;
+
+}
+
+.pref-link:hover{
+
+    background:#f7fbf8;
+
+}
+
+.pref-link i:first-child{
+
+    width:22px;
+
+    color:#18b25b;
+
+    font-size:16px;
+
+}
+
+.pref-link span{
+
+    flex:1;
+
+    margin-left:14px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+.pref-link i:last-child{
+
+    color:#9aa3a0;
+
+}
+
+/* ==========================================
+   ABOUT INFO
+========================================== */
+
+.pref-info{
+
+    padding:8px 18px 14px;
+
+}
+
+.info-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:13px 0;
+
+    border-bottom:1px solid #eef2ef;
+
+}
+
+.info-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.info-row span{
+
+    color:#666;
+
+    font-size:14px;
+
+}
+
+.info-row strong{
+
+    color:#111;
+
+    font-size:14px;
+
+    font-weight:700;
+
+}
+
+/* ==========================================
+   DISABLED OPTIONS
+========================================== */
+
+.disabled{
+
+    opacity:.55;
+
+    pointer-events:none;
+
+  }
+
+/* ==========================================
+   SAVE BUTTON
+========================================== */
+
+.save-section{
+
+    margin:24px 16px;
+
+}
+
+.save-preferences-btn{
+
+    width:100%;
+
+    height:54px;
+
+    border:none;
+
+    border-radius:16px;
+
+    background:#18b25b;
+
+    color:#fff;
+
+    font-size:16px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+    box-shadow:0 10px 24px rgba(24,178,91,.25);
+
+    transition:.25s;
+
+}
+
+.save-preferences-btn:hover{
+
+    background:#14994d;
+
+}
+
+.save-preferences-btn:active{
+
+    transform:scale(.98);
+
+}
+
+/* ==========================================
+   FOOTER
+========================================== */
+
+.preferences-footer{
+
+    margin:40px 16px 30px;
+
+    text-align:center;
+
+    color:#777;
+
+}
+
+.preferences-footer img{
+
+    width:70px;
+
+    height:70px;
+
+    object-fit:contain;
+
+    margin-bottom:10px;
+
+}
+
+.preferences-footer h3{
+
+    color:#111;
+
+    font-size:17px;
+
+    margin-bottom:6px;
+
+}
+
+.preferences-footer p{
+
+    font-size:13px;
+
+    line-height:1.6;
+
+    margin-bottom:8px;
+
+}
+
+.preferences-footer small{
+
+    font-size:11px;
+
+    color:#999;
+
+}
+
+/* ==========================================
+   CARD ANIMATION
+========================================== */
+
+.pref-card{
+
+    animation:fadeUp .35s ease;
+
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(16px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* ==========================================
+   INPUT FOCUS
+========================================== */
+
+select:focus{
+
+    border-color:#18b25b;
+
+    box-shadow:0 0 0 3px rgba(24,178,91,.12);
+
+}
+
+/* ==========================================
+   MOBILE RESPONSIVE
+========================================== */
+
+@media(max-width:480px){
+
+    .preferences-header h2{
+
+        font-size:17px;
+
+    }
+
+    .pref-item{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+    .pref-item select{
+
+        width:100%;
+
+        margin-top:10px;
+
+    }
+
+    .switch-row{
+
+        padding:14px 16px;
+
+    }
+
+    .pref-title{
+
+        padding:14px 16px;
+
+    }
+
+}
+
+/* ==========================================
+   TABLET
+========================================== */
+
+@media(min-width:768px){
+
+    .preferences-page{
+
+        max-width:720px;
+
+        margin:auto;
+
+    }
+
+}
+
+/* ==========================================
+   END
+========================================== */
