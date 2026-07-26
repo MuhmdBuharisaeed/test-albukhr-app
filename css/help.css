@@ -1,0 +1,498 @@
+/* ==========================================
+   ALBUKHR HELP CENTER
+   Part 1
+========================================== */
+
+/* =========================
+PAGE
+========================= */
+
+.help-page{
+
+    width:100%;
+    max-width:800px;
+
+    margin:auto;
+
+    padding-bottom:120px;
+
+}
+
+/* =========================
+HEADER
+========================= */
+
+.help-header{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:100;
+
+    height:64px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 18px;
+
+    background:#18b25b;
+
+    color:#fff;
+
+    box-shadow:0 3px 12px rgba(0,0,0,.08);
+
+}
+
+.help-header h2{
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+.back-btn,
+.home-btn{
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:rgba(255,255,255,.16);
+
+    color:#fff;
+
+    font-size:17px;
+
+    cursor:pointer;
+
+}
+
+/* =========================
+HERO
+========================= */
+
+.help-hero{
+
+    margin:18px 16px;
+
+    padding:22px;
+
+    border-radius:22px;
+
+    background:linear-gradient(
+        135deg,
+        #18b25b,
+        #0f7a3d
+    );
+
+    color:#fff;
+
+}
+
+.help-hero h2{
+
+    font-size:24px;
+
+    margin-bottom:8px;
+
+}
+
+.help-hero p{
+
+    font-size:14px;
+
+    line-height:1.6;
+
+    opacity:.95;
+
+}
+
+/* =========================
+SEARCH
+========================= */
+
+.help-search{
+
+    margin:16px;
+
+}
+
+.search-box{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    background:#fff;
+
+    border-radius:16px;
+
+    padding:15px 16px;
+
+    box-shadow:0 8px 22px rgba(0,0,0,.06);
+
+}
+
+.search-box i{
+
+    color:#18b25b;
+
+    font-size:16px;
+
+}
+
+.search-box input{
+
+    flex:1;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    font-size:15px;
+
+}
+
+/* =========================
+CARD
+========================= */
+
+.help-card{
+
+    background:#fff;
+
+    margin:16px;
+
+    border-radius:22px;
+
+    overflow:hidden;
+
+    box-shadow:0 8px 22px rgba(0,0,0,.06);
+
+}
+
+.section-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:18px;
+
+    font-size:17px;
+
+    font-weight:700;
+
+    color:#111;
+
+    border-bottom:1px solid #eef1ef;
+
+}
+
+.section-title i{
+
+    color:#18b25b;
+
+  }
+
+/* ==========================================
+   QUICK HELP GRID
+========================================== */
+
+.quick-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:14px;
+
+    padding:18px;
+
+}
+
+.quick-help-btn{
+
+    border:none;
+
+    background:#f8fbf9;
+
+    border-radius:18px;
+
+    padding:20px 12px;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+}
+
+.quick-help-btn:hover{
+
+    background:#eef9f2;
+
+    transform:translateY(-2px);
+
+}
+
+.quick-help-btn i{
+
+    font-size:28px;
+
+    color:#18b25b;
+
+}
+
+.quick-help-btn span{
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+/* ==========================================
+   FAQ
+========================================== */
+
+.faq-list{
+
+    padding:8px 0;
+
+}
+
+.faq-item{
+
+    border-bottom:1px solid #eef1ef;
+
+}
+
+.faq-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.faq-question{
+
+    width:100%;
+
+    border:none;
+
+    background:none;
+
+    padding:18px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    cursor:pointer;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#222;
+
+    text-align:left;
+
+}
+
+.faq-question i{
+
+    color:#18b25b;
+
+    transition:.3s;
+
+}
+
+.faq-item.active .faq-question i{
+
+    transform:rotate(180deg);
+
+}
+
+.faq-answer{
+
+    display:none;
+
+    padding:0 18px 18px;
+
+    color:#666;
+
+    font-size:14px;
+
+    line-height:1.7;
+
+}
+
+.faq-item.active .faq-answer{
+
+    display:block;
+
+}
+
+/* ==========================================
+   HELP MENU
+========================================== */
+
+.help-menu{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.help-item{
+
+    border:none;
+
+    background:#fff;
+
+    padding:18px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+    border-bottom:1px solid #eef1ef;
+
+}
+
+.help-item:last-child{
+
+    border-bottom:none;
+
+}
+
+.help-item:hover{
+
+    background:#f8fbf9;
+
+}
+
+.help-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.help-left i{
+
+    width:22px;
+
+    text-align:center;
+
+    font-size:18px;
+
+    color:#18b25b;
+
+}
+
+.help-left span{
+
+    font-size:15px;
+
+    font-weight:600;
+
+    color:#222;
+
+}
+
+.help-item>.fa-angle-right{
+
+    color:#b4b4b4;
+
+}
+
+/* ==========================================
+   SECURITY TIPS
+========================================== */
+
+.tips-list{
+
+    padding:18px;
+
+}
+
+.tip-item{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:12px;
+
+    margin-bottom:18px;
+
+}
+
+.tip-item:last-child{
+
+    margin-bottom:0;
+
+}
+
+.tip-item i{
+
+    color:#18b25b;
+
+    font-size:18px;
+
+    margin-top:2px;
+
+}
+
+.tip-item p{
+
+    flex:1;
+
+    font-size:14px;
+
+    color:#555;
+
+    line-height:1.7;
+
+  }
