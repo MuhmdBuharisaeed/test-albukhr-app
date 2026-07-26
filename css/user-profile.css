@@ -1091,6 +1091,58 @@ font-size:20px;
 
 }
 
+/* =====================================
+   LOGOUT SECTION
+===================================== */
+
+.logout-section{
+    padding:24px 20px 35px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.logout-button{
+    width:100%;
+    max-width:340px;
+    height:54px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+
+    border:none;
+    outline:none;
+    border-radius:18px;
+
+    background:linear-gradient(
+        135deg,
+        #0f7a3d,
+        #169b50
+    );
+
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+
+    cursor:pointer;
+    transition:.25s ease;
+
+    box-shadow:0 10px 25px rgba(15,122,61,.25);
+}
+
+.logout-button:hover{
+    transform:translateY(-2px);
+}
+
+.logout-button:active{
+    transform:scale(.98);
+}
+
+.logout-button i{
+    font-size:18px;
+}
 
 /* =====================================
    WALLET ADDRESS
