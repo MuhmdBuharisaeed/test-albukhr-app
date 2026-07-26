@@ -496,3 +496,226 @@ CARD
     line-height:1.7;
 
   }
+/* ==========================================
+   ABOUT SECTION
+========================================== */
+
+.about-card{
+    background:#fff;
+    border-radius:18px;
+    padding:22px;
+    margin-top:22px;
+    box-shadow:0 8px 24px rgba(0,0,0,.06);
+    text-align:center;
+}
+
+.about-logo{
+    width:70px;
+    height:70px;
+    object-fit:contain;
+    margin-bottom:12px;
+}
+
+.about-title{
+    font-size:18px;
+    font-weight:700;
+    color:var(--albukhr-green);
+    margin-bottom:8px;
+}
+
+.about-text{
+    font-size:14px;
+    line-height:1.7;
+    color:#666;
+}
+
+/* ==========================================
+   FOOTER
+========================================== */
+
+.help-footer{
+    margin-top:28px;
+    padding:24px 18px 40px;
+    text-align:center;
+    color:#777;
+}
+
+.help-footer h4{
+    color:var(--albukhr-green);
+    margin-bottom:8px;
+}
+
+.help-footer p{
+    font-size:13px;
+    line-height:1.6;
+}
+
+.help-footer small{
+    display:block;
+    margin-top:10px;
+    color:#999;
+}
+
+/* ==========================================
+   HOVER EFFECTS
+========================================== */
+
+.faq-card,
+.contact-card,
+.about-card{
+    transition:.25s ease;
+}
+
+.faq-card:hover,
+.contact-card:hover,
+.about-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 12px 28px rgba(0,0,0,.10);
+}
+
+.contact-btn{
+    transition:.25s ease;
+}
+
+.contact-btn:hover{
+    transform:scale(1.02);
+}
+
+.contact-btn:active{
+    transform:scale(.97);
+}
+
+/* ==========================================
+   FADE ANIMATION
+========================================== */
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+        transform:translateY(18px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+.help-card,
+.faq-card,
+.contact-card,
+.about-card{
+
+    animation:fadeUp .45s ease;
+
+}
+
+/* ==========================================
+   DARK MODE READY
+========================================== */
+
+:root{
+
+    --help-bg:#f5f7f8;
+    --help-card:#ffffff;
+    --help-text:#222;
+    --help-sub:#777;
+
+}
+
+.dark-mode{
+
+    --help-bg:#111827;
+    --help-card:#1c2431;
+    --help-text:#ffffff;
+    --help-sub:#b6b6b6;
+
+}
+
+body{
+
+    background:var(--help-bg);
+
+}
+
+.help-card,
+.faq-card,
+.contact-card,
+.about-card{
+
+    background:var(--help-card);
+    color:var(--help-text);
+
+}
+
+.help-subtitle,
+.about-text,
+.help-footer p{
+
+    color:var(--help-sub);
+
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media (max-width:768px){
+
+    .help-container{
+
+        padding:16px;
+
+    }
+
+    .help-title{
+
+        font-size:22px;
+
+    }
+
+    .search-box input{
+
+        font-size:14px;
+
+    }
+
+    .contact-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media (max-width:480px){
+
+    .help-header{
+
+        padding:16px;
+
+    }
+
+    .faq-question{
+
+        font-size:14px;
+
+    }
+
+    .contact-btn{
+
+        width:100%;
+
+    }
+
+}
+
+/* ==========================================
+   END OF FILE
+========================================== */
