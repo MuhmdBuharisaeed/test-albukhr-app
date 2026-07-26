@@ -529,32 +529,43 @@ CARD
     color:#666;
 }
 
-/* ==========================================
-   FOOTER
-========================================== */
+/* ===============================
+FOOTER
+=============================== */
 
 .help-footer{
-    margin-top:28px;
-    padding:24px 18px 40px;
     text-align:center;
-    color:#777;
+    padding:30px 20px;
+    color:#666;
 }
 
-.help-footer h4{
-    color:var(--albukhr-green);
+.footer-logo{
+    width:70px;
+    height:70px;
+    object-fit:contain;
+    display:block;
+    margin:0 auto 15px;
+    border-radius:18px;
+    box-shadow:0 8px 20px rgba(15,122,61,.15);
+}
+
+.help-footer h3{
+    font-size:20px;
+    color:#222;
     margin-bottom:8px;
 }
 
 .help-footer p{
-    font-size:13px;
+    font-size:14px;
+    color:#666;
     line-height:1.6;
+    margin-bottom:10px;
 }
 
 .help-footer small{
-    display:block;
-    margin-top:10px;
+    font-size:12px;
     color:#999;
-}
+   }
 
 /* ==========================================
    HOVER EFFECTS
