@@ -893,23 +893,23 @@ transform:translateY(0);
   font-weight:600;
   }
 
-/* ===============================
+/* =====================================
    EXPLORE PROJECTS BUTTON
-================================ */
+===================================== */
 
 .explore-btn{
 
-    display:inline-flex;
+    display:flex;
     align-items:center;
     justify-content:center;
+    gap:8px;
 
     padding:10px 18px;
 
-    min-width:150px;
-    height:46px;
-
     border:none;
-    border-radius:30px;
+    border-radius:999px;
+
+    cursor:pointer;
 
     background:linear-gradient(
         135deg,
@@ -918,19 +918,30 @@ transform:translateY(0);
     );
 
     color:#fff;
-    font-size:15px;
+
+    font-size:14px;
     font-weight:700;
 
-    cursor:pointer;
+    box-shadow:
+        0 6px 18px rgba(15,122,61,.28);
 
-    box-shadow:0 6px 18px rgba(15,122,61,.25);
+    transition:.3s ease;
 
-    transition:.25s;
+    animation:exploreGlow 2s infinite;
+}
+
+.explore-btn i{
+
+    font-size:15px;
+
 }
 
 .explore-btn:hover{
 
     transform:translateY(-2px);
+
+    box-shadow:
+        0 10px 24px rgba(15,122,61,.40);
 
 }
 
@@ -939,3 +950,28 @@ transform:translateY(0);
     transform:scale(.97);
 
 }
+
+@keyframes exploreGlow{
+
+    0%{
+
+        box-shadow:
+        0 0 0 rgba(15,122,61,.25);
+
+    }
+
+    50%{
+
+        box-shadow:
+        0 0 18px rgba(24,181,90,.55);
+
+    }
+
+    100%{
+
+        box-shadow:
+        0 0 0 rgba(15,122,61,.25);
+
+    }
+
+    }
