@@ -419,7 +419,7 @@ LEFT
 
     margin-top:4px;
 
-    font-size:24px;
+    font-size:14px;
 
     font-weight:800;
 
@@ -540,7 +540,7 @@ RIGHT
 
     position:relative;
 
-    width:250px;
+    width:150px;
 
     display:flex;
 
@@ -566,7 +566,7 @@ PI COIN
 
 .hero-coin{
 
-    width:120px;
+    width:90px;
 
     filter:
 
