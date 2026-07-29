@@ -72,15 +72,20 @@ CACHE.loading = true;
 
 try{
 
-const stakes =
+const userStakes =
 await getAllStakesMerged();
 
+const globalStakes =
+await getGlobalStakes();
+
 CACHE.stakes =
+Array.isArray(userStakes)
+? userStakes
+: [];
 
-Array.isArray(stakes)
-
-? stakes
-
+CACHE.globalStakes =
+Array.isArray(globalStakes)
+? globalStakes
 : [];
 
 buildProjects();
@@ -111,7 +116,7 @@ function buildProjects(){
 
 const map = {};
 
-CACHE.stakes.forEach(stake=>{
+CACHE.globalStakes.forEach(stake=>{
 
 const name =
 String(
