@@ -48,122 +48,123 @@ letter-spacing:1px;
 padding:16px;
 }
 
-/* =========================================
-   SUMMARY CARDS V2
-========================================= */
+/* =====================================
+   PREMIUM SUMMARY
+===================================== */
 
 .summary-grid{
 
-display:grid;
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
 
-grid-template-columns:repeat(2,1fr);
+    gap:14px;
 
-gap:14px;
-
-margin:20px 16px;
+    margin:18px;
 
 }
 
 .summary-card{
 
-display:flex;
+    background:#fff;
 
-align-items:center;
+    border-radius:24px;
 
-justify-content:flex-start;
+    padding:18px;
 
-gap:14px;
+    min-height:150px;
 
-padding:18px;
+    box-shadow:
+        0 10px 28px rgba(0,0,0,.06);
 
-background:#fff;
-
-border-radius:20px;
-
-box-shadow:0 8px 24px rgba(0,0,0,.06);
-
-transition:.25s;
-
-min-height:92px;
+    transition:.3s;
 
 }
 
 .summary-card:hover{
 
-transform:translateY(-3px);
+    transform:translateY(-3px);
 
-box-shadow:
-0 12px 28px rgba(0,0,0,.10);
+    box-shadow:
+        0 14px 34px rgba(0,0,0,.10);
 
 }
 
 .summary-icon{
 
-width:52px;
+    width:54px;
+    height:54px;
 
-height:52px;
+    border-radius:16px;
 
-border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 
-display:flex;
+    font-size:26px;
 
-align-items:center;
+    margin-bottom:16px;
 
-justify-content:center;
-
-font-size:24px;
-
-background:
-
-linear-gradient(
-135deg,
-#0f7a3d,
-#18a558
-);
-
-color:#fff;
-
-flex-shrink:0;
+    color:#fff;
 
 }
 
-.summary-content{
+.summary-card:nth-child(1) .summary-icon{
 
-flex:1;
+    background:linear-gradient(135deg,#16a34a,#0f7a3d);
 
-display:flex;
+}
 
-flex-direction:column;
+.summary-card:nth-child(2) .summary-icon{
 
-justify-content:center;
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
 
-align-items:center;
+}
 
-text-align:center;
+.summary-card:nth-child(3) .summary-icon{
+
+    background:linear-gradient(135deg,#a855f7,#7c3aed);
+
+}
+
+.summary-card:nth-child(4) .summary-icon{
+
+    background:linear-gradient(135deg,#f59e0b,#f97316);
 
 }
 
 .summary-title{
 
-font-size:13px;
+    font-size:15px;
 
-color:#777;
+    color:#666;
 
-margin:0 0 6px;
+    margin-bottom:8px;
 
-font-weight:500;
+    font-weight:500;
 
 }
 
 .summary-value{
 
-font-size:18px;
+    font-size:22px;
 
-font-weight:800;
+    font-weight:800;
 
-color:#111;
+    color:#111;
 
-line-height:1.2;
+    line-height:1.2;
+
+}
+
+.summary-subtitle{
+
+    margin-top:6px;
+
+    font-size:14px;
+
+    color:#178848;
+
+    font-weight:600;
 
 }
 
