@@ -57,9 +57,9 @@ padding:16px;
     display:grid;
     grid-template-columns:repeat(2,1fr);
 
-    gap:14px;
+    gap:10px;
 
-    margin:18px;
+    margin:14px;
 
 }
 
@@ -67,16 +67,16 @@ padding:16px;
 
     background:#fff;
 
-    border-radius:24px;
+    border-radius:18px;
 
-    padding:18px;
+    padding:12px;
 
-    min-height:150px;
+    min-height:72px;
 
     box-shadow:
-        0 10px 28px rgba(0,0,0,.06);
+        0 6px 18px rgba(0,0,0,.05);
 
-    transition:.3s;
+    transition:.25s;
 
 }
 
@@ -91,16 +91,16 @@ padding:16px;
 
 .summary-icon{
 
-    width:54px;
-    height:54px;
+    width:42px;
+    height:42px;
 
-    border-radius:16px;
+    border-radius:14px;
 
     display:flex;
     align-items:center;
     justify-content:center;
 
-    font-size:26px;
+    font-size:20px;
 
     margin-bottom:16px;
 
@@ -108,25 +108,33 @@ padding:16px;
 
 }
 
-.summary-card:nth-child(1) .summary-icon{
+.summary-card:nth-child(1) 
+
+.summary-icon{
 
     background:linear-gradient(135deg,#16a34a,#0f7a3d);
 
 }
 
-.summary-card:nth-child(2) .summary-icon{
+.summary-card:nth-child(2) 
+
+.summary-icon{
 
     background:linear-gradient(135deg,#3b82f6,#2563eb);
 
 }
 
-.summary-card:nth-child(3) .summary-icon{
+.summary-card:nth-child(3) 
+
+.summary-icon{
 
     background:linear-gradient(135deg,#a855f7,#7c3aed);
 
 }
 
-.summary-card:nth-child(4) .summary-icon{
+.summary-card:nth-child(4) 
+
+.summary-icon{
 
     background:linear-gradient(135deg,#f59e0b,#f97316);
 
@@ -134,7 +142,7 @@ padding:16px;
 
 .summary-title{
 
-    font-size:15px;
+    font-size:12px;
 
     color:#666;
 
@@ -146,7 +154,7 @@ padding:16px;
 
 .summary-value{
 
-    font-size:22px;
+    font-size:15px;
 
     font-weight:800;
 
@@ -158,9 +166,9 @@ padding:16px;
 
 .summary-subtitle{
 
-    margin-top:6px;
+    margin-top:3px;
 
-    font-size:14px;
+    font-size:11px;
 
     color:#178848;
 
