@@ -176,6 +176,16 @@ totalPortfolio.toFixed(2) + " Pi";
 
 }
 
+const todayProfit =
+document.getElementById("todayProfit");
+
+if(todayProfit){
+
+todayProfit.innerHTML =
+`+${totalEarn.toFixed(2)} Pi`;
+
+}
+
 container.innerHTML="";
 
 if(Object.keys(map).length===0){
@@ -358,3 +368,77 @@ Retry
 }
 
 renderInvestorDashboard();
+
+/* =====================================
+   ALBUKHR PREMIUM HERO
+===================================== */
+
+let portfolioVisible = true;
+
+/* Greeting */
+
+(function(){
+
+const greeting =
+document.getElementById("greetingText");
+
+if(greeting){
+
+const hour = new Date().getHours();
+
+if(hour < 12){
+
+greeting.textContent =
+"Good Morning,";
+
+}else if(hour < 18){
+
+greeting.textContent =
+"Good Afternoon,";
+
+}else{
+
+greeting.textContent =
+"Good Evening,";
+
+}
+
+}
+
+})();
+
+/* Balance Toggle */
+
+const eyeBtn =
+document.getElementById("toggleBalance");
+
+if(eyeBtn){
+
+eyeBtn.onclick = ()=>{
+
+const balance =
+document.getElementById("heroPortfolio");
+
+portfolioVisible =
+!portfolioVisible;
+
+if(portfolioVisible){
+
+renderInvestorDashboard();
+
+eyeBtn.innerHTML =
+'<i class="fa-solid fa-eye"></i>';
+
+}else{
+
+balance.textContent =
+"••••••";
+
+eyeBtn.innerHTML =
+'<i class="fa-solid fa-eye-slash"></i>';
+
+}
+
+};
+
+}
