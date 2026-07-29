@@ -453,7 +453,7 @@ BALANCE
 
 .hero-balance{
 
-    font-size:32px;
+    font-size:30px;
 
     font-weight:900;
 
@@ -540,7 +540,7 @@ RIGHT
 
     position:relative;
 
-    width:150px;
+    width:120px;
 
     display:flex;
 
@@ -566,7 +566,7 @@ PI COIN
 
 .hero-coin{
 
-    width:90px;
+    width:85px;
 
     filter:
 
@@ -656,50 +656,83 @@ TREASURY
 MOBILE
 ========================= */
 
-@media(max-width:768px){
+@media (max-width:768px){
 
 .dashboard-hero{
 
-    flex-direction:column;
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items:center;
 
-    align-items:flex-start;
+    padding:18px;
+    min-height:180px;
+}
 
-    padding:24px;
+.hero-left{
 
-    min-height:auto;
-
+    flex:1;
 }
 
 .hero-right{
 
-    width:100%;
-
-    margin-top:25px;
-
+    width:120px;
+    margin-top:0;
 }
 
-.hero-coin{
+.hero-greeting{
 
-    width:140px;
-
+    font-size:13px;
 }
 
 #heroUserName{
 
-    font-size:30px;
+    font-size:15px;
+}
 
+.hero-label{
+
+    font-size:12px;
+    margin-top:8px;
 }
 
 .hero-balance{
 
-    font-size:42px;
+    font-size:30px;
+}
 
+.eye-btn{
+
+    width:36px;
+    height:36px;
+    font-size:15px;
+}
+
+.profit-badge{
+
+    padding:7px 12px;
+    font-size:11px;
+}
+
+.hero-coin{
+
+    width:82px;
 }
 
 .treasury-badge{
 
-    transform:scale(.92);
+    margin-top:8px;
+    padding:7px 10px;
+}
 
+.treasury-badge strong{
+
+    font-size:10px;
+}
+
+.treasury-badge span{
+
+    font-size:12px;
 }
 
 }
