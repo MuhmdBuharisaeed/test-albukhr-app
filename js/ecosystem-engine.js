@@ -129,33 +129,21 @@ stake.project ||
 
 if(!map[name]){
 
+const meta = resolveProject(name);
+
 map[name]={
 
-code:name,
+    ...meta,
 
-title:name,
+    investors:new Set(),
 
-description:"",
+    liquidity:0,
 
-icon:"📦",
+    reward:0,
 
-category:"Project",
+    records:0,
 
-roi:0,
-
-minimum:1,
-
-target:1000,
-
-investors:new Set(),
-
-liquidity:0,
-
-reward:0,
-
-records:0,
-
-stakes:[]
+    stakes:[]
 
 };
 
