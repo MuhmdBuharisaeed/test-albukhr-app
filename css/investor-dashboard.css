@@ -317,9 +317,9 @@ line-height:1.3;
 
     background:#fff;
 
-    border-radius:22px;
+    border-radius:18px;
 
-    padding:16px;
+    padding:14px;
 
     margin:14px 16px;
 
@@ -360,11 +360,11 @@ TOP
 
 .investment-icon{
 
-    width:72px;
+    width:60px;
 
-    height:72px;
+    height:60px;
 
-    border-radius:16px;
+    border-radius:14px;
 
     overflow:hidden;
 
@@ -386,13 +386,13 @@ TOP
 
 .investment-name{
 
-    font-size:22px;
+    font-size:16px;
 
     font-weight:800;
 
     color:#111;
 
-    margin-bottom:8px;
+    margin-bottom:4px;
 
 }
 
@@ -406,7 +406,7 @@ TOP
 
     flex-wrap:wrap;
 
-    gap:8px;
+    gap:6px;
 
 }
 
@@ -414,7 +414,7 @@ TOP
 
     color:#16a34a;
 
-    font-size:13px;
+    font-size:12px;
 
     font-weight:700;
 
@@ -422,7 +422,7 @@ TOP
 
 .project-badge{
 
-    padding:4px 10px;
+    padding:3px 8px;
 
     border-radius:999px;
 
@@ -430,7 +430,7 @@ TOP
 
     color:#218c4d;
 
-    font-size:12px;
+    font-size:11px;
 
     font-weight:700;
 
@@ -472,9 +472,9 @@ GRID
 
     grid-template-columns:repeat(4,1fr);
 
-    gap:10px;
+    gap:8px;
 
-    margin:14px 0;
+    margin:10px 0;
 
 }
 
@@ -506,7 +506,7 @@ GRID
 
 .investment-grid b{
 
-    font-size:17px;
+    font-size:15px;
 
     color:#111;
 
@@ -526,7 +526,7 @@ PROGRESS
 
     margin-bottom:6px;
 
-    font-size:13px;
+    font-size:12px;
 
     color:#555;
 
@@ -536,7 +536,7 @@ PROGRESS
 
     width:100%;
 
-    height:10px;
+    height:8px;
 
     background:#ececec;
 
@@ -568,21 +568,21 @@ BUTTON
 
 .investment-btn{
 
-    margin-top:16px;
+    margin-top:12px;
 
     width:100%;
 
     border:none;
 
-    border-radius:14px;
+    border-radius:12px;
 
-    padding:12px;
+    padding:11px;
 
     background:#0f7a3d;
 
     color:#fff;
 
-    font-size:14px;
+    font-size:13px;
 
     font-weight:700;
 
