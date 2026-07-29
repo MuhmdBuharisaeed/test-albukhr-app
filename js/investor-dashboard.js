@@ -234,79 +234,113 @@ card.innerHTML = `
 
 <div class="investment-top">
 
-<div class="investment-project">
+    <div class="investment-project">
 
-<div class="investment-icon">
+        <div class="investment-icon">
 
-📦
+            <img src="images/projects/default.png"
+                 alt="${project}">
 
-</div>
+        </div>
 
-<div>
+        <div>
 
-<div class="investment-name">
+            <div class="investment-name">
+                ${project}
+            </div>
 
-${project}
+            <div class="investment-status">
 
-</div>
+                <span class="status-dot">
+                    ● Active
+                </span>
 
-<div class="investment-status">
+                <span class="project-badge">
+                    Core Project
+                </span>
 
-🟢 Active
+            </div>
 
-</div>
+        </div>
 
-</div>
+    </div>
 
-</div>
+    <div class="investment-profit">
 
-<div class="investment-profit">
+        <b>
+            ${data.earn.toFixed(2)} Pi
+        </b>
 
-+${data.earn.toFixed(2)} Pi
+        <span>
+            Current Earnings
+        </span>
 
-</div>
+    </div>
 
 </div>
 
 <div class="investment-grid">
 
-<div>
+    <div>
 
-<span>Invested</span>
+        <span>Invested</span>
 
-<b>${data.invest.toFixed(2)} Pi</b>
+        <b>
+            ${data.invest.toFixed(2)} Pi
+        </b>
+
+    </div>
+
+    <div>
+
+        <span>Earnings</span>
+
+        <b>
+            ${data.earn.toFixed(2)} Pi
+        </b>
+
+    </div>
+
+    <div>
+
+        <span>ROI</span>
+
+        <b>
+            ${
+                data.invest > 0
+                ? ((data.earn / data.invest) * 100).toFixed(2)
+                : "0.00"
+            }%
+        </b>
+
+    </div>
+
+    <div>
+
+        <span>Records</span>
+
+        <b>${data.count}</b>
+
+    </div>
 
 </div>
 
-<div>
+<div class="progress-header">
 
-<span>Earnings</span>
+    <span>
+        Project Progress
+    </span>
 
-<b>${data.earn.toFixed(2)} Pi</b>
-
-</div>
-
-<div>
-
-<span>Records</span>
-
-<b>${data.count}</b>
-
-</div>
-
-<div>
-
-<span>Status</span>
-
-<b>Running</b>
-
-</div>
+    <span>85%</span>
 
 </div>
 
 <div class="investment-progress">
 
-<div class="investment-progress-bar"></div>
+    <div
+        class="investment-progress-bar"
+        style="width:85%">
+    </div>
 
 </div>
 
