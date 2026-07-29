@@ -289,162 +289,420 @@ padding:0 16px;
 font-weight:700;
 }
 
-/* =========================================
-   HERO BANNER
-========================================= */
+/* =====================================
+   ALBUKHR PREMIUM HERO
+===================================== */
 
 .dashboard-hero{
 
-margin:16px;
+    position:relative;
 
-padding:22px;
+    overflow:hidden;
 
-border-radius:24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 
-background:
-linear-gradient(
-135deg,
-#0f7a3d,
-#18a558
-);
+    margin:18px;
+    padding:28px;
 
-color:#fff;
+    min-height:230px;
 
-box-shadow:
-0 12px 30px
-rgba(15,122,61,.25);
+    border-radius:30px;
 
-overflow:hidden;
+    background:linear-gradient(
+        135deg,
+        #06692f 0%,
+        #0d8c43 45%,
+        #13a74d 100%
+    );
 
-position:relative;
+    color:#fff;
 
-}
-
-.dashboard-hero::after{
-
-content:"";
-
-position:absolute;
-
-right:-40px;
-
-top:-40px;
-
-width:160px;
-
-height:160px;
-
-border-radius:50%;
-
-background:
-rgba(255,255,255,.08);
+    box-shadow:
+        0 18px 45px rgba(15,122,61,.28);
 
 }
 
-.hero-content{
+/* =========================
+BACKGROUND GLOW
+========================= */
 
-display:flex;
+.hero-bg{
 
-justify-content:space-between;
+    position:absolute;
 
-align-items:flex-start;
+    width:420px;
+    height:420px;
 
-gap:20px;
+    right:-160px;
+    top:-150px;
 
-position:relative;
+    border-radius:50%;
 
-z-index:2;
+    background:rgba(255,255,255,.06);
 
 }
 
-.hero-text{
+/* =========================
+WAVE
+========================= */
 
-flex:1;
+.hero-wave{
+
+    position:absolute;
+
+    right:-100px;
+    bottom:-80px;
+
+    width:520px;
+    height:320px;
+
+    border-radius:50%;
+
+    border:1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+
+        0 0 0 40px rgba(255,255,255,.03),
+
+        0 0 0 80px rgba(255,255,255,.02),
+
+        0 0 0 120px rgba(255,255,255,.02);
+
+}
+
+/* =========================
+LEFT
+========================= */
+
+.hero-left{
+
+    position:relative;
+
+    z-index:2;
+
+    flex:1;
 
 }
 
 .hero-greeting{
 
-font-size:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
 
-font-weight:600;
+    font-size:17px;
+    font-weight:500;
 
-opacity:.9;
-
-margin-bottom:8px;
-
-}
-
-.hero-text h1{
-
-margin:0;
-
-font-size:clamp(18px,5vw,28px);
-
-font-weight:700;
-
-line-height:1.2;
-
-letter-spacing:-0.4px;
-
-max-width:190px;
-
-white-space:normal;
-
-word-break:break-word;
-
-overflow-wrap:anywhere;
+    opacity:.95;
 
 }
 
-.hero-text p{
+.wave{
 
-margin-top:12px;
-
-font-size:15px;
-
-line-height:1.6;
-
-opacity:.92;
-
-max-width:260px;
+    animation:waveHand 2s infinite;
 
 }
 
-.hero-balance{
+@keyframes waveHand{
 
-background:
-rgba(255,255,255,.12);
+    0%{transform:rotate(0deg);}
+    20%{transform:rotate(18deg);}
+    40%{transform:rotate(-8deg);}
+    60%{transform:rotate(18deg);}
+    100%{transform:rotate(0deg);}
 
-backdrop-filter:blur(8px);
+}
 
-padding:14px 18px;
+#heroUserName{
 
-border-radius:18px;
+    margin-top:8px;
 
-text-align:right;
+    font-size:40px;
 
-min-width:130px;
+    font-weight:800;
+
+    line-height:1.15;
 
 }
 
 .hero-label{
 
-font-size:12px;
+    margin-top:18px;
 
-opacity:.85;
+    font-size:17px;
 
-margin-bottom:6px;
+    opacity:.85;
 
 }
 
-.hero-value{
+/* =========================
+BALANCE
+========================= */
 
-font-size:24px;
+.hero-balance-row{
 
-font-weight:800;
+    display:flex;
+    align-items:center;
+    gap:14px;
 
-  }
+    margin-top:8px;
+
+}
+
+.hero-balance{
+
+    font-size:54px;
+
+    font-weight:900;
+
+    letter-spacing:.5px;
+
+}
+
+/* =========================
+EYE BUTTON
+========================= */
+
+.eye-btn{
+
+    width:50px;
+    height:50px;
+
+    border:none;
+
+    border-radius:16px;
+
+    cursor:pointer;
+
+    background:rgba(255,255,255,.16);
+
+    backdrop-filter:blur(12px);
+
+    color:#fff;
+
+    font-size:20px;
+
+    transition:.30s;
+
+}
+
+.eye-btn:hover{
+
+    transform:scale(1.08);
+
+    background:rgba(255,255,255,.24);
+
+}
+
+/* =========================
+TODAY BADGE
+========================= */
+
+.profit-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-top:22px;
+
+    padding:12px 18px;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.12);
+
+    backdrop-filter:blur(10px);
+
+    font-size:17px;
+
+    font-weight:700;
+
+}
+
+.profit-badge small{
+
+    opacity:.8;
+
+    font-weight:500;
+
+}
+
+/* =========================
+RIGHT
+========================= */
+
+.hero-right{
+
+    position:relative;
+
+    width:250px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    z-index:2;
+
+}
+
+/* =========================
+PI COIN
+========================= */
+
+.coin-wrapper{
+
+    animation:coinFloat 4s ease-in-out infinite;
+
+}
+
+.hero-coin{
+
+    width:180px;
+
+    filter:
+
+        drop-shadow(
+            0 20px 25px rgba(0,0,0,.25)
+        );
+
+}
+
+@keyframes coinFloat{
+
+    0%{
+
+        transform:translateY(0);
+
+    }
+
+    50%{
+
+        transform:translateY(-10px);
+
+    }
+
+    100%{
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* =========================
+TREASURY
+========================= */
+
+.treasury-badge{
+
+    margin-top:-8px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:14px 18px;
+
+    border-radius:18px;
+
+    background:#ffd84c;
+
+    color:#222;
+
+    box-shadow:
+
+        0 10px 25px rgba(0,0,0,.18);
+
+}
+
+.treasury-badge i{
+
+    font-size:24px;
+
+    color:#866300;
+
+}
+
+.treasury-badge strong{
+
+    display:block;
+
+    font-size:14px;
+
+}
+
+.treasury-badge span{
+
+    display:block;
+
+    font-size:17px;
+
+    font-weight:800;
+
+}
+
+/* =========================
+MOBILE
+========================= */
+
+@media(max-width:768px){
+
+.dashboard-hero{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    padding:24px;
+
+    min-height:auto;
+
+}
+
+.hero-right{
+
+    width:100%;
+
+    margin-top:25px;
+
+}
+
+.hero-coin{
+
+    width:140px;
+
+}
+
+#heroUserName{
+
+    font-size:30px;
+
+}
+
+.hero-balance{
+
+    font-size:42px;
+
+}
+
+.treasury-badge{
+
+    transform:scale(.92);
+
+}
+
+}
 
 /* =========================================
    INVESTMENT CARD V2
