@@ -304,11 +304,11 @@ font-weight:700;
     align-items:center;
 
     margin:18px;
-    padding:28px;
+    padding:20px;
 
-    min-height:230px;
+    min-height:180px;
 
-    border-radius:30px;
+    border-radius:24px;
 
     background:linear-gradient(
         135deg,
@@ -390,9 +390,9 @@ LEFT
 
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:5px;
 
-    font-size:17px;
+    font-size:13px;
     font-weight:500;
 
     opacity:.95;
@@ -417,21 +417,21 @@ LEFT
 
 #heroUserName{
 
-    margin-top:8px;
+    margin-top:4px;
 
-    font-size:40px;
+    font-size:24px;
 
     font-weight:800;
 
-    line-height:1.15;
+    line-height:1.1;
 
 }
 
 .hero-label{
 
-    margin-top:18px;
+    margin-top:10px;
 
-    font-size:17px;
+    font-size:12px;
 
     opacity:.85;
 
@@ -453,7 +453,7 @@ BALANCE
 
 .hero-balance{
 
-    font-size:54px;
+    font-size:32px;
 
     font-weight:900;
 
@@ -467,12 +467,12 @@ EYE BUTTON
 
 .eye-btn{
 
-    width:50px;
-    height:50px;
+    width:38px;
+    height:38px;
 
     border:none;
 
-    border-radius:16px;
+    border-radius:12px;
 
     cursor:pointer;
 
@@ -482,7 +482,7 @@ EYE BUTTON
 
     color:#fff;
 
-    font-size:20px;
+    font-size:16px;
 
     transition:.30s;
 
@@ -506,11 +506,11 @@ TODAY BADGE
 
     align-items:center;
 
-    gap:10px;
+    gap:6px;
 
-    margin-top:22px;
+    margin-top:12px;
 
-    padding:12px 18px;
+    padding:8px 12px;
 
     border-radius:999px;
 
@@ -518,7 +518,7 @@ TODAY BADGE
 
     backdrop-filter:blur(10px);
 
-    font-size:17px;
+    font-size:12px;
 
     font-weight:700;
 
@@ -566,7 +566,7 @@ PI COIN
 
 .hero-coin{
 
-    width:180px;
+    width:120px;
 
     filter:
 
@@ -610,11 +610,11 @@ TREASURY
 
     align-items:center;
 
-    gap:12px;
+    gap:8px;
 
-    padding:14px 18px;
+    padding:8px 12px;
 
-    border-radius:18px;
+    border-radius:14px;
 
     background:#ffd84c;
 
@@ -628,7 +628,7 @@ TREASURY
 
 .treasury-badge i{
 
-    font-size:24px;
+    font-size:14px;
 
     color:#866300;
 
@@ -638,7 +638,7 @@ TREASURY
 
     display:block;
 
-    font-size:14px;
+    font-size:11px;
 
 }
 
@@ -646,7 +646,7 @@ TREASURY
 
     display:block;
 
-    font-size:17px;
+    font-size:14px;
 
     font-weight:800;
 
