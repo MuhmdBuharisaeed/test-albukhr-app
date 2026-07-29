@@ -1201,48 +1201,67 @@ font-size:21px;
 }
 
 }
-/* ==========================================
-   FOOTER
-========================================== */
+
+/* ===============================
+FOOTER
+=============================== */
 
 .profile-footer{
-    margin:32px 18px 18px;
-    padding:24px 18px;
-
-    background:#fff;
-
-    border-radius:22px;
 
     text-align:center;
 
-    box-shadow:0 8px 20px rgba(0,0,0,.05);
+    padding:30px 20px;
+
+    color:#666;
+
 }
 
 .footer-logo{
-    width:64px;
-    height:64px;
+
+    width:70px;
+
+    height:70px;
 
     object-fit:contain;
 
-    margin-bottom:12px;
+    display:block;
+
+    margin:0 auto 15px;
+
+    border-radius:18px;
+
+    box-shadow:0 8px 20px rgba(15,122,61,.15);
+
+}
+
+.profile-footer h3{
+
+    font-size:20px;
+
+    color:#222;
+
+    margin-bottom:8px;
+
 }
 
 .profile-footer p{
-    font-size:15px;
-    font-weight:700;
-    color:#111;
 
-    margin-bottom:6px;
-}
+    font-size:14px;
 
-.profile-footer small{
-    display:block;
-
-    color:#777;
+    color:#666;
 
     line-height:1.6;
 
-    font-size:13px;
+    margin-bottom:10px;
+
+}
+
+.profile-footer small{
+
+    font-size:12px;
+
+    color:#999;
+
 }
 
 /* ==========================================
