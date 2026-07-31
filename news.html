@@ -1,0 +1,117 @@
+<!-- =========================================
+     ALBUKHR NEWS PAGE
+========================================= -->
+
+<div class="news-page">
+
+    <!-- HEADER -->
+    <div class="news-header">
+
+        <h2>
+            📰 ALBUKHR News
+        </h2>
+
+        <p>
+            Latest announcements from ALBUKHR Ecosystem
+            and your invested projects.
+        </p>
+
+    </div>
+
+    <!-- FILTER TABS -->
+
+    <div class="news-tabs">
+
+        <button
+            class="news-tab active"
+            data-filter="all">
+
+            All
+
+        </button>
+
+        <button
+            class="news-tab"
+            data-filter="ecosystem">
+
+            Ecosystem
+
+        </button>
+
+        <button
+            class="news-tab"
+            data-filter="projects">
+
+            My Projects
+
+        </button>
+
+    </div>
+
+    <!-- NEWS FEED -->
+
+    <div
+        id="newsFeed"
+        class="news-feed">
+
+        <!-- JS WILL LOAD NEWS HERE -->
+
+    </div>
+
+    <!-- LOAD MORE -->
+
+    <div class="news-load">
+
+        <button
+            id="loadMoreNews"
+            class="load-news-btn">
+
+            Load More
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- ===========================
+     NEWS CARD TEMPLATE
+=========================== -->
+
+<template id="newsCardTemplate">
+
+<div class="news-card">
+
+    <div class="news-top">
+
+        <div class="news-badge"></div>
+
+        <div class="news-time"></div>
+
+    </div>
+
+    <div class="news-image-box">
+
+        <img
+            class="news-image">
+
+    </div>
+
+    <div class="news-content">
+
+        <h3 class="news-title"></h3>
+
+        <p class="news-description"></p>
+
+        <button
+            class="news-read-more">
+
+            Read More
+
+        </button>
+
+    </div>
+
+</div>
+
+</template>
