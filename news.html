@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0">
+content="width=device-width,initial-scale=1.0">
 
 <title>ALBUKHR News</title>
 
@@ -15,6 +16,7 @@ content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/albukhr-ui.css">
 <link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/app-alert.css">
 
 <!-- NEWS CSS -->
 
@@ -23,39 +25,27 @@ content="width=device-width, initial-scale=1.0">
 <style>
 
 .header-right{
-
 display:flex;
 align-items:center;
 gap:10px;
-
 }
 
-/* USER BOX */
-
 .user-box{
-
 display:flex;
 flex-direction:column;
 align-items:flex-end;
 justify-content:center;
 max-width:90px;
-
 }
 
-/* USERNAME */
-
 #piUser{
-
 font-size:10px;
 margin-top:2px;
 color:#fff;
-
 white-space:nowrap;
 overflow:hidden;
 text-overflow:ellipsis;
-
 text-align:right;
-
 }
 
 </style>
@@ -70,7 +60,7 @@ text-align:right;
 
 (function(){
 
-const user =
+const user=
 JSON.parse(
 localStorage.getItem("pi_user")
 );
@@ -87,9 +77,9 @@ window.location.replace(
 
 </script>
 
-<!-- ===========================
+<!-- ===================================
 HEADER
-=========================== -->
+=================================== -->
 
 <header class="header">
 
@@ -105,8 +95,6 @@ ALBUKHR
 
 <div class="header-right">
 
-<!-- USER -->
-
 <div
 class="header-btn user-box"
 id="userBox">
@@ -120,8 +108,6 @@ id="userBox">
 <div id="piUser"></div>
 
 </div>
-
-<!-- NOTIFICATION -->
 
 <div
 class="header-btn notification-btn"
@@ -141,60 +127,84 @@ class="notification-badge">
 
 </header>
 
-<!-- ===========================
-WELCOME BAR
-=========================== -->
+<!-- ===================================
+NEWS HEADER
+=================================== -->
 
-<div class="welcome-bar">
+<section class="news-header">
 
-<div
-id="welcomeScroll"
-class="welcome-track">
+<div class="news-title">
 
-Welcome to ALBUKHR News —
+<div class="news-icon">
+
+📰
+
+</div>
+
+<div>
+
+<h2>
+
+ALBUKHR News
+
+</h2>
+
+<p>
+
 Official ecosystem announcements,
-project updates and personalized
-investment news.
+project transparency updates,
+and personalized news.
+
+</p>
 
 </div>
 
 </div>
 
+<button
+id="refreshNewsBtn"
+class="refresh-news-btn">
+
+Refresh
+
+</button>
+
+</section>
 <!-- =========================================
 NEWS HERO
 ========================================= -->
 
 <section class="news-hero">
 
-<div class="news-hero-left">
+  <div class="hero-left">
 
-<h2>
+    <div class="hero-badge">
+      📰 Official News Center
+    </div>
 
-📰 ALBUKHR News
+    <h1>
+      ALBUKHR News
+    </h1>
 
-</h2>
+    <p>
+      Official ecosystem announcements, company updates,
+      transparency reports and personalized project news
+      based on your investments.
+    </p>
 
-<p>
+  </div>
 
-Stay informed with official ALBUKHR announcements,
-ecosystem updates and personalized news from
-projects you've invested in.
+  <div class="hero-right">
 
-</p>
+    <button
+      id="refreshNewsBtn"
+      class="primary-btn">
 
-</div>
+      🔄 Refresh
 
-<div class="news-hero-right">
+    </button>
 
-<button
-id="refreshNewsBtn"
-class="primary-btn">
-
-🔄 Refresh
-
-</button>
-
-</div>
+  </div>
 
 </section>
 
@@ -203,41 +213,47 @@ class="primary-btn">
 NEWS SUMMARY
 ========================================= -->
 
-<section class="stats">
+<section class="news-summary">
 
-<div class="stat-card">
+  <div class="summary-card">
 
-<span>
+    <div class="summary-icon">
+      📢
+    </div>
 
-Official News
+    <div class="summary-info">
 
-</span>
+      <span>
+        Ecosystem News
+      </span>
 
-<strong
-id="officialNewsCount">
+      <strong id="officialNewsCount">
+        0
+      </strong>
 
-0
+    </div>
 
-</strong>
+  </div>
 
-</div>
+  <div class="summary-card">
 
-<div class="stat-card">
+    <div class="summary-icon">
+      📂
+    </div>
 
-<span>
+    <div class="summary-info">
 
-My Project Updates
+      <span>
+        My Projects
+      </span>
 
-</span>
+      <strong id="projectNewsCount">
+        0
+      </strong>
 
-<strong
-id="projectNewsCount">
+    </div>
 
-0
-
-</strong>
-
-</div>
+  </div>
 
 </section>
 
@@ -248,62 +264,70 @@ SEARCH
 
 <section class="news-search">
 
-<input
+  <div class="search-box">
 
-type="text"
+    <span class="search-icon">
+      🔍
+    </span>
 
-id="newsSearch"
+    <input
 
-placeholder="Search news..."
+      type="text"
 
-autocomplete="off"
+      id="newsSearch"
 
->
+      placeholder="Search news..."
+
+      autocomplete="off"
+
+    >
+
+  </div>
 
 </section>
 
 
 <!-- =========================================
-NEWS FILTERS
+FILTER TABS
 ========================================= -->
 
 <section class="news-tabs">
 
-<button
+  <button
 
-id="tabAll"
+    class="news-tab active"
 
-class="news-tab active"
+    id="tabAll"
 
-data-tab="all">
+    data-tab="all">
 
-All
+    All News
 
-</button>
+  </button>
 
-<button
+  <button
 
-id="tabOfficial"
+    class="news-tab"
 
-class="news-tab"
+    id="tabOfficial"
 
-data-tab="official">
+    data-tab="official">
 
-📢 Ecosystem
+    📢 Ecosystem
 
-</button>
+  </button>
 
-<button
+  <button
 
-id="tabProjects"
+    class="news-tab"
 
-class="news-tab"
+    id="tabProjects"
 
-data-tab="projects">
+    data-tab="projects">
 
-📂 My Projects
+    📂 My Projects
 
-</button>
+  </button>
 
 </section>
 
@@ -313,18 +337,98 @@ NEWS FEED
 ========================================= -->
 
 <section
+class="news-feed"
+id="newsFeed">
+
+  <div class="loading-card">
+
+    <div class="loading-spinner"></div>
+
+    <p>
+
+      Loading latest news...
+
+    </p>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+EMPTY STATE
+========================================= -->
+
+<section
+
+id="newsEmpty"
+
+class="news-empty"
+
+style="display:none;">
+
+  <div class="empty-icon">
+
+    📰
+
+  </div>
+
+  <h3>
+
+    No News Available
+
+  </h3>
+
+  <p>
+
+    There are currently no official announcements
+    or project updates available.
+
+  </p>
+
+</section>
+
+
+<!-- =========================================
+LOAD MORE
+========================================= -->
+
+<section class="news-footer">
+
+  <button
+
+    id="loadMoreNews"
+
+    class="secondary-btn">
+
+    Load More
+
+  </button>
+
+</section>
+<!-- =========================================
+NEWS FEED
+========================================= -->
+
+<main class="news-container">
+
+<section
 id="newsFeed"
 class="news-feed">
 
-<div
-class="loading-card">
+<div class="loading-card">
 
-Loading latest news...
+<div class="loading-spinner"></div>
+
+<h3>Loading News...</h3>
+
+<p>
+Please wait while we load the latest updates.
+</p>
 
 </div>
 
 </section>
-
 
 <!-- =========================================
 EMPTY STATE
@@ -349,32 +453,40 @@ No News Available
 
 <p>
 
-There are currently no announcements
-or project updates to display.
+There are currently no announcements or
+project updates available.
+
+Please check again later.
 
 </p>
 
+<button
+id="refreshEmptyBtn"
+class="primary-btn">
+
+Refresh
+
+</button>
+
 </section>
 
+</main>
 
 <!-- =========================================
 LOAD MORE
 ========================================= -->
 
-<section
-class="news-footer">
+<footer class="news-footer">
 
 <button
-
 id="loadMoreNews"
-
 class="secondary-btn">
 
 Load More
 
 </button>
 
-</section>
+</footer>
 
 <!-- =========================================
 IMAGE PREVIEW MODAL
@@ -390,7 +502,8 @@ onclick="closeImagePreview()">
 
 </div>
 
-<div class="image-preview-box">
+<div
+class="image-preview-box">
 
 <button
 class="image-close-btn"
@@ -403,12 +516,11 @@ onclick="closeImagePreview()">
 <img
 id="previewImage"
 src=""
-alt="News Image">
+alt="Preview">
 
 </div>
 
 </div>
-
 
 <!-- =========================================
 FULL NEWS MODAL
@@ -424,9 +536,15 @@ onclick="closeNewsModal()">
 
 </div>
 
-<div class="news-modal-box">
+<div
+class="news-modal-box">
 
-<div class="news-modal-header">
+<!-- HEADER -->
+
+<div
+class="news-modal-header">
+
+<div>
 
 <h2
 id="modalTitle">
@@ -434,6 +552,29 @@ id="modalTitle">
 Loading...
 
 </h2>
+
+<div
+class="news-modal-meta">
+
+<span
+id="modalCategory">
+
+</span>
+
+<span class="dot">
+
+•
+
+</span>
+
+<span
+id="modalDate">
+
+</span>
+
+</div>
+
+</div>
 
 <button
 class="modal-close-btn"
@@ -445,26 +586,7 @@ onclick="closeNewsModal()">
 
 </div>
 
-
-<div class="news-modal-body">
-
-<div
-class="news-modal-meta">
-
-<span
-id="modalCategory">
-
-</span>
-
-•
-
-<span
-id="modalDate">
-
-</span>
-
-</div>
-
+<!-- IMAGE -->
 
 <img
 id="modalImage"
@@ -472,6 +594,7 @@ class="modal-image"
 src=""
 alt="">
 
+<!-- CONTENT -->
 
 <div
 id="modalContent"
@@ -479,10 +602,10 @@ class="modal-content">
 
 </div>
 
-</div>
+<!-- FOOTER -->
 
-
-<div class="news-modal-footer">
+<div
+class="news-modal-footer">
 
 <button
 id="shareNewsBtn"
@@ -505,8 +628,6 @@ Close
 </div>
 
 </div>
-
-
 <!-- =========================================
 SHARE MODAL
 ========================================= -->
@@ -521,7 +642,8 @@ onclick="closeShareModal()">
 
 </div>
 
-<div class="share-box">
+<div
+class="share-box">
 
 <h3>
 
@@ -534,17 +656,20 @@ id="shareLink"
 type="text"
 readonly>
 
-<div class="share-actions">
+<div
+class="share-actions">
 
 <button
-id="copyShareLink">
+id="copyShareLink"
+class="primary-btn">
 
 📋 Copy Link
 
 </button>
 
 <button
-onclick="closeShareModal()">
+onclick="closeShareModal()"
+class="secondary-btn">
 
 Close
 
@@ -556,14 +681,14 @@ Close
 
 </div>
 
-
 <!-- =========================================
 LOADING OVERLAY
 ========================================= -->
 
 <div
 id="newsLoading"
-class="news-loading">
+class="news-loading"
+style="display:none;">
 
 <div class="loading-spinner">
 
@@ -578,34 +703,6 @@ Loading...
 </div>
 
 <!-- =========================================
-SIDE DRAWER
-========================================= -->
-
-<div
-id="sideDrawer"
-class="side-drawer">
-
-<div class="drawer-header">
-
-<h3>
-
-Settings
-
-</h3>
-
-</div>
-
-
-<div class="drawer-body">
-
-<a href="user-profile.html">
-
-👤 Profile
-
-</a>
-
-
-<!-- =========================================
 APP ALERT
 ========================================= -->
 
@@ -613,7 +710,8 @@ APP ALERT
 id="appAlert"
 class="app-alert">
 
-<div class="app-alert-box">
+<div
+class="app-alert-box">
 
 <h3
 id="appAlertTitle">
@@ -646,21 +744,23 @@ SUPABASE
 
 <script src="js/supabase-core.js"></script>
 
+<!-- =========================================
+PROJECT ENGINE
+========================================= -->
+
+<script src="js/project-config.js"></script>
+
+<script src="js/project-updates.js"></script>
+
+<script src="js/staking.js"></script>
 
 <!-- =========================================
 GLOBAL JS
 ========================================= -->
 
-<script src="js/project-config.js"></script>
-
-<script src="js/staking.js"></script>
-
-<script src="js/project-updates.js"></script>
-
-<script src="js/notifications.js"></script>
-
 <script src="js/app-alert.js"></script>
 
+<script src="js/notifications.js"></script>
 
 <!-- =========================================
 NEWS ENGINE
