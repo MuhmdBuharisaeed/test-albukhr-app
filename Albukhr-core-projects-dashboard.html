@@ -368,65 +368,66 @@ function average(values = []){
 /* =========================================
    ADMIN AUTH GUARD (SUPABASE)
 ========================================= */
+
 async function guardAdmin(){
 
   try{
 
-    if(typeof requireRole === "function"){
+    const client = window.getAlbukhrSupabaseClient();
 
-      const ok = await requireRole([
+    if(!client){
+      location.replace("admin-login.html");
+      return false;
+    }
+
+    const {
+      data:{ session }
+    } = await client.auth.getSession();
+
+    if(!session){
+      location.replace("admin-login.html");
+      return false;
+    }
+
+    const {
+      data:admin,
+      error
+    } = await client
+      .from("admin_users")
+      .select("role_code,status")
+      .eq("auth_user_id",session.user.id)
+      .eq("status","active")
+      .single();
+
+    if(error || !admin){
+      location.replace("admin-login.html");
+      return false;
+    }
+
+    if(typeof requireRole==="function"){
+
+      await requireRole([
         "super_admin",
         "ecosystem_admin",
         "project_admin",
         "finance_admin"
       ]);
 
-      if(ok === false){
-        return false;
-      }
-
-    }
-
-    if(typeof getCurrentAdmin === "function"){
-
-      const admin = await getCurrentAdmin();
-
-      if(!admin){
-
-        window.location.replace("admin-login.html");
-        return false;
-
-      }
-
-    }else{
-
-      const client = window.getAlbukhrSupabaseClient();
-
-      const {
-        data:{session}
-      } = await client.auth.getSession();
-
-      if(!session){
-
-        window.location.replace("admin-login.html");
-        return false;
-
-      }
-
     }
 
     return true;
 
-  }catch(error){
+  }catch(e){
 
-    console.error(error);
+    console.error(e);
 
-    window.location.replace("admin-login.html");
+    location.replace("admin-login.html");
+
     return false;
 
   }
 
-  }
+   }
 
 /* =========================================
    INVESTOR STATS
@@ -826,23 +827,15 @@ function openProjectUpdates(encodedProjectCode){
 ========================================= */
 document.addEventListener("DOMContentLoaded", async ()=>{
 
-  const allowed = await guardAdmin();
+  const ok = await guardAdmin();
 
-  if(!allowed) return;
+  if(!ok) return;
 
-  if(typeof loadProjects === "function"){
-    try{
-      await loadProjects(true);
-    }catch(e){
-      console.warn("Projects preload failed:", e);
-    }
+  if(typeof loadProjects==="function"){
+    await loadProjects(true);
   }
 
   await renderDashboard();
-
-  setInterval(async ()=>{
-    await renderDashboard();
-  }, 90000);
 
 });
 </script>
