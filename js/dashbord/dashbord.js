@@ -175,37 +175,24 @@
     }
 
     async function getResolverCurrentUser(){
-
-        return await ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
-      try{
+    try{
         if(
-          typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
-          typeof ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser === "function"
+            typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
+            typeof ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser === "function"
         ){
-          return ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
+            return await ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
         }
-      }catch(e){
+    }catch(e){
         console.warn("Resolver getCurrentAlbukhrUser warning:", e);
-      }
+    }
 
-      return {
-        email:
-          localStorage.getItem("albukhr_current_email") ||
-          localStorage.getItem("currentUserEmail") ||
-          "",
-        userid:
-          localStorage.getItem("albukhr_current_email") ||
-          localStorage.getItem("currentUserEmail") ||
-          "",
-        username:
-          localStorage.getItem("albukhr_current_username") ||
-          localStorage.getItem("currentUserName") ||
-          "ALBUKHR Admin",
-        role:
-          localStorage.getItem("albukhr_current_role") ||
-          "project_admin",
-        isAdmin:true
-      };
+    return {
+        email: localStorage.getItem("albukhr_current_email") || "",
+        userid: localStorage.getItem("albukhr_current_email") || "",
+        username: localStorage.getItem("albukhr_current_username") || "ALBUKHR Admin",
+        role: localStorage.getItem("albukhr_current_role") || "project_admin",
+        isAdmin: true
+    };
     }
 
     function resetImagePreview(){
