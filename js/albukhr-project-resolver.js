@@ -19,7 +19,7 @@
 (function(){
   "use strict";
 
-  const RESOLVER_VERSION = "2.0.0";
+  const RESOLVER_VERSION = "3.0.0";
 
   const ADMIN_ROLES = [
     "super_admin",
@@ -71,7 +71,7 @@
   ========================================= */
   async function getCurrentAlbukhrEmail(){
 
-    const admin = await getCurrentAdmin();
+    const admin = await window.getCurrentAdmin();
 
     if(!admin){
         return "";
@@ -87,13 +87,13 @@
 
   async function getCurrentAlbukhrAdminRaw(){
 
-    return await getCurrentAdmin();
+    return await window.getCurrentAdmin();
 
   }
 
    async function getCurrentAlbukhrUser(){
 
-    const admin = await getCurrentAdmin();
+    const admin = await window.getCurrentAdmin();
 
     if(!admin){
 
