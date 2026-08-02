@@ -174,7 +174,9 @@
       };
     }
 
-    function getResolverCurrentUser(){
+    async function getResolverCurrentUser(){
+
+        return await ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
       try{
         if(
           typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
@@ -561,7 +563,7 @@
        - no hard-stop by project type
        - only gate actions
     ========================================= */
-    function applyDashboardSectionPermissions(project){
+    async function applyDashboardSectionPermissions(project){
       const user = getResolverCurrentUser();
       const projectType = getProjectTypeFromResolver(project);
 
@@ -782,17 +784,15 @@
         return;
       }
 
-      const currentUser = getResolverCurrentUser();
-
       if(
-        typeof canManageAlbukhrProjectTreasury === "function" &&
-        !canManageAlbukhrProjectTreasury(currentProject, currentUser)
-      ){
-        showDashboardAlert(
-          "Access denied",
-          "You do not have permission to manage this project's treasury."
-        );
-        return;
+    typeof canManageAlbukhrProjectTreasury === "function" &&
+    !(await canManageAlbukhrProjectTreasury(currentProject))
+){
+    showDashboardAlert(
+        "Access denied",
+        "You do not have permission to manage this project's treasury."
+    );
+    return;
       }
 
       const amount = safeNumber(dashboardEls.addAmount.value, 0);
@@ -846,17 +846,15 @@
         return;
       }
 
-      const currentUser = getResolverCurrentUser();
-
       if(
-        typeof canManageAlbukhrProjectTreasury === "function" &&
-        !canManageAlbukhrProjectTreasury(currentProject, currentUser)
-      ){
-        showDashboardAlert(
-          "Access denied",
-          "You do not have permission to withdraw treasury funds from this project."
-        );
-        return;
+    typeof canManageAlbukhrProjectTreasury === "function" &&
+    !(await canManageAlbukhrProjectTreasury(currentProject))
+){
+    showDashboardAlert(
+        "Access denied",
+        "You do not have permission to withdraw treasury funds from this project."
+    );
+    return;
       }
 
       const amount = safeNumber(dashboardEls.withdrawAmount.value, 0);
@@ -942,17 +940,15 @@
         return;
       }
 
-      const currentUser = getResolverCurrentUser();
-
       if(
-        typeof canUploadAlbukhrProjectUpdate === "function" &&
-        !canUploadAlbukhrProjectUpdate(currentProject, currentUser)
-      ){
-        showDashboardAlert(
-          "Access denied",
-          "You do not have permission to publish updates for this project."
-        );
-        return;
+    typeof canUploadAlbukhrProjectUpdate === "function" &&
+    !(await canUploadAlbukhrProjectUpdate(currentProject))
+){
+    showDashboardAlert(
+        "Access denied",
+        "You do not have permission to publish updates for this project."
+    );
+    return;
       }
 
       if(typeof uploadProjectUpdateToSupabase !== "function"){
