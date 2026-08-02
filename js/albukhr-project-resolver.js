@@ -69,55 +69,60 @@
   /* =========================================
      CURRENT USER / ADMIN HELPERS
   ========================================= */
-  function getCurrentAlbukhrEmail(){
-    return safeString(
-      localStorage.getItem("albukhr_current_email") ||
-      localStorage.getItem("albukhr_user_email") ||
-      ""
+  async function getCurrentAlbukhrEmail(){
+
+    const admin = await getCurrentAdmin();
+
+    if(!admin){
+        return "";
+    }
+
+    return (
+        admin.email ||
+        admin.admin_email ||
+        ""
     ).trim();
+
   }
 
-  function getCurrentAlbukhrAdminRaw(){
-    try{
-      if(typeof getAdmin === "function"){
-        return getAdmin() || null;
-      }
-    }catch(e){
-      console.warn("getAdmin() failed:", e);
-    }
+  async function getCurrentAlbukhrAdminRaw(){
 
-    try{
-      const raw =
-        localStorage.getItem("albukhr_admin") ||
-        localStorage.getItem("albukhr_current_admin");
+    return await getCurrentAdmin();
 
-      if(raw){
-        return JSON.parse(raw);
-      }
-    }catch(e){
-      console.warn("Admin localStorage parse failed:", e);
-    }
-
-    return null;
   }
 
-  function getCurrentAlbukhrUser(){
-    const admin = getCurrentAlbukhrAdminRaw();
-    const email = getCurrentAlbukhrEmail();
+   async function getCurrentAlbukhrUser(){
 
-    const role =
-      safeString(admin?.role || admin?.admin_role || "").trim().toLowerCase();
+    const admin = await getCurrentAdmin();
 
-    return {
-      email,
-      userid: email,
-      username: safeString(admin?.username || admin?.name || email || ""),
-      role,
-      isAdmin: !!admin,
-      admin
+    if(!admin){
+
+        return {
+
+            email:"",
+            userid:"",
+            username:"",
+            role:"",
+            isAdmin:false,
+            admin:null
+
+        };
+
+    }
+
+    return{
+
+        email:admin.email,
+        userid:admin.auth_user_id,
+        username:admin.username,
+        role:admin.role_code,
+        isAdmin:true,
+        admin
+
     };
-  }
 
+   }
+   
   function hasAdminRole(user, roles = []){
     if(!user || !user.isAdmin) return false;
     const role = lower(user.role);
