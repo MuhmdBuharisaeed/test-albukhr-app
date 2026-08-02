@@ -551,7 +551,7 @@
        - only gate actions
     ========================================= */
     async function applyDashboardSectionPermissions(project){
-      const user = getResolverCurrentUser();
+      const user = await getResolverCurrentUser();
       const projectType = getProjectTypeFromResolver(project);
 
       let canManageTreasury = false;
