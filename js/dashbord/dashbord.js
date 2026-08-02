@@ -699,7 +699,8 @@
 
         renderProjectHeader(project);
 
-        const permissionState = applyDashboardSectionPermissions(project);
+          const permissionState =
+    await applyDashboardSectionPermissions(project);
 
         const [treasuryStatus, roi, investors, history] = await Promise.all([
           getProjectTreasurySummary(project),
