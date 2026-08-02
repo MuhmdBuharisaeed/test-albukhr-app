@@ -280,6 +280,23 @@
        dashboard page remains admin-side for now.
     ========================================= */
 
+       function guardAdmin(){
+      if(typeof requireRole === "function"){
+        requireRole([
+          "super_admin",
+          "ecosystem_admin",
+          "project_admin",
+          "finance_admin"
+        ]);
+      }
+
+      if(typeof getAdmin === "function" && !getAdmin()){
+        window.location.href = "admin-login.html";
+        return false;
+      }
+
+      return true;
+    }
 
 
     /* =========================================
