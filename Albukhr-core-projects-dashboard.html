@@ -370,62 +370,7 @@ function average(values = []){
    ADMIN AUTH GUARD (SUPABASE)
 ========================================= */
 
-async function guardAdmin(){
 
-  try{
-
-    const client = window.getAlbukhrSupabaseClient();
-
-    if(!client){
-      location.replace("admin-login.html");
-      return false;
-    }
-
-    const {
-      data:{ session }
-    } = await client.auth.getSession();
-
-    if(!session){
-      location.replace("admin-login.html");
-      return false;
-    }
-
-    const {
-      data:admin,
-      error
-    } = await client
-      .from("admin_users")
-      .select("role_code,status")
-      .eq("auth_user_id",session.user.id)
-      .eq("status","active")
-      .single();
-
-    if(error || !admin){
-      location.replace("admin-login.html");
-      return false;
-    }
-
-    if(typeof requireRole==="function"){
-
-      await requireRole([
-        "super_admin",
-      ]);
-
-    }
-
-    return true;
-
-  }catch(e){
-
-    console.error(e);
-
-    location.replace("admin-login.html");
-
-    return false;
-
-  }
-
-  }
 
 /* =========================================
    INVESTOR STATS
