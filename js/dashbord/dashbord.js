@@ -341,10 +341,6 @@ const DashboardAPI = {
    PI PAYMENT ENGINE PLACEHOLDER
 
    Part 2 zai fara daga nan.
-========================================= */
-
-const AlbukhrPaymentEngine = {};
-
 /* =========================================
    ALBUKHR PAYMENT ENGINE
 
