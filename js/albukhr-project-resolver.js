@@ -517,133 +517,159 @@
   /* =========================================
      ACCESS RULES
   ========================================= */
-  function canAccessAlbukhrProjectDashboard(project, user = null){
+  async function canAccessAlbukhrProjectDashboard(project, user = null){
+
     if(!project) return false;
 
-    user = user || getCurrentAlbukhrUser();
+    user = user || await getCurrentAlbukhrUser();
 
     if(isAnyProjectAdmin(user)){
-      return true;
+        return true;
     }
 
     if(isCoreProject(project)){
-      return false;
+        return false;
     }
 
     const creatorId = lower(project.creator_userid);
     const currentUserId = lower(user.userid || user.email);
 
-    if(creatorId && creatorId === currentUserId){
-      return true;
+    if(
+        creatorId &&
+        creatorId === currentUserId
+    ){
+        return true;
     }
 
     return false;
-  }
 
+  }
   /* =========================================
      TREASURY RULES
   ========================================= */
-  function canManageAlbukhrProjectTreasury(project, user = null){
+  async function canManageAlbukhrProjectTreasury(project, user = null){
+
     if(!project) return false;
 
-    user = user || getCurrentAlbukhrUser();
+    user = user || await getCurrentAlbukhrUser();
 
     if(
-      isSuperAdmin(user) ||
-      isFinanceAdmin(user) ||
-      isEcosystemAdmin(user)
+        isSuperAdmin(user) ||
+        isFinanceAdmin(user) ||
+        isEcosystemAdmin(user)
     ){
-      return true;
+        return true;
     }
 
     return false;
+
   }
 
   /* =========================================
      UPDATE RULES
   ========================================= */
-  function canUploadAlbukhrProjectUpdate(project, user = null){
+  async function canUploadAlbukhrProjectUpdate(project, user = null){
+
     if(!project) return false;
 
-    user = user || getCurrentAlbukhrUser();
+    user = user || await getCurrentAlbukhrUser();
 
     if(isAnyProjectAdmin(user)){
-      return true;
+        return true;
     }
 
     const creatorId = lower(project.creator_userid);
     const currentUserId = lower(user.userid || user.email);
 
     if(
-      (isInternalProject(project) || isExternalProject(project)) &&
-      creatorId &&
-      creatorId === currentUserId
+        (isInternalProject(project) || isExternalProject(project)) &&
+        creatorId &&
+        creatorId === currentUserId
     ){
-      return true;
+        return true;
     }
 
     return false;
-  }
 
+  }
   /* =========================================
      SAFE DASHBOARD GUARD
   ========================================= */
-  async function guardAlbukhrDashboardAccess({
+async function guardAlbukhrDashboardAccess({
     projectRef = "",
     requireProject = true
-  } = {}){
+} = {}){
 
-    const user = getCurrentAlbukhrUser();
+    const user = await getCurrentAlbukhrUser();
 
     const ref =
-      safeString(projectRef || localStorage.getItem("albukhr_current_project"))
-        .trim();
+        safeString(
+            projectRef ||
+            localStorage.getItem("albukhr_current_project")
+        ).trim();
 
     if(!ref){
-      if(requireProject){
-        return {
-          ok:false,
-          reason:"missing_project",
-          project:null,
-          user
-        };
-      }
 
-      return {
-        ok:true,
-        reason:null,
-        project:null,
-        user
-      };
+        if(requireProject){
+
+            return{
+                ok:false,
+                reason:"missing_project",
+                project:null,
+                user
+            };
+
+        }
+
+        return{
+            ok:true,
+            reason:null,
+            project:null,
+            user
+        };
+
     }
 
-    const project = await resolveAlbukhrProject(ref);
+    const project =
+    await resolveAlbukhrProject(ref);
 
     if(!project){
-      return {
-        ok:false,
-        reason:"project_not_found",
-        project:null,
-        user
-      };
+
+        return{
+            ok:false,
+            reason:"project_not_found",
+            project:null,
+            user
+        };
+
     }
 
-    if(!canAccessAlbukhrProjectDashboard(project, user)){
-      return {
-        ok:false,
-        reason:"access_denied",
+    if(
+        !(await canAccessAlbukhrProjectDashboard(
+            project,
+            user
+        ))
+    ){
+
+        return{
+            ok:false,
+            reason:"access_denied",
+            project,
+            user
+        };
+
+    }
+
+    return{
+
+        ok:true,
+        reason:null,
         project,
         user
-      };
-    }
 
-    return {
-      ok:true,
-      reason:null,
-      project,
-      user
     };
-  }
+
+       }
 
   /* =========================================
      UI HELPERS
