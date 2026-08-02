@@ -1206,3 +1206,1350 @@ const EscrowHooks = {
    History Rendering
 
 ========================================= */
+/* =========================================
+   PART 5A
+   PROJECT LOADER
+   SUPABASE + RESOLVER
+========================================= */
+
+/* =========================================
+   PROJECT CACHE
+========================================= */
+
+let ProjectCache = [];
+
+/* =========================================
+   LOAD ALL PROJECTS
+========================================= */
+
+async function loadProjects(forceReload = false){
+
+    if(
+        ProjectCache.length &&
+        !forceReload
+    ){
+        return ProjectCache;
+    }
+
+    const { data, error } =
+        await supabase
+            .from("projects")
+            .select("*")
+            .order("project_name");
+
+    if(error){
+
+        console.error(
+            "Projects Load Error:",
+            error
+        );
+
+        ProjectCache = [];
+
+        return [];
+
+    }
+
+    ProjectCache = data || [];
+
+    return ProjectCache;
+
+}
+
+/* =========================================
+   GET PROJECT META
+========================================= */
+
+async function getProjectMeta(projectCode){
+
+    if(!projectCode){
+
+        return null;
+
+    }
+
+    const projects =
+        await loadProjects();
+
+    return (
+
+        projects.find(project =>
+
+            String(
+                project.project_code
+            ).trim().toLowerCase()
+
+            ===
+
+            String(
+                projectCode
+            ).trim().toLowerCase()
+
+        )
+
+        ||
+
+        null
+
+    );
+
+}
+
+/* =========================================
+   RESOLVE CURRENT PROJECT
+========================================= */
+
+async function resolveCurrentProject(){
+
+    let project = null;
+
+    try{
+
+        if(
+            typeof normalizeAlbukhrCurrentProjectStorage
+            === "function"
+        ){
+
+            await normalizeAlbukhrCurrentProjectStorage();
+
+        }
+
+    }catch(error){
+
+        console.warn(error);
+
+    }
+
+    try{
+
+        if(
+            typeof resolveAlbukhrCurrentProject
+            === "function"
+        ){
+
+            project =
+                await resolveAlbukhrCurrentProject();
+
+        }
+
+    }catch(error){
+
+        console.warn(error);
+
+    }
+
+    if(
+        project &&
+        project.project_code
+    ){
+
+        DashboardState.project =
+            project;
+
+        return project;
+
+    }
+
+    const currentProjectCode =
+
+        localStorage.getItem(
+            "albukhr_current_project"
+        )
+
+        ||
+
+        sessionStorage.getItem(
+            "albukhr_current_project"
+        )
+
+        ||
+
+        "";
+
+    if(!currentProjectCode){
+
+        throw new Error(
+            "Current project not found."
+        );
+
+    }
+
+    project =
+        await getProjectMeta(
+            currentProjectCode
+        );
+
+    if(!project){
+
+        throw new Error(
+            "Project does not exist."
+        );
+
+    }
+
+    DashboardState.project =
+        project;
+
+    return project;
+
+}
+
+/* =========================================
+   PROJECT TYPE
+========================================= */
+
+function getProjectType(project){
+
+    if(
+        typeof getAlbukhrProjectType
+        === "function"
+    ){
+
+        return getAlbukhrProjectType(
+            project
+        );
+
+    }
+
+    return String(
+
+        project?.project_type ||
+
+        "internal"
+
+    )
+
+    .trim()
+
+    .toLowerCase();
+
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+function renderProjectHeader(project){
+
+    dashboardEls.projectName.textContent =
+
+        project.project_name ||
+
+        project.project_code ||
+
+        "Unknown Project";
+
+    dashboardEls.projectMetaLine.innerHTML =
+
+        `Code:
+        <strong>
+
+        ${escapeHtml(
+            project.project_code
+        )}
+
+        </strong>
+
+        •
+
+        Type:
+
+        <strong>
+
+        ${escapeHtml(
+            getProjectType(project)
+        )}
+
+        </strong>`;
+
+    dashboardEls.projectBadges.innerHTML =
+
+        `
+
+        <span class="badge">
+
+        ${escapeHtml(
+            getProjectType(project)
+        )}
+
+        </span>
+
+        <span class="badge">
+
+        ${escapeHtml(
+
+            project.status ||
+
+            "active"
+
+        )}
+
+        </span>
+
+        `;
+
+    }
+/* =========================================
+   PART 5B
+   TREASURY SUMMARY
+   ROI
+   INVESTORS
+   STATS
+========================================= */
+
+/* =========================================
+   TREASURY SUMMARY
+========================================= */
+
+async function getProjectTreasurySummary(project){
+
+    if(!project){
+
+        return null;
+
+    }
+
+    try{
+
+        if(
+            typeof getProjectTreasuryStatus ===
+            "function"
+        ){
+
+            const summary =
+
+                await getProjectTreasuryStatus(
+
+                    project.project_code
+
+                );
+
+            if(summary){
+
+                DashboardState.treasury =
+                    summary;
+
+                return summary;
+
+            }
+
+        }
+
+    }
+
+    catch(error){
+
+        console.warn(error);
+
+    }
+
+    DashboardState.treasury = {
+
+        liquidity:0,
+
+        reserve:0,
+
+        reserve_percent:
+
+            safeNumber(
+
+                project.reserve_percent,
+
+                30
+
+            ),
+
+        min_liquidity:
+
+            safeNumber(
+
+                project.min_liquidity,
+
+                100
+
+            ),
+
+        max_usable_liquidity:0,
+
+        reward_rate:
+
+            safeNumber(
+
+                project.reward_rate,
+
+                0
+
+            )
+
+    };
+
+    return DashboardState.treasury;
+
+}
+
+/* =========================================
+   ROI
+========================================= */
+
+async function getProjectROI(project){
+
+    try{
+
+        if(
+
+            typeof calculateProjectROI ===
+
+            "function"
+
+        ){
+
+            const roi =
+
+                await calculateProjectROI(
+
+                    project.project_code
+
+                );
+
+            DashboardState.roi =
+
+                safeNumber(
+
+                    roi,
+
+                    0
+
+                );
+
+            return DashboardState.roi;
+
+        }
+
+    }
+
+    catch(error){
+
+        console.warn(error);
+
+    }
+
+    DashboardState.roi =
+
+        safeNumber(
+
+            project.roi,
+
+            0
+
+        );
+
+    return DashboardState.roi;
+
+}
+
+/* =========================================
+   INVESTORS
+========================================= */
+
+async function getProjectInvestorCount(project){
+
+    try{
+
+        if(
+
+            typeof getAllStakesMerged ===
+
+            "function"
+
+        ){
+
+            const stakes =
+
+                await getAllStakesMerged();
+
+            DashboardState.investors =
+
+                stakes.filter(stake=>{
+
+                    return String(
+
+                        stake.project_code ||
+
+                        stake.project ||
+
+                        ""
+
+                    )
+
+                    .trim()
+
+                    .toLowerCase()
+
+                    ===
+
+                    String(
+
+                        project.project_code
+
+                    )
+
+                    .trim()
+
+                    .toLowerCase();
+
+                }).length;
+
+            return DashboardState.investors;
+
+        }
+
+    }
+
+    catch(error){
+
+        console.warn(error);
+
+    }
+
+    DashboardState.investors = 0;
+
+    return 0;
+
+}
+
+/* =========================================
+   LIQUIDITY STATUS
+========================================= */
+
+function computeLiquidityStatus(){
+
+    const treasury =
+
+        DashboardState.treasury ||
+
+        {};
+
+    const liquidity =
+
+        safeNumber(
+
+            treasury.liquidity,
+
+            0
+
+        );
+
+    const minimum =
+
+        safeNumber(
+
+            treasury.min_liquidity,
+
+            100
+
+        );
+
+    const usable =
+
+        safeNumber(
+
+            treasury.max_usable_liquidity,
+
+            0
+
+        );
+
+    if(liquidity < minimum){
+
+        return{
+
+            label:"LOW",
+
+            className:
+
+                "status-low"
+
+        };
+
+    }
+
+    if(usable <= 0){
+
+        return{
+
+            label:"SAFE",
+
+            className:
+
+                "status-safe"
+
+        };
+
+    }
+
+    return{
+
+        label:"STRONG",
+
+        className:
+
+            "status-strong"
+
+    };
+
+}
+
+/* =========================================
+   STATS
+========================================= */
+
+function renderProjectStats(){
+
+    const treasury =
+
+        DashboardState.treasury ||
+
+        {};
+
+    dashboardEls.liquidity.textContent =
+
+        formatPi(
+
+            treasury.liquidity
+
+        );
+
+    dashboardEls.reserve.textContent =
+
+        formatPi(
+
+            treasury.reserve
+
+        );
+
+    dashboardEls.usableLiquidity.textContent =
+
+        formatPi(
+
+            treasury.max_usable_liquidity
+
+        );
+
+    dashboardEls.roi.textContent =
+
+        `${safeNumber(
+
+            DashboardState.roi,
+
+            0
+
+        ).toFixed(2)}%`;
+
+    dashboardEls.investors.textContent =
+
+        DashboardState.investors;
+
+    const state =
+
+        computeLiquidityStatus();
+
+    dashboardEls.liquidityStatus.textContent =
+
+        state.label;
+
+    dashboardEls.liquidityStatus.className =
+
+        `big ${state.className}`;
+
+}
+
+/* =========================================
+   LOAD DASHBOARD STATS
+========================================= */
+
+async function loadDashboardStats(){
+
+    if(
+
+        !DashboardState.project
+
+    ){
+
+        return;
+
+    }
+
+    await Promise.all([
+
+        getProjectTreasurySummary(
+
+            DashboardState.project
+
+        ),
+
+        getProjectROI(
+
+            DashboardState.project
+
+        ),
+
+        getProjectInvestorCount(
+
+            DashboardState.project
+
+        )
+
+    ]);
+
+    renderProjectStats();
+
+                       }
+/* =========================================
+   PART 5C
+   HISTORY
+   DASHBOARD RENDERER
+========================================= */
+
+/* =========================================
+   TREASURY HISTORY
+========================================= */
+
+async function getTreasuryHistory(project){
+
+    if(!project){
+
+        DashboardState.history = [];
+
+        return [];
+
+    }
+
+    try{
+
+        if(
+            typeof getProjectTreasuryHistory ===
+            "function"
+        ){
+
+            const history =
+
+                await getProjectTreasuryHistory(
+
+                    project.project_code,
+
+                    50
+
+                );
+
+            DashboardState.history =
+
+                Array.isArray(history)
+
+                ? history
+
+                : [];
+
+            return DashboardState.history;
+
+        }
+
+    }
+
+    catch(error){
+
+        console.warn(error);
+
+    }
+
+    DashboardState.history = [];
+
+    return [];
+
+}
+
+/* =========================================
+   HISTORY RENDERER
+========================================= */
+
+function renderHistory(){
+
+    if(
+        !DashboardState.history.length
+    ){
+
+        dashboardEls.history.className =
+
+            "empty";
+
+        dashboardEls.history.innerHTML =
+
+            "No treasury activity yet.";
+
+        return;
+
+    }
+
+    dashboardEls.history.className = "";
+
+    dashboardEls.history.innerHTML =
+
+        DashboardState.history
+
+        .map(item=>{
+
+            const amount =
+
+                safeNumber(
+
+                    item.amount,
+
+                    0
+
+                );
+
+            const type =
+
+                safeString(
+
+                    item.tx_type ||
+
+                    item.type ||
+
+                    "transaction"
+
+                )
+
+                .replace(/_/g," ");
+
+            const note =
+
+                safeString(
+
+                    item.note ||
+
+                    type
+
+                );
+
+            const created =
+
+                item.created_at
+
+                ?
+
+                new Date(
+
+                    item.created_at
+
+                ).toLocaleString()
+
+                :
+
+                "—";
+
+            return `
+
+            <div class="tx">
+
+                <div class="tx-left">
+
+                    <strong>
+
+                        ${escapeHtml(type)}
+
+                    </strong>
+
+                    <div class="muted">
+
+                        ${escapeHtml(note)}
+
+                    </div>
+
+                    <div class="muted">
+
+                        ${escapeHtml(created)}
+
+                    </div>
+
+                </div>
+
+                <div class="tx-right">
+
+                    ${formatPi(amount)}
+
+                </div>
+
+            </div>
+
+            `;
+
+        })
+
+        .join("");
+
+}
+
+/* =========================================
+   STAKE PANEL
+========================================= */
+
+async function loadStakePanel(){
+
+    if(
+        typeof renderProjectStakeUI ===
+        "function"
+    ){
+
+        try{
+
+            await renderProjectStakeUI(
+
+                DashboardState.project.project_code,
+
+                getCurrentUser().email
+
+            );
+
+            return;
+
+        }
+
+        catch(error){
+
+            console.warn(error);
+
+        }
+
+    }
+
+    dashboardEls.projectStakeBox.innerHTML =
+
+        `<div class="muted">
+
+            Stake panel unavailable.
+
+        </div>`;
+
+}
+
+/* =========================================
+   DASHBOARD
+========================================= */
+
+async function renderDashboard(){
+
+    if(
+        DashboardState.busy
+    ){
+
+        return;
+
+    }
+
+    DashboardState.busy = true;
+
+    try{
+
+        dashboardEls.projectName.textContent =
+
+            "Loading...";
+
+        dashboardEls.projectMetaLine.textContent =
+
+            "Preparing project dashboard...";
+
+        dashboardEls.history.className =
+
+            "loading";
+
+        dashboardEls.history.innerHTML =
+
+            "Loading treasury history...";
+
+        /* -------------------------------
+           PROJECT
+        ------------------------------- */
+
+        const project =
+
+            await resolveCurrentProject();
+
+        DashboardState.project = project;
+
+        renderProjectHeader(project);
+
+        /* -------------------------------
+           STATS
+        ------------------------------- */
+
+        await loadDashboardStats();
+
+        /* -------------------------------
+           HISTORY
+        ------------------------------- */
+
+        await getTreasuryHistory(project);
+
+        renderHistory();
+
+        /* -------------------------------
+           STAKE PANEL
+        ------------------------------- */
+
+        await loadStakePanel();
+
+        DashboardState.initialized = true;
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        dashboardEls.projectName.textContent =
+
+            "Project Load Failed";
+
+        dashboardEls.projectMetaLine.textContent =
+
+            error.message ||
+
+            "Unknown Error";
+
+        dashboardEls.history.className =
+
+            "error-box";
+
+        dashboardEls.history.innerHTML =
+
+            `<div>
+
+                ${escapeHtml(
+
+                    error.message ||
+
+                    "Dashboard failed."
+
+                )}
+
+            </div>`;
+
+    }
+
+    finally{
+
+        DashboardState.busy = false;
+
+    }
+
+}
+/* =========================================
+   PART 5D
+   FINAL INITIALIZATION
+========================================= */
+
+/* =========================================
+   IMAGE PREVIEW
+========================================= */
+
+function resetImagePreview(){
+
+    dashboardEls.updateImagePreview.src = "";
+
+    dashboardEls.updateImagePreviewMeta.textContent = "";
+
+    dashboardEls.updateImagePreviewBox.style.display =
+        "none";
+
+}
+
+function previewSelectedImage(file){
+
+    if(!file){
+
+        resetImagePreview();
+
+        return;
+
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        dashboardEls.updateImagePreview.src =
+            e.target.result;
+
+        dashboardEls.updateImagePreviewMeta.textContent =
+
+            `${file.name}
+
+            •
+
+            ${(file.size/1024/1024).toFixed(2)} MB`;
+
+        dashboardEls.updateImagePreviewBox.style.display =
+            "block";
+
+    };
+
+    reader.readAsDataURL(file);
+
+}
+
+/* =========================================
+   PERMISSIONS
+========================================= */
+
+async function applyDashboardPermissions(){
+
+    if(!DashboardState.project){
+
+        return;
+
+    }
+
+    const user = getCurrentUser();
+
+    let treasuryAccess = true;
+
+    let updateAccess = true;
+
+    try{
+
+        if(
+            typeof canManageAlbukhrProjectTreasury ===
+            "function"
+        ){
+
+            treasuryAccess =
+                canManageAlbukhrProjectTreasury(
+
+                    DashboardState.project,
+
+                    user
+
+                );
+
+        }
+
+    }catch(error){
+
+        console.warn(error);
+
+    }
+
+    try{
+
+        if(
+            typeof canUploadAlbukhrProjectUpdate ===
+            "function"
+        ){
+
+            updateAccess =
+                canUploadAlbukhrProjectUpdate(
+
+                    DashboardState.project,
+
+                    user
+
+                );
+
+        }
+
+    }catch(error){
+
+        console.warn(error);
+
+    }
+
+    dashboardEls.addLiquidityBtn.disabled =
+        !treasuryAccess;
+
+    dashboardEls.withdrawLiquidityBtn.disabled =
+        !treasuryAccess;
+
+    dashboardEls.projectUpdateTitle.disabled =
+        !updateAccess;
+
+    dashboardEls.projectUpdateImage.disabled =
+        !updateAccess;
+
+    dashboardEls.projectUpdateText.disabled =
+        !updateAccess;
+
+    dashboardEls.uploadProjectUpdateBtn.disabled =
+        !updateAccess;
+
+    DashboardState.permissions = {
+
+        treasury:
+            treasuryAccess,
+
+        updates:
+            updateAccess
+
+    };
+
+}
+
+/* =========================================
+   BIND EVENTS
+========================================= */
+
+function bindDashboardActions(){
+
+    dashboardEls.addLiquidityBtn.addEventListener(
+
+        "click",
+
+        addLiquidityAction
+
+    );
+
+    dashboardEls.withdrawLiquidityBtn.addEventListener(
+
+        "click",
+
+        withdrawLiquidityAction
+
+    );
+
+    if(
+        typeof uploadProjectUpdate ===
+        "function"
+    ){
+
+        dashboardEls.uploadProjectUpdateBtn
+        .addEventListener(
+
+            "click",
+
+            uploadProjectUpdate
+
+        );
+
+    }
+
+    dashboardEls.projectUpdateImage
+    .addEventListener(
+
+        "change",
+
+        function(){
+
+            previewSelectedImage(
+
+                this.files[0]
+
+            );
+
+        }
+
+    );
+
+}
+
+/* =========================================
+   REFRESH
+========================================= */
+
+async function refreshDashboard(){
+
+    try{
+
+        await renderDashboard();
+
+        await applyDashboardPermissions();
+
+    }
+
+    catch(error){
+
+        console.error(
+
+            "Dashboard Refresh:",
+
+            error
+
+        );
+
+    }
+
+}
+
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+
+    "DOMContentLoaded",
+
+    async function(){
+
+        try{
+
+            if(
+                typeof guardAdmin ===
+                "function"
+            ){
+
+                if(
+
+                    !guardAdmin()
+
+                ){
+
+                    return;
+
+                }
+
+            }
+
+            await loadProjects(true);
+
+            bindDashboardActions();
+
+            await refreshDashboard();
+
+            setInterval(
+
+                refreshDashboard,
+
+                DashboardConfig.refreshInterval
+
+            );
+
+            console.log(
+
+                "ALBUKHR Dashboard Ready"
+
+            );
+
+        }
+
+        catch(error){
+
+            console.error(error);
+
+            dashboardAlert(
+
+                "Dashboard Error",
+
+                error.message ||
+
+                "Initialization failed."
+
+            );
+
+        }
+
+    }
+
+);
+
+/* =========================================
+   END OF
+   ALBUKHR UNIVERSAL DASHBOARD
+========================================= */
