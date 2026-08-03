@@ -921,6 +921,8 @@
     ========================================= */
     async function uploadProjectUpdate(){
 
+    alert("uploadProjectUpdate() started");
+
       if(uploadBusy) return;
 
       if(!currentProject){
