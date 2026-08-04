@@ -1006,12 +1006,20 @@
         );
 
       }catch(err){
-        console.error("Project update upload error:", err);
-        showDashboardAlert(
-          "Upload failed",
-          err?.message || "Failed to upload project update."
-        );
-      }finally{
+
+    alert(
+        "ERROR:\n\n" +
+        (err?.message || JSON.stringify(err))
+    );
+
+    console.error("Project update upload error:", err);
+
+    showDashboardAlert(
+        "Upload failed",
+        err?.message || "Failed to upload project update."
+    );
+
+}finally{
         uploadBusy = false;
         dashboardEls.uploadProjectUpdateBtn.disabled = false;
         dashboardEls.uploadProjectUpdateBtn.textContent = "Upload Update";
