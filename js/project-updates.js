@@ -356,9 +356,7 @@
     createdByEmail = "",
     createdByName = "",
     createdByRole = ""
-} = {}){
-
-    alert("STEP 1");
+  } = {}){
 
     projectCode = safeString(projectCode).trim();
     projectName = safeString(projectName).trim();
@@ -366,35 +364,41 @@
 
     const pickedFile = imageFile || file || null;
 
-    alert("STEP 2");
+    if(!projectCode){
+      throw new Error("Project code is required");
+    }
 
-    const upload = await uploadProjectUpdateImage(pickedFile,{
-        projectCode,
-        projectType
+    if(!projectName){
+      throw new Error("Project name is required");
+    }
+
+    if(!pickedFile){
+      throw new Error("Project update image is required");
+    }
+
+    const upload = await uploadProjectUpdateImage(pickedFile, {
+      projectCode,
+      projectType
     });
-
-    alert("STEP 3");
 
     const update = await createProjectUpdate({
-        project_code: projectCode,
-        project_name: projectName,
-        project_type: projectType,
-        title,
-        description,
-        image_url: upload.publicUrl,
-        created_by_email: createdByEmail,
-        created_by_name: createdByName,
-        created_by_role: createdByRole,
-        is_visible:true
+      project_code: projectCode,
+      project_name: projectName,
+      project_type: projectType,
+      title,
+      description,
+      image_url: upload.publicUrl,
+      created_by_email: createdByEmail,
+      created_by_name: createdByName,
+      created_by_role: createdByRole,
+      is_visible: true
     });
 
-    alert("STEP 4");
-
     return {
-        update,
-        image: upload
+      update,
+      image: upload
     };
-    }
+  }
 
   /* =========================================
      FETCH PROJECT UPDATES
