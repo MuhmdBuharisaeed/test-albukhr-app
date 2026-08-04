@@ -979,17 +979,21 @@
       dashboardEls.uploadProjectUpdateBtn.textContent = "Uploading...";
 
       try{
-        const result = await uploadProjectUpdateToSupabase({
-          projectCode: currentProject.project_code,
-          projectName: currentProject.project_name || currentProject.project_code,
-          projectType: currentProject.project_type || "internal",
-          title,
-          description,
-          file: imageFile,
-          createdByEmail: actor.email,
-          createdByName: actor.name,
-          createdByRole: actor.role
-        });
+        alert("Before uploadProjectUpdateToSupabase");
+
+const result = await uploadProjectUpdateToSupabase({
+    projectCode: currentProject.project_code,
+    projectName: currentProject.project_name || currentProject.project_code,
+    projectType: currentProject.project_type || "internal",
+    title,
+    description,
+    file: imageFile,
+    createdByEmail: actor.email,
+    createdByName: actor.name,
+    createdByRole: actor.role
+});
+
+alert("After uploadProjectUpdateToSupabase");
 
         if(result?.error){
           throw new Error(result.error);
