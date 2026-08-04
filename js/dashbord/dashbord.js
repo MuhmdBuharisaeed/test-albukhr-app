@@ -921,8 +921,6 @@
     ========================================= */
     async function uploadProjectUpdate(){
 
-    alert("uploadProjectUpdate() started");
-
       if(uploadBusy) return;
 
       if(!currentProject){
@@ -979,21 +977,17 @@
       dashboardEls.uploadProjectUpdateBtn.textContent = "Uploading...";
 
       try{
-        alert("Before uploadProjectUpdateToSupabase");
-
-const result = await uploadProjectUpdateToSupabase({
-    projectCode: currentProject.project_code,
-    projectName: currentProject.project_name || currentProject.project_code,
-    projectType: currentProject.project_type || "internal",
-    title,
-    description,
-    file: imageFile,
-    createdByEmail: actor.email,
-    createdByName: actor.name,
-    createdByRole: actor.role
-});
-
-alert("After uploadProjectUpdateToSupabase");
+        const result = await uploadProjectUpdateToSupabase({
+          projectCode: currentProject.project_code,
+          projectName: currentProject.project_name || currentProject.project_code,
+          projectType: currentProject.project_type || "internal",
+          title,
+          description,
+          file: imageFile,
+          createdByEmail: actor.email,
+          createdByName: actor.name,
+          createdByRole: actor.role
+        });
 
         if(result?.error){
           throw new Error(result.error);
@@ -1010,20 +1004,12 @@ alert("After uploadProjectUpdateToSupabase");
         );
 
       }catch(err){
-
-    alert(
-        "ERROR:\n\n" +
-        (err?.message || JSON.stringify(err))
-    );
-
-    console.error("Project update upload error:", err);
-
-    showDashboardAlert(
-        "Upload failed",
-        err?.message || "Failed to upload project update."
-    );
-
-}finally{
+        console.error("Project update upload error:", err);
+        showDashboardAlert(
+          "Upload failed",
+          err?.message || "Failed to upload project update."
+        );
+      }finally{
         uploadBusy = false;
         dashboardEls.uploadProjectUpdateBtn.disabled = false;
         dashboardEls.uploadProjectUpdateBtn.textContent = "Upload Update";
