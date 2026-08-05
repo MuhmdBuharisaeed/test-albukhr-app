@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+ALBUKHR • External Projects Admin
+</title>
+
+<!-- =====================================
+     GLOBAL STYLE
+===================================== -->
+
+<link
+rel="stylesheet"
+href="style.css">
+
+<link
+rel="stylesheet"
+href="css/admin.css">
+
+<link
+rel="stylesheet"
+href="css/admin-external-panel.css">
+
+<!-- =====================================
+     ADMIN SECURITY
+===================================== -->
+
+<script src="js/supabase.js"></script>
+
+<script src="js/supabase-admin-auth/admin-session.js"></script>
+
+<script src="js/supabase-admin-auth/admin-permissions.js"></script>
+
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
+
+<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
+
+<script src="js/supabase-admin-auth/admin-guard.js"></script>
+
+<script src="js/supabase-admin-auth/admin-logs.js"></script>
+
+<script src="js/supabase-admin-auth/admin-core.js"></script>
+
+</head>
+
+<body>
+
+<!-- =====================================
+     PAGE LOADER
+===================================== -->
+
+<div
+id="pageLoader"
+class="admin-page-loader">
+
+<div class="loader-box">
+
+<div class="loader-spinner"></div>
+
+<h3>
+Loading External Projects...
+</h3>
+
+<p>
+
+Initializing Admin Security
+
+</p>
+
+</div>
+
+</div>
+
+<!-- =====================================
+     PAGE
+===================================== -->
+
+<div
+id="pageContainer"
+
+style="display:none;">
+
+<header class="header">
+
+<h1 class="brand">
+
+🌍 External Projects
+
+</h1>
+
+<div class="header-actions">
+
+<button
+
+class="btn btn-secondary"
+
+onclick="refreshPanel()">
+
+Refresh
+
+</button>
+
+<button
+
+class="btn btn-danger"
+
+onclick="adminLogout()">
+
+Logout
+
+</button>
+
+</div>
+
+</header>
+
+<main class="section">
+
+<div class="page-title">
+
+<h2>
+
+External Project Administration
+
+</h2>
+
+<p>
+
+Review, approve, reject and monitor
+all external projects submitted
+to ALBUKHR.
+
+</p>
+
+</div>
+<!-- =====================================
+     SUMMARY CARDS
+===================================== -->
+
+<section class="stats-grid">
+
+<div class="stat-card">
+
+<div class="stat-icon">
+📁
+</div>
+
+<div class="stat-content">
+
+<h3
+id="totalProjects">
+
+0
+
+</h3>
+
+<p>
+
+Total Projects
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+🕒
+</div>
+
+<div class="stat-content">
+
+<h3
+id="pendingProjects">
+
+0
+
+</h3>
+
+<p>
+
+Pending Review
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+✅
+</div>
+
+<div class="stat-content">
+
+<h3
+id="approvedProjects">
+
+0
+
+</h3>
+
+<p>
+
+Approved
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+❌
+</div>
+
+<div class="stat-content">
+
+<h3
+id="rejectedProjects">
+
+0
+
+</h3>
+
+<p>
+
+Rejected
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+⛔
+</div>
+
+<div class="stat-content">
+
+<h3
+id="suspendedProjects">
+
+0
+
+</h3>
+
+<p>
+
+Suspended
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+💰
+</div>
+
+<div class="stat-content">
+
+<h3
+id="totalCapital">
+
+0
+
+</h3>
+
+<p>
+
+Requested Capital
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     FILTER BAR
+===================================== -->
+
+<section class="filter-panel">
+
+<input
+
+type="text"
+
+id="projectSearch"
+
+placeholder="Search project, owner or category...">
+
+<select id="statusFilter">
+
+<option value="all">
+
+All Status
+
+</option>
+
+<option value="pending">
+
+Pending
+
+</option>
+
+<option value="approved">
+
+Approved
+
+</option>
+
+<option value="rejected">
+
+Rejected
+
+</option>
+
+<option value="suspended">
+
+Suspended
+
+</option>
+
+</select>
+
+<select id="categoryFilter">
+
+<option value="all">
+
+All Categories
+
+</option>
+
+</select>
+
+</section>
+
+<!-- =====================================
+     PENDING PROJECTS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+🕒 Pending Projects
+
+</h3>
+
+<span
+id="pendingCounter"
+
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div
+id="pendingProjectsContainer"
+
+class="project-list">
+
+<div class="empty-state">
+
+No Pending Projects
+
+</div>
+
+</div>
+
+</section>
+<!-- =====================================
+     APPROVED PROJECTS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+✅ Approved Projects
+
+</h3>
+
+<span
+id="approvedCounter"
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div
+id="approvedProjectsContainer"
+class="project-list">
+
+<div class="empty-state">
+
+No Approved Projects
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     REJECTED PROJECTS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+❌ Rejected Projects
+
+</h3>
+
+<span
+id="rejectedCounter"
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div
+id="rejectedProjectsContainer"
+class="project-list">
+
+<div class="empty-state">
+
+No Rejected Projects
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     SUSPENDED PROJECTS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+⛔ Suspended Projects
+
+</h3>
+
+<span
+id="suspendedCounter"
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div
+id="suspendedProjectsContainer"
+class="project-list">
+
+<div class="empty-state">
+
+No Suspended Projects
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     PROJECT DETAILS MODAL
+===================================== -->
+
+<div
+id="projectModal"
+class="admin-modal">
+
+<div
+class="admin-modal-overlay"
+onclick="closeProjectModal()">
+
+</div>
+
+<div
+class="admin-modal-box">
+
+<div
+class="admin-modal-header">
+
+<h2
+id="modalProjectTitle">
+
+External Project
+
+</h2>
+
+<button
+class="modal-close-btn"
+onclick="closeProjectModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+class="admin-modal-body">
+
+<div
+id="modalProjectContent">
+
+Loading...
+
+</div>
+
+</div>
+
+<div
+class="admin-modal-footer">
+
+<button
+
+class="btn btn-success"
+
+id="approveProjectBtn">
+
+Approve
+
+</button>
+
+<button
+
+class="btn btn-danger"
+
+id="rejectProjectBtn">
+
+Reject
+
+</button>
+
+<button
+
+class="btn btn-warning"
+
+id="suspendProjectBtn">
+
+Suspend
+
+</button>
+
+<button
+
+class="btn btn-secondary"
+
+onclick="closeProjectModal()">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+<!-- =====================================
+     GLOBAL ALERT MODAL
+===================================== -->
+
+<div
+id="adminAlertModal"
+class="admin-alert-modal">
+
+<div class="admin-alert-box">
+
+<h3
+id="adminAlertTitle">
+
+Notification
+
+</h3>
+
+<p
+id="adminAlertMessage">
+
+Ready
+
+</p>
+
+<div
+class="admin-alert-actions">
+
+<button
+class="btn btn-success"
+onclick="closeAdminAlert()">
+
+OK
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</main>
+
+</div>
+
+<!-- =====================================
+     EXTERNAL PROJECT ENGINE
+===================================== -->
+
+<script src="js/external/external-project-engine.js"></script>
+
+<!-- =====================================
+     ADMIN PANEL ENGINE
+===================================== -->
+
+<script src="js/admin/admin-external-panel.js"></script>
+
+<!-- =====================================
+     INITIALIZE
+===================================== -->
+
+<script>
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+async ()=>{
+
+try{
+
+/* ---------- BOOTSTRAP ---------- */
+
+await initializeAdmin();
+
+/* ---------- SUPER ADMIN ---------- */
+
+const allowed =
+
+await requirePermission(
+
+"external.manage"
+
+);
+
+if(!allowed){
+
+return;
+
+}
+
+/* ---------- PANEL ---------- */
+
+if(
+
+typeof initializeExternalAdminPanel
+
+===
+
+"function"
+
+){
+
+await initializeExternalAdminPanel();
+
+}
+
+/* ---------- SHOW PAGE ---------- */
+
+document
+
+.getElementById(
+
+"pageLoader"
+
+)
+
+.style.display =
+
+"none";
+
+document
+
+.getElementById(
+
+"pageContainer"
+
+)
+
+.style.display =
+
+"block";
+
+}
+catch(error){
+
+console.error(
+
+"[EXTERNAL PANEL]",
+
+error
+
+);
+
+alert(
+
+error.message ||
+
+"Unable to initialize External Admin Panel."
+
+);
+
+location.replace(
+
+"unified-admin-buttons.html"
+
+);
+
+}
+
+});
+
+</script>
+
+</body>
+
+</html>
