@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+ALBUKHR Admin • Permissions
+</title>
+
+<!-- =========================================
+GLOBAL CSS
+========================================= -->
+
+<link rel="stylesheet" href="css/style.css">
+
+<link rel="stylesheet" href="css/albukhr-ui.css">
+
+<link rel="stylesheet" href="css/global-header.css">
+
+<!-- =========================================
+PAGE CSS
+========================================= -->
+
+<link rel="stylesheet" href="css/admin-permissions.css">
+
+<style>
+
+.header-right{
+
+display:flex;
+align-items:center;
+gap:10px;
+
+}
+
+/* ADMIN BOX */
+
+.admin-box{
+
+display:flex;
+flex-direction:column;
+align-items:flex-end;
+justify-content:center;
+
+max-width:140px;
+
+}
+
+/* ADMIN NAME */
+
+#adminName{
+
+font-size:11px;
+color:#fff;
+font-weight:700;
+
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+
+}
+
+/* ADMIN ROLE */
+
+#adminRole{
+
+font-size:10px;
+color:#d8ffe8;
+
+white-space:nowrap;
+
+}
+
+</style>
+
+</head>
+
+<body data-page="admin-permissions">
+
+<!-- =========================================
+ADMIN GUARD
+========================================= -->
+
+<script>
+
+(async()=>{
+
+try{
+
+if(typeof requireSuperAdmin!=="function"){
+
+location.replace("admin-login.html");
+
+return;
+
+}
+
+const ok =
+await requireSuperAdmin();
+
+if(!ok){
+
+return;
+
+}
+
+}catch(e){
+
+console.error(e);
+
+location.replace("admin-login.html");
+
+}
+
+})();
+
+</script>
+
+<!-- =========================================
+HEADER
+========================================= -->
+
+<header class="header">
+
+<div class="header-left">
+
+<span class="brand">
+
+ALBUKHR
+
+</span>
+
+</div>
+
+<div class="header-right">
+
+<!-- ADMIN -->
+
+<div
+class="header-btn admin-box">
+
+<div class="user-icon">
+
+🛡️
+
+</div>
+
+<div id="adminName">
+
+Loading...
+
+</div>
+
+<div id="adminRole">
+
+Super Admin
+
+</div>
+
+</div>
+
+<!-- LOGOUT -->
+
+<div
+
+class="header-btn"
+
+id="logoutBtn"
+
+title="Logout">
+
+🚪
+
+</div>
+
+</div>
+
+</header>
+
+<!-- =========================================
+WELCOME BAR
+========================================= -->
+
+<div class="welcome-bar">
+
+<div
+class="welcome-track">
+
+ALBUKHR Administration Center —
+Role Management • Permission Matrix • Security Control • Activity Logs
+
+</div>
+
+</div>
+
+<!-- =========================================
+PAGE HERO
+========================================= -->
+
+<section class="news-hero">
+
+<div class="news-hero-left">
+
+<h2>
+
+🛡️ Permission Management
+
+</h2>
+
+<p>
+
+Manage administrator roles, permissions,
+access levels and security policies across
+the entire ALBUKHR ecosystem.
+
+Only Super Administrators are allowed
+to modify permission assignments.
+
+</p>
+
+</div>
+
+<div class="news-hero-right">
+
+<button
+
+id="refreshPermissions"
+
+class="primary-btn">
+
+🔄 Refresh
+
+</button>
+
+</div>
+
+</section>
+<!-- =========================================
+PERMISSION SUMMARY
+========================================= -->
+
+<section class="stats">
+
+<div class="stat-card">
+
+<span>
+
+Total Admins
+
+</span>
+
+<strong id="totalAdmins">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Active Roles
+
+</span>
+
+<strong id="totalRoles">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Permissions
+
+</span>
+
+<strong id="totalPermissions">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Activity Today
+
+</span>
+
+<strong id="todayActivities">
+
+0
+
+</strong>
+
+</div>
+
+</section>
+
+<!-- =========================================
+SEARCH
+========================================= -->
+
+<section class="news-search">
+
+<input
+
+type="text"
+
+id="adminSearch"
+
+placeholder="Search administrator..."
+
+autocomplete="off">
+
+</section>
+
+<!-- =========================================
+FILTERS
+========================================= -->
+
+<section class="news-tabs">
+
+<button
+
+class="news-tab active"
+
+data-role="all"
+
+id="filterAll">
+
+All
+
+</button>
+
+<button
+
+class="news-tab"
+
+data-role="super_admin"
+
+id="filterSuper">
+
+🛡️ Super Admin
+
+</button>
+
+<button
+
+class="news-tab"
+
+data-role="finance_admin"
+
+id="filterFinance">
+
+💰 Finance
+
+</button>
+
+<button
+
+class="news-tab"
+
+data-role="review_admin"
+
+id="filterReview">
+
+📝 Review
+
+</button>
+
+<button
+
+class="news-tab"
+
+data-role="viewer_admin"
+
+id="filterViewer">
+
+👁️ Viewer
+
+</button>
+
+</section>
+
+<!-- =========================================
+ACTION BAR
+========================================= -->
+
+<section class="action-bar">
+
+<button
+
+id="addAdminBtn"
+
+class="primary-btn">
+
+➕ Add Admin
+
+</button>
+
+<button
+
+id="viewLogsBtn"
+
+class="secondary-btn">
+
+📜 Activity Logs
+
+</button>
+
+<button
+
+id="reloadPermissionsBtn"
+
+class="secondary-btn">
+
+🔄 Reload
+
+</button>
+
+</section>
+
+<!-- =========================================
+PERMISSION TABLE
+========================================= -->
+
+<section class="permission-wrapper">
+
+<table class="permission-table">
+
+<thead>
+
+<tr>
+
+<th>
+
+Administrator
+
+</th>
+
+<th>
+
+Role
+
+</th>
+
+<th>
+
+Status
+
+</th>
+
+<th>
+
+Permissions
+
+</th>
+
+<th>
+
+Last Login
+
+</th>
+
+<th>
+
+Actions
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody id="permissionsTableBody">
+
+<tr>
+
+<td colspan="6">
+
+<div class="loading-card">
+
+Loading administrator permissions...
+
+</div>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- =========================================
+EMPTY STATE
+========================================= -->
+
+<section
+
+id="permissionEmpty"
+
+class="news-empty"
+
+style="display:none;">
+
+<div class="empty-icon">
+
+🛡️
+
+</div>
+
+<h3>
+
+No Administrators Found
+
+</h3>
+
+<p>
+
+No administrator matches the current search
+or selected filter.
+
+</p>
+
+</section>
+
+<!-- =========================================
+LOAD MORE
+========================================= -->
+
+<section class="news-footer">
+
+<button
+
+id="loadMoreAdmins"
+
+class="secondary-btn">
+
+Load More
+
+</button>
+
+  </section>
+  <!-- =========================================
+ADD / EDIT ADMIN MODAL
+========================================= -->
+
+<div
+id="adminModal"
+class="news-modal">
+
+<div
+class="news-modal-overlay"
+onclick="closeAdminModal()">
+
+</div>
+
+<div class="news-modal-box">
+
+<div class="news-modal-header">
+
+<h2 id="adminModalTitle">
+
+Add Administrator
+
+</h2>
+
+<button
+class="modal-close-btn"
+onclick="closeAdminModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div class="news-modal-body">
+
+<div class="form-group">
+
+<label>
+
+Administrator Email
+
+</label>
+
+<input
+type="email"
+id="adminEmail"
+placeholder="admin@albukhr.com">
+
+</div>
+
+<div class="form-group">
+
+<label>
+
+Username
+
+</label>
+
+<input
+type="text"
+id="adminUsername"
+placeholder="Administrator Username">
+
+</div>
+
+<div class="form-group">
+
+<label>
+
+Role
+
+</label>
+
+<select id="adminRoleSelect">
+
+<option value="viewer_admin">
+
+Viewer Admin
+
+</option>
+
+<option value="review_admin">
+
+Review Admin
+
+</option>
+
+<option value="finance_admin">
+
+Finance Admin
+
+</option>
+
+<option value="super_admin">
+
+Super Admin
+
+</option>
+
+</select>
+
+</div>
+
+<div class="form-group">
+
+<label>
+
+Status
+
+</label>
+
+<select id="adminStatus">
+
+<option value="active">
+
+Active
+
+</option>
+
+<option value="disabled">
+
+Disabled
+
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="news-modal-footer">
+
+<button
+id="saveAdminBtn"
+class="primary-btn">
+
+💾 Save
+
+</button>
+
+<button
+onclick="closeAdminModal()"
+class="secondary-btn">
+
+Cancel
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =========================================
+PERMISSION MODAL
+========================================= -->
+
+<div
+id="permissionModal"
+class="news-modal">
+
+<div
+class="news-modal-overlay"
+onclick="closePermissionModal()">
+
+</div>
+
+<div class="news-modal-box">
+
+<div class="news-modal-header">
+
+<h2>
+
+Permission Manager
+
+</h2>
+
+<button
+class="modal-close-btn"
+onclick="closePermissionModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+class="news-modal-body"
+id="permissionContainer">
+
+<div class="loading-card">
+
+Loading permissions...
+
+</div>
+
+</div>
+
+<div class="news-modal-footer">
+
+<button
+id="savePermissionsBtn"
+class="primary-btn">
+
+💾 Save Changes
+
+</button>
+
+<button
+onclick="closePermissionModal()"
+class="secondary-btn">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =========================================
+ADMIN LOGS MODAL
+========================================= -->
+
+<div
+id="logsModal"
+class="news-modal">
+
+<div
+class="news-modal-overlay"
+onclick="closeLogsModal()">
+
+</div>
+
+<div class="news-modal-box">
+
+<div class="news-modal-header">
+
+<h2>
+
+📜 Activity Logs
+
+</h2>
+
+<button
+class="modal-close-btn"
+onclick="closeLogsModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+class="news-modal-body"
+id="logsContainer">
+
+<div class="loading-card">
+
+Loading activity logs...
+
+</div>
+
+</div>
+
+<div class="news-modal-footer">
+
+<button
+onclick="closeLogsModal()"
+class="primary-btn">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =========================================
+DELETE CONFIRMATION
+========================================= -->
+
+<div
+id="deleteAdminModal"
+class="share-modal">
+
+<div
+class="share-overlay"
+onclick="closeDeleteModal()">
+
+</div>
+
+<div class="share-box">
+
+<h3>
+
+Delete Administrator
+
+</h3>
+
+<p>
+
+This action cannot be undone.
+
+Are you sure you want to continue?
+
+</p>
+
+<div class="share-actions">
+
+<button
+id="confirmDeleteAdmin"
+class="primary-btn">
+
+🗑 Delete
+
+</button>
+
+<button
+onclick="closeDeleteModal()">
+
+Cancel
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =========================================
+LOADING OVERLAY
+========================================= -->
+
+<div
+id="adminLoading"
+class="news-loading">
+
+<div class="loading-spinner"></div>
+
+<p>
+
+Processing...
+
+</p>
+
+</div>
+
+<!-- =========================================
+APP ALERT
+========================================= -->
+
+<div
+id="appAlert"
+class="app-alert">
+
+<div class="app-alert-box">
+
+<h3
+id="appAlertTitle">
+
+Notice
+
+</h3>
+
+<p
+id="appAlertText">
+
+</p>
+
+<button
+onclick="closeAppAlert()">
+
+OK
+
+</button>
+
+</div>
+
+</div>
+<!-- =========================================
+SUPABASE
+========================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-core.js"></script>
+
+<!-- =========================================
+ADMIN CORE
+========================================= -->
+
+<script src="js/supabase-admin-auth/admin-core.js"></script>
+
+<script src="js/supabase-admin-auth/admin-session.js"></script>
+
+<script src="js/supabase-admin-auth/admin-permissions.js"></script>
+
+<script src="js/supabase-admin-auth/admin-logs.js"></script>
+
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
+
+<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
+
+<script src="js/supabase-admin-auth/admin-guard.js"></script>
+
+<!-- =========================================
+APP ALERT
+========================================= -->
+
+<script src="js/app-alert.js"></script>
+
+<!-- =========================================
+PAGE ENGINE
+========================================= -->
+
+<script src="js/admin-permissions-page.js"></script>
+
+<!-- =========================================
+BOOTSTRAP
+========================================= -->
+
+<script>
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+async()=>{
+
+try{
+
+await initializeAdmin();
+
+const admin =
+await getCurrentAdmin();
+
+if(!admin){
+
+location.replace(
+"admin-login.html"
+);
+
+return;
+
+}
+
+/* HEADER */
+
+document.getElementById(
+
+"adminName"
+
+).textContent =
+
+admin.username ||
+
+admin.email ||
+
+"Administrator";
+
+document.getElementById(
+
+"adminRole"
+
+).textContent =
+
+(admin.role_code || "")
+
+.replaceAll("_"," ")
+
+.toUpperCase();
+
+/* LOAD PAGE */
+
+if(
+
+typeof loadPermissionPage ===
+
+"function"
+
+){
+
+await loadPermissionPage();
+
+}
+
+}catch(error){
+
+console.error(
+
+"[ADMIN PERMISSIONS]",
+
+error
+
+);
+
+if(typeof openAppAlert==="function"){
+
+openAppAlert(
+
+"Initialization Error",
+
+error.message
+
+);
+
+}
+
+}
+
+});
+
+/* LOGOUT */
+
+document
+
+.getElementById(
+
+"logoutBtn"
+
+)
+
+.addEventListener(
+
+"click",
+
+async()=>{
+
+if(
+
+confirm(
+
+"Logout from Admin Control Center?"
+
+)
+
+){
+
+await adminLogout();
+
+}
+
+}
+
+);
+
+</script>
+
+</body>
+</html>
