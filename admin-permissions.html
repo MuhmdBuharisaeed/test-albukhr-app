@@ -12,118 +12,115 @@ content="width=device-width, initial-scale=1.0">
 ALBUKHR Admin • Permissions
 </title>
 
-<!-- =========================================
-GLOBAL CSS
-========================================= -->
+<!-- =====================================
+GLOBAL ADMIN CSS
+===================================== -->
 
 <link rel="stylesheet" href="css/style.css">
 
-<link rel="stylesheet" href="css/albukhr-ui.css">
+<link rel="stylesheet" href="css/admin-permissions.css">
 
 <link rel="stylesheet" href="css/global-header.css">
 
-<!-- =========================================
-PAGE CSS
-========================================= -->
+<link rel="stylesheet" href="css/app-alert.css">
 
-<link rel="stylesheet" href="css/admin-permissions.css">
+<!-- =====================================
+SUPABASE
+===================================== -->
 
-<style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-.header-right{
+<script src="js/supabase-core.js"></script>
 
-display:flex;
-align-items:center;
-gap:10px;
+<!-- =====================================
+ADMIN ENGINES
+===================================== -->
 
-}
+<script src="js/supabase-admin-auth/admin-core.js"></script>
 
-/* ADMIN BOX */
+<script src="js/supabase-admin-auth/admin-session.js"></script>
 
-.admin-box{
+<script src="js/supabase-admin-auth/admin-permissions.js"></script>
 
-display:flex;
-flex-direction:column;
-align-items:flex-end;
-justify-content:center;
+<script src="js/supabase-admin-auth/admin-logs.js"></script>
 
-max-width:140px;
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
 
-}
+<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
 
-/* ADMIN NAME */
+<script src="js/supabase-admin-auth/admin-guard.js"></script>
 
-#adminName{
-
-font-size:11px;
-color:#fff;
-font-weight:700;
-
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-
-}
-
-/* ADMIN ROLE */
-
-#adminRole{
-
-font-size:10px;
-color:#d8ffe8;
-
-white-space:nowrap;
-
-}
-
-</style>
-
-</head>
-
-<body data-page="admin-permissions">
-
-<!-- =========================================
-ADMIN GUARD
-========================================= -->
+<script src="js/app-alert.js"></script>
 
 <script>
 
+/* =====================================
+INITIALIZE
+===================================== */
+
 (async()=>{
 
-try{
+await initializeAdmin();
 
-if(typeof requireSuperAdmin!=="function"){
-
-location.replace("admin-login.html");
-
-return;
-
-}
-
-const ok =
 await requireSuperAdmin();
-
-if(!ok){
-
-return;
-
-}
-
-}catch(e){
-
-console.error(e);
-
-location.replace("admin-login.html");
-
-}
 
 })();
 
 </script>
 
-<!-- =========================================
+</head>
+
+<body>
+
+<!-- =====================================
+LOADING
+===================================== -->
+
+<div
+id="adminLoading"
+class="admin-loading">
+
+<div class="loading-spinner"></div>
+
+<p>
+
+Loading Permission Center...
+
+</p>
+
+</div>
+
+<!-- =====================================
+APP ALERT
+===================================== -->
+
+<div
+id="appAlert"
+class="app-alert">
+
+<div class="app-alert-box">
+
+<h3 id="appAlertTitle">
+
+Notice
+
+</h3>
+
+<p id="appAlertText"></p>
+
+<button onclick="closeAppAlert()">
+
+OK
+
+</button>
+
+</div>
+
+</div>
+
+<!-- =====================================
 HEADER
-========================================= -->
+===================================== -->
 
 <header class="header">
 
@@ -139,112 +136,81 @@ ALBUKHR
 
 <div class="header-right">
 
-<!-- ADMIN -->
+<button
+class="secondary-btn"
+onclick="adminLogout()">
 
-<div
-class="header-btn admin-box">
+Logout
 
-<div class="user-icon">
-
-🛡️
-
-</div>
-
-<div id="adminName">
-
-Loading...
-
-</div>
-
-<div id="adminRole">
-
-Super Admin
-
-</div>
-
-</div>
-
-<!-- LOGOUT -->
-
-<div
-
-class="header-btn"
-
-id="logoutBtn"
-
-title="Logout">
-
-🚪
-
-</div>
+</button>
 
 </div>
 
 </header>
 
-<!-- =========================================
-WELCOME BAR
-========================================= -->
+<!-- =====================================
+MAIN PAGE
+===================================== -->
 
-<div class="welcome-bar">
+<div class="admin-page">
 
-<div
-class="welcome-track">
+<!-- =====================================
+HERO
+===================================== -->
 
-ALBUKHR Administration Center —
-Role Management • Permission Matrix • Security Control • Activity Logs
+<section
+class="permissions-hero">
 
-</div>
-
-</div>
-
-<!-- =========================================
-PAGE HERO
-========================================= -->
-
-<section class="news-hero">
-
-<div class="news-hero-left">
+<div class="hero-left">
 
 <h2>
 
-🛡️ Permission Management
+Admin Permission Center
 
 </h2>
 
 <p>
 
-Manage administrator roles, permissions,
-access levels and security policies across
-the entire ALBUKHR ecosystem.
-
-Only Super Administrators are allowed
-to modify permission assignments.
+Manage administrator accounts,
+roles,
+permissions,
+activity logs,
+and access control
+across the entire
+ALBUKHR ecosystem.
 
 </p>
 
 </div>
 
-<div class="news-hero-right">
+<div class="hero-right">
 
 <button
+id="refreshAdmins"
+class="secondary-btn">
 
-id="refreshPermissions"
+Refresh
 
+</button>
+
+<button
+id="addAdminBtn"
 class="primary-btn">
 
-🔄 Refresh
++ Add Admin
 
 </button>
 
 </div>
 
 </section>
-<!-- =========================================
-PERMISSION SUMMARY
-========================================= -->
 
-<section class="stats">
+<!-- =====================================
+STATISTICS
+===================================== -->
+
+<section
+class="permission-stats">
 
 <div class="stat-card">
 
@@ -254,7 +220,8 @@ Total Admins
 
 </span>
 
-<strong id="totalAdmins">
+<strong
+id="totalAdmins">
 
 0
 
@@ -266,11 +233,12 @@ Total Admins
 
 <span>
 
-Active Roles
+Super Admins
 
 </span>
 
-<strong id="totalRoles">
+<strong
+id="superAdmins">
 
 0
 
@@ -282,11 +250,12 @@ Active Roles
 
 <span>
 
-Permissions
+Active
 
 </span>
 
-<strong id="totalPermissions">
+<strong
+id="activeAdmins">
 
 0
 
@@ -298,11 +267,12 @@ Permissions
 
 <span>
 
-Activity Today
+Disabled
 
 </span>
 
-<strong id="todayActivities">
+<strong
+id="disabledAdmins">
 
 0
 
@@ -311,138 +281,72 @@ Activity Today
 </div>
 
 </section>
-
-<!-- =========================================
+<!-- =====================================
 SEARCH
-========================================= -->
+===================================== -->
 
-<section class="news-search">
+<section class="permission-search">
 
 <input
-
 type="text"
-
 id="adminSearch"
-
-placeholder="Search administrator..."
-
-autocomplete="off">
+placeholder="Search by username, email or role...">
 
 </section>
 
-<!-- =========================================
-FILTERS
-========================================= -->
+<!-- =====================================
+ROLE FILTERS
+===================================== -->
 
-<section class="news-tabs">
+<section class="role-filter">
 
 <button
-
-class="news-tab active"
-
-data-role="all"
-
-id="filterAll">
+class="active"
+data-role-filter="all">
 
 All
 
 </button>
 
 <button
+data-role-filter="super_admin">
 
-class="news-tab"
-
-data-role="super_admin"
-
-id="filterSuper">
-
-🛡️ Super Admin
+Super Admin
 
 </button>
 
 <button
+data-role-filter="finance_admin">
 
-class="news-tab"
-
-data-role="finance_admin"
-
-id="filterFinance">
-
-💰 Finance
+Finance
 
 </button>
 
 <button
+data-role-filter="review_admin">
 
-class="news-tab"
-
-data-role="review_admin"
-
-id="filterReview">
-
-📝 Review
+Review
 
 </button>
 
 <button
+data-role-filter="viewer_admin">
 
-class="news-tab"
-
-data-role="viewer_admin"
-
-id="filterViewer">
-
-👁️ Viewer
+Viewer
 
 </button>
 
 </section>
 
-<!-- =========================================
-ACTION BAR
-========================================= -->
-
-<section class="action-bar">
-
-<button
-
-id="addAdminBtn"
-
-class="primary-btn">
-
-➕ Add Admin
-
-</button>
-
-<button
-
-id="viewLogsBtn"
-
-class="secondary-btn">
-
-📜 Activity Logs
-
-</button>
-
-<button
-
-id="reloadPermissionsBtn"
-
-class="secondary-btn">
-
-🔄 Reload
-
-</button>
-
-</section>
-
-<!-- =========================================
+<!-- =====================================
 PERMISSION TABLE
-========================================= -->
+===================================== -->
 
-<section class="permission-wrapper">
+<section
+class="permission-table-wrapper">
 
-<table class="permission-table">
+<table
+class="permission-table">
 
 <thead>
 
@@ -468,13 +372,13 @@ Status
 
 <th>
 
-Permissions
+Last Login
 
 </th>
 
 <th>
 
-Last Login
+Permissions
 
 </th>
 
@@ -488,17 +392,16 @@ Actions
 
 </thead>
 
-<tbody id="permissionsTableBody">
+<tbody
+id="permissionsTableBody">
 
 <tr>
 
-<td colspan="6">
+<td
+colspan="6"
+class="text-center">
 
-<div class="loading-card">
-
-Loading administrator permissions...
-
-</div>
+Loading administrators...
 
 </td>
 
@@ -510,19 +413,15 @@ Loading administrator permissions...
 
 </section>
 
-<!-- =========================================
+<!-- =====================================
 EMPTY STATE
-========================================= -->
+===================================== -->
 
 <section
-
 id="permissionEmpty"
+class="permission-empty hidden">
 
-class="news-empty"
-
-style="display:none;">
-
-<div class="empty-icon">
+<div class="icon">
 
 🛡️
 
@@ -536,56 +435,59 @@ No Administrators Found
 
 <p>
 
-No administrator matches the current search
-or selected filter.
+There are currently no administrator
+accounts matching this search or filter.
 
 </p>
 
 </section>
 
-<!-- =========================================
-LOAD MORE
-========================================= -->
+<!-- =====================================
+FOOTER
+===================================== -->
 
-<section class="news-footer">
+<section
+class="permission-footer">
 
 <button
-
-id="loadMoreAdmins"
-
-class="secondary-btn">
+id="loadMoreAdmins">
 
 Load More
 
 </button>
 
+<button
+id="viewLogsBtn">
+
+Activity Logs
+
+</button>
+
   </section>
-  <!-- =========================================
+  <!-- =====================================
 ADD / EDIT ADMIN MODAL
-========================================= -->
+===================================== -->
 
 <div
 id="adminModal"
-class="news-modal">
+class="admin-modal">
 
 <div
-class="news-modal-overlay"
-onclick="closeAdminModal()">
+class="admin-modal-box">
 
-</div>
+<!-- HEADER -->
 
-<div class="news-modal-box">
+<div class="modal-header">
 
-<div class="news-modal-header">
-
-<h2 id="adminModalTitle">
+<h2
+id="adminModalTitle">
 
 Add Administrator
 
 </h2>
 
 <button
-class="modal-close-btn"
+class="modal-close"
 onclick="closeAdminModal()">
 
 ✕
@@ -594,22 +496,13 @@ onclick="closeAdminModal()">
 
 </div>
 
-<div class="news-modal-body">
+<!-- BODY -->
 
-<div class="form-group">
+<div class="modal-body">
 
-<label>
+<div class="form-grid">
 
-Administrator Email
-
-</label>
-
-<input
-type="email"
-id="adminEmail"
-placeholder="admin@albukhr.com">
-
-</div>
+<!-- USERNAME -->
 
 <div class="form-group">
 
@@ -622,9 +515,28 @@ Username
 <input
 type="text"
 id="adminUsername"
-placeholder="Administrator Username">
+placeholder="Administrator username">
 
 </div>
+
+<!-- EMAIL -->
+
+<div class="form-group">
+
+<label>
+
+Email Address
+
+</label>
+
+<input
+type="email"
+id="adminEmail"
+placeholder="admin@example.com">
+
+</div>
+
+<!-- ROLE -->
 
 <div class="form-group">
 
@@ -634,23 +546,12 @@ Role
 
 </label>
 
-<select id="adminRoleSelect">
+<select
+id="adminRole">
 
-<option value="viewer_admin">
+<option value="">
 
-Viewer Admin
-
-</option>
-
-<option value="review_admin">
-
-Review Admin
-
-</option>
-
-<option value="finance_admin">
-
-Finance Admin
+Select Role
 
 </option>
 
@@ -660,9 +561,29 @@ Super Admin
 
 </option>
 
+<option value="finance_admin">
+
+Finance Admin
+
+</option>
+
+<option value="review_admin">
+
+Review Admin
+
+</option>
+
+<option value="viewer_admin">
+
+Viewer Admin
+
+</option>
+
 </select>
 
 </div>
+
+<!-- STATUS -->
 
 <div class="form-group">
 
@@ -672,7 +593,8 @@ Status
 
 </label>
 
-<select id="adminStatus">
+<select
+id="adminStatus">
 
 <option value="active">
 
@@ -690,58 +612,75 @@ Disabled
 
 </div>
 
+<!-- NOTES -->
+
+<div class="form-group form-full">
+
+<label>
+
+Internal Notes
+
+</label>
+
+<textarea
+id="adminNotes"
+placeholder="Optional notes...">
+
+</textarea>
+
 </div>
 
-<div class="news-modal-footer">
+</div>
+
+</div>
+
+<!-- FOOTER -->
+
+<div class="modal-footer">
 
 <button
-id="saveAdminBtn"
-class="primary-btn">
-
-💾 Save
-
-</button>
-
-<button
-onclick="closeAdminModal()"
-class="secondary-btn">
+class="modal-cancel"
+onclick="closeAdminModal()">
 
 Cancel
 
 </button>
 
-</div>
+<button
+id="saveAdminBtn"
+class="modal-save">
+
+Save Administrator
+
+</button>
 
 </div>
 
 </div>
 
-<!-- =========================================
-PERMISSION MODAL
-========================================= -->
+</div>
+
+<!-- =====================================
+PERMISSION MATRIX MODAL
+===================================== -->
 
 <div
 id="permissionModal"
-class="news-modal">
+class="permission-modal">
 
 <div
-class="news-modal-overlay"
-onclick="closePermissionModal()">
+class="permission-modal-box">
 
-</div>
-
-<div class="news-modal-box">
-
-<div class="news-modal-header">
+<div class="modal-header">
 
 <h2>
 
-Permission Manager
+Permission Matrix
 
 </h2>
 
 <button
-class="modal-close-btn"
+class="modal-close"
 onclick="closePermissionModal()">
 
 ✕
@@ -751,67 +690,62 @@ onclick="closePermissionModal()">
 </div>
 
 <div
-class="news-modal-body"
-id="permissionContainer">
+class="modal-body">
 
-<div class="loading-card">
+<div
+id="permissionGrid"
+class="permission-grid">
 
-Loading permissions...
+<!-- Loaded dynamically -->
 
 </div>
 
 </div>
 
-<div class="news-modal-footer">
+<div class="modal-footer">
 
 <button
-id="savePermissionsBtn"
-class="primary-btn">
-
-💾 Save Changes
-
-</button>
-
-<button
-onclick="closePermissionModal()"
-class="secondary-btn">
+class="modal-cancel"
+onclick="closePermissionModal()">
 
 Close
 
 </button>
 
-</div>
+<button
+id="savePermissionsBtn"
+class="modal-save">
+
+Save Permissions
+
+</button>
 
 </div>
 
 </div>
 
-<!-- =========================================
-ADMIN LOGS MODAL
-========================================= -->
+</div>
+<!-- =====================================
+ACTIVITY LOGS MODAL
+===================================== -->
 
 <div
 id="logsModal"
-class="news-modal">
+class="logs-modal">
 
 <div
-class="news-modal-overlay"
-onclick="closeLogsModal()">
+class="logs-modal-box">
 
-</div>
-
-<div class="news-modal-box">
-
-<div class="news-modal-header">
+<div class="modal-header">
 
 <h2>
 
-📜 Activity Logs
+Administrator Activity Logs
 
 </h2>
 
 <button
-class="modal-close-btn"
+class="modal-close"
 onclick="closeLogsModal()">
 
 ✕
@@ -821,10 +755,13 @@ onclick="closeLogsModal()">
 </div>
 
 <div
-class="news-modal-body"
-id="logsContainer">
+class="modal-body">
 
-<div class="loading-card">
+<div
+id="logsContainer"
+class="logs-container">
+
+<div class="text-center">
 
 Loading activity logs...
 
@@ -832,11 +769,13 @@ Loading activity logs...
 
 </div>
 
-<div class="news-modal-footer">
+</div>
+
+<div class="modal-footer">
 
 <button
-onclick="closeLogsModal()"
-class="primary-btn">
+class="modal-cancel"
+onclick="closeLogsModal()">
 
 Close
 
@@ -848,152 +787,87 @@ Close
 
 </div>
 
-<!-- =========================================
-DELETE CONFIRMATION
-========================================= -->
+<!-- =====================================
+DELETE CONFIRM MODAL
+===================================== -->
 
 <div
-id="deleteAdminModal"
-class="share-modal">
+id="deleteModal"
+class="permission-modal">
 
 <div
-class="share-overlay"
-onclick="closeDeleteModal()">
+class="permission-modal-box">
 
-</div>
+<div class="modal-header">
 
-<div class="share-box">
-
-<h3>
+<h2>
 
 Delete Administrator
 
-</h3>
-
-<p>
-
-This action cannot be undone.
-
-Are you sure you want to continue?
-
-</p>
-
-<div class="share-actions">
+</h2>
 
 <button
-id="confirmDeleteAdmin"
-class="primary-btn">
+class="modal-close"
+onclick="closeDeleteModal()">
 
-🗑 Delete
+✕
 
 </button>
 
+</div>
+
+<div class="modal-body">
+
+<p>
+
+Are you sure you want to permanently
+remove this administrator?
+
+</p>
+
+<p class="text-danger">
+
+This action cannot be undone.
+
+</p>
+
+</div>
+
+<div class="modal-footer">
+
 <button
+class="modal-cancel"
 onclick="closeDeleteModal()">
 
 Cancel
 
 </button>
 
-</div>
-
-</div>
-
-</div>
-
-<!-- =========================================
-LOADING OVERLAY
-========================================= -->
-
-<div
-id="adminLoading"
-class="news-loading">
-
-<div class="loading-spinner"></div>
-
-<p>
-
-Processing...
-
-</p>
-
-</div>
-
-<!-- =========================================
-APP ALERT
-========================================= -->
-
-<div
-id="appAlert"
-class="app-alert">
-
-<div class="app-alert-box">
-
-<h3
-id="appAlertTitle">
-
-Notice
-
-</h3>
-
-<p
-id="appAlertText">
-
-</p>
-
 <button
-onclick="closeAppAlert()">
+id="confirmDeleteBtn"
+class="modal-save">
 
-OK
+Delete
 
 </button>
 
 </div>
 
 </div>
-<!-- =========================================
-SUPABASE
-========================================= -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</div>
 
-<script src="js/supabase-core.js"></script>
-
-<!-- =========================================
-ADMIN CORE
-========================================= -->
-
-<script src="js/supabase-admin-auth/admin-core.js"></script>
-
-<script src="js/supabase-admin-auth/admin-session.js"></script>
-
-<script src="js/supabase-admin-auth/admin-permissions.js"></script>
-
-<script src="js/supabase-admin-auth/admin-logs.js"></script>
-
-<script src="js/supabase-admin-auth/admin-auth.js"></script>
-
-<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
-
-<script src="js/supabase-admin-auth/admin-guard.js"></script>
-
-<!-- =========================================
-APP ALERT
-========================================= -->
-
-<script src="js/app-alert.js"></script>
-
-<!-- =========================================
+<!-- =====================================
 PAGE ENGINE
-========================================= -->
+===================================== -->
 
 <script src="js/admin-permissions-page.js"></script>
 
-<!-- =========================================
-BOOTSTRAP
-========================================= -->
-
 <script>
+
+/* =====================================
+PAGE START
+===================================== */
 
 document.addEventListener(
 
@@ -1003,58 +877,25 @@ async()=>{
 
 try{
 
+document.getElementById(
+
+"adminLoading"
+
+).style.display="flex";
+
 await initializeAdmin();
 
-const admin =
-await getCurrentAdmin();
-
-if(!admin){
-
-location.replace(
-"admin-login.html"
-);
-
-return;
-
-}
-
-/* HEADER */
-
-document.getElementById(
-
-"adminName"
-
-).textContent =
-
-admin.username ||
-
-admin.email ||
-
-"Administrator";
-
-document.getElementById(
-
-"adminRole"
-
-).textContent =
-
-(admin.role_code || "")
-
-.replaceAll("_"," ")
-
-.toUpperCase();
-
-/* LOAD PAGE */
+await requireSuperAdmin();
 
 if(
 
-typeof loadPermissionPage ===
+typeof initializePermissionPage===
 
 "function"
 
 ){
 
-await loadPermissionPage();
+await initializePermissionPage();
 
 }
 
@@ -1068,57 +909,42 @@ error
 
 );
 
-if(typeof openAppAlert==="function"){
+if(
+
+typeof openAppAlert==="function"
+
+){
 
 openAppAlert(
 
-"Initialization Error",
+"Initialization Failed",
 
 error.message
 
 );
 
+}else{
+
+alert(error.message);
+
 }
+
+}finally{
+
+document.getElementById(
+
+"adminLoading"
+
+).style.display="none";
 
 }
 
 });
 
-/* LOGOUT */
-
-document
-
-.getElementById(
-
-"logoutBtn"
-
-)
-
-.addEventListener(
-
-"click",
-
-async()=>{
-
-if(
-
-confirm(
-
-"Logout from Admin Control Center?"
-
-)
-
-){
-
-await adminLogout();
-
-}
-
-}
-
-);
-
 </script>
 
+</div>
+
 </body>
+
 </html>
