@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+
+ALBUKHR • Risk Monitor
+
+</title>
+
+<!-- =====================================
+     GLOBAL CSS
+===================================== -->
+
+<link
+rel="stylesheet"
+href="style.css">
+
+<link
+rel="stylesheet"
+href="css/admin.css">
+
+<link
+rel="stylesheet"
+href="css/admin-risk-monitor.css">
+
+<!-- =====================================
+     ADMIN ENGINES
+===================================== -->
+
+<script src="js/supabase.js"></script>
+
+<script src="js/supabase-admin-auth/admin-session.js"></script>
+
+<script src="js/supabase-admin-auth/admin-permissions.js"></script>
+
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
+
+<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
+
+<script src="js/supabase-admin-auth/admin-guard.js"></script>
+
+<script src="js/supabase-admin-auth/admin-logs.js"></script>
+
+<script src="js/supabase-admin-auth/admin-core.js"></script>
+
+</head>
+
+<body>
+
+<!-- =====================================
+     PAGE LOADER
+===================================== -->
+
+<div
+id="pageLoader"
+class="admin-page-loader">
+
+<div class="loader-box">
+
+<div class="loader-spinner"></div>
+
+<h3>
+
+Loading Risk Monitor...
+
+</h3>
+
+<p>
+
+Connecting to ALBUKHR Mainnet...
+
+</p>
+
+</div>
+
+</div>
+
+<!-- =====================================
+     PAGE
+===================================== -->
+
+<div
+id="pageContainer"
+style="display:none;">
+
+<header class="header">
+
+<div>
+
+<h1 class="brand">
+
+⚠️ ALBUKHR Risk Monitor
+
+</h1>
+
+<p class="header-subtitle">
+
+Real-Time Treasury & Ecosystem Risk Analysis
+
+</p>
+
+</div>
+
+<div class="header-actions">
+
+<button
+class="btn btn-secondary"
+onclick="refreshRiskMonitor()">
+
+Refresh
+
+</button>
+
+<button
+class="btn btn-danger"
+onclick="adminLogout()">
+
+Logout
+
+</button>
+
+</div>
+
+</header>
+
+<main class="section">
+
+<!-- =====================================
+     PAGE TITLE
+===================================== -->
+
+<div class="page-title">
+
+<h2>
+
+Risk Monitoring Dashboard
+
+</h2>
+
+<p>
+
+Monitor treasury liquidity,
+withdrawal pressure,
+project health,
+system stability,
+and ecosystem risks
+in real time.
+
+</p>
+
+</div>
+
+<!-- =====================================
+     SUMMARY CARDS
+===================================== -->
+
+<section class="stats-grid">
+
+<div class="stat-card">
+
+<div class="stat-icon">
+
+🏦
+
+</div>
+
+<div class="stat-content">
+
+<h3 id="treasuryRisk">
+
+LOW
+
+</h3>
+
+<p>
+
+Treasury Risk
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+
+💧
+
+</div>
+
+<div class="stat-content">
+
+<h3 id="liquidityRisk">
+
+LOW
+
+</h3>
+
+<p>
+
+Liquidity Risk
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+
+💸
+
+</div>
+
+<div class="stat-content">
+
+<h3 id="withdrawRisk">
+
+LOW
+
+</h3>
+
+<p>
+
+Withdrawal Risk
+
+</p>
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<div class="stat-icon">
+
+📊
+
+</div>
+
+<div class="stat-content">
+
+<h3 id="projectRisk">
+
+LOW
+
+</h3>
+
+<p>
+
+Project Risk
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+<!-- =====================================
+     CRITICAL ALERT
+===================================== -->
+
+<section
+id="criticalAlertBanner"
+class="critical-alert-banner hidden">
+
+<div class="alert-icon">
+
+🚨
+
+</div>
+
+<div class="alert-content">
+
+<h3>
+
+Critical Risk Detected
+
+</h3>
+
+<p id="criticalAlertMessage">
+
+No critical alerts.
+
+</p>
+
+</div>
+
+<div class="alert-actions">
+
+<button
+class="btn btn-danger"
+onclick="dismissCriticalAlert()">
+
+Dismiss
+
+</button>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     SYSTEM HEALTH
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+🩺 Overall System Health
+
+</h3>
+
+<span
+id="systemHealthBadge"
+class="status-badge status-approved">
+
+Healthy
+
+</span>
+
+</div>
+
+<div class="health-grid">
+
+<div class="health-item">
+
+<span>
+
+System Score
+
+</span>
+
+<strong
+id="systemHealthScore">
+
+100%
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Treasury Stability
+
+</span>
+
+<strong
+id="treasuryHealth">
+
+Excellent
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Liquidity Status
+
+</span>
+
+<strong
+id="liquidityHealth">
+
+Stable
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Withdrawal Pressure
+
+</span>
+
+<strong
+id="withdrawHealth">
+
+Low
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Active Projects
+
+</span>
+
+<strong
+id="activeProjects">
+
+0
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Projects At Risk
+
+</span>
+
+<strong
+id="projectsAtRisk">
+
+0
+
+</strong>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     LIVE RISK LEVELS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+📊 Live Risk Indicators
+
+</h3>
+
+</div>
+
+<div class="risk-level-grid">
+
+<div class="risk-box risk-low">
+
+<h4>
+
+LOW
+
+</h4>
+
+<p
+id="lowRiskCount">
+
+0
+
+</p>
+
+</div>
+
+<div class="risk-box risk-medium">
+
+<h4>
+
+MEDIUM
+
+</h4>
+
+<p
+id="mediumRiskCount">
+
+0
+
+</p>
+
+</div>
+
+<div class="risk-box risk-high">
+
+<h4>
+
+HIGH
+
+</h4>
+
+<p
+id="highRiskCount">
+
+0
+
+</p>
+
+</div>
+
+<div class="risk-box risk-critical">
+
+<h4>
+
+CRITICAL
+
+</h4>
+
+<p
+id="criticalRiskCount">
+
+0
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     TREASURY SUMMARY
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+🏦 Treasury Overview
+
+</h3>
+
+</div>
+
+<div class="health-grid">
+
+<div class="health-item">
+
+<span>
+
+Ecosystem Treasury
+
+</span>
+
+<strong
+id="ecosystemTreasury">
+
+0 PI
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Project Treasury
+
+</span>
+
+<strong
+id="projectTreasury">
+
+0 PI
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Locked Capital
+
+</span>
+
+<strong
+id="lockedCapital">
+
+0 PI
+
+</strong>
+
+</div>
+
+<div class="health-item">
+
+<span>
+
+Available Liquidity
+
+</span>
+
+<strong
+id="availableLiquidity">
+
+0 PI
+
+</strong>
+
+</div>
+
+</div>
+
+  </section>
+  <!-- =====================================
+     SEARCH & FILTER PANEL
+===================================== -->
+
+<section class="filter-panel">
+
+<input
+type="text"
+id="riskSearch"
+placeholder="Search project, treasury or risk...">
+
+<select id="riskFilter">
+
+<option value="all">
+
+All Risk Levels
+
+</option>
+
+<option value="low">
+
+Low
+
+</option>
+
+<option value="medium">
+
+Medium
+
+</option>
+
+<option value="high">
+
+High
+
+</option>
+
+<option value="critical">
+
+Critical
+
+</option>
+
+</select>
+
+<select id="categoryFilter">
+
+<option value="all">
+
+All Categories
+
+</option>
+
+</select>
+
+</section>
+
+<!-- =====================================
+     PROJECT RISK TABLE
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+📊 Project Risk Analysis
+
+</h3>
+
+<span
+id="projectRiskCounter"
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div class="table-responsive">
+
+<table class="admin-table">
+
+<thead>
+
+<tr>
+
+<th>
+
+Project
+
+</th>
+
+<th>
+
+Category
+
+</th>
+
+<th>
+
+Liquidity
+
+</th>
+
+<th>
+
+Treasury
+
+</th>
+
+<th>
+
+Investors
+
+</th>
+
+<th>
+
+Risk
+
+</th>
+
+<th>
+
+Action
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody
+id="projectRiskTable">
+
+<tr>
+
+<td
+colspan="7"
+class="empty-state">
+
+No Project Data
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     WITHDRAWAL RISK
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+💸 Withdrawal Monitoring
+
+</h3>
+
+<span
+id="withdrawCounter"
+class="counter-badge">
+
+0
+
+</span>
+
+</div>
+
+<div class="table-responsive">
+
+<table class="admin-table">
+
+<thead>
+
+<tr>
+
+<th>
+
+User
+
+</th>
+
+<th>
+
+Project
+
+</th>
+
+<th>
+
+Amount
+
+</th>
+
+<th>
+
+Status
+
+</th>
+
+<th>
+
+Risk
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody
+id="withdrawRiskTable">
+
+<tr>
+
+<td
+colspan="5"
+class="empty-state">
+
+No Withdrawal Requests
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+<!-- =====================================
+     RECENT RISK EVENTS
+===================================== -->
+
+<section class="admin-card">
+
+<div class="card-header">
+
+<h3>
+
+🚨 Recent Risk Events
+
+</h3>
+
+</div>
+
+<div
+id="riskEventsList"
+class="activity-list">
+
+<div class="empty-state">
+
+No Recent Risk Events
+
+</div>
+
+</div>
+
+</section>
+<!-- =====================================
+     RISK DETAILS MODAL
+===================================== -->
+
+<div
+id="riskDetailsModal"
+class="admin-modal">
+
+<div class="admin-modal-box">
+
+<div class="admin-modal-header">
+
+<h2>
+
+Risk Details
+
+</h2>
+
+<button
+class="modal-close-btn"
+onclick="closeRiskModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+id="riskModalBody"
+class="admin-modal-body">
+
+Loading...
+
+</div>
+
+<div class="admin-modal-footer">
+
+<button
+class="btn btn-secondary"
+onclick="closeRiskModal()">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =====================================
+     ALERT MODAL
+===================================== -->
+
+<div
+id="alertModal"
+class="admin-alert-modal">
+
+<div class="admin-alert-box">
+
+<h3 id="alertTitle">
+
+System Alert
+
+</h3>
+
+<p id="alertMessage">
+
+No message.
+
+</p>
+
+<div class="admin-alert-actions">
+
+<button
+class="btn btn-primary"
+onclick="closeAlertModal()">
+
+OK
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</main>
+
+</div>
+
+<!-- =====================================
+     RISK MONITOR ENGINE
+===================================== -->
+
+<script src="js/admin/admin-risk-monitor.js"></script>
+
+<script>
+
+/* =====================================
+   INITIALIZE PAGE
+===================================== */
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+async ()=>{
+
+try{
+
+/* Bootstrap */
+
+const ok =
+await initializeAdmin();
+
+if(!ok){
+
+return;
+
+}
+
+/* Permission */
+
+const allowed =
+await requirePermission(
+"risk.monitor"
+);
+
+if(!allowed){
+
+return;
+
+}
+
+/* Load Dashboard */
+
+await loadRiskMonitor();
+
+/* Auto Refresh */
+
+startRiskMonitor();
+
+/* Hide Loader */
+
+document.getElementById(
+"pageLoader"
+).style.display="none";
+
+document.getElementById(
+"pageContainer"
+).style.display="block";
+
+console.log(
+"✅ Risk Monitor Ready"
+);
+
+}catch(error){
+
+console.error(error);
+
+alert(
+
+"Unable to load Risk Monitor."
+
+);
+
+}
+
+});
+
+</script>
+
+</body>
+
+</html>
