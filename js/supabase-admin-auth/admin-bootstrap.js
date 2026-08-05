@@ -123,36 +123,14 @@ Admin.session = session;
         /* ---------- ADMIN RECORD ---------- */
 
         const {
-
-            data:admin,
-
-            error
-
-        } = await supabase
-
-        .from("admin_users")
-
-        .select("*")
-
-        .eq(
-
-    "auth_user_id",
-
-    user.id
-
-)
-
-        )
-
-        .eq(
-
-            "status",
-
-            "active"
-
-        )
-
-        .single();
+    data: admin,
+    error
+} = await supabase
+    .from("admin_users")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .eq("status", "active")
+    .single();
 
         if(error || !admin){
 
