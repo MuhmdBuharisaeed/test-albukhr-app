@@ -8,63 +8,7 @@
 <!-- PI SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-<style>
-body{
-  margin:0;
-  font-family:sans-serif;
-  background:#f5f5f5;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-  flex-direction:column;
-}
-
-/* HEADER STYLE */
-.header{
-  position:absolute;
-  top:0;
-  width:100%;
-  background:#0f7a3d;
-  color:#fff;
-  padding:14px;
-  text-align:center;
-  font-weight:700;
-  font-size:18px;
-}
-
-/* CARD */
-.card{
-  background:#fff;
-  padding:30px;
-  border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.1);
-  text-align:center;
-  width:90%;
-  max-width:320px;
-}
-
-button{
-  padding:12px 20px;
-  font-size:16px;
-  border:none;
-  background:#0f7a3d;
-  color:#fff;
-  border-radius:8px;
-  cursor:pointer;
-  margin-top:15px;
-}
-
-button:active{
-  transform:scale(0.97);
-}
-
-.status{
-  margin-top:15px;
-  font-size:14px;
-  color:#333;
-}
-</style>
+<link rel="stylesheet" href="css/login.css">
 
 </head>
 
@@ -82,86 +26,7 @@ button:active{
 
 </div>
 
-<script>
-
-// ✅ STATUS UPDATE
-function setStatus(msg){
-  document.getElementById("status").innerText = msg;
-  console.log(msg);
-}
-
-// 🔐 LOGIN FUNCTION
-async function login(){
-
-  try{
-
-    if(typeof window.Pi === "undefined"){
-      setStatus("❌ Open inside Pi Browser");
-      return;
-    }
-
-    setStatus("🔄 Initializing Pi...");
-
-    Pi.init({
-      version:"2.0",
-      sandbox: true
-    });
-
-    setStatus("🔐 Authenticating...");
-
-    const scopes = ['username', 'payments'];
-
-function onIncompletePaymentFound(payment){
-  console.log(payment);
-}
-
-const auth = await Pi.authenticate(
-  scopes,
-  onIncompletePaymentFound
-);
-
-    console.log("AUTH:", auth);
-
-    const user = {
-      uid: auth.user?.uid || auth.uid,
-      username: auth.user?.username || auth.username
-    };
-
-    if(!user.uid){
-      throw new Error("Invalid user");
-    }
-
-    // ✅ SAVE USER
-    localStorage.setItem("pi_user", JSON.stringify(user));
-
-    setStatus("✅ Login success: " + user.username);
-
-    // 🚀 REDIRECT AFTER 1s
-    setTimeout(()=>{
-      window.location.href = "index.html";
-    },1000);
-
-  }catch(err){
-
-    console.error("LOGIN ERROR:", err);
-
-    setStatus("❌ Login failed");
-
-  }
-
-}
-
-// 🔁 AUTO LOGIN CHECK
-document.addEventListener("DOMContentLoaded", ()=>{
-
-  const saved = JSON.parse(localStorage.getItem("pi_user"));
-
-  if(saved && saved.uid){
-    window.location.href = "index.html";
-  }
-
-});
-</script>
+<script src="js/login.js"></script>
 
 </body>
 </html>
