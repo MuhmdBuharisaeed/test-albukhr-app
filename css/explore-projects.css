@@ -1,0 +1,68 @@
+.section{padding:16px}
+.search-box{
+  background:#fff;
+  border-radius:14px;
+  padding:12px 14px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:14px
+}
+.search-box input{
+  border:none;
+  outline:none;
+  flex:1;
+  font-size:15px
+}
+.project-card{
+  background:#fff;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  display:flex;
+  gap:12px;
+  align-items:center
+}
+.project-icon{font-size:22px}
+.project-body{flex:1}
+.project-title{font-size:15px;font-weight:600}
+.project-desc{font-size:12px;color:#666;margin-top:2px}
+.project-meta{font-size:12px;color:#0f7a3d;margin-top:6px}
+.project-tag{
+  font-size:10px;
+  padding:3px 8px;
+  border-radius:20px;
+  background:#e6f5ec;
+  color:#0f7a3d;
+  display:inline-block;
+  margin-top:6px
+}
+.project-tag.external{
+  background:#fff3cd;
+  color:#856404
+}
+.project-action a{
+  font-size:13px;
+  color:#0f7a3d;
+  text-decoration:none;
+  font-weight:600
+}
+.section-title{
+  font-size:14px;
+  font-weight:700;
+  color:#0f7a3d;
+  margin:16px 0 10px
+}
+.empty{
+  text-align:center;
+  font-size:13px;
+  color:#777;
+  margin-top:20px
+}
+
+.brand-name{
+  font-size: 28px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
