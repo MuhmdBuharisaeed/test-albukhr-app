@@ -6,13 +6,10 @@
   <title>ALBUKHR Transparency</title>
 
   <!-- Global User Page CSS -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/global-core.css">
-  <link rel="stylesheet" href="css/global-layout.css">
-  <link rel="stylesheet" href="css/global-components.css">
-  <link rel="stylesheet" href="css/global-style.css">
-  <link rel="stylesheet" href="css/global-header.css">
-  <link rel="stylesheet" href="css/global-buttons.css">
+<link rel="stylesheet" href="albukhr-ui.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/global-buttons.css">
 
   <!-- App Alert -->
   <link rel="stylesheet" href="css/app-alert.css">
@@ -173,6 +170,40 @@
   </a>
 
 </div>
+
+<script>
+
+let lastScroll = 0;
+let threshold = 10;
+
+const dock =
+document.querySelector(".dock-nav");
+
+window.addEventListener("scroll",()=>{
+
+const current =
+window.pageYOffset;
+
+if(Math.abs(current-lastScroll)<=threshold)
+return;
+
+if(current > lastScroll){
+
+/* scroll down */
+dock.classList.add("hide");
+
+}else{
+
+/* scroll up */
+dock.classList.remove("hide");
+
+}
+
+lastScroll = current;
+
+});
+
+</script>
   
   <!-- APP ALERT JS -->
   <script src="js/app-alert.js"></script>
