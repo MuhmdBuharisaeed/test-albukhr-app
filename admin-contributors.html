@@ -16,25 +16,7 @@ ALBUKHR Admin Contributors
 <!-- ==========================
      ADMIN AUTH
 =========================== -->
-<script src="admin-auth.js"></script>
-
-<script>
-
-/* ==========================
-   ACCESS GUARD
-========================== */
-
-requireRole([
-    "super_admin",
-    "finance_admin",
-    "review_admin"
-]);
-
-if(!getAdmin()){
-    location.href="admin-login.html";
-}
-
-</script>
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
 
 <!-- ==========================
      SUPABASE
