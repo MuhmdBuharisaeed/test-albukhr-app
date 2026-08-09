@@ -195,4 +195,134 @@ function renderRequests(rows){
           `
         }
 
-    
+        ${
+          row.receipt_ref
+          ? `
+            <div class="receipt-ref">
+              <strong>Ref:</strong>
+              ${escapeHtml(row.receipt_ref)}
+            </div>
+          `
+          : ""
+        }
+      </div>
+
+      <div class="note-area">
+        <label for="${noteId}">
+          Admin Note
+        </label>
+
+        <textarea
+          id="${noteId}"
+          class="note-input"
+          placeholder="Write note for user...">${escapeHtml(row.admin_note || "")}</textarea>
+      </div>
+
+      ${
+        row.admin_note
+        ? `
+          <div class="admin-note-box">
+            <strong>Saved Note:</strong><br>
+            ${escapeHtml(row.admin_note)}
+          </div>
+        `
+        : ""
+      }
+
+      ${actionButtons}
+    `;
+
+    listBox.appendChild(card);
+  });
+}
+
+/* ==========================
+APPROVE REQUEST
+========================== */
+async function approveRequest(id){
+
+  const noteEl =
+    document.getElementById(`note_${id}`);
+
+  const note =
+    noteEl ? noteEl.value.trim() : "";
+
+  const ok =
+    confirm("Approve this dApp request?");
+
+  if(!ok) return;
+
+  try{
+
+    const { error } =
+      await window.supabaseClient
+        .from("dapp_requests")
+        .update({
+          status:"approved",
+          telegram_unlocked:true,
+          admin_note:note,
+          reviewed_at:new Date().toISOString()
+        })
+        .eq("id", id);
+
+    if(error){
+      console.error(error);
+      alert(error.message || "Failed to approve request.");
+      return;
+    }
+
+    loadRequests();
+
+  }catch(err){
+    console.error(err);
+    alert("Network error while approving request.");
+  }
+}
+
+/* ==========================
+REJECT REQUEST
+========================== */
+async function rejectRequest(id){
+
+  const noteEl =
+    document.getElementById(`note_${id}`);
+
+  const note =
+    noteEl ? noteEl.value.trim() : "";
+
+  const ok =
+    confirm("Reject this dApp request?");
+
+  if(!ok) return;
+
+  try{
+
+    const { error } =
+      await window.supabaseClient
+        .from("dapp_requests")
+        .update({
+          status:"rejected",
+          telegram_unlocked:false,
+          admin_note:note,
+          reviewed_at:new Date().toISOString()
+        })
+        .eq("id", id);
+
+    if(error){
+      console.error(error);
+      alert(error.message || "Failed to reject request.");
+      return;
+    }
+
+    loadRequests();
+
+  }catch(err){
+    console.error(err);
+    alert("Network error while rejecting request.");
+  }
+}
+
+/* ==========================
+START
+========================== */
+loadRequests();
