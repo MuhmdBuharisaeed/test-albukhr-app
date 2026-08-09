@@ -1,0 +1,365 @@
+/* ==========================================
+   ALBUKHR
+   ADMIN EXTERNAL DASHBOARD
+========================================== */
+
+:root{
+
+--primary:#0f7a3d;
+--primary-light:#e9f8ef;
+--secondary:#198754;
+
+--danger:#dc3545;
+--danger-light:#fdecec;
+
+--warning:#ff9800;
+--warning-light:#fff7e6;
+
+--success:#28a745;
+--success-light:#edf9f1;
+
+--text:#222;
+--text-light:#777;
+
+--border:#e7e7e7;
+
+--white:#ffffff;
+
+--shadow:
+0 10px 30px rgba(0,0,0,.08);
+
+--radius:18px;
+
+}
+
+/* ==========================================
+BODY
+========================================== */
+
+body{
+
+margin:0;
+
+padding:0;
+
+background:#f4f7f5;
+
+font-family:
+
+system-ui,
+-apple-system,
+BlinkMacSystemFont,
+"Segoe UI",
+Roboto,
+sans-serif;
+
+color:var(--text);
+
+}
+
+/* ==========================================
+MAIN CONTAINER
+========================================== */
+
+.admin-page{
+
+max-width:1400px;
+
+margin:auto;
+
+padding:20px;
+
+}
+
+/* ==========================================
+PAGE TITLE
+========================================== */
+
+.page-title{
+
+font-size:28px;
+
+font-weight:800;
+
+color:var(--primary);
+
+margin-bottom:6px;
+
+}
+
+.page-subtitle{
+
+font-size:14px;
+
+color:var(--text-light);
+
+margin-bottom:25px;
+
+}
+
+/* ==========================================
+SUMMARY GRID
+========================================== */
+
+.summary-grid{
+
+display:grid;
+
+grid-template-columns:
+
+repeat(auto-fit,minmax(220px,1fr));
+
+gap:18px;
+
+margin-bottom:25px;
+
+}
+
+/* ==========================================
+SUMMARY CARD
+========================================== */
+
+.summary-card{
+
+background:var(--white);
+
+border-radius:var(--radius);
+
+padding:20px;
+
+box-shadow:var(--shadow);
+
+transition:.25s;
+
+border:1px solid transparent;
+
+}
+
+.summary-card:hover{
+
+transform:translateY(-4px);
+
+border-color:#d8efe1;
+
+}
+
+.summary-icon{
+
+font-size:30px;
+
+margin-bottom:12px;
+
+}
+
+.summary-value{
+
+font-size:30px;
+
+font-weight:800;
+
+color:var(--primary);
+
+}
+
+.summary-label{
+
+font-size:13px;
+
+color:var(--text-light);
+
+margin-top:6px;
+
+}
+
+/* ==========================================
+CONTENT GRID
+========================================== */
+
+.dashboard-grid{
+
+display:grid;
+
+grid-template-columns:
+
+1fr 1fr;
+
+gap:20px;
+
+}
+
+/* ==========================================
+SECTION CARD
+========================================== */
+
+.section-card{
+
+background:#fff;
+
+border-radius:18px;
+
+box-shadow:var(--shadow);
+
+padding:20px;
+
+}
+
+.section-header{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+margin-bottom:16px;
+
+}
+
+.section-title{
+
+font-size:18px;
+
+font-weight:700;
+
+color:var(--primary);
+
+}
+/* ==========================================
+SEARCH BAR
+========================================== */
+
+.search-section{
+
+display:flex;
+
+align-items:center;
+
+gap:12px;
+
+margin-bottom:20px;
+
+flex-wrap:wrap;
+
+}
+
+.search-box{
+
+flex:1;
+
+min-width:260px;
+
+}
+
+.search-box input{
+
+width:100%;
+
+padding:14px 16px;
+
+border:1px solid var(--border);
+
+border-radius:12px;
+
+font-size:14px;
+
+outline:none;
+
+background:#fff;
+
+transition:.25s;
+
+box-sizing:border-box;
+
+}
+
+.search-box input:focus{
+
+border-color:var(--primary);
+
+box-shadow:0 0 0 4px rgba(15,122,61,.08);
+
+}
+
+/* ==========================================
+FILTER BUTTONS
+========================================== */
+
+.filter-group{
+
+display:flex;
+
+gap:10px;
+
+flex-wrap:wrap;
+
+}
+
+.filter-btn{
+
+border:none;
+
+background:#f1f1f1;
+
+padding:10px 16px;
+
+border-radius:30px;
+
+cursor:pointer;
+
+font-size:13px;
+
+font-weight:600;
+
+transition:.25s;
+
+}
+
+.filter-btn:hover{
+
+background:#e4f5ea;
+
+color:var(--primary);
+
+}
+
+.filter-btn.active{
+
+background:var(--primary);
+
+color:#fff;
+
+}
+
+/* ==========================================
+PROJECT LIST
+========================================== */
+
+.project-list{
+
+display:flex;
+
+flex-direction:column;
+
+gap:14px;
+
+}
+
+/* ==========================================
+PROJECT CARD
+========================================== */
+
+.project-card{
+
+background:#fff;
+
+border:1px solid var(--border);
+
+border-radius:16px;
+
+padding:18px;
+
+transition:.25s;
+
+}
+
+.proje
