@@ -1,0 +1,914 @@
+/* =========================================
+   ALBUKHR ADMIN CONTRIBUTORS
+   PART 3
+========================================= */
+
+/* ---------- GLOBAL STATE ---------- */
+
+const state = {
+
+contributors: [],
+
+filtered: [],
+
+loading:false
+
+};
+
+/* ---------- DOM ---------- */
+
+const notice =
+document.getElementById("notice");
+
+const list =
+document.getElementById("contributorsList");
+
+const inviteOutput =
+document.getElementById("inviteOutput");
+
+const btnInvite =
+document.getElementById("generateInviteBtn");
+
+const btnRefresh =
+document.getElementById("refreshBtn");
+
+const searchInput =
+document.getElementById("searchInput");
+
+const statusFilter =
+document.getElementById("statusFilter");
+
+const statTotal =
+document.getElementById("statTotal");
+
+const statPending =
+document.getElementById("statPending");
+
+const statApproved =
+document.getElementById("statApproved");
+
+const statRejected =
+document.getElementById("statRejected");
+
+const listCount =
+document.getElementById("listCount");
+
+/* ---------- NOTICE ---------- */
+
+function showNotice(message,type="success"){
+
+notice.style.display="block";
+
+notice.innerHTML=message;
+
+if(type==="error"){
+
+notice.style.background="#ffe9e9";
+
+notice.style.color="#b40000";
+
+notice.style.border="1px solid #ffbcbc";
+
+}else{
+
+notice.style.background="#eefdf2";
+
+notice.style.color="#0f7a3d";
+
+notice.style.border="1px solid #b9ebca";
+
+}
+
+}
+
+/* ---------- CLEAR NOTICE ---------- */
+
+function hideNotice(){
+
+notice.style.display="none";
+
+notice.innerHTML="";
+
+}
+
+/* ---------- BUTTON LOADING ---------- */
+
+function setLoading(button,text){
+
+button.disabled=true;
+
+button.dataset.old=button.innerHTML;
+
+button.innerHTML=text;
+
+}
+
+function clearLoading(button){
+
+button.disabled=false;
+
+button.innerHTML=button.dataset.old;
+
+}
+
+/* ---------- SAFE ---------- */
+
+function safe(value){
+
+if(value===null) return "";
+
+if(value===undefined) return "";
+
+return String(value);
+
+}
+
+/* ---------- ESCAPE ---------- */
+
+function escapeHTML(text){
+
+return safe(text)
+
+.replaceAll("&","&amp;")
+
+.replaceAll("<","&lt;")
+
+.replaceAll(">","&gt;")
+
+.replaceAll('"',"&quot;")
+
+.replaceAll("'","&#39;");
+
+}
+
+/* ---------- STATUS ---------- */
+
+function contributorStatus(item){
+
+return safe(item.status)
+
+.toLowerCase()
+
+.trim() || "pending";
+
+}
+
+/* ---------- STATISTICS ---------- */
+
+function updateStats(){
+
+const total =
+state.contributors.length;
+
+const pending =
+state.contributors.filter(
+
+x=>contributorStatus(x)==="pending"
+
+).length;
+
+const approved =
+state.contributors.filter(
+
+x=>contributorStatus(x)==="approved"
+
+).length;
+
+const rejected =
+state.contributors.filter(
+
+x=>contributorStatus(x)==="rejected"
+
+).length;
+
+statTotal.innerHTML=total;
+
+statPending.innerHTML=pending;
+
+statApproved.innerHTML=approved;
+
+statRejected.innerHTML=rejected;
+
+}
+
+/* ---------- COPY ---------- */
+
+function copyText(text){
+
+navigator.clipboard.writeText(text);
+
+showNotice("Copied successfully.");
+
+}
+
+/* ---------- EMPTY ---------- */
+
+function emptyList(message){
+
+list.innerHTML=`
+
+<div class="card">
+
+${escapeHTML(message)}
+
+</div>
+
+`;
+
+}
+
+/* =========================================
+   FETCH CONTRIBUTORS
+========================================= */
+
+async function fetchContributors(){
+
+hideNotice();
+
+setLoading(btnRefresh,"Refreshing...");
+
+try{
+
+if(
+!window.AlbukhrContributorEngine ||
+typeof window.AlbukhrContributorEngine.adminListContributors !== "function"
+){
+
+throw new Error(
+"Contributor Engine not loaded."
+);
+
+}
+
+const rows =
+await window.AlbukhrContributorEngine
+.adminListContributors();
+
+state.contributors =
+Array.isArray(rows)
+? rows
+: [];
+
+updateStats();
+
+applyFilters();
+
+}
+catch(error){
+
+console.error(error);
+
+emptyList("Unable to load contributors.");
+
+showNotice(
+
+error.message ||
+
+"Failed to load contributors.",
+
+"error"
+
+);
+
+}
+finally{
+
+clearLoading(btnRefresh);
+
+}
+
+}
+
+/* =========================================
+   GENERATE INVITE
+========================================= */
+
+async function generateInvite(){
+
+hideNotice();
+
+setLoading(
+
+btnInvite,
+
+"Generating..."
+
+);
+
+try{
+
+if(
+!window.AlbukhrContributorEngine ||
+typeof window.AlbukhrContributorEngine.generateContributorInvite !== "function"
+){
+
+throw new Error(
+"Contributor Engine not loaded."
+);
+
+}
+
+const result =
+await window.AlbukhrContributorEngine
+.generateContributorInvite({
+
+createdByEmail:
+localStorage.getItem(
+"albukhr_current_email"
+) || "",
+
+createdByName:
+localStorage.getItem(
+"albukhr_current_username"
+) || "Admin"
+
+});
+
+if(!result.token){
+
+throw new Error(
+"Invite token not returned."
+);
+
+}
+
+const inviteLink =
+result.invite_url ||
+
+(
+window.location.origin +
+
+"/submit-albukhrecosystem-form.html?invite=" +
+
+encodeURIComponent(result.token)
+
+);
+
+inviteOutput.style.display="block";
+
+inviteOutput.innerHTML=`
+
+<b>Invite Link</b>
+
+<br><br>
+
+<input
+value="${escapeHTML(inviteLink)}"
+readonly
+style="width:100%;padding:10px">
+
+<br><br>
+
+<button onclick="copyText('${inviteLink}')">
+
+📋 Copy Invite Link
+
+</button>
+
+<br><br>
+
+<b>Token:</b>
+
+${escapeHTML(result.token)}
+
+`;
+
+showNotice(
+"Contributor Invite Generated Successfully."
+);
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+
+error.message ||
+
+"Unable to generate invite.",
+
+"error"
+
+);
+
+}
+finally{
+
+clearLoading(btnInvite);
+
+}
+
+   }
+
+/* =========================================
+   FILTER CONTRIBUTORS
+========================================= */
+
+function applyFilters(){
+
+const keyword =
+(searchInput.value || "")
+.toLowerCase()
+.trim();
+
+const status =
+statusFilter.value;
+
+state.filtered =
+state.contributors.filter(function(c){
+
+const text = [
+
+c.full_name,
+c.email,
+c.phone,
+c.country,
+c.albukhr_id,
+c.skills,
+c.experience,
+c.contribution
+
+]
+.join(" ")
+.toLowerCase();
+
+const searchMatch =
+text.includes(keyword);
+
+const statusMatch =
+status==="all"
+? true
+: (c.status || "pending")===status;
+
+return searchMatch && statusMatch;
+
+});
+
+renderList();
+
+}
+
+/* =========================================
+   RENDER CONTRIBUTORS
+========================================= */
+
+function renderList(){
+
+list.innerHTML="";
+
+if(!state.filtered.length){
+
+emptyList(
+"No contributors found."
+);
+
+return;
+
+}
+
+listCount.textContent =
+state.filtered.length +
+" Contributors";
+
+state.filtered.forEach(function(c){
+
+const card =
+document.createElement("div");
+
+card.className="card";
+
+const status =
+(c.status || "pending");
+
+let badgeColor="#999";
+
+if(status==="approved")
+badgeColor="#0f7a3d";
+
+if(status==="pending")
+badgeColor="#d48b00";
+
+if(status==="rejected")
+badgeColor="#b71c1c";
+
+card.innerHTML=`
+
+<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+
+<img
+src="${
+c.photo_url || 'images/avatar.png'
+}"
+style="
+width:90px;
+height:90px;
+border-radius:12px;
+object-fit:cover;
+border:1px solid #ddd;
+">
+
+<div style="flex:1">
+
+<h3 style="margin:0;">
+${escapeHTML(c.full_name || "Unnamed")}
+</h3>
+
+<div style="
+margin-top:6px;
+font-size:13px;
+color:#666;
+">
+
+${escapeHTML(c.email || "")}<br>
+
+${escapeHTML(c.phone || "")}<br>
+
+${escapeHTML(c.country || "")}
+
+</div>
+
+<div style="
+margin-top:10px;
+">
+
+<span style="
+background:${badgeColor};
+color:white;
+padding:5px 12px;
+border-radius:30px;
+font-size:12px;
+">
+
+${status.toUpperCase()}
+
+</span>
+
+</div>
+
+<div style="
+margin-top:12px;
+font-size:13px;
+line-height:1.7;
+">
+
+<b>Skills:</b>
+
+${escapeHTML(c.skills || "-")}
+
+<br><br>
+
+<b>Experience:</b>
+
+${escapeHTML(c.experience || "-")}
+
+<br><br>
+
+<b>Contribution:</b>
+
+${escapeHTML(c.contribution || "-")}
+
+</div>
+
+<div style="
+margin-top:14px;
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+">
+
+${
+status==="pending"
+?
+
+`
+
+<button
+onclick="approveContributor('${c.email}')"
+>
+
+Approve
+
+</button>
+
+<button
+onclick="rejectContributor('${c.email}')"
+>
+
+Reject
+
+</button>
+
+`
+
+:
+
+""
+
+}
+
+${
+status==="approved"
+?
+
+`
+
+<button
+onclick="unlockTelegram('${c.email}')"
+>
+
+Telegram
+
+</button>
+
+<button
+onclick="unlockInternal('${c.email}')"
+>
+
+Internal
+
+</button>
+
+<button
+onclick="unlockProjectBuilder('${c.email}')"
+>
+
+Project Builder
+
+</button>
+
+`
+
+:
+
+""
+
+}
+
+</div>
+
+</div>
+
+</div>
+
+`;
+
+list.appendChild(card);
+
+});
+
+   }
+
+/* =========================================
+   APPROVE CONTRIBUTOR
+========================================= */
+
+async function approveContributor(email){
+
+if(!confirm("Approve this contributor?")){
+return;
+}
+
+try{
+
+await window.AlbukhrContributorEngine
+.adminApproveContributor(email);
+
+showNotice(
+"Contributor approved successfully."
+);
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to approve contributor.",
+"error"
+);
+
+}
+
+}
+
+/* =========================================
+   REJECT CONTRIBUTOR
+========================================= */
+
+async function rejectContributor(email){
+
+if(!confirm("Reject this contributor?")){
+return;
+}
+
+try{
+
+await window.AlbukhrContributorEngine
+.adminRejectContributor(email);
+
+showNotice(
+"Contributor rejected successfully."
+);
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to reject contributor.",
+"error"
+);
+
+}
+
+}
+
+/* =========================================
+   UNLOCK TELEGRAM
+========================================= */
+
+async function unlockTelegram(email){
+
+try{
+
+await window.AlbukhrContributorEngine
+.adminUnlockTelegram(email);
+
+showNotice(
+"Telegram unlocked successfully."
+);
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to unlock Telegram.",
+"error"
+);
+
+}
+
+}
+
+/* =========================================
+   UNLOCK INTERNAL
+========================================= */
+
+async function unlockInternal(email){
+
+try{
+
+await window.AlbukhrContributorEngine
+.adminUnlockInternal(email);
+
+showNotice(
+"Internal access unlocked."
+);
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to unlock Internal.",
+"error"
+);
+
+}
+
+}
+
+/* =========================================
+   UNLOCK PROJECT BUILDER
+========================================= */
+
+async function unlockProjectBuilder(email){
+
+try{
+
+await window.AlbukhrContributorEngine
+.adminUnlockProjectBuilder(email);
+
+showNotice(
+"Project Builder unlocked."
+);
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to unlock Project Builder.",
+"error"
+);
+
+}
+
+}
+
+/* =========================================
+   EVENTS
+========================================= */
+
+btnInvite.onclick = generateInvite;
+
+btnRefresh.onclick = fetchContributors;
+
+searchInput.oninput = applyFilters;
+
+statusFilter.onchange = applyFilters;
+
+/* =========================================
+   INITIALIZE
+========================================= */
+
+document.addEventListener(
+"DOMContentLoaded",
+async function(){
+
+try{
+
+if(
+!window.albukhrSupabase
+){
+
+throw new Error(
+"Supabase Core not loaded."
+);
+
+}
+
+if(
+!window.AlbukhrContributorEngine
+){
+
+throw new Error(
+"Contributor Engine not loaded."
+);
+
+}
+
+await fetchContributors();
+
+}
+catch(error){
+
+console.error(error);
+
+showNotice(
+error.message,
+"error"
+);
+
+}
+
+});
+
+/* =========================================
+   GLOBAL EXPORTS
+========================================= */
+
+window.generateInvite =
+generateInvite;
+
+window.fetchContributors =
+fetchContributors;
+
+window.approveContributor =
+approveContributor;
+
+window.rejectContributor =
+rejectContributor;
+
+window.unlockTelegram =
+unlockTelegram;
+
+window.unlockInternal =
+unlockInternal;
+
+window.unlockProjectBuilder =
+unlockProjectBuilder;
+
+window.copyText =
+copyText;
