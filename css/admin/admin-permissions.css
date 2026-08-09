@@ -1,0 +1,410 @@
+/* ==========================================
+   ALBUKHR ADMIN PERMISSIONS
+   Version 1.0
+   PART 1
+========================================== */
+
+/* ==========================================
+   PAGE
+========================================== */
+
+body{
+
+margin:0;
+padding:0;
+
+background:#f4f7f6;
+
+font-family:
+"Segoe UI",
+Tahoma,
+sans-serif;
+
+color:#222;
+
+}
+
+/* ==========================================
+   WRAPPER
+========================================== */
+
+.admin-page{
+
+max-width:1400px;
+
+margin:auto;
+
+padding:24px;
+
+}
+
+/* ==========================================
+   HERO
+========================================== */
+
+.permissions-hero{
+
+background:#0f7a3d;
+
+border-radius:20px;
+
+padding:28px;
+
+color:#fff;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+gap:20px;
+
+margin-bottom:24px;
+
+box-shadow:
+
+0 10px 30px
+
+rgba(0,0,0,.10);
+
+}
+
+.hero-left h2{
+
+margin:0;
+
+font-size:28px;
+
+font-weight:700;
+
+}
+
+.hero-left p{
+
+margin-top:8px;
+
+opacity:.9;
+
+line-height:1.6;
+
+font-size:14px;
+
+max-width:650px;
+
+}
+
+.hero-right{
+
+display:flex;
+
+gap:12px;
+
+flex-wrap:wrap;
+
+}
+
+/* ==========================================
+   BUTTONS
+========================================== */
+
+.primary-btn{
+
+background:#fff;
+
+color:#0f7a3d;
+
+border:none;
+
+padding:12px 20px;
+
+border-radius:12px;
+
+font-weight:600;
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.primary-btn:hover{
+
+transform:translateY(-2px);
+
+box-shadow:
+
+0 6px 18px
+
+rgba(0,0,0,.15);
+
+}
+
+.secondary-btn{
+
+background:
+
+rgba(255,255,255,.15);
+
+color:#fff;
+
+border:1px solid
+
+rgba(255,255,255,.3);
+
+padding:12px 20px;
+
+border-radius:12px;
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.secondary-btn:hover{
+
+background:
+
+rgba(255,255,255,.25);
+
+}
+
+/* ==========================================
+   STATISTICS
+========================================== */
+
+.permission-stats{
+
+display:grid;
+
+grid-template-columns:
+
+repeat(4,1fr);
+
+gap:18px;
+
+margin-bottom:24px;
+
+}
+
+.stat-card{
+
+background:#fff;
+
+border-radius:18px;
+
+padding:20px;
+
+box-shadow:
+
+0 6px 20px
+
+rgba(0,0,0,.06);
+
+display:flex;
+
+flex-direction:column;
+
+gap:8px;
+
+}
+
+.stat-card span{
+
+font-size:13px;
+
+color:#777;
+
+}
+
+.stat-card strong{
+
+font-size:28px;
+
+font-weight:700;
+
+color:#0f7a3d;
+
+}
+
+/* ==========================================
+   SEARCH BAR
+========================================== */
+
+.permission-search{
+
+display:flex;
+
+gap:14px;
+
+margin-bottom:20px;
+
+flex-wrap:wrap;
+
+}
+
+.permission-search input{
+
+flex:1;
+
+min-width:260px;
+
+padding:14px 18px;
+
+border-radius:12px;
+
+border:1px solid #ddd;
+
+font-size:14px;
+
+outline:none;
+
+transition:.2s;
+
+}
+
+.permission-search input:focus{
+
+border-color:#0f7a3d;
+
+box-shadow:
+
+0 0 0 3px
+
+rgba(15,122,61,.15);
+
+}
+
+/* ==========================================
+   FILTER BUTTONS
+========================================== */
+
+.role-filter{
+
+display:flex;
+
+gap:10px;
+
+flex-wrap:wrap;
+
+margin-bottom:22px;
+
+}
+
+.role-filter button{
+
+border:none;
+
+padding:10px 18px;
+
+border-radius:999px;
+
+background:#fff;
+
+cursor:pointer;
+
+font-weight:600;
+
+transition:.25s;
+
+box-shadow:
+
+0 3px 10px
+
+rgba(0,0,0,.05);
+
+}
+
+.role-filter button:hover{
+
+background:#0f7a3d;
+
+color:#fff;
+
+}
+
+.role-filter button.active{
+
+background:#0f7a3d;
+
+color:#fff;
+
+}
+/* ==========================================
+   PERMISSION TABLE
+========================================== */
+
+.permission-table-wrapper{
+
+background:#fff;
+
+border-radius:18px;
+
+overflow:hidden;
+
+box-shadow:
+0 8px 25px rgba(0,0,0,.06);
+
+margin-bottom:24px;
+
+}
+
+.permission-table{
+
+width:100%;
+
+border-collapse:collapse;
+
+min-width:1000px;
+
+}
+
+.permission-table thead{
+
+background:#0f7a3d;
+
+color:#fff;
+
+}
+
+.permission-table th{
+
+padding:16px;
+
+font-size:13px;
+
+font-weight:700;
+
+text-align:left;
+
+white-space:nowrap;
+
+}
+
+.permission-table td{
+
+padding:16px;
+
+border-bottom:1px solid #edf0ef;
+
+font-size:13px;
+
+vertical-align:middle;
+
+}
+
+.permission-table tbody tr{
+
+transition:.2s;
+
+}
+
+.permission-table tbody tr:hover{
+
+background:#f7fbf8;
+
+}
+
+/* ==========================================
+   USER CEL
