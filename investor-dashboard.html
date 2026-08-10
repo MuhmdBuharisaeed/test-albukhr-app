@@ -1,22 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Investor Dashboard</title>
-
-<meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>Investor Dashboard</title>
-
-<meta
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Investor Dashboard</title><meta
 name="description"
 content="ALBUKHR Investor Dashboard">
 
@@ -28,304 +11,496 @@ content="#0f7a3d">
 name="color-scheme"
 content="light">
 
-<link rel="icon" href="assets/logo.png">
-
-<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/logo.png"><link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/albukhr-ui.css">
 <link rel="stylesheet" href="css/global-header.css">
 <link rel="stylesheet" href="css/global-buttons.css">
-<link rel="stylesheet" href="css/investor-dashboard.css">
+<link rel="stylesheet" href="css/investor-dashboard.css"></head><body><!-- ===== ALBUKHR HEADER ===== --><header class="header">  <div class="header-left"><span class="brand">
+  ALBUKHR
+</span>
 
-</head>
+  </div>  <div class="header-right"><div
+  class="header-btn notification-btn"
+  onclick="openNotifications()"
+  aria-label="Notifications">
 
-<body>
+  <!-- Notification SVG -->
+  <svg
+    width="21"
+    height="21"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
 
-<!-- ===== ALBUKHR HEADER ===== -->
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
 
-<header class="header">
+  </svg>
 
-  <div class="header-left">
-  <span class="brand">ALBUKHR</span>
-  </div>
-
-<div class="header-right">
-
-<div class="header-btn notification-btn" onclick="openNotifications()">
-
-🔔
-
-<span id="notifBadge" class="notification-badge"></span>
+  <span
+    id="notifBadge"
+    class="notification-badge">
+  </span>
 
 </div>
 
-</div>
-
-</header>
-
-<!-- =====================================
+  </div></header><!-- =====================================
 ALBUKHR PREMIUM HERO
-===================================== -->
+===================================== --><section class="dashboard-hero"><div class="hero-bg"></div>
 
-<section class="dashboard-hero">
+<div class="hero-wave"></div>
 
-    <div class="hero-bg"></div>
+<div class="hero-left">
 
-    <div class="hero-wave"></div>
+    <div class="hero-greeting">
 
-    <div class="hero-left">
+        <span id="greetingText">
+            Good Morning,
+        </span>
 
-        <div class="hero-greeting">
+    </div>
 
-            <span id="greetingText">
-                Good Morning
+    <h1 id="heroUserName">
+        Muhmd Buhari
+    </h1>
+
+    <p class="hero-label">
+        Portfolio Value
+    </p>
+
+    <div class="hero-balance-row">
+
+        <h2
+          id="heroPortfolio"
+          class="hero-balance">
+
+            0.00 Pi
+
+        </h2>
+
+        <button
+          id="toggleBalance"
+          class="eye-btn"
+          type="button"
+          aria-label="Toggle portfolio balance">
+
+            <!-- Eye SVG -->
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+
+                <path
+                  d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"/>
+
+            </svg>
+
+        </button>
+
+    </div>
+
+    <div class="profit-badge">
+
+        <!-- Trend SVG -->
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+
+            <polyline points="3 17 9 11 13 15 21 7"/>
+            <polyline points="15 7 21 7 21 13"/>
+
+        </svg>
+
+        <span id="todayProfit">
+            +0.00 Pi (0%)
+        </span>
+
+        <small>
+            Today
+        </small>
+
+    </div>
+
+</div>
+
+
+<div class="hero-right">
+
+    <div class="coin-wrapper">
+
+        <img
+          src="images/file_000000006a9881f4b24d23cd0d572b0d.png"
+          alt="Pi Coin"
+          class="hero-coin">
+
+    </div>
+
+    <div class="treasury-badge">
+
+        <!-- Shield SVG -->
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+
+            <path
+              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+
+            <path
+              d="m9 12 2 2 4-4"/>
+
+        </svg>
+
+        <div>
+
+            <strong>
+                Secured by
+            </strong>
+
+            <span>
+                ALBUKHR Treasury
             </span>
 
-            <span class="wave">
-                👋
-            </span>
-
-        </div>
-
-        <h1 id="heroUserName">
-
-            Muhmd Buhari
-
-        </h1>
-
-        <p class="hero-label">
-
-            Portfolio Value
-
-        </p>
-
-        <div class="hero-balance-row">
-
-            <h2
-            id="heroPortfolio"
-            class="hero-balance">
-
-                0.00 Pi
-
-            </h2>
-
-            <button
-            id="toggleBalance"
-            class="eye-btn">
-
-                <i
-                class="fa-solid fa-eye">
-                </i>
-
-            </button>
-
-        </div>
-
-        <div class="profit-badge">
-
-            <i class="fa-solid fa-arrow-trend-up"></i>
-
-            <span id="todayProfit">
-
-                +0.00 Pi (0%)
-
-            </span>
-
-            <small>
-
-                Today
-
-            </small>
-
         </div>
 
     </div>
-
-    <div class="hero-right">
-
-        <div class="coin-wrapper">
-
-            <img
-
-            src="images/file_000000006a9881f4b24d23cd0d572b0d.png"
-
-            alt="Pi Coin"
-
-            class="hero-coin">
-
-        </div>
-
-        <div class="treasury-badge">
-
-            <i class="fa-solid fa-shield-halved"></i>
-
-            <div>
-
-                <strong>
-
-                    Secured by
-
-                </strong>
-
-                <span>
-
-                    ALBUKHR Treasury
-
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-<div class="page">
-
-<!-- SUMMARY -->
-<div class="summary-grid">
-
-  <div class="summary-card">
-    <div class="summary-icon">💼</div>
-
-    <div class="summary-title">
-      Portfolio
-    </div>
-
-    <div class="summary-value" id="totalPortfolio">
-      0.00 Pi
-    </div>
-
-    <div class="summary-subtitle">
-      Total Value
-    </div>
-  </div>
-
-  <div class="summary-card">
-    <div class="summary-icon">💵</div>
-
-    <div class="summary-title">
-      Invested
-    </div>
-
-    <div class="summary-value" id="totalInvest">
-      0.00 Pi
-    </div>
-
-    <div class="summary-subtitle">
-      Total Invested
-    </div>
-  </div>
-
-  <div class="summary-card">
-    <div class="summary-icon">📈</div>
-
-    <div class="summary-title">
-      Earnings
-    </div>
-
-    <div class="summary-value" id="totalEarn">
-      0.00 Pi
-    </div>
-
-    <div class="summary-subtitle">
-      Total Earnings
-    </div>
-  </div>
-
-  <div class="summary-card">
-    <div class="summary-icon">📦</div>
-
-    <div class="summary-title">
-      Projects
-    </div>
-
-    <div class="summary-value" id="totalProjects">
-      0
-    </div>
-
-    <div class="summary-subtitle">
-      Active Projects
-    </div>
-  </div>
 
 </div>
 
-<!-- QUICK ACTIONS -->
+</section><div class="page"><!-- =====================================
+SUMMARY
+===================================== --><div class="summary-grid">  <!-- PORTFOLIO -->  <div class="summary-card"><div class="summary-icon">
 
-<div class="quick-actions">
+  <!-- Portfolio SVG -->
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
 
-<div class="action-item"
-onclick="location.href='marketplace.html'">
+    <rect
+      x="3"
+      y="7"
+      width="18"
+      height="13"
+      rx="2"/>
 
-<div class="action-icon">🛒</div>
+    <path
+      d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+
+    <path
+      d="M3 12h18"/>
+
+    <path
+      d="M10 12v2h4v-2"/>
+
+  </svg>
+
+</div>
+
+<div class="summary-title">
+  Portfolio
+</div>
+
+<div
+  class="summary-value"
+  id="totalPortfolio">
+
+  0.00 Pi
+
+</div>
+
+<div class="summary-subtitle">
+  Total Value
+</div>
+
+  </div>  <!-- INVESTED -->  <div class="summary-card"><div class="summary-icon">
+
+  <!-- Wallet / Investment SVG -->
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v10a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6"/>
+
+    <path
+      d="M16 13h2"/>
+
+  </svg>
+
+</div>
+
+<div class="summary-title">
+  Invested
+</div>
+
+<div
+  class="summary-value"
+  id="totalInvest">
+
+  0.00 Pi
+
+</div>
+
+<div class="summary-subtitle">
+  Total Invested
+</div>
+
+  </div>  <!-- EARNINGS -->  <div class="summary-card"><div class="summary-icon">
+
+  <!-- Earnings SVG -->
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <polyline
+      points="3 17 9 11 13 15 21 7"/>
+
+    <polyline
+      points="15 7 21 7 21 13"/>
+
+  </svg>
+
+</div>
+
+<div class="summary-title">
+  Earnings
+</div>
+
+<div
+  class="summary-value"
+  id="totalEarn">
+
+  0.00 Pi
+
+</div>
+
+<div class="summary-subtitle">
+  Total Earnings
+</div>
+
+  </div>  <!-- PROJECTS -->  <div class="summary-card"><div class="summary-icon">
+
+  <!-- Projects SVG -->
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M3 7h5l2 2h11v10a2 2 0 0 1-2 2H3z"/>
+
+    <path
+      d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2"/>
+
+  </svg>
+
+</div>
+
+<div class="summary-title">
+  Projects
+</div>
+
+<div
+  class="summary-value"
+  id="totalProjects">
+
+  0
+
+</div>
+
+<div class="summary-subtitle">
+  Active Projects
+</div>
+
+  </div></div><!-- =====================================
+QUICK ACTIONS
+===================================== --><div class="quick-actions">  <!-- MARKETPLACE -->  <div
+    class="action-item"
+    onclick="location.href='marketplace.html'"><div class="action-icon">
+
+  <!-- Store SVG -->
+  <svg
+    width="25"
+    height="25"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M3 9h18l-1-5H4z"/>
+
+    <path
+      d="M5 9v11h14V9"/>
+
+    <path
+      d="M9 20v-6h6v6"/>
+
+    <path
+      d="M3 9c0 2 1 3 3 3s3-1 3-3c0 2 1 3 3 3s3-1 3-3c0 2 1 3 3 3s3-1 3-3"/>
+
+  </svg>
+
+</div>
 
 <div class="action-label">
-Marketplace
+  Marketplace
 </div>
 
+  </div>  <!-- WALLET -->  <div
+    class="action-item"
+    onclick="location.href='wallet.html'"><div class="action-icon">
+
+  <!-- Wallet SVG -->
+  <svg
+    width="25"
+    height="25"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M20 7V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v10a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6"/>
+
+    <path
+      d="M16 13h2"/>
+
+  </svg>
+
 </div>
-
-<div class="action-item"
-onclick="location.href='wallet.html'">
-
-<div class="action-icon">💳</div>
 
 <div class="action-label">
-Wallet
+  Wallet
 </div>
 
+  </div>  <!-- HISTORY -->  <div
+    class="action-item"
+    onclick="location.href='transactions.html'"><div class="action-icon">
+
+  <!-- History SVG -->
+  <svg
+    width="25"
+    height="25"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M3 12a9 9 0 1 0 3-6.7"/>
+
+    <polyline
+      points="3 4 3 9 8 9"/>
+
+    <path
+      d="M12 7v5l3 2"/>
+
+  </svg>
+
 </div>
-
-<div class="action-item"
-onclick="location.href='transactions.html'">
-
-<div class="action-icon">📃</div>
 
 <div class="action-label">
-History
+  History
 </div>
 
+  </div>  <!-- WITHDRAW -->  <div
+    class="action-item"
+    onclick="location.href='withdraw.html'"><div class="action-icon">
+
+  <!-- Withdraw SVG -->
+  <svg
+    width="25"
+    height="25"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round">
+
+    <path
+      d="M12 3v12"/>
+
+    <polyline
+      points="7 10 12 15 17 10"/>
+
+    <path
+      d="M5 21h14"/>
+
+  </svg>
+
 </div>
-
-<div class="action-item"
-onclick="location.href='withdraw.html'">
-
-<div class="action-icon">💸</div>
 
 <div class="action-label">
-Withdraw
+  Withdraw
 </div>
 
-</div>
-
-</div>
-
-<!-- INVESTMENTS -->
-
-<div class="section-title">
-My Investments
-</div>
-
-<div id="investments"></div>
-
-</div>
-
-<!-- ===== ALBUKHR DOCK NAV ===== -->
-
-<div class="dock-nav">
-
-  <!-- HOME -->
-  <a href="index.html" class="dock-item">
+  </div></div><!-- =====================================
+INVESTMENTS
+===================================== --><div class="section-title">
+  My Investments
+</div><div id="investments"></div></div><!-- =====================================
+ALBUKHR DOCK NAV
+===================================== --><div class="dock-nav">  <!-- HOME -->  <a href="index.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
       <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
     </svg>
     <span>Home</span>
-  </a>
-
-
-  <!-- INVESTORS -->
-  <a href="investor-dashboard.html" class="dock-item">
+  </a>  <!-- INVESTORS -->  <a href="investor-dashboard.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
       <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
       <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
@@ -333,51 +508,51 @@ My Investments
       <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
     </svg>
     <span>Investors</span>
-  </a>
+  </a>  <!-- TRANSPARENCY HUB -->  <a href="transparency.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">  <!-- Document -->
+  <path d="M6 3h8l4 4v14H6z"/>
 
+  <!-- Fold -->
+  <path d="M14 3v4h4"/>
 
-  <!-- TRANSPARENCY HUB -->
-  <a href="transparency.html" class="dock-item">
-    <svg viewBox="0 0 24 24" class="dock-icon">
-      
-      <!-- Document -->
-      <path d="M6 3h8l4 4v14H6z"/>
-      
-      <!-- Fold -->
-      <path d="M14 3v4h4"/>
-      
-      <!-- Lines -->
-      <path d="M8 11h8"/>
-      <path d="M8 14h8"/>
-      
-      <!-- Eye -->
-      <ellipse cx="12" cy="18" rx="4" ry="2"/>
-      <circle cx="12" cy="18" r="0.8"/>
-      
-    </svg>
-    <span>Transparency</span>
-  </a>
+  <!-- Lines -->
+  <path d="M8 11h8"/>
+  <path d="M8 14h8"/>
 
+  <!-- Eye -->
+  <ellipse cx="12" cy="18" rx="4" ry="2"/>
+  <circle cx="12" cy="18" r="0.8"/>
 
-  <!-- SERVICES -->
-  <a href="services.html" class="dock-item">
-    <svg viewBox="0 0 24 24" class="dock-icon">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
-    </svg>
-    <span>Services</span>
-  </a>
+</svg>
 
-</div>
+<span>
+  Transparency
+</span>
 
-<script src="js/staking.js" defer></script>
+  </a>  <!-- SERVICES -->  <a href="services.html" class="dock-item"><svg viewBox="0 0 24 24" class="dock-icon">
 
-<script src="js/notifications.js" defer></script>
+  <circle cx="12" cy="12" r="3"/>
 
-<script src="js/ecosystem-engine.js" defer></script>
+  <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
 
-<script src="js/investor-dashboard.js" defer></script>
+</svg>
 
-</body>
+<span>
+  Services
+</span>
 
-    </html>
+  </a></div><!-- =====================================
+JAVASCRIPT
+===================================== --><script
+  src="js/staking.js"
+  defer>
+</script><script
+  src="js/notifications.js"
+  defer>
+</script><script
+  src="js/ecosystem-engine.js"
+  defer>
+</script><script
+  src="js/investor-dashboard.js"
+  defer>
+</script></body></html>
