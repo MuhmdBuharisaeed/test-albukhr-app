@@ -1,711 +1,146 @@
+/* =========================================================
+   ALBUKHR — INVESTOR DASHBOARD V4
+   File: css/investor-dashboard.css
+
+   Scope:
+   - Investor Dashboard only
+   - Premium green/white UI
+   - Emoji-free icon containers
+   - Responsive mobile-first layout
+   - ALBUKHR DOCK NAV is intentionally NOT styled here
+========================================================= */
+
+/* =========================================================
+   BASE
+========================================================= */
+
 body{
-margin:0;
-font-family:system-ui;
-background:#f4f7f6;
-padding-bottom:120px;
+    margin:0;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:#f4f7f6;
+    color:#111;
+    padding-bottom:120px;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
 }
 
+button{
+    font:inherit;
+    -webkit-tap-highlight-color:transparent;
+}
+
+.page{
+    width:100%;
+    max-width:500px;
+    margin:0 auto;
+    padding:0 0 20px;
+}
+
+.page,
+.summary-card,
+.invest-card,
+.dashboard-hero{
+    transition:all .25s ease;
+}
+
+/* =========================================================
+   HEADER
+   Note: This does NOT modify .dock-nav.
+========================================================= */
+
 .header{
-background:#0f7a3d;
-height:60px;
-padding:0 16px;
-display:flex;
-align-items:center;
-justify-content:space-between;
+    width:100%;
+    height:60px;
+    padding:0 16px;
+    background:#0f7a3d;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-sizing:border-box;
 }
 
 .header-left{
-display:flex;
-align-items:center;
-gap:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
 .header-right{
-display:flex;
-align-items:center;
-}
-
-.main-logo{
-height:58px;
-width:auto;
-display:block;
-object-fit:contain;
-
-filter:
-drop-shadow(0 0 0.8px #000)
-drop-shadow(0 0 1px #000);
+    display:flex;
+    align-items:center;
+    gap:8px;
 }
 
 .brand{
-color:white;
-font-weight:700;
-font-size:18px;
-letter-spacing:1px;
+    color:#fff;
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:1px;
 }
 
-/* HEADER SPACE */
-.page{
-padding:16px;
-}
-
-/* =====================================
-   PREMIUM SUMMARY
-===================================== */
-
-.summary-grid{
-
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-
-    gap:10px;
-
-    margin:16px;
-
-}
-
-.summary-card{
-
-    background:#fff;
-
-    border-radius:22px;
-
-    padding:14px;
-
-    min-height:118px;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-start;
-
-    box-shadow:
-        0 8px 22px rgba(0,0,0,.05);
-
-    transition:.25s;
-
-}
-
-.summary-card:hover{
-
-    transform:translateY(-2px);
-
-    box-shadow:
-        0 12px 28px rgba(0,0,0,.08);
-
-}
-
-/* ICON */
-
-.summary-icon{
-
-    width:46px;
-    height:46px;
-
-    border-radius:14px;
-
+.header-btn{
+    width:38px;
+    height:38px;
     display:flex;
     align-items:center;
     justify-content:center;
-
-    font-size:22px;
-
-    margin-bottom:10px;
-
+    border-radius:12px;
+    cursor:pointer;
     color:#fff;
-
 }
 
-.summary-card:nth-child(1) .summary-icon{
-
-    background:linear-gradient(135deg,#16a34a,#0f7a3d);
-
+.notification-btn{
+    position:relative;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.12);
 }
 
-.summary-card:nth-child(2) .summary-icon{
-
-    background:linear-gradient(135deg,#3b82f6,#2563eb);
-
+.notification-btn:hover{
+    background:rgba(255,255,255,.18);
 }
 
-.summary-card:nth-child(3) .summary-icon{
-
-    background:linear-gradient(135deg,#9333ea,#7c3aed);
-
-}
-
-.summary-card:nth-child(4) .summary-icon{
-
-    background:linear-gradient(135deg,#f59e0b,#ea580c);
-
-}
-
-/* TITLE */
-
-.summary-title{
-
-    font-size:13px;
-
-    color:#666;
-
-    font-weight:500;
-
-    margin-bottom:8px;
-
-}
-
-/* VALUE */
-
-.summary-value{
-
-    font-size:17px;
-
-    font-weight:800;
-
-    color:#111;
-
-    line-height:1.1;
-
-    margin-bottom:5px;
-
-}
-
-/* SUBTITLE */
-
-.summary-subtitle{
-
-    font-size:12px;
-
-    color:#159447;
-
-    font-weight:600;
-
-}
-
-/* MOBILE */
-
-@media(max-width:768px){
-
-.summary-grid{
-
-    gap:8px;
-
-    margin:14px;
-
-}
-
-.summary-card{
-
-    padding:12px;
-
-    min-height:108px;
-
-}
-
-.summary-icon{
-
-    width:40px;
-    height:40px;
-
-    font-size:20px;
-
-    margin-bottom:8px;
-
-}
-
-.summary-title{
-
-    font-size:12px;
-
-}
-
-.summary-value{
-
-    font-size:15px;
-
-}
-
-.summary-subtitle{
-
-    font-size:11px;
-
-}
-
-}
-
-/* =========================================
-   QUICK ACTIONS PREMIUM
-========================================= */
-
-.quick-actions{
-
-display:grid;
-
-grid-template-columns:repeat(4,1fr);
-
-gap:14px;
-
-margin:24px 16px;
-
-}
-
-.action-item{
-
-display:flex;
-
-flex-direction:column;
-
-align-items:center;
-
-justify-content:center;
-
-cursor:pointer;
-
-transition:.25s;
-
-}
-
-.action-item:active{
-
-transform:scale(.95);
-
-}
-
-.action-icon{
-
-width:58px;
-
-height:58px;
-
-border-radius:18px;
-
-background:#fff;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-font-size:28px;
-
-box-shadow:
-
-0 8px 20px rgba(0,0,0,.08);
-
-margin-bottom:8px;
-
-}
-
-.action-label{
-
-font-size:13px;
-
-font-weight:600;
-
-text-align:center;
-
-color:#333;
-
-line-height:1.3;
-
-}
-
-/* =====================================
-   INVESTMENT CARDS V4
-===================================== */
-
-.invest-card{
-
-    background:#fff;
-
-    border-radius:20px;
-
-    padding:14px;
-
-    margin:12px 16px;
-
-    box-shadow:0 6px 18px rgba(0,0,0,.06);
-
-}
-
-/* ===========================
-TOP
-=========================== */
-
-.investment-top{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:flex-start;
-
-    gap:10px;
-
-    margin-bottom:12px;
-
-}
-
-.investment-project{
-
-    display:flex;
-
-    align-items:flex-start;
-
-    gap:12px;
-
-    flex:1;
-
-}
-
-/* IMAGE */
-
-.investment-icon{
-
-    width:64px;
-
-    height:64px;
-
-    border-radius:14px;
-
-    overflow:hidden;
-
-    flex-shrink:0;
-
-    background:#eef7f0;
-
-}
-
-.investment-icon img{
-
-    width:100%;
-
-    height:100%;
-
-    object-fit:cover;
-
-}
-
-/* TITLE */
-
-.investment-name{
-
-    font-size:20px;
-
-    font-weight:800;
-
-    color:#111;
-
-    line-height:1.2;
-
-    margin-bottom:6px;
-
-}
-
-/* STATUS */
-
-.investment-status{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:8px;
-
-    flex-wrap:wrap;
-
-}
-
-.status-dot{
-
-    color:#18a34a;
-
-    font-size:13px;
-
-    font-weight:700;
-
-}
-
-.project-badge{
-
-    padding:4px 10px;
-
-    border-radius:999px;
-
-    background:#eef8ee;
-
-    color:#218c4d;
-
-    font-size:11px;
-
-    font-weight:700;
-
-}
-
-/* RIGHT */
-
-.investment-profit{
-
-    text-align:right;
-
-    min-width:85px;
-
-}
-
-.investment-profit b{
-
+.notification-btn svg,
+.notification-btn .icon{
+    width:19px;
+    height:19px;
     display:block;
-
-    font-size:18px;
-
-    color:#138847;
-
-    margin-bottom:2px;
-
 }
 
-.investment-profit span{
-
-    font-size:11px;
-
-    color:#777;
-
-    line-height:1.2;
-
+.notification-badge{
+    position:absolute;
+    top:5px;
+    right:5px;
+    min-width:7px;
+    height:7px;
+    padding:0;
+    border-radius:50%;
+    background:#ff4d4f;
+    box-shadow:0 0 0 2px #0f7a3d;
+    display:none;
 }
 
-/* ===========================
-GRID
-=========================== */
-
-.investment-grid{
-
-    display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
-    gap:12px;
-
-    margin:14px 0;
-
-}
-
-.investment-grid>div{
-
-    border-right:1px solid #ececec;
-
-    padding-right:8px;
-
-}
-
-.investment-grid>div:last-child{
-
-    border-right:none;
-
-}
-
-.investment-grid span{
-
+.main-logo{
+    height:58px;
+    width:auto;
     display:block;
-
-    color:#888;
-
-    font-size:11px;
-
-    margin-bottom:3px;
-
+    object-fit:contain;
+    filter:
+        drop-shadow(0 0 .8px #000)
+        drop-shadow(0 0 1px #000);
 }
 
-.investment-grid b{
-
-    font-size:16px;
-
-    color:#111;
-
-    font-weight:800;
-
-}
-
-/* ===========================
-PROGRESS
-=========================== */
-
-.progress-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-top:6px;
-
-    margin-bottom:6px;
-
-    font-size:12px;
-
-    color:#666;
-
-}
-
-.investment-progress{
-
-    height:8px;
-
-    border-radius:999px;
-
-    overflow:hidden;
-
-    background:#e9e9e9;
-
-}
-
-.investment-progress-bar{
-
-    height:100%;
-
-    width:85%;
-
-    border-radius:999px;
-
-    background:linear-gradient(
-        90deg,
-        #0f7a3d,
-        #28c76f
-    );
-
-}
-
-/* BUTTON */
-
-.investment-btn{
-
-    width:100%;
-
-    margin-top:14px;
-
-    padding:12px;
-
-    border:none;
-
-    border-radius:14px;
-
-    background:#0f7a3d;
-
-    color:#fff;
-
-    font-size:14px;
-
-    font-weight:700;
-
-}
-
-/* ===========================
-ANDROID
-=========================== */
-
-@media(max-width:768px){
-
-.invest-card{
-
-    padding:12px;
-
-}
-
-.investment-top{
-
-    gap:8px;
-
-}
-
-.investment-icon{
-
-    width:56px;
-
-    height:56px;
-
-}
-
-.investment-name{
-
-    font-size:16px;
-
-}
-
-.status-dot{
-
-    font-size:12px;
-
-}
-
-.project-badge{
-
-    font-size:10px;
-
-    padding:3px 8px;
-
-}
-
-.investment-profit{
-
-    min-width:72px;
-
-}
-
-.investment-profit b{
-
-    font-size:15px;
-
-}
-
-.investment-profit span{
-
-    font-size:10px;
-
-}
-
-.investment-grid{
-
-    grid-template-columns:repeat(4,1fr);
-
-    gap:6px;
-
-}
-
-.investment-grid span{
-
-    font-size:10px;
-
-}
-
-.investment-grid b{
-
-    font-size:13px;
-
-}
-
-.investment-btn{
-
-    padding:10px;
-
-    font-size:13px;
-
-}
-
-}
-
-/* =====================================
-   ALBUKHR PREMIUM HERO
-===================================== */
+/* =========================================================
+   PREMIUM HERO
+========================================================= */
 
 .dashboard-hero{
-
     position:relative;
-
     overflow:hidden;
 
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
 
     margin:18px;
     padding:20px;
@@ -714,48 +149,34 @@ ANDROID
 
     border-radius:24px;
 
-    background:linear-gradient(
-        135deg,
-        #06692f 0%,
-        #0d8c43 45%,
-        #13a74d 100%
-    );
+    background:
+        linear-gradient(
+            135deg,
+            #06692f 0%,
+            #0d8c43 45%,
+            #13a74d 100%
+        );
 
     color:#fff;
 
     box-shadow:
         0 18px 45px rgba(15,122,61,.28);
-
 }
 
-/* =========================
-BACKGROUND GLOW
-========================= */
-
 .hero-bg{
-
     position:absolute;
-
     width:420px;
     height:420px;
-
     right:-160px;
     top:-150px;
 
     border-radius:50%;
-
     background:rgba(255,255,255,.06);
-
+    pointer-events:none;
 }
 
-/* =========================
-WAVE
-========================= */
-
 .hero-wave{
-
     position:absolute;
-
     right:-100px;
     bottom:-80px;
 
@@ -763,257 +184,201 @@ WAVE
     height:320px;
 
     border-radius:50%;
-
     border:1px solid rgba(255,255,255,.10);
 
     box-shadow:
-
         0 0 0 40px rgba(255,255,255,.03),
-
         0 0 0 80px rgba(255,255,255,.02),
-
         0 0 0 120px rgba(255,255,255,.02);
 
+    pointer-events:none;
 }
 
-/* =========================
-LEFT
-========================= */
-
 .hero-left{
-
     position:relative;
-
     z-index:2;
-
     flex:1;
-
+    min-width:0;
 }
 
 .hero-greeting{
-
     display:flex;
     align-items:center;
-    gap:5px;
+    gap:6px;
 
     font-size:13px;
     font-weight:500;
-
     opacity:.95;
-
 }
 
 .wave{
-
-    animation:waveHand 2s infinite;
-
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;
+    height:18px;
 }
 
-@keyframes waveHand{
-
-    0%{transform:rotate(0deg);}
-    20%{transform:rotate(18deg);}
-    40%{transform:rotate(-8deg);}
-    60%{transform:rotate(18deg);}
-    100%{transform:rotate(0deg);}
-
+/* Emoji-free replacement: simple animated hand/brand mark
+   can be supplied by the HTML as an SVG/icon. */
+.wave svg,
+.wave .icon{
+    width:17px;
+    height:17px;
 }
 
 #heroUserName{
-
-    margin-top:4px;
-
-    font-size:14px;
-
+    margin:4px 0 0;
+    font-size:15px;
     font-weight:800;
-
-    line-height:1.1;
-
+    line-height:1.15;
+    word-break:break-word;
 }
 
 .hero-label{
-
-    margin-top:10px;
-
+    margin:10px 0 0;
     font-size:12px;
-
     opacity:.85;
-
 }
 
-/* =========================
-BALANCE
-========================= */
-
 .hero-balance-row{
-
     display:flex;
     align-items:center;
     gap:14px;
-
     margin-top:8px;
-
 }
 
 .hero-balance{
-
+    margin:0;
     font-size:30px;
-
     font-weight:900;
-
     letter-spacing:.5px;
-
+    line-height:1.1;
 }
 
-/* =========================
-EYE BUTTON
-========================= */
-
 .eye-btn{
-
     width:38px;
     height:38px;
 
-    border:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 
+    padding:0;
+    border:0;
     border-radius:12px;
 
     cursor:pointer;
 
     background:rgba(255,255,255,.16);
-
     backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
 
     color:#fff;
 
-    font-size:16px;
-
-    transition:.30s;
-
+    transition:.25s ease;
 }
 
 .eye-btn:hover{
-
     transform:scale(1.08);
-
     background:rgba(255,255,255,.24);
-
 }
 
-/* =========================
-TODAY BADGE
-========================= */
+.eye-btn:active{
+    transform:scale(.96);
+}
+
+.eye-btn svg,
+.eye-btn .icon{
+    width:18px;
+    height:18px;
+    display:block;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+}
 
 .profit-badge{
-
     display:inline-flex;
-
     align-items:center;
-
-    gap:6px;
+    gap:7px;
 
     margin-top:12px;
-
     padding:8px 12px;
 
     border-radius:999px;
 
     background:rgba(255,255,255,.12);
-
     backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
 
     font-size:12px;
-
     font-weight:700;
-
 }
 
 .profit-badge small{
-
     opacity:.8;
-
     font-weight:500;
-
 }
 
-/* =========================
-RIGHT
-========================= */
+.profit-badge svg,
+.profit-badge .icon{
+    width:14px;
+    height:14px;
+    display:block;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+}
+
+/* =========================================================
+   HERO RIGHT
+========================================================= */
 
 .hero-right{
-
     position:relative;
-
-    width:120px;
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-    justify-content:center;
-
     z-index:2;
 
+    width:120px;
+    flex:0 0 120px;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
 }
 
-/* =========================
-PI COIN
-========================= */
-
 .coin-wrapper{
+    display:flex;
+    align-items:center;
+    justify-content:center;
 
     animation:coinFloat 4s ease-in-out infinite;
-
 }
 
 .hero-coin{
-
     width:85px;
+    height:auto;
+    display:block;
 
     filter:
-
-        drop-shadow(
-            0 20px 25px rgba(0,0,0,.25)
-        );
-
+        drop-shadow(0 20px 25px rgba(0,0,0,.25));
 }
 
 @keyframes coinFloat{
-
-    0%{
-
+    0%,100%{
         transform:translateY(0);
-
     }
-
     50%{
-
         transform:translateY(-10px);
-
     }
-
-    100%{
-
-        transform:translateY(0);
-
-    }
-
 }
 
-/* =========================
-TREASURY
-========================= */
-
 .treasury-badge{
-
     margin-top:-8px;
 
     display:flex;
-
     align-items:center;
-
     gap:8px;
 
     padding:8px 12px;
@@ -1021,410 +386,750 @@ TREASURY
     border-radius:14px;
 
     background:#ffd84c;
-
     color:#222;
 
     box-shadow:
-
         0 10px 25px rgba(0,0,0,.18);
-
 }
 
-.treasury-badge i{
+.treasury-badge svg,
+.treasury-badge .icon{
+    width:15px;
+    height:15px;
+    flex:0 0 15px;
 
-    font-size:14px;
-
-    color:#866300;
-
+    fill:none;
+    stroke:#866300;
+    stroke-width:2;
 }
 
 .treasury-badge strong{
-
     display:block;
-
     font-size:11px;
-
+    line-height:1.2;
 }
 
 .treasury-badge span{
-
     display:block;
-
+    margin-top:2px;
     font-size:14px;
-
     font-weight:800;
-
+    line-height:1.15;
 }
 
-/* =========================
-MOBILE
-========================= */
+/* =========================================================
+   SUMMARY GRID
+========================================================= */
 
-@media (max-width:768px){
+.summary-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin:16px;
+}
 
-.dashboard-hero{
+.summary-card{
+    min-height:118px;
 
     display:flex;
-    flex-direction:row;
-    justify-content:space-between;
+    flex-direction:column;
+    justify-content:flex-start;
+
+    padding:14px;
+
+    background:#fff;
+    border-radius:22px;
+
+    box-shadow:
+        0 8px 22px rgba(0,0,0,.05);
+}
+
+.summary-card:hover{
+    transform:translateY(-2px);
+    box-shadow:
+        0 12px 28px rgba(0,0,0,.08);
+}
+
+.summary-card:active{
+    transform:scale(.98);
+}
+
+/* =========================================================
+   SUMMARY ICON SYSTEM — EMOJI FREE
+========================================================= */
+
+.summary-icon{
+    width:46px;
+    height:46px;
+
+    display:flex;
     align-items:center;
+    justify-content:center;
 
-    padding:18px;
-    min-height:180px;
+    margin-bottom:10px;
+
+    border-radius:14px;
+
+    color:#fff;
 }
 
-.hero-left{
+.summary-icon svg,
+.summary-icon .icon{
+    width:22px;
+    height:22px;
 
-    flex:1;
+    display:block;
+
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
 }
 
-.hero-right{
-
-    width:120px;
-    margin-top:0;
+.summary-card:nth-child(1) .summary-icon{
+    background:linear-gradient(135deg,#16a34a,#0f7a3d);
 }
 
-.hero-greeting{
+.summary-card:nth-child(2) .summary-icon{
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+}
 
+.summary-card:nth-child(3) .summary-icon{
+    background:linear-gradient(135deg,#9333ea,#7c3aed);
+}
+
+.summary-card:nth-child(4) .summary-icon{
+    background:linear-gradient(135deg,#f59e0b,#ea580c);
+}
+
+.summary-title{
+    margin-bottom:8px;
     font-size:13px;
+    color:#666;
+    font-weight:500;
 }
 
-#heroUserName{
-
-    font-size:15px;
+.summary-value{
+    margin-bottom:5px;
+    font-size:17px;
+    font-weight:800;
+    color:#111;
+    line-height:1.1;
 }
 
-.hero-label{
-
+.summary-subtitle{
     font-size:12px;
-    margin-top:8px;
+    color:#159447;
+    font-weight:600;
 }
 
-.hero-balance{
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
 
-    font-size:30px;
+.quick-actions{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+    margin:24px 16px;
 }
 
-.eye-btn{
+.action-item{
+    min-width:0;
 
-    width:36px;
-    height:36px;
-    font-size:15px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+
+    cursor:pointer;
+
+    transition:.25s ease;
 }
 
-.profit-badge{
-
-    padding:7px 12px;
-    font-size:11px;
+.action-item:hover{
+    transform:translateY(-2px);
 }
 
-.hero-coin{
-
-    width:82px;
+.action-item:active{
+    transform:scale(.95);
 }
 
-.treasury-badge{
+/* Emoji-free icon box */
+.action-icon{
+    width:58px;
+    height:58px;
 
-    margin-top:8px;
-    padding:7px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    margin-bottom:8px;
+
+    border-radius:18px;
+
+    background:#fff;
+
+    color:#0f7a3d;
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.08);
 }
 
-.treasury-badge strong{
+.action-icon svg,
+.action-icon .icon{
+    width:26px;
+    height:26px;
 
-    font-size:10px;
+    display:block;
+
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
 }
 
-.treasury-badge span{
-
-    font-size:12px;
+.action-label{
+    font-size:13px;
+    font-weight:600;
+    text-align:center;
+    color:#333;
+    line-height:1.3;
 }
 
-}
-
-/* =========================================
-   INVESTMENT CARD V2
-========================================= */
+/* =========================================================
+   INVESTMENT CARDS — CONSOLIDATED V4
+========================================================= */
 
 .invest-card{
+    margin:16px;
+    padding:18px;
 
-background:#fff;
+    background:#fff;
+    border-radius:24px;
 
-border-radius:24px;
+    box-shadow:
+        0 10px 26px rgba(0,0,0,.06);
+}
 
-padding:20px;
-
-margin:16px;
-
-box-shadow:
-0 10px 26px rgba(0,0,0,.06);
-
+.invest-card:active{
+    transform:scale(.98);
 }
 
 .investment-top{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-margin-bottom:18px;
-
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
 }
 
 .investment-project{
+    min-width:0;
+    flex:1;
 
-display:flex;
-
-align-items:center;
-
-gap:14px;
-
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
 }
 
+/* Project image/icon */
 .investment-icon{
+    width:56px;
+    height:56px;
 
-width:56px;
+    flex:0 0 56px;
 
-height:56px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 
-border-radius:18px;
+    overflow:hidden;
 
-display:flex;
+    border-radius:18px;
 
-align-items:center;
+    background:
+        linear-gradient(
+            135deg,
+            #0f7a3d,
+            #18a558
+        );
 
-justify-content:center;
+    color:#fff;
+}
 
-font-size:28px;
+.investment-icon img{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+}
 
-background:
+.investment-icon svg,
+.investment-icon .icon{
+    width:27px;
+    height:27px;
 
-linear-gradient(
-135deg,
-#0f7a3d,
-#18a558
-);
-
-color:#fff;
-
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
 }
 
 .investment-name{
-
-font-size:18px;
-
-font-weight:700;
-
+    margin:0;
+    font-size:18px;
+    font-weight:800;
+    color:#111;
+    line-height:1.2;
 }
 
 .investment-status{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    margin-top:4px;
 
-margin-top:4px;
+    color:#35a853;
+    font-size:13px;
+    font-weight:600;
+}
 
-font-size:13px;
+.status-dot{
+    color:#18a34a;
+    font-size:12px;
+    font-weight:700;
+}
 
-color:#1c7c3f;
+.project-badge{
+    display:inline-flex;
+    align-items:center;
 
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    background:#eef8ee;
+    color:#218c4d;
+
+    font-size:11px;
+    font-weight:700;
 }
 
 .investment-profit{
-
-font-size:24px;
-
-font-weight:800;
-
-color:#118c4f;
-
-text-align:right;
-
+    min-width:72px;
+    text-align:right;
 }
 
+.investment-profit b{
+    display:block;
+    margin-bottom:2px;
+
+    font-size:18px;
+    color:#138847;
+    font-weight:800;
+}
+
+.investment-profit span{
+    display:block;
+
+    font-size:11px;
+    color:#777;
+    line-height:1.2;
+}
+
+/* =========================================================
+   INVESTMENT DATA GRID
+========================================================= */
+
 .investment-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
 
-display:grid;
+    margin-bottom:18px;
+}
 
-grid-template-columns:repeat(2,1fr);
-
-gap:16px;
-
-margin-bottom:18px;
-
+.investment-grid > div{
+    min-width:0;
+    padding:0;
+    border-right:0;
 }
 
 .investment-grid span{
+    display:block;
+    margin-bottom:4px;
 
-display:block;
-
-font-size:12px;
-
-color:#888;
-
-margin-bottom:4px;
-
+    font-size:12px;
+    color:#888;
 }
 
 .investment-grid b{
+    font-size:16px;
+    color:#222;
+    font-weight:800;
+}
 
-font-size:16px;
+/* =========================================================
+   PROGRESS
+========================================================= */
 
-color:#222;
+.progress-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
 
+    margin:0 0 6px;
+
+    font-size:12px;
+    color:#666;
 }
 
 .investment-progress{
+    height:8px;
 
-height:8px;
+    margin-bottom:18px;
 
-background:#ececec;
+    overflow:hidden;
 
-border-radius:999px;
-
-overflow:hidden;
-
-margin-bottom:18px;
-
+    border-radius:999px;
+    background:#ececec;
 }
 
 .investment-progress-bar{
+    width:100%;
+    height:100%;
 
-height:100%;
+    border-radius:999px;
 
-width:100%;
+    background:
+        linear-gradient(
+            90deg,
+            #0f7a3d,
+            #34d87b
+        );
 
-background:
+    background-size:200% 100%;
 
-linear-gradient(
-90deg,
-#0f7a3d,
-#34d87b
-);
-
-background-size:200% 100%;
-
-animation:progressMove 2.5s linear infinite;
-
-   }
-
-
+    animation:progressMove 2.5s linear infinite;
+}
 
 @keyframes progressMove{
-
-0%{
-
-background-position:0%;
-
+    0%{
+        background-position:0%;
+    }
+    100%{
+        background-position:200%;
+    }
 }
 
-100%{
-
-background-position:200%;
-
-}
-
-}
+/* =========================================================
+   INVESTMENT BUTTON
+========================================================= */
 
 .investment-btn{
+    width:100%;
 
-width:100%;
+    margin-top:0;
+    padding:15px;
 
-padding:15px;
+    border:0;
+    border-radius:18px;
 
-border:none;
+    background:
+        linear-gradient(
+            135deg,
+            #0f7a3d,
+            #18a558
+        );
 
-border-radius:18px;
+    color:#fff;
 
-background:
+    font-size:15px;
+    font-weight:700;
 
-linear-gradient(
-135deg,
-#0f7a3d,
-#18a558
-);
+    cursor:pointer;
 
-color:#fff;
-
-font-size:15px;
-
-font-weight:700;
-
-cursor:pointer;
-
-transition:.25s;
-
+    transition:.25s ease;
 }
 
 .investment-btn:hover{
+    transform:translateY(-2px);
 
-transform:translateY(-2px);
-
-box-shadow:
-
-0 10px 20px rgba(15,122,61,.25);
-
+    box-shadow:
+        0 10px 20px rgba(15,122,61,.25);
 }
 
 .investment-btn:active{
-
-transform:scale(.98);
-
+    transform:scale(.98);
 }
 
-.investment-btn:hover{
+/* =========================================================
+   GENERAL RESPONSIVE
+========================================================= */
 
-background:#18a558;
+@media(max-width:768px){
 
+    .page{
+        max-width:500px;
+    }
+
+    .summary-grid{
+        gap:8px;
+        margin:14px;
+    }
+
+    .summary-card{
+        min-height:108px;
+        padding:12px;
+    }
+
+    .summary-icon{
+        width:40px;
+        height:40px;
+        margin-bottom:8px;
+    }
+
+    .summary-icon svg,
+    .summary-icon .icon{
+        width:20px;
+        height:20px;
+    }
+
+    .summary-title{
+        font-size:12px;
+    }
+
+    .summary-value{
+        font-size:15px;
+    }
+
+    .summary-subtitle{
+        font-size:11px;
+    }
+
+    .quick-actions{
+        gap:10px;
+        margin:22px 14px;
+    }
+
+    .action-icon{
+        width:52px;
+        height:52px;
+        border-radius:16px;
+    }
+
+    .action-icon svg,
+    .action-icon .icon{
+        width:24px;
+        height:24px;
+    }
+
+    .action-label{
+        font-size:12px;
+    }
+
+    .invest-card{
+        margin:14px;
+        padding:14px;
+    }
+
+    .investment-top{
+        gap:8px;
+    }
+
+    .investment-icon{
+        width:56px;
+        height:56px;
+        flex-basis:56px;
+    }
+
+    .investment-name{
+        font-size:16px;
+    }
+
+    .investment-status{
+        font-size:12px;
+    }
+
+    .project-badge{
+        font-size:10px;
+        padding:3px 8px;
+    }
+
+    .investment-profit{
+        min-width:72px;
+    }
+
+    .investment-profit b{
+        font-size:15px;
+    }
+
+    .investment-profit span{
+        font-size:10px;
+    }
+
+    .investment-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+    }
+
+    .investment-grid span{
+        font-size:10px;
+    }
+
+    .investment-grid b{
+        font-size:13px;
+    }
+
+    .investment-btn{
+        padding:12px;
+        font-size:13px;
+    }
+
+    .dashboard-hero{
+        flex-direction:row;
+        justify-content:space-between;
+        align-items:center;
+
+        margin:16px;
+        padding:18px;
+
+        min-height:180px;
+    }
+
+    .hero-left{
+        flex:1;
+        min-width:0;
+    }
+
+    .hero-right{
+        width:110px;
+        flex-basis:110px;
+        margin-top:0;
+    }
+
+    .hero-greeting{
+        font-size:13px;
+    }
+
+    #heroUserName{
+        font-size:15px;
+    }
+
+    .hero-label{
+        font-size:12px;
+        margin-top:8px;
+    }
+
+    .hero-balance{
+        font-size:30px;
+    }
+
+    .eye-btn{
+        width:36px;
+        height:36px;
+    }
+
+    .profit-badge{
+        padding:7px 12px;
+        font-size:11px;
+    }
+
+    .hero-coin{
+        width:82px;
+    }
+
+    .treasury-badge{
+        margin-top:8px;
+        padding:7px 10px;
+    }
+
+    .treasury-badge strong{
+        font-size:10px;
+    }
+
+    .treasury-badge span{
+        font-size:12px;
+    }
 }
 
-.page{
+/* =========================================================
+   SMALL PHONES
+========================================================= */
 
-max-width:500px;
+@media(max-width:380px){
 
-margin:auto;
+    .dashboard-hero{
+        margin:12px;
+        padding:15px;
+        border-radius:20px;
+    }
 
+    .hero-right{
+        width:92px;
+        flex-basis:92px;
+    }
+
+    .hero-coin{
+        width:70px;
+    }
+
+    .hero-balance{
+        font-size:26px;
+    }
+
+    .treasury-badge{
+        gap:5px;
+        padding:6px 8px;
+    }
+
+    .treasury-badge span{
+        font-size:10px;
+    }
+
+    .quick-actions{
+        gap:6px;
+        margin-left:12px;
+        margin-right:12px;
+    }
+
+    .action-icon{
+        width:48px;
+        height:48px;
+        border-radius:14px;
+    }
+
+    .action-label{
+        font-size:11px;
+    }
+
+    .summary-grid{
+        margin-left:12px;
+        margin-right:12px;
+    }
+
+    .invest-card{
+        margin-left:12px;
+        margin-right:12px;
+    }
 }
 
-.summary-card,
-.invest-card,
-.dashboard-hero{
+/* =========================================================
+   ACCESSIBILITY / MOTION
+========================================================= */
 
-transition:all .25s ease;
+@media(prefers-reduced-motion:reduce){
 
-}
-
-.summary-card:active,
-.invest-card:active{
-
-transform:scale(.98);
-
-}
-
-button{
-
--webkit-tap-highlight-color:transparent;
-
-}
-
-body{
-
-scroll-behavior:smooth;
-
-}
-
-.investment-status{
-
-display:flex;
-
-align-items:center;
-
-gap:5px;
-
-color:#35a853;
-
-font-size:14px;
-
-font-weight:600;
-
-margin-top:4px;
-
+    *,
+    *::before,
+    *::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        scroll-behavior:auto !important;
+        transition-duration:.01ms !important;
+    }
 }
