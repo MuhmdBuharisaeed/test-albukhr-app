@@ -1,478 +1,570 @@
-let lastScroll = 0;
-let threshold = 10;
+/* =========================================================
+   ALBUKHR – INVESTOR DASHBOARD V4
+   Investor dashboard logic
+   NOTE: ALBUKHR DOCK NAV is intentionally not modified.
+========================================================= */
+
+(() => {
+    "use strict";
+
+    /* =========================================================
+       DOCK NAV — PRESERVED
+    ========================================================= */
+
+    let lastScroll = 0;
+    const threshold = 10;
+
+    const dock = document.querySelector(".dock-nav");
+
+    if (dock) {
+        window.addEventListener("scroll", () => {
+            const current = window.pageYOffset;
+
+            if (Math.abs(current - lastScroll) <= threshold) return;
+
+            if (current > lastScroll) {
+                dock.classList.add("hide");
+            } else {
+                dock.classList.remove("hide");
+            }
+
+            lastScroll = current;
+        });
+    }
+
+    const currentPage = location.pathname.split("/").pop() || "index.html";
+
+    document.querySelectorAll(".dock-item").forEach(link => {
+        if (link.getAttribute("href") === currentPage) {
+            link.classList.add("active");
+        }
+    });
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    function escapeHTML(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function formatPi(value) {
+        return `${getNumber(value).toFixed(2)} Pi`;
+    }
+
+    function getCurrentUser() {
+        try {
+            return window.AlbukhrEcosystem?.currentUser?.() || {};
+        } catch (error) {
+            console.warn("Unable to read current user:", error);
+            return {};
+        }
+    }
+
+    /* =========================================================
+       HERO USER
+    ========================================================= */
+
+    const user = getCurrentUser();
+
+    const heroUserName = document.getElementById("heroUserName");
+
+    if (heroUserName) {
+        heroUserName.textContent =
+            user.username ||
+            user.name ||
+            "Investor";
+    }
+
+    /* =========================================================
+       GREETING
+    ========================================================= */
+
+    const greeting = document.getElementById("greetingText");
+
+    if (greeting) {
+        const hour = new Date().getHours();
+
+        if (hour < 12) {
+            greeting.textContent = "Good Morning,";
+        } else if (hour < 18) {
+            greeting.textContent = "Good Afternoon,";
+        } else {
+            greeting.textContent = "Good Evening,";
+        }
+    }
 
-const dock =
-document.querySelector(".dock-nav");
+    /* =========================================================
+       INVESTOR DASHBOARD
+    ========================================================= */
 
-window.addEventListener("scroll",()=>{
+    async function renderInvestorDashboard() {
 
-const current =
-window.pageYOffset;
+        const container = document.getElementById("investments");
 
-if(Math.abs(current-lastScroll)<=threshold)
-return;
+        if (!container) return;
 
-if(current > lastScroll){
-
-/* scroll down */
-dock.classList.add("hide");
-
-}else{
-
-/* scroll up */
-dock.classList.remove("hide");
-
-}
-
-lastScroll = current;
-
-});
-
-
-const current = location.pathname.split("/").pop();
-
-document.querySelectorAll(".dock-item").forEach(link=>{
-
-if(link.getAttribute("href") === current){
-
-link.classList.add("active");
-
-}
-
-});
-
-/* =========================================
-   HERO
-========================================= */
-
-const user =
-AlbukhrEcosystem.currentUser?.() || {};
-
-document.getElementById(
-"heroUserName"
-).innerText =
-
-user.username ||
-user.name ||
-"Investor";
-
-async function renderInvestorDashboard(){
-
-const container =
-document.getElementById("investments");
-
-container.innerHTML = `
-<div class="invest-card"
-style="text-align:center;color:#777;">
-Loading investments...
-</div>
-`;
-
-try{
-
-const stakes =
-await getAllStakesMerged();
-
-if(!Array.isArray(stakes)){
-
-throw new Error(
-"Invalid investment data."
-);
-
-}
-
-let totalInvest = 0;
-let totalEarn = 0;
-let totalPortfolio = 0;
-
-const map = {};
-
-stakes.forEach(s=>{
-
-const amount =
-Number(s.amount) || 0;
-
-const reward =
-Number(s.reward) || 0;
-
-const withdrawn =
-Number(s.withdrawnReward) || 0;
-
-const remaining =
-Math.max(0,reward-withdrawn);
-
-const projectName =
-(s.project || "Unnamed Project").trim();
-
-totalInvest += amount;
-
-totalPortfolio += amount;
-
-if(s.type==="stake"){
-
-totalEarn += remaining;
-
-}
-
-if(!map[projectName]){
-
-map[projectName]={
-
-invest:0,
-
-earn:0,
-
-status:"Active",
-
-count:0
-
-};
-
-}
-
-map[projectName].invest += amount;
-
-map[projectName].count++;
-
-if(s.type==="stake"){
-
-map[projectName].earn += remaining;
-
-}
-
-});
-
-document.getElementById(
-"totalPortfolio"
-).innerText =
-totalPortfolio.toFixed(2)+" Pi";
-
-document.getElementById(
-"totalInvest"
-).innerText =
-totalInvest.toFixed(2)+" Pi";
-
-document.getElementById(
-"totalEarn"
-).innerText =
-totalEarn.toFixed(2)+" Pi";
-
-document.getElementById(
-"totalProjects"
-).innerText =
-Object.keys(map).length;
-
-/* HERO PORTFOLIO */
-
-const heroPortfolio =
-document.getElementById(
-"heroPortfolio"
-);
-
-if(heroPortfolio){
-
-heroPortfolio.innerText =
-totalPortfolio.toFixed(2) + " Pi";
-
-}
-
-const todayProfit =
-document.getElementById("todayProfit");
-
-if(todayProfit){
-
-todayProfit.innerHTML =
-`+${totalEarn.toFixed(2)} Pi`;
-
-}
-
-container.innerHTML="";
-
-if(Object.keys(map).length===0){
-
-container.innerHTML=`
-
-<div class="invest-card"
-style="text-align:center;">
-
-<h3>No investments yet</h3>
-
-<p style="color:#666;">
-
-Start by exploring
-approved projects.
-
-</p>
-
-<button
-class="wallet-btn"
-onclick="location.href='marketplace.html'">
-
-Explore Marketplace
-
-</button>
-
-</div>
-
-`;
-
-return;
-
-}
-
-Object.entries(map).forEach(
-
-([project,data])=>{
-
-const card =
-document.createElement("div");
-
-card.className =
-"invest-card";
-
-card.innerHTML = `
-
-<div class="investment-top">
-
-    <div class="investment-project">
-
-        <div class="investment-icon">
-
-            <img src="images/projects/default.png"
-                 alt="${project}">
-
-        </div>
-
-        <div>
-
-            <div class="investment-name">
-                ${project}
+        container.innerHTML = `
+            <div class="invest-card dashboard-loading">
+                Loading investments...
             </div>
+        `;
+
+        try {
+            if (typeof window.getAllStakesMerged !== "function") {
+                throw new Error("Investment data engine is unavailable.");
+            }
+
+            const stakes = await window.getAllStakesMerged();
+
+            if (!Array.isArray(stakes)) {
+                throw new Error("Invalid investment data.");
+            }
+
+            let totalInvest = 0;
+            let totalEarn = 0;
+            let totalPortfolio = 0;
+
+            const projects = {};
+
+            stakes.forEach(stake => {
+
+                const amount = getNumber(stake.amount);
+                const reward = getNumber(stake.reward);
+                const withdrawnReward = getNumber(
+                    stake.withdrawnReward
+                );
 
-            <div class="investment-status">
+                const remainingReward = Math.max(
+                    0,
+                    reward - withdrawnReward
+                );
 
-                <span class="status-dot">
-                    ● Active
-                </span>
+                const projectName =
+                    String(
+                        stake.project ||
+                        "Unnamed Project"
+                    ).trim();
 
-                <span class="project-badge">
-                    Core Project
-                </span>
+                totalInvest += amount;
+                totalPortfolio += amount;
 
-            </div>
+                if (stake.type === "stake") {
+                    totalEarn += remainingReward;
+                }
 
-        </div>
+                if (!projects[projectName]) {
+                    projects[projectName] = {
+                        invest: 0,
+                        earn: 0,
+                        status: "Active",
+                        count: 0
+                    };
+                }
 
-    </div>
+                projects[projectName].invest += amount;
+                projects[projectName].count += 1;
 
-    <div class="investment-profit">
+                if (stake.type === "stake") {
+                    projects[projectName].earn += remainingReward;
+                }
+            });
 
-        <b>
-            ${data.earn.toFixed(2)} Pi
-        </b>
+            /* =====================================================
+               SUMMARY
+            ===================================================== */
 
-        <span>
-            Current Earnings
-        </span>
+            const totalPortfolioEl =
+                document.getElementById("totalPortfolio");
 
-    </div>
+            const totalInvestEl =
+                document.getElementById("totalInvest");
 
-</div>
+            const totalEarnEl =
+                document.getElementById("totalEarn");
 
-<div class="investment-grid">
+            const totalProjectsEl =
+                document.getElementById("totalProjects");
 
-    <div>
+            if (totalPortfolioEl) {
+                totalPortfolioEl.textContent =
+                    formatPi(totalPortfolio);
+            }
 
-        <span>Invested</span>
+            if (totalInvestEl) {
+                totalInvestEl.textContent =
+                    formatPi(totalInvest);
+            }
 
-        <b>
-            ${data.invest.toFixed(2)} Pi
-        </b>
+            if (totalEarnEl) {
+                totalEarnEl.textContent =
+                    formatPi(totalEarn);
+            }
 
-    </div>
+            if (totalProjectsEl) {
+                totalProjectsEl.textContent =
+                    Object.keys(projects).length;
+            }
 
-    <div>
+            /* =====================================================
+               HERO PORTFOLIO
+            ===================================================== */
 
-        <span>Earnings</span>
+            const heroPortfolio =
+                document.getElementById("heroPortfolio");
 
-        <b>
-            ${data.earn.toFixed(2)} Pi
-        </b>
+            if (heroPortfolio) {
+                heroPortfolio.textContent =
+                    formatPi(totalPortfolio);
+            }
 
-    </div>
+            const todayProfit =
+                document.getElementById("todayProfit");
 
-    <div>
+            if (todayProfit) {
+                todayProfit.textContent =
+                    `+${totalEarn.toFixed(2)} Pi`;
+            }
 
-        <span>ROI</span>
+            /* =====================================================
+               EMPTY STATE
+            ===================================================== */
 
-        <b>
-            ${
-                data.invest > 0
-                ? ((data.earn / data.invest) * 100).toFixed(2)
-                : "0.00"
-            }%
-        </b>
+            container.innerHTML = "";
 
-    </div>
+            if (Object.keys(projects).length === 0) {
 
-    <div>
+                container.innerHTML = `
+                    <div class="invest-card empty-investments">
 
-        <span>Records</span>
+                        <h3>No investments yet</h3>
 
-        <b>${data.count}</b>
+                        <p>
+                            Start by exploring approved projects.
+                        </p>
 
-    </div>
+                        <button
+                            class="wallet-btn"
+                            type="button"
+                            onclick="location.href='marketplace.html'">
 
-</div>
+                            Explore Marketplace
 
-<div class="progress-header">
+                        </button>
 
-    <span>
-        Project Progress
-    </span>
+                    </div>
+                `;
 
-    <span>85%</span>
+                return;
+            }
 
-</div>
+            /* =====================================================
+               PROJECT CARDS
+            ===================================================== */
 
-<div class="investment-progress">
+            Object.entries(projects).forEach(
+                ([project, data]) => {
 
-    <div
-        class="investment-progress-bar"
-        style="width:85%">
-    </div>
+                    const card =
+                        document.createElement("div");
 
-</div>
+                    card.className = "invest-card";
 
-<button
-class="investment-btn"
-onclick="location.href='project.html?project=${encodeURIComponent(project)}'">
+                    const safeProject =
+                        escapeHTML(project);
 
-View Details →
+                    const roi =
+                        data.invest > 0
+                            ? (
+                                (data.earn / data.invest) *
+                                100
+                              ).toFixed(2)
+                            : "0.00";
 
-</button>
+                    const projectURL =
+                        `project.html?project=${
+                            encodeURIComponent(project)
+                        }`;
 
-`;
+                    card.innerHTML = `
+                        <div class="investment-top">
 
-container.appendChild(card);
+                            <div class="investment-project">
 
-});
+                                <div class="investment-icon">
 
-}catch(error){
+                                    <img
+                                        src="images/projects/default.png"
+                                        alt="${safeProject}"
+                                        loading="lazy"
+                                        onerror="this.style.display='none';"
+                                    >
 
-console.error(
-"Investor Dashboard Error:",
-error
-);
+                                </div>
 
-container.innerHTML = `
+                                <div>
 
-<div class="invest-card"
-style="text-align:center;">
+                                    <div class="investment-name">
+                                        ${safeProject}
+                                    </div>
 
-<h3>
+                                    <div class="investment-status">
 
-Unable to load investments
+                                        <span class="status-dot">
+                                            Active
+                                        </span>
 
-</h3>
+                                        <span class="project-badge">
+                                            Core Project
+                                        </span>
 
-<p
-style="color:#666;">
+                                    </div>
 
-Please check your
-internet connection
-or try again later.
+                                </div>
 
-</p>
+                            </div>
 
-<button
-class="wallet-btn"
-onclick="renderInvestorDashboard()">
+                            <div class="investment-profit">
 
-Retry
+                                <b>
+                                    ${data.earn.toFixed(2)} Pi
+                                </b>
 
-</button>
+                                <span>
+                                    Current Earnings
+                                </span>
 
-</div>
+                            </div>
 
-`;
+                        </div>
 
-}
+                        <div class="investment-grid">
 
-}
+                            <div>
+                                <span>Invested</span>
+                                <b>
+                                    ${data.invest.toFixed(2)} Pi
+                                </b>
+                            </div>
 
-renderInvestorDashboard();
+                            <div>
+                                <span>Earnings</span>
+                                <b>
+                                    ${data.earn.toFixed(2)} Pi
+                                </b>
+                            </div>
 
-/* =====================================
-   ALBUKHR PREMIUM HERO
-===================================== */
+                            <div>
+                                <span>ROI</span>
+                                <b>
+                                    ${roi}%
+                                </b>
+                            </div>
 
-let portfolioVisible = true;
+                            <div>
+                                <span>Records</span>
+                                <b>
+                                    ${data.count}
+                                </b>
+                            </div>
 
-/* Greeting */
+                        </div>
 
-(function(){
+                        <div class="progress-header">
 
-const greeting =
-document.getElementById("greetingText");
+                            <span>
+                                Project Progress
+                            </span>
 
-if(greeting){
+                            <span>
+                                85%
+                            </span>
 
-const hour = new Date().getHours();
+                        </div>
 
-if(hour < 12){
+                        <div class="investment-progress">
 
-greeting.textContent =
-"Good Morning,";
+                            <div
+                                class="investment-progress-bar"
+                                style="width:85%">
+                            </div>
 
-}else if(hour < 18){
+                        </div>
 
-greeting.textContent =
-"Good Afternoon,";
+                        <button
+                            class="investment-btn"
+                            type="button"
+                            data-project-url="${escapeHTML(projectURL)}">
 
-}else{
+                            View Details
 
-greeting.textContent =
-"Good Evening,";
+                        </button>
+                    `;
 
-}
+                    const viewButton =
+                        card.querySelector(".investment-btn");
 
-}
+                    if (viewButton) {
+                        viewButton.addEventListener(
+                            "click",
+                            () => {
+                                location.href = projectURL;
+                            }
+                        );
+                    }
+
+                    container.appendChild(card);
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Investor Dashboard Error:",
+                error
+            );
+
+            container.innerHTML = `
+                <div class="invest-card dashboard-error">
+
+                    <h3>
+                        Unable to load investments
+                    </h3>
+
+                    <p>
+                        Please check your internet connection
+                        or try again later.
+                    </p>
+
+                    <button
+                        class="wallet-btn"
+                        type="button"
+                        id="retryInvestorDashboard">
+
+                        Retry
+
+                    </button>
+
+                </div>
+            `;
+
+            const retryButton =
+                document.getElementById(
+                    "retryInvestorDashboard"
+                );
+
+            if (retryButton) {
+                retryButton.addEventListener(
+                    "click",
+                    renderInvestorDashboard
+                );
+            }
+        }
+    }
+
+    /* =========================================================
+       BALANCE VISIBILITY
+       No emoji is used here.
+    ========================================================= */
+
+    let portfolioVisible = true;
+
+    const eyeButton =
+        document.getElementById("toggleBalance");
+
+    if (eyeButton) {
+
+        eyeButton.setAttribute(
+            "aria-label",
+            "Hide portfolio balance"
+        );
+
+        eyeButton.setAttribute(
+            "title",
+            "Hide portfolio balance"
+        );
+
+        eyeButton.addEventListener(
+            "click",
+            async () => {
+
+                const balance =
+                    document.getElementById(
+                        "heroPortfolio"
+                    );
+
+                if (!balance) return;
+
+                portfolioVisible =
+                    !portfolioVisible;
+
+                if (portfolioVisible) {
+
+                    await renderInvestorDashboard();
+
+                    eyeButton.setAttribute(
+                        "aria-label",
+                        "Hide portfolio balance"
+                    );
+
+                    eyeButton.setAttribute(
+                        "title",
+                        "Hide portfolio balance"
+                    );
+
+                    eyeButton.innerHTML = `
+                        <span
+                            class="balance-eye-icon"
+                            aria-hidden="true">
+                            ◉
+                        </span>
+                    `;
+
+                } else {
+
+                    balance.textContent =
+                        "••••••";
+
+                    eyeButton.setAttribute(
+                        "aria-label",
+                        "Show portfolio balance"
+                    );
+
+                    eyeButton.setAttribute(
+                        "title",
+                        "Show portfolio balance"
+                    );
+
+                    eyeButton.innerHTML = `
+                        <span
+                            class="balance-eye-icon"
+                            aria-hidden="true">
+                            ○
+                        </span>
+                    `;
+                }
+            }
+        );
+    }
+
+    /* =========================================================
+       START
+    ========================================================= */
+
+    renderInvestorDashboard();
+
+    /* Optional global access for existing UI code. */
+    window.renderInvestorDashboard =
+        renderInvestorDashboard;
 
 })();
-
-/* Balance Toggle */
-
-const eyeBtn =
-document.getElementById("toggleBalance");
-
-if(eyeBtn){
-
-eyeBtn.onclick = ()=>{
-
-const balance =
-document.getElementById("heroPortfolio");
-
-portfolioVisible =
-!portfolioVisible;
-
-if(portfolioVisible){
-
-renderInvestorDashboard();
-
-eyeBtn.innerHTML =
-'<i class="fa-solid fa-eye"></i>';
-
-}else{
-
-balance.textContent =
-"••••••";
-
-eyeBtn.innerHTML =
-'<i class="fa-solid fa-eye-slash"></i>';
-
-}
-
-};
-
-}
