@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -11,41 +12,124 @@ content="width=device-width,initial-scale=1.0">
 
 <title>ALBUKHR News</title>
 
-<!-- GLOBAL CSS -->
+<!-- =========================================
+     GLOBAL CSS
+========================================= -->
 
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/albukhr-ui.css">
 <link rel="stylesheet" href="css/global-header.css">
 <link rel="stylesheet" href="css/app-alert.css">
 
-<!-- NEWS CSS -->
+<!-- =========================================
+     NEWS CSS
+========================================= -->
 
 <link rel="stylesheet" href="css/news.css">
 
 <style>
 
 .header-right{
-display:flex;
-align-items:center;
-gap:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .user-box{
-display:flex;
-flex-direction:column;
-align-items:flex-end;
-justify-content:center;
-max-width:90px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  max-width:90px;
 }
 
 #piUser{
-font-size:10px;
-margin-top:2px;
-color:#fff;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-text-align:right;
+  font-size:10px;
+  margin-top:2px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:right;
+}
+
+/* =========================================
+   SVG ICON SYSTEM
+========================================= */
+
+.svg-icon{
+  width:20px;
+  height:20px;
+  display:inline-block;
+  vertical-align:middle;
+  flex-shrink:0;
+}
+
+.svg-icon path,
+.svg-icon circle,
+.svg-icon rect,
+.svg-icon line,
+.svg-icon polyline,
+.svg-icon polygon{
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.svg-icon.fill path,
+.svg-icon.fill circle{
+  fill:currentColor;
+  stroke:none;
+}
+
+.news-icon .svg-icon{
+  width:30px;
+  height:30px;
+}
+
+.hero-badge .svg-icon{
+  width:17px;
+  height:17px;
+}
+
+.summary-icon .svg-icon{
+  width:24px;
+  height:24px;
+}
+
+.search-icon .svg-icon{
+  width:19px;
+  height:19px;
+}
+
+.news-tab .svg-icon{
+  width:17px;
+  height:17px;
+}
+
+.primary-btn .svg-icon,
+.secondary-btn .svg-icon,
+.refresh-news-btn .svg-icon{
+  width:17px;
+  height:17px;
+}
+
+.empty-icon .svg-icon{
+  width:42px;
+  height:42px;
+}
+
+.modal-close-btn .svg-icon,
+.image-close-btn .svg-icon{
+  width:18px;
+  height:18px;
+}
+
+.share-actions .svg-icon{
+  width:17px;
+  height:17px;
 }
 
 </style>
@@ -54,690 +138,842 @@ text-align:right;
 
 <body data-page="news">
 
-<!-- LOGIN CHECK -->
+<!-- =========================================
+     LOGIN CHECK
+========================================= -->
 
 <script>
 
 (function(){
 
-const user=
-JSON.parse(
-localStorage.getItem("pi_user")
-);
+  const user =
+    JSON.parse(
+      localStorage.getItem("pi_user")
+    );
 
-if(!user || !user.uid){
+  if(!user || !user.uid){
 
-window.location.replace(
-"login.html"
-);
+    window.location.replace(
+      "login.html"
+    );
 
-}
+  }
 
 })();
 
 </script>
 
-<!-- ===================================
-HEADER
-=================================== -->
+<!-- =========================================
+     HEADER
+========================================= -->
 
 <header class="header">
 
-<div class="header-left">
+  <div class="header-left">
 
 <span class="brand">
-
-ALBUKHR
-
+  ALBUKHR
 </span>
 
-</div>
+  </div>
 
-<div class="header-right">
+  <div class="header-right">
 
-<div
-class="header-btn user-box"
-id="userBox">
-
-<div class="user-icon">
-
-👤
-
-</div>
-
-<div id="piUser"></div>
-
-</div>
+<!-- USER -->
 
 <div
-class="header-btn notification-btn"
-onclick="openNotifications()">
+  class="header-btn user-box"
+  id="userBox">
 
-🔔
+  <div class="user-icon">
 
-<span
-id="notifBadge"
-class="notification-badge">
+    <svg
+      class="svg-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true">
 
-</span>
+      <circle cx="12" cy="8" r="3.5"></circle>
+
+      <path
+        d="M5 20c0-3.2 3.1-5.5 7-5.5s7 2.3 7 5.5">
+      </path>
+
+    </svg>
+
+  </div>
+
+  <div id="piUser"></div>
 
 </div>
 
+
+<!-- NOTIFICATIONS -->
+
+<div
+  class="header-btn notification-btn"
+  onclick="openNotifications()"
+  aria-label="Notifications">
+
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
+
+    <path
+      d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
+    </path>
+
+    <path
+      d="M10 21h4">
+    </path>
+
+  </svg>
+
+  <span
+    id="notifBadge"
+    class="notification-badge">
+  </span>
+
 </div>
+
+  </div>
 
 </header>
 
-<!-- ===================================
-NEWS HEADER
-=================================== -->
-
-<section class="news-header">
-
-<div class="news-title">
-
-<div class="news-icon">
-
-📰
-
-</div>
-
-<div>
-
-<h2>
-
-ALBUKHR News
-
-</h2>
-
-<p>
-
-Official ecosystem announcements,
-project transparency updates,
-and personalized news.
-
-</p>
-
-</div>
-
-</div>
-
-<button
-id="refreshNewsBtn"
-class="refresh-news-btn">
-
-Refresh
-
-</button>
-
-</section>
 <!-- =========================================
-NEWS HERO
+     NEWS HERO
 ========================================= -->
 
 <section class="news-hero">
 
   <div class="hero-left">
 
-    <div class="hero-badge">
-      📰 Official News Center
-    </div>
+<div class="hero-badge">
 
-    <h1>
-      ALBUKHR News
-    </h1>
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
 
-    <p>
-      Official ecosystem announcements, company updates,
-      transparency reports and personalized project news
-      based on your investments.
-    </p>
+    <rect
+      x="4"
+      y="5"
+      width="16"
+      height="15"
+      rx="2">
+    </rect>
+
+    <path d="M8 9h8"></path>
+
+    <path d="M8 13h5"></path>
+
+    <path d="M8 17h8"></path>
+
+  </svg>
+
+  Official News Center
+
+</div>
+
+
+<h1>
+  ALBUKHR News
+</h1>
+
+
+<p>
+  Official ecosystem announcements, company updates,
+  transparency reports and personalized project news
+  based on your investments.
+</p>
 
   </div>
 
   <div class="hero-right">
 
-    <button
-      id="refreshNewsBtn"
-      class="primary-btn">
+<button
+  id="refreshNewsBtn"
+  class="primary-btn">
 
-      🔄 Refresh
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
 
-    </button>
+    <path
+      d="M20 11a8 8 0 0 0-14.9-4">
+    </path>
+
+    <polyline
+      points="4 4 4 8 8 8">
+    </polyline>
+
+    <path
+      d="M4 13a8 8 0 0 0 14.9 4">
+    </path>
+
+    <polyline
+      points="20 20 20 16 16 16">
+    </polyline>
+
+  </svg>
+
+  Refresh
+
+</button>
 
   </div>
 
 </section>
 
-
 <!-- =========================================
-NEWS SUMMARY
+     NEWS SUMMARY
 ========================================= -->
 
 <section class="news-summary">
 
+  <!-- ECOSYSTEM NEWS -->
+
   <div class="summary-card">
 
-    <div class="summary-icon">
-      📢
-    </div>
+<div class="summary-icon">
 
-    <div class="summary-info">
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
 
-      <span>
-        Ecosystem News
-      </span>
+    <path
+      d="M4 5h16v14H4z">
+    </path>
 
-      <strong id="officialNewsCount">
-        0
-      </strong>
+    <path d="M7 9h10"></path>
 
-    </div>
+    <path d="M7 13h7"></path>
+
+    <path d="M7 17h5"></path>
+
+  </svg>
+
+</div>
+
+
+<div class="summary-info">
+
+  <span>
+    Ecosystem News
+  </span>
+
+  <strong id="officialNewsCount">
+    0
+  </strong>
+
+</div>
 
   </div>
 
+  <!-- MY PROJECTS -->
+
   <div class="summary-card">
 
-    <div class="summary-icon">
-      📂
-    </div>
+<div class="summary-icon">
 
-    <div class="summary-info">
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
 
-      <span>
-        My Projects
-      </span>
+    <path
+      d="M3 7h7l2 2h9v10H3z">
+    </path>
 
-      <strong id="projectNewsCount">
-        0
-      </strong>
+    <path
+      d="M3 7V5h7l2 2">
+    </path>
 
-    </div>
+  </svg>
+
+</div>
+
+
+<div class="summary-info">
+
+  <span>
+    My Projects
+  </span>
+
+  <strong id="projectNewsCount">
+    0
+  </strong>
+
+</div>
 
   </div>
 
 </section>
 
-
 <!-- =========================================
-SEARCH
+     SEARCH
 ========================================= -->
 
 <section class="news-search">
 
   <div class="search-box">
 
-    <span class="search-icon">
-      🔍
-    </span>
+<span class="search-icon">
 
-    <input
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
 
-      type="text"
+    <circle
+      cx="11"
+      cy="11"
+      r="6.5">
+    </circle>
 
-      id="newsSearch"
+    <line
+      x1="16"
+      y1="16"
+      x2="21"
+      y2="21">
+    </line>
 
-      placeholder="Search news..."
+  </svg>
 
-      autocomplete="off"
+</span>
 
-    >
+
+<input
+  type="text"
+  id="newsSearch"
+  placeholder="Search news..."
+  autocomplete="off">
 
   </div>
 
 </section>
 
-
 <!-- =========================================
-FILTER TABS
+     FILTER TABS
 ========================================= -->
 
 <section class="news-tabs">
 
-  <button
+  <!-- ALL -->
 
-    class="news-tab active"
+<button
+ class="news-tab active"
+ id="tabAll"
+ data-tab="all">
 
-    id="tabAll"
-
-    data-tab="all">
-
-    All News
-
-  </button>
-
-  <button
-
-    class="news-tab"
-
-    id="tabOfficial"
-
-    data-tab="official">
-
-    📢 Ecosystem
+All News
 
   </button>
 
-  <button
+  <!-- ECOSYSTEM -->
 
-    class="news-tab"
+<button
+ class="news-tab"
+ id="tabOfficial"
+ data-tab="official">
 
-    id="tabProjects"
+<svg
+  class="svg-icon"
+  viewBox="0 0 24 24"
+  aria-hidden="true">
 
-    data-tab="projects">
+  <path
+    d="M12 3l2.2 4.6L19 9l-3.5 3.4.8 4.8L12 15l-4.3 2.2.8-4.8L5 9l4.8-1.4z">
+  </path>
 
-    📂 My Projects
+</svg>
+
+Ecosystem
 
   </button>
 
-</section>
+  <!-- PROJECTS -->
 
+<button
+ class="news-tab"
+ id="tabProjects"
+ data-tab="projects">
 
-<!-- =========================================
-NEWS FEED
-========================================= -->
+<svg
+  class="svg-icon"
+  viewBox="0 0 24 24"
+  aria-hidden="true">
 
-<section
-class="news-feed"
-id="newsFeed">
+  <path
+    d="M3 7h7l2 2h9v10H3z">
+  </path>
 
-  <div class="loading-card">
+  <path
+    d="M3 7V5h7l2 2">
+  </path>
 
-    <div class="loading-spinner"></div>
+</svg>
 
-    <p>
-
-      Loading latest news...
-
-    </p>
-
-  </div>
-
-</section>
-
-
-<!-- =========================================
-EMPTY STATE
-========================================= -->
-
-<section
-
-id="newsEmpty"
-
-class="news-empty"
-
-style="display:none;">
-
-  <div class="empty-icon">
-
-    📰
-
-  </div>
-
-  <h3>
-
-    No News Available
-
-  </h3>
-
-  <p>
-
-    There are currently no official announcements
-    or project updates available.
-
-  </p>
-
-</section>
-
-
-<!-- =========================================
-LOAD MORE
-========================================= -->
-
-<section class="news-footer">
-
-  <button
-
-    id="loadMoreNews"
-
-    class="secondary-btn">
-
-    Load More
+My Projects
 
   </button>
 
 </section>
+
 <!-- =========================================
-NEWS FEED
+     NEWS FEED
 ========================================= -->
 
 <main class="news-container">
 
-<section
-id="newsFeed"
-class="news-feed">
+  <section
+    id="newsFeed"
+    class="news-feed">
 
 <div class="loading-card">
 
-<div class="loading-spinner"></div>
+  <div class="loading-spinner"></div>
 
-<h3>Loading News...</h3>
+  <h3>
+    Loading News...
+  </h3>
 
-<p>
-Please wait while we load the latest updates.
-</p>
+  <p>
+    Please wait while we load the latest updates.
+  </p>
 
 </div>
 
-</section>
+  </section>
 
-<!-- =========================================
-EMPTY STATE
-========================================= -->
+  <!-- =========================================
+       EMPTY STATE
+  ========================================= -->
 
-<section
-id="newsEmpty"
-class="news-empty"
-style="display:none;">
+  <section
+    id="newsEmpty"
+    class="news-empty"
+    style="display:none;">
 
 <div class="empty-icon">
 
-📰
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
+
+    <rect
+      x="4"
+      y="4"
+      width="16"
+      height="16"
+      rx="2">
+    </rect>
+
+    <path d="M8 9h8"></path>
+
+    <path d="M8 13h5"></path>
+
+    <path d="M8 17h7"></path>
+
+  </svg>
 
 </div>
 
+
 <h3>
-
-No News Available
-
+  No News Available
 </h3>
 
+
 <p>
-
-There are currently no announcements or
-project updates available.
-
-Please check again later.
-
+  There are currently no announcements or
+  project updates available.
+  Please check again later.
 </p>
 
-<button
-id="refreshEmptyBtn"
-class="primary-btn">
 
-Refresh
+<button
+  id="refreshEmptyBtn"
+  class="primary-btn">
+
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
+
+    <path
+      d="M20 11a8 8 0 0 0-14.9-4">
+    </path>
+
+    <polyline
+      points="4 4 4 8 8 8">
+    </polyline>
+
+    <path
+      d="M4 13a8 8 0 0 0 14.9 4">
+    </path>
+
+    <polyline
+      points="20 20 20 16 16 16">
+    </polyline>
+
+  </svg>
+
+  Refresh
 
 </button>
 
-</section>
+  </section>
 
 </main>
 
 <!-- =========================================
-LOAD MORE
+     LOAD MORE
 ========================================= -->
 
 <footer class="news-footer">
 
 <button
-id="loadMoreNews"
-class="secondary-btn">
+ id="loadMoreNews"
+ class="secondary-btn">
 
 Load More
 
-</button>
+  </button>
 
 </footer>
 
 <!-- =========================================
-IMAGE PREVIEW MODAL
+     IMAGE PREVIEW MODAL
 ========================================= -->
 
 <div
-id="imagePreviewModal"
-class="image-preview-modal">
+  id="imagePreviewModal"
+  class="image-preview-modal">
 
-<div
-class="image-preview-overlay"
-onclick="closeImagePreview()">
+  <div
+    class="image-preview-overlay"
+    onclick="closeImagePreview()">
+  </div>
 
-</div>
-
-<div
-class="image-preview-box">
+  <div class="image-preview-box">
 
 <button
-class="image-close-btn"
-onclick="closeImagePreview()">
+  class="image-close-btn"
+  onclick="closeImagePreview()"
+  aria-label="Close image preview">
 
-✕
+  <svg
+    class="svg-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true">
+
+    <line
+      x1="6"
+      y1="6"
+      x2="18"
+      y2="18">
+    </line>
+
+    <line
+      x1="18"
+      y1="6"
+      x2="6"
+      y2="18">
+    </line>
+
+  </svg>
 
 </button>
 
-<img
-id="previewImage"
-src=""
-alt="Preview">
 
-</div>
+<img
+  id="previewImage"
+  src=""
+  alt="News image preview">
+
+  </div>
 
 </div>
 
 <!-- =========================================
-FULL NEWS MODAL
+     FULL NEWS MODAL
 ========================================= -->
 
 <div
-id="newsModal"
-class="news-modal">
+  id="newsModal"
+  class="news-modal">
 
-<div
-class="news-modal-overlay"
-onclick="closeNewsModal()">
+  <div
+    class="news-modal-overlay"
+    onclick="closeNewsModal()">
+  </div>
 
-</div>
-
-<div
-class="news-modal-box">
+  <div class="news-modal-box">
 
 <!-- HEADER -->
 
-<div
-class="news-modal-header">
+<div class="news-modal-header">
 
-<div>
+  <div>
 
-<h2
-id="modalTitle">
+    <h2 id="modalTitle">
+      Loading...
+    </h2>
 
-Loading...
 
-</h2>
+    <div class="news-modal-meta">
 
-<div
-class="news-modal-meta">
+      <span id="modalCategory">
+      </span>
 
-<span
-id="modalCategory">
+      <span class="dot">
+        •
+      </span>
 
-</span>
+      <span id="modalDate">
+      </span>
 
-<span class="dot">
+    </div>
 
-•
+  </div>
 
-</span>
 
-<span
-id="modalDate">
+  <button
+    class="modal-close-btn"
+    onclick="closeNewsModal()"
+    aria-label="Close">
 
-</span>
+    <svg
+      class="svg-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true">
+
+      <line
+        x1="6"
+        y1="6"
+        x2="18"
+        y2="18">
+      </line>
+
+      <line
+        x1="18"
+        y1="6"
+        x2="6"
+        y2="18">
+      </line>
+
+    </svg>
+
+  </button>
 
 </div>
 
-</div>
-
-<button
-class="modal-close-btn"
-onclick="closeNewsModal()">
-
-✕
-
-</button>
-
-</div>
 
 <!-- IMAGE -->
 
 <img
-id="modalImage"
-class="modal-image"
-src=""
-alt="">
+  id="modalImage"
+  class="modal-image"
+  src=""
+  alt="">
+
 
 <!-- CONTENT -->
 
 <div
-id="modalContent"
-class="modal-content">
-
+  id="modalContent"
+  class="modal-content">
 </div>
+
 
 <!-- FOOTER -->
 
-<div
-class="news-modal-footer">
+<div class="news-modal-footer">
 
-<button
-id="shareNewsBtn"
-class="secondary-btn">
+  <button
+    id="shareNewsBtn"
+    class="secondary-btn">
 
-📤 Share
+    <svg
+      class="svg-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true">
 
-</button>
+      <circle
+        cx="18"
+        cy="5"
+        r="2.5">
+      </circle>
 
-<button
-onclick="closeNewsModal()"
-class="primary-btn">
+      <circle
+        cx="6"
+        cy="12"
+        r="2.5">
+      </circle>
 
-Close
+      <circle
+        cx="18"
+        cy="19"
+        r="2.5">
+      </circle>
 
-</button>
+      <line
+        x1="8.2"
+        y1="10.8"
+        x2="15.8"
+        y2="6.2">
+      </line>
+
+      <line
+        x1="8.2"
+        y1="13.2"
+        x2="15.8"
+        y2="17.8">
+      </line>
+
+    </svg>
+
+    Share
+
+  </button>
+
+
+  <button
+    onclick="closeNewsModal()"
+    class="primary-btn">
+
+    Close
+
+  </button>
 
 </div>
 
-</div>
+  </div>
 
 </div>
+
 <!-- =========================================
-SHARE MODAL
+     SHARE MODAL
 ========================================= -->
 
 <div
-id="shareModal"
-class="share-modal">
+  id="shareModal"
+  class="share-modal">
 
-<div
-class="share-overlay"
-onclick="closeShareModal()">
+  <div
+    class="share-overlay"
+    onclick="closeShareModal()">
+  </div>
 
-</div>
-
-<div
-class="share-box">
+  <div class="share-box">
 
 <h3>
-
-Share News
-
+  Share News
 </h3>
+
 
 <input
-id="shareLink"
-type="text"
-readonly>
+  id="shareLink"
+  type="text"
+  readonly>
 
-<div
-class="share-actions">
 
-<button
-id="copyShareLink"
-class="primary-btn">
+<div class="share-actions">
 
-📋 Copy Link
+  <button
+    id="copyShareLink"
+    class="primary-btn">
 
-</button>
+    <svg
+      class="svg-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true">
 
-<button
-onclick="closeShareModal()"
-class="secondary-btn">
+      <rect
+        x="8"
+        y="8"
+        width="11"
+        height="11"
+        rx="2">
+      </rect>
 
-Close
+      <path
+        d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2">
+      </path>
 
-</button>
+    </svg>
+
+    Copy Link
+
+  </button>
+
+
+  <button
+    onclick="closeShareModal()"
+    class="secondary-btn">
+
+    Close
+
+  </button>
 
 </div>
 
-</div>
+  </div>
 
 </div>
 
 <!-- =========================================
-LOADING OVERLAY
+     LOADING OVERLAY
 ========================================= -->
 
 <div
-id="newsLoading"
-class="news-loading"
-style="display:none;">
+  id="newsLoading"
+  class="news-loading"
+  style="display:none;">
 
-<div class="loading-spinner">
+  <div class="loading-spinner">
+  </div>
 
-</div>
-
-<p>
-
-Loading...
-
-</p>
+  <p>
+    Loading...
+  </p>
 
 </div>
 
 <!-- =========================================
-APP ALERT
+     APP ALERT
 ========================================= -->
 
 <div
-id="appAlert"
-class="app-alert">
+  id="appAlert"
+  class="app-alert">
 
-<div
-class="app-alert-box">
+  <div class="app-alert-box">
 
-<h3
-id="appAlertTitle">
-
-Notice
-
+<h3 id="appAlertTitle">
+  Notice
 </h3>
 
-<p
-id="appAlertText">
-
+<p id="appAlertText">
 </p>
 
 <button
-onclick="closeAppAlert()">
+  onclick="closeAppAlert()">
 
-OK
+  OK
 
 </button>
 
-</div>
+  </div>
 
 </div>
 
 <!-- =========================================
-SUPABASE
+     SUPABASE
 ========================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -745,7 +981,7 @@ SUPABASE
 <script src="js/supabase-core.js"></script>
 
 <!-- =========================================
-PROJECT ENGINE
+     PROJECT ENGINE
 ========================================= -->
 
 <script src="js/project-config.js"></script>
@@ -755,7 +991,7 @@ PROJECT ENGINE
 <script src="js/staking.js"></script>
 
 <!-- =========================================
-GLOBAL JS
+     GLOBAL JS
 ========================================= -->
 
 <script src="js/app-alert.js"></script>
@@ -763,7 +999,7 @@ GLOBAL JS
 <script src="js/notifications.js"></script>
 
 <!-- =========================================
-NEWS ENGINE
+     NEWS ENGINE
 ========================================= -->
 
 <script src="js/news-engine.js"></script>
@@ -771,4 +1007,4 @@ NEWS ENGINE
 <script src="js/news.js"></script>
 
 </body>
-</html>
+      </html>
