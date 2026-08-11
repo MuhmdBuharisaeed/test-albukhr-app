@@ -190,184 +190,464 @@ return [];
 
 async function renderPendingRequests(){
 
-const box =
-document.getElementById("pendingRequests");
+    const box =
+        document.getElementById("pendingRequests");
 
-if(!box) return;
+    if(!box) return;
 
-box.innerHTML =
 
-`<div class="empty-state">
+    /* =========================================
+       LOADING
+    ========================================= */
 
-Loading pending requests...
+    box.innerHTML = `
 
-</div>`;
+        <div class="empty-state">
 
-const requests =
-await fetchRequests("pending");
+            <div class="withdraw-loading-icon">
 
-if(!requests.length){
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
 
-renderEmpty(
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-box,
+                    <path
+                        d="M12 3a9 9 0 0 1 9 9">
+                    </path>
 
-"No Pending Requests"
+                </svg>
 
-);
+            </div>
 
-return;
+            <span>
+                Loading pending requests...
+            </span>
 
-}
+        </div>
 
-const visible =
+    `;
 
-WITHDRAW_STATE.pendingExpanded
 
-? requests
+    /* =========================================
+       FETCH
+    ========================================= */
 
-: requests.slice(0,3);
+    const requests =
+        await fetchRequests("pending");
 
-box.innerHTML = "";
 
-visible.forEach(req=>{
+    if(!requests.length){
 
-const card =
-document.createElement("div");
+        renderEmpty(
+            box,
+            "No Pending Requests"
+        );
 
-card.className =
-"withdraw-item";
+        return;
 
-card.innerHTML = `
+    }
 
-<div class="withdraw-left">
 
-<div class="withdraw-user">
+    /* =========================================
+       LIMIT
+    ========================================= */
 
-📦 ${req.project}
+    const visible =
+        WITHDRAW_STATE.pendingExpanded
 
-</div>
+        ? requests
 
-<div class="withdraw-date">
+        : requests.slice(0,3);
 
-👤 ${req.userid || "Unknown"}
 
-</div>
+    box.innerHTML = "";
 
-<div class="withdraw-date">
 
-💼 ${shortWallet(req.wallet)}
+    /* =========================================
+       RENDER REQUESTS
+    ========================================= */
 
-</div>
+    visible.forEach(req=>{
 
-<div class="withdraw-date">
+        const card =
+            document.createElement("div");
 
-📅 ${formatDate(req.created_at)}
 
-</div>
+        card.className =
+            "withdraw-item";
 
-<span class="status pending">
 
-Pending
+        card.innerHTML = `
 
-</span>
+            <!-- LEFT SIDE -->
 
-</div>
+            <div class="withdraw-left">
 
-<div class="withdraw-right">
 
-<div class="withdraw-amount">
+                <!-- PROJECT -->
 
-${Number(req.amount).toFixed(2)} Pi
+                <div class="withdraw-user">
 
-</div>
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-<div class="withdraw-type">
+                        <rect
+                            x="3"
+                            y="5"
+                            width="18"
+                            height="15"
+                            rx="2">
+                        </rect>
 
-${req.type}
+                        <path
+                            d="M8 5V3h8v2">
+                        </path>
 
-</div>
+                        <path
+                            d="M3 10h18">
+                        </path>
 
-<div class="withdraw-actions">
+                    </svg>
 
-<button
+                    <span>
+                        ${req.project}
+                    </span>
 
-class="approve-btn"
+                </div>
 
-onclick="approveRequest('${req.id}',this)">
 
-✅ Approve
+                <!-- USER -->
 
-</button>
+                <div class="withdraw-date">
 
-<button
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-class="reject-btn"
+                        <circle
+                            cx="12"
+                            cy="8"
+                            r="3.5">
+                        </circle>
 
-onclick="rejectRequest('${req.id}',this)">
+                        <path
+                            d="M5 20c.8-3.5 3.1-5.5 7-5.5s6.2 2 7 5.5">
+                        </path>
 
-❌ Reject
+                    </svg>
 
-</button>
+                    <span>
+                        ${req.userid || "Unknown"}
+                    </span>
 
-</div>
+                </div>
 
-</div>
 
-`;
+                <!-- WALLET -->
 
-box.appendChild(card);
+                <div class="withdraw-date">
 
-});
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-/* See More */
+                        <rect
+                            x="3"
+                            y="6"
+                            width="18"
+                            height="14"
+                            rx="2">
+                        </rect>
 
-if(requests.length > 3){
+                        <path
+                            d="M3 10h18">
+                        </path>
 
-const wrap =
-document.createElement("div");
+                        <path
+                            d="M7 6V4h10v2">
+                        </path>
 
-wrap.style.textAlign="center";
+                        <circle
+                            cx="16"
+                            cy="15"
+                            r="1.5">
+                        </circle>
 
-wrap.style.marginTop="14px";
+                    </svg>
 
-wrap.innerHTML = `
+                    <span>
+                        ${shortWallet(req.wallet)}
+                    </span>
 
-<button
+                </div>
 
-class="see-more-btn"
 
-onclick="
+                <!-- DATE -->
 
-WITHDRAW_STATE.pendingExpanded=
+                <div class="withdraw-date">
 
-!WITHDRAW_STATE.pendingExpanded;
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-renderPendingRequests();
+                        <rect
+                            x="4"
+                            y="5"
+                            width="16"
+                            height="16"
+                            rx="2">
+                        </rect>
 
-">
+                        <path
+                            d="M8 3v4">
+                        </path>
 
-${
+                        <path
+                            d="M16 3v4">
+                        </path>
 
-WITHDRAW_STATE.pendingExpanded
+                        <path
+                            d="M4 9h16">
+                        </path>
 
-?
+                        <path
+                            d="M8 13h2">
+                        </path>
 
-"Show Less"
+                        <path
+                            d="M14 13h2">
+                        </path>
 
-:
+                        <path
+                            d="M8 17h2">
+                        </path>
 
-"See More"
+                        <path
+                            d="M14 17h2">
+                        </path>
 
-}
+                    </svg>
 
-</button>
+                    <span>
+                        ${formatDate(req.created_at)}
+                    </span>
 
-`;
+                </div>
 
-box.appendChild(wrap);
 
-}
+                <!-- STATUS -->
+
+                <span class="status pending">
+
+                    <svg
+                        class="status-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8">
+                        </circle>
+
+                        <path
+                            d="M12 8v4l3 2">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        Pending
+                    </span>
+
+                </span>
+
+            </div>
+
+
+            <!-- RIGHT SIDE -->
+
+            <div class="withdraw-right">
+
+
+                <!-- AMOUNT -->
+
+                <div class="withdraw-amount">
+
+                    ${Number(req.amount).toFixed(2)} Pi
+
+                </div>
+
+
+                <!-- TYPE -->
+
+                <div class="withdraw-type">
+
+                    ${req.type}
+
+                </div>
+
+
+                <!-- ACTIONS -->
+
+                <div class="withdraw-actions">
+
+
+                    <!-- APPROVE -->
+
+                    <button
+                        type="button"
+                        class="approve-btn"
+                        onclick="approveRequest('${req.id}',this)"
+                    >
+
+                        <svg
+                            class="withdraw-svg"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="9">
+                            </circle>
+
+                            <path
+                                d="m8 12 2.5 2.5L16 9">
+                            </path>
+
+                        </svg>
+
+                        <span>
+                            Approve
+                        </span>
+
+                    </button>
+
+
+                    <!-- REJECT -->
+
+                    <button
+                        type="button"
+                        class="reject-btn"
+                        onclick="rejectRequest('${req.id}',this)"
+                    >
+
+                        <svg
+                            class="withdraw-svg"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="9">
+                            </circle>
+
+                            <path
+                                d="m9 9 6 6M15 9l-6 6">
+                            </path>
+
+                        </svg>
+
+                        <span>
+                            Reject
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        box.appendChild(card);
+
+    });
+
+
+    /* =========================================
+       SEE MORE / SHOW LESS
+    ========================================= */
+
+    if(requests.length > 3){
+
+        const wrap =
+            document.createElement("div");
+
+
+        wrap.className =
+            "withdraw-see-more";
+
+
+        wrap.innerHTML = `
+
+            <button
+                type="button"
+                class="see-more-btn"
+                onclick="
+                    WITHDRAW_STATE.pendingExpanded =
+                    !WITHDRAW_STATE.pendingExpanded;
+
+                    renderPendingRequests();
+                "
+            >
+
+                <span>
+
+                    ${
+                        WITHDRAW_STATE.pendingExpanded
+                        ? "Show Less"
+                        : "See More"
+                    }
+
+                </span>
+
+
+                <svg
+                    class="see-more-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+
+                    <path
+                        d="${
+                            WITHDRAW_STATE.pendingExpanded
+                            ? "m18 15-6-6-6 6"
+                            : "m6 9 6 6 6-6"
+                        }"
+                    ></path>
+
+                </svg>
+
+            </button>
+
+        `;
+
+
+        box.appendChild(wrap);
+
+    }
 
 }
 
@@ -377,174 +657,440 @@ box.appendChild(wrap);
 
 async function renderApprovedRequests(){
 
-const box =
-document.getElementById("approvedRequests");
+    const box =
+        document.getElementById("approvedRequests");
 
-if(!box) return;
+    if(!box) return;
 
-box.innerHTML =
 
-`<div class="empty-state">
+    /* =========================================
+       LOADING
+    ========================================= */
 
-Loading approved requests...
+    box.innerHTML = `
 
-</div>`;
+        <div class="empty-state">
 
-const requests =
-await fetchRequests("approved");
+            <div class="withdraw-loading-icon">
 
-if(!requests.length){
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
 
-renderEmpty(
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-box,
+                    <path
+                        d="M12 3a9 9 0 0 1 9 9">
+                    </path>
 
-"No Approved Requests"
+                </svg>
 
-);
+            </div>
 
-return;
+            <span>
+                Loading approved requests...
+            </span>
 
-}
+        </div>
 
-const visible =
+    `;
 
-WITHDRAW_STATE.approvedExpanded
 
-? requests
+    /* =========================================
+       FETCH
+    ========================================= */
 
-: requests.slice(0,3);
+    const requests =
+        await fetchRequests("approved");
 
-box.innerHTML = "";
 
-visible.forEach(req=>{
+    if(!requests.length){
 
-const card =
-document.createElement("div");
+        renderEmpty(
+            box,
+            "No Approved Requests"
+        );
 
-card.className =
-"withdraw-item";
+        return;
 
-card.innerHTML = `
+    }
 
-<div class="withdraw-left">
 
-<div class="withdraw-user">
+    /* =========================================
+       LIMIT
+    ========================================= */
 
-📦 ${req.project}
+    const visible =
+        WITHDRAW_STATE.approvedExpanded
 
-</div>
+        ? requests
 
-<div class="withdraw-date">
+        : requests.slice(0,3);
 
-👤 ${req.userid || "Unknown"}
 
-</div>
+    box.innerHTML = "";
 
-<div class="withdraw-date">
 
-💼 ${shortWallet(req.wallet)}
+    /* =========================================
+       RENDER APPROVED REQUESTS
+    ========================================= */
 
-</div>
+    visible.forEach(req=>{
 
-<div class="withdraw-date">
+        const card =
+            document.createElement("div");
 
-📅 ${formatDate(req.created_at)}
 
-</div>
+        card.className =
+            "withdraw-item";
 
-<span class="status approved">
 
-Approved
+        card.innerHTML = `
 
-</span>
+            <!-- LEFT SIDE -->
 
-</div>
+            <div class="withdraw-left">
 
-<div class="withdraw-right">
 
-<div class="withdraw-amount">
+                <!-- PROJECT -->
 
-${Number(req.amount).toFixed(2)} Pi
+                <div class="withdraw-user">
 
-</div>
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-<div class="withdraw-type">
+                        <rect
+                            x="3"
+                            y="5"
+                            width="18"
+                            height="15"
+                            rx="2">
+                        </rect>
 
-${req.type}
+                        <path
+                            d="M8 5V3h8v2">
+                        </path>
 
-</div>
+                        <path
+                            d="M3 10h18">
+                        </path>
 
-<div class="withdraw-actions">
+                    </svg>
 
-<button
+                    <span>
+                        ${req.project}
+                    </span>
 
-class="pay-btn"
+                </div>
 
-onclick="payRequest('${req.id}',this)">
 
-💸 Pay Now
+                <!-- USER -->
 
-</button>
+                <div class="withdraw-date">
 
-</div>
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-</div>
+                        <circle
+                            cx="12"
+                            cy="8"
+                            r="3.5">
+                        </circle>
 
-`;
+                        <path
+                            d="M5 20c.8-3.5 3.1-5.5 7-5.5s6.2 2 7 5.5">
+                        </path>
 
-box.appendChild(card);
+                    </svg>
 
-});
+                    <span>
+                        ${req.userid || "Unknown"}
+                    </span>
 
-/* See More */
+                </div>
 
-if(requests.length > 3){
 
-const wrap =
-document.createElement("div");
+                <!-- WALLET -->
 
-wrap.style.textAlign="center";
+                <div class="withdraw-date">
 
-wrap.style.marginTop="14px";
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-wrap.innerHTML = `
+                        <rect
+                            x="3"
+                            y="6"
+                            width="18"
+                            height="14"
+                            rx="2">
+                        </rect>
 
-<button
+                        <path
+                            d="M3 10h18">
+                        </path>
 
-class="see-more-btn"
+                        <path
+                            d="M7 6V4h10v2">
+                        </path>
 
-onclick="
+                        <circle
+                            cx="16"
+                            cy="15"
+                            r="1.5">
+                        </circle>
 
-WITHDRAW_STATE.approvedExpanded=
+                    </svg>
 
-!WITHDRAW_STATE.approvedExpanded;
+                    <span>
+                        ${shortWallet(req.wallet)}
+                    </span>
 
-renderApprovedRequests();
+                </div>
 
-">
 
-${
+                <!-- DATE -->
 
-WITHDRAW_STATE.approvedExpanded
+                <div class="withdraw-date">
 
-?
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
 
-"Show Less"
+                        <rect
+                            x="4"
+                            y="5"
+                            width="16"
+                            height="16"
+                            rx="2">
+                        </rect>
 
-:
+                        <path
+                            d="M8 3v4">
+                        </path>
 
-"See More"
+                        <path
+                            d="M16 3v4">
+                        </path>
 
-}
+                        <path
+                            d="M4 9h16">
+                        </path>
 
-</button>
+                        <path
+                            d="M8 13h2">
+                        </path>
 
-`;
+                        <path
+                            d="M14 13h2">
+                        </path>
 
-box.appendChild(wrap);
+                        <path
+                            d="M8 17h2">
+                        </path>
 
-}
+                        <path
+                            d="M14 17h2">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        ${formatDate(req.created_at)}
+                    </span>
+
+                </div>
+
+
+                <!-- APPROVED STATUS -->
+
+                <span class="status approved">
+
+                    <svg
+                        class="status-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8">
+                        </circle>
+
+                        <path
+                            d="m8 12 2.5 2.5L16 9">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        Approved
+                    </span>
+
+                </span>
+
+            </div>
+
+
+            <!-- RIGHT SIDE -->
+
+            <div class="withdraw-right">
+
+
+                <!-- AMOUNT -->
+
+                <div class="withdraw-amount">
+
+                    ${Number(req.amount).toFixed(2)} Pi
+
+                </div>
+
+
+                <!-- TYPE -->
+
+                <div class="withdraw-type">
+
+                    ${req.type}
+
+                </div>
+
+
+                <!-- PAY ACTION -->
+
+                <div class="withdraw-actions">
+
+                    <button
+                        type="button"
+                        class="pay-btn"
+                        onclick="payRequest('${req.id}',this)"
+                    >
+
+                        <svg
+                            class="withdraw-svg"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <rect
+                                x="3"
+                                y="6"
+                                width="18"
+                                height="14"
+                                rx="2">
+                            </rect>
+
+                            <path
+                                d="M3 10h18">
+                            </path>
+
+                            <path
+                                d="M7 6V4h10v2">
+                            </path>
+
+                            <circle
+                                cx="16"
+                                cy="15"
+                                r="1.5">
+                            </circle>
+
+                        </svg>
+
+                        <span>
+                            Pay Now
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        box.appendChild(card);
+
+    });
+
+
+    /* =========================================
+       SEE MORE / SHOW LESS
+    ========================================= */
+
+    if(requests.length > 3){
+
+        const wrap =
+            document.createElement("div");
+
+
+        wrap.className =
+            "withdraw-see-more";
+
+
+        wrap.innerHTML = `
+
+            <button
+                type="button"
+                class="see-more-btn"
+                onclick="
+                    WITHDRAW_STATE.approvedExpanded =
+                    !WITHDRAW_STATE.approvedExpanded;
+
+                    renderApprovedRequests();
+                "
+            >
+
+                <span>
+
+                    ${
+                        WITHDRAW_STATE.approvedExpanded
+                        ? "Show Less"
+                        : "See More"
+                    }
+
+                </span>
+
+
+                <svg
+                    class="see-more-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+
+                    <path
+                        d="${
+                            WITHDRAW_STATE.approvedExpanded
+                            ? "m18 15-6-6-6 6"
+                            : "m6 9 6 6-6 6"
+                        }"
+                    ></path>
+
+                </svg>
+
+            </button>
+
+        `;
+
+
+        box.appendChild(wrap);
+
+    }
 
 }
 
