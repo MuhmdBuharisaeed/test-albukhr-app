@@ -39,27 +39,6 @@
 
   text-align: right;   /* 👈 KEY FIX */
 }
-
-.drawer-icon{
-  width:20px;
-  height:20px;
-  display:inline-block;
-  vertical-align:middle;
-  flex-shrink:0;
-  color:currentColor;
-}
-
-.drawer-icon path,
-.drawer-icon rect,
-.drawer-icon circle,
-.drawer-icon line,
-.drawer-icon polyline{
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.8;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  }
 </style>
 
 </head>
@@ -302,231 +281,339 @@ document.querySelectorAll(".dock-item").forEach(link=>{
 <!-- SIDE DRAWER -->
 <div id="sideDrawer" class="side-drawer">
 
+  <!-- DRAWER HEADER -->
   <div class="drawer-header">
+
     <h3>Settings</h3>
-    <span class="close-drawer" onclick="closeDrawer()">✖️</span>
+
+    <button
+      type="button"
+      class="close-drawer"
+      onclick="closeDrawer()"
+      aria-label="Close settings">
+
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true">
+
+        <path d="M6 6L18 18"></path>
+        <path d="M18 6L6 18"></path>
+
+      </svg>
+
+    </button>
+
   </div>
+
 
   <!-- ORIGINAL LINKS (UNCHANGED) -->
   <div class="drawer-body">
-    <a href="user-profile.html">Profile</a>
-    <a href="preferences.html">Preferences</a>
-    <a href="security.html">Security</a>
-    <a href="help.html">Help</a>
-  </div>
 
-<hr style="margin:12px 0">
-
-<!-- ===============================
-     EXTENDED DRAWER CONTENT
-=============================== -->
-<div class="drawer-extra">
-
-  <!-- POLICIES -->
-  <div class="drawer-title">
-
-    <svg
-      class="drawer-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true">
-
-      <path d="M6 3h12v18H6z"></path>
-      <path d="M9 7h6"></path>
-      <path d="M9 11h6"></path>
-      <path d="M9 15h4"></path>
-
-    </svg>
-
-    Legal & Policies
-
-  </div>
-
-
-  <div class="drawer-policy">
-
-    <!-- PRIVACY POLICY -->
-    <a href="privacy-policy.html">
-
-      <div class="policy-icon">
-
-        <svg
-          class="drawer-icon"
-          viewBox="0 0 24 24"
-          aria-hidden="true">
-
-          <rect
-            x="5"
-            y="3"
-            width="14"
-            height="18"
-            rx="2">
-          </rect>
-
-          <path d="M9 8h6"></path>
-          <path d="M9 12h6"></path>
-
-          <path
-            d="M8 16l2 2 5-5">
-          </path>
-
-        </svg>
-
-      </div>
-
-      Privacy Policy
-
+    <a href="user-profile.html">
+      Profile
     </a>
 
-
-    <!-- TERMS OF SERVICE -->
-    <a href="terms-of-service.html">
-
-      <div class="policy-icon">
-
-        <svg
-          class="drawer-icon"
-          viewBox="0 0 24 24"
-          aria-hidden="true">
-
-          <path
-            d="M6 3h8l4 4v14H6z">
-          </path>
-
-          <path
-            d="M14 3v4h4">
-          </path>
-
-          <path d="M9 11h6"></path>
-          <path d="M9 15h6"></path>
-          <path d="M9 18h4"></path>
-
-        </svg>
-
-      </div>
-
-      Terms of Service
-
+    <a href="preferences.html">
+      Preferences
     </a>
 
+    <a href="security.html">
+      Security
+    </a>
 
-    <!-- WHITEPAPER -->
-    <a href="whitepaper.html">
-
-      <div class="policy-icon">
-
-        <svg
-          class="drawer-icon"
-          viewBox="0 0 24 24"
-          aria-hidden="true">
-
-          <path
-            d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2z">
-          </path>
-
-          <path
-            d="M6 4v14a2 2 0 0 0 2 2">
-          </path>
-
-          <path d="M9 8h6"></path>
-          <path d="M9 12h6"></path>
-          <path d="M9 16h4"></path>
-
-        </svg>
-
-      </div>
-
-      Whitepaper
-
+    <a href="help.html">
+      Help
     </a>
 
   </div>
 
-</div>
-  
+
+  <hr style="margin:12px 0">
+
+
+  <!-- ===============================
+       EXTENDED DRAWER CONTENT
+  ================================ -->
+
+  <div class="drawer-extra">
+
+
+    <!-- ===============================
+         LEGAL & POLICIES
+    ================================ -->
+
+    <div class="drawer-title">
+
+      <svg
+        class="drawer-section-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
+
+        <path d="M12 3v18"></path>
+
+        <path d="M5 6h14"></path>
+
+        <path d="M7 6l-3 7h6L7 6z"></path>
+
+        <path d="M17 6l-3 7h6l-3-7z"></path>
+
+        <path d="M3 18h8"></path>
+
+        <path d="M13 18h8"></path>
+
+      </svg>
+
+      <span>Legal &amp; Policies</span>
+
+    </div>
+
+
+    <div class="drawer-policy">
+
+
+      <!-- PRIVACY POLICY -->
+      <a href="privacy-policy.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <rect
+              x="5"
+              y="3"
+              width="14"
+              height="18"
+              rx="2">
+            </rect>
+
+            <path d="M9 8h6"></path>
+
+            <path d="M9 12h6"></path>
+
+            <path d="M8 16l2 2 5-5"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Privacy Policy</span>
+
+      </a>
+
+
+      <!-- TERMS OF SERVICE -->
+      <a href="terms-of-service.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <path d="M6 3h8l4 4v14H6z"></path>
+
+            <path d="M14 3v4h4"></path>
+
+            <path d="M9 11h6"></path>
+
+            <path d="M9 15h6"></path>
+
+            <path d="M9 18h4"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Terms of Service</span>
+
+      </a>
+
+
+      <!-- WHITEPAPER -->
+      <a href="whitepaper.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path>
+
+            <path d="M19 4h-6c-2 0-3 1-3 3v13c0-2 1-3 3-3h6z"></path>
+
+            <path d="M8 8h3"></path>
+
+            <path d="M8 11h3"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Whitepaper</span>
+
+      </a>
+
+    </div>
+
+
+    <!-- GOVERNANCE NOTE -->
+
     <div class="drawer-note">
+
       All users must comply with ALBUKHR governance rules.
+
     </div>
 
-<!-- SOCIAL / MEDIA -->
-<div class="drawer-title">🌐 Media & Channels</div>
 
-<div class="drawer-social">
+    <!-- ===============================
+         MEDIA / CHANNELS
+    ================================ -->
 
-<a class="social-item"
-href="https://t.me/albukhrtelegramchannel"
-target="_blank">
+    <div class="drawer-title">
 
-<div class="social-icon">
-<img src="images/images (2).jpeg" alt="Telegram">
-</div>
+      <svg
+        class="drawer-section-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
 
-Telegram
+        <circle
+          cx="12"
+          cy="12"
+          r="9">
+        </circle>
 
-</a>
+        <path d="M3 12h18"></path>
 
+        <path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path>
 
-<a class="social-item"
-href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C"
-target="_blank">
+        <path d="M12 3c-2.5 2.5-3.5 5.5-3.5 9s1 6.5 3.5 9"></path>
 
-<div class="social-icon">
-<img src="images/images.png" alt="WhatsApp">
-</div>
+      </svg>
 
-WhatsApp
+      <span>Media &amp; Channels</span>
 
-</a>
-
-
-<a class="social-item"
-href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz"
-target="_blank">
-
-<div class="social-icon">
-<img src="images/images (1) (1).jpeg" alt="Facebook">
-</div>
-
-Facebook
-
-</a>
+    </div>
 
 
-<a class="social-item"
-href="https://www.youtube.com/@Albukhrinvestmentlimited"
-target="_blank">
-
-<div class="social-icon">
-<img src="images/images.jpeg" alt="YouTube">
-</div>
-
-YouTube
-
-</a>
+    <div class="drawer-social">
 
 
-<a class="social-item"
-href="#"
-target="_blank">
+      <!-- TELEGRAM -->
+      <a
+        class="social-item"
+        href="https://t.me/albukhrtelegramchannel"
+        target="_blank"
+        rel="noopener">
 
-<div class="social-icon">
-<img src="images/images (1).png" alt="X">
-</div>
+        <div class="social-icon">
+          <img
+            src="images/images (2).jpeg"
+            alt="Telegram">
+        </div>
 
-X
+        <span>Telegram</span>
 
-</a>
+      </a>
 
-</div>
+
+      <!-- WHATSAPP -->
+      <a
+        class="social-item"
+        href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images.png"
+            alt="WhatsApp">
+        </div>
+
+        <span>WhatsApp</span>
+
+      </a>
+
+
+      <!-- FACEBOOK -->
+      <a
+        class="social-item"
+        href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images (1) (1).jpeg"
+            alt="Facebook">
+        </div>
+
+        <span>Facebook</span>
+
+      </a>
+
+
+      <!-- YOUTUBE -->
+      <a
+        class="social-item"
+        href="https://www.youtube.com/@Albukhrinvestmentlimited"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images.jpeg"
+            alt="YouTube">
+        </div>
+
+        <span>YouTube</span>
+
+      </a>
+
+
+      <!-- X -->
+      <a
+        class="social-item"
+        href="#"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images (1).png"
+            alt="X">
+        </div>
+
+        <span>X</span>
+
+      </a>
+
+    </div>
+
+
+    <!-- MEDIA NOTE -->
 
     <div class="drawer-note">
+
       Official public channels of ALBUKHR ecosystem
+
     </div>
-     
+
+
   </div>
 
 </div>
 
-<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER OVERLAY -->
+
+<div
+  id="drawerOverlay"
+  class="drawer-overlay"
+  onclick="closeDrawer()">
+</div>
 
 <script src="js/project-config.js"></script>   
 <script src="js/staking.js"></script>
