@@ -1205,3 +1205,263 @@ button svg,
   }
 
 }
+
+
+/* ==========================================
+   ALBUKHR ADMIN WALLET V4
+   TRANSACTION DIRECTION LAYOUT
+========================================== */
+
+.tx-card{
+    width:100%;
+    display:flex;
+    align-items:center;
+    margin:12px 0;
+    padding:14px 16px;
+
+    background:#fff;
+
+    border:1px solid #e6eee9;
+    border-radius:18px;
+
+    box-shadow:
+        0 5px 16px rgba(0,0,0,.045);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+/* ------------------------------------------
+   SENT → LEFT
+------------------------------------------ */
+
+.tx-card.sent{
+    width:78%;
+    margin-right:auto;
+    margin-left:0;
+
+    border-left:4px solid #e53935;
+}
+
+/* ------------------------------------------
+   RECEIVED → RIGHT
+------------------------------------------ */
+
+.tx-card.received{
+    width:78%;
+    margin-left:auto;
+    margin-right:0;
+
+    border-right:4px solid #18a558;
+}
+
+/* ------------------------------------------
+   TRANSACTION CONTENT
+------------------------------------------ */
+
+.tx-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    min-width:0;
+    flex:1;
+}
+
+.tx-info{
+    min-width:0;
+}
+
+.tx-title{
+    font-size:15px;
+    font-weight:800;
+    color:#1d2923;
+
+    margin-bottom:3px;
+}
+
+.tx-meta{
+    font-size:12px;
+    color:#7a8580;
+
+    line-height:1.5;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+/* ------------------------------------------
+   ICON
+------------------------------------------ */
+
+.tx-icon{
+    width:44px;
+    height:44px;
+
+    flex:0 0 44px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:14px;
+
+    background:#edf8f1;
+}
+
+.tx-icon svg{
+    width:24px;
+    height:24px;
+
+    fill:none;
+    stroke:#16834b;
+    stroke-width:1.8;
+
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+
+/* SENT ICON */
+
+.tx-card.sent .tx-icon{
+    background:#fff0f0;
+}
+
+.tx-card.sent .tx-icon svg{
+    stroke:#d93636;
+}
+
+/* RECEIVED ICON */
+
+.tx-card.received .tx-icon{
+    background:#eaf8f0;
+}
+
+.tx-card.received .tx-icon svg{
+    stroke:#159451;
+}
+
+/* ------------------------------------------
+   RIGHT INFORMATION
+------------------------------------------ */
+
+.tx-right{
+    text-align:right;
+    margin-left:14px;
+
+    flex-shrink:0;
+}
+
+.tx-amount{
+    font-size:16px;
+    font-weight:800;
+
+    white-space:nowrap;
+}
+
+.tx-time{
+    margin-top:4px;
+
+    font-size:10px;
+    color:#9aa49f;
+
+    white-space:nowrap;
+}
+
+/* ------------------------------------------
+   SENT AMOUNT
+------------------------------------------ */
+
+.tx-card.sent .tx-amount{
+    color:#d93636 !important;
+}
+
+/* ------------------------------------------
+   RECEIVED AMOUNT
+------------------------------------------ */
+
+.tx-card.received .tx-amount{
+    color:#159451 !important;
+}
+
+/* ------------------------------------------
+   TRANSACTIONS CONTAINER
+------------------------------------------ */
+
+#adminTxList{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+
+    padding:4px 0 18px;
+}
+
+/* ------------------------------------------
+   MOBILE
+------------------------------------------ */
+
+@media(max-width:600px){
+
+    .tx-card{
+        width:82%;
+        padding:13px 14px;
+        border-radius:17px;
+    }
+
+    .tx-card.sent{
+        margin-left:0;
+        margin-right:auto;
+    }
+
+    .tx-card.received{
+        margin-left:auto;
+        margin-right:0;
+    }
+
+    .tx-icon{
+        width:42px;
+        height:42px;
+        flex-basis:42px;
+    }
+
+    .tx-title{
+        font-size:14px;
+    }
+
+    .tx-meta{
+        font-size:11px;
+    }
+
+    .tx-amount{
+        font-size:14px;
+    }
+
+    .tx-right{
+        margin-left:10px;
+    }
+}
+
+/* ------------------------------------------
+   VERY SMALL SCREENS
+------------------------------------------ */
+
+@media(max-width:380px){
+
+    .tx-card{
+        width:88%;
+    }
+
+    .tx-right{
+        margin-left:7px;
+    }
+
+    .tx-amount{
+        font-size:13px;
+    }
+
+    .tx-time{
+        font-size:9px;
+    }
+}
