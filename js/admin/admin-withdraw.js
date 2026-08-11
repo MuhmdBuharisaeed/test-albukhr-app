@@ -101,6 +101,14 @@ renderPaidRequests()
 }
 
 /* =========================================
+   ADMIN WALLET V4 — INSTANT REFRESH
+========================================= */
+
+function refreshAdminWalletNow(){
+    window.location.reload();
+}
+
+/* =========================================
    REMOVE CARD (OPTIMISTIC UI)
 ========================================= */
 
@@ -715,197 +723,300 @@ box.appendChild(wrap);
    APPROVE REQUEST
 ========================================= */
 
-async function approveRequest(id,button){
+async function approveRequest(id, button){
 
-try{
+    try{
 
-const { data:req, error } =
+        if(button){
 
-await supabaseClient
+            button.disabled = true;
 
-.from("withdraw_requests")
+            button.innerHTML = `
+                <svg
+                    class="withdraw-svg withdraw-spinner"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-.select("*")
+                    <path
+                        d="M12 3a9 9 0 0 1 9 9">
+                    </path>
+                </svg>
 
-.eq("id",id)
+                <span>Approving...</span>
+            `;
+        }
 
-.single();
+        /* GET REQUEST */
 
-if(error || !req){
+        const {
+            data:req,
+            error
+        } = await supabaseClient
 
-showAlert(
+            .from("withdraw_requests")
 
-"Error",
+            .select("*")
 
-"Request not found",
+            .eq("id",id)
 
-"error"
+            .single();
 
-);
+        if(error || !req){
 
-return;
+            if(button){
 
-}
+                button.disabled = false;
 
-/* Fraud Check */
+                button.innerHTML = `
+                    <svg
+                        class="withdraw-svg"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="9">
+                        </circle>
 
-const { data:stakes } =
+                        <path
+                            d="m8 12 2.5 2.5L16 9">
+                        </path>
+                    </svg>
 
-await supabaseClient
+                    <span>Approve</span>
+                `;
+            }
 
-.from("stakes")
+            showAlert(
+                "Error",
+                "Request not found",
+                "error"
+            );
 
-.select("*")
+            return;
+        }
 
-.eq("userid",req.userid)
 
-.eq("project",req.project);
+        /* =================================
+           FRAUD CHECK
+        ================================= */
 
-let totalReward = 0;
+        const {
+            data:stakes
+        } = await supabaseClient
 
-(stakes || []).forEach(stake=>{
+            .from("stakes")
 
-const reward =
+            .select("*")
 
-Number(stake.reward || 0);
+            .eq("userid",req.userid)
 
-const withdrawn =
+            .eq("project",req.project);
 
-Number(stake.withdrawnReward || 0);
 
-totalReward +=
+        let totalReward = 0;
 
-Math.max(0,reward-withdrawn);
 
-});
+        (stakes || []).forEach(stake=>{
 
-if(
+            const reward =
+                Number(stake.reward || 0);
 
-req.type==="reward"
+            const withdrawn =
+                Number(
+                    stake.withdrawnReward || 0
+                );
 
-&&
+            totalReward +=
+                Math.max(
+                    0,
+                    reward - withdrawn
+                );
 
-Number(req.amount) > totalReward
+        });
 
-){
 
-showAlert(
+        if(
+            req.type === "reward" &&
+            Number(req.amount) > totalReward
+        ){
 
-"Fraud Detected",
+            if(button){
 
-"Requested reward exceeds available reward.",
+                button.disabled = false;
 
-"error"
+                button.innerHTML = `
+                    <svg
+                        class="withdraw-svg"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="9">
+                        </circle>
 
-);
+                        <path
+                            d="m8 12 2.5 2.5L16 9">
+                        </path>
+                    </svg>
 
-return;
+                    <span>Approve</span>
+                `;
+            }
 
-}
+            showAlert(
+                "Fraud Detected",
+                "Requested reward exceeds available reward.",
+                "error"
+            );
 
-/* Fee */
+            return;
+        }
 
-const fee =
 
-Number(req.amount) * 0.01;
+        /* =================================
+           FEE
+        ================================= */
 
-const receive =
+        const fee =
+            Number(req.amount) * 0.01;
 
-Number(req.amount) - fee;
+        const receive =
+            Number(req.amount) - fee;
 
-/* Create Transaction */
 
-const { error:txError } =
+        /* =================================
+           CREATE TRANSACTION
+        ================================= */
 
-await supabaseClient
+        const {
+            error:txError
+        } = await supabaseClient
 
-.from("transactions")
+            .from("transactions")
 
-.insert({
+            .insert({
 
-userid:req.userid,
+                userid:req.userid,
 
-project:req.project,
+                project:req.project,
 
-wallet:req.wallet,
+                wallet:req.wallet,
 
-amount:receive,
+                amount:receive,
 
-fee,
+                fee,
 
-type:req.type,
+                type:req.type,
 
-status:"approved",
+                status:"approved",
 
-txid:null,
+                txid:null,
 
-created_at:new Date().toISOString()
+                created_at:
+                    new Date().toISOString()
 
-});
+            });
 
-if(txError){
 
-throw txError;
+        if(txError){
 
-}
+            throw txError;
 
-/* Update Request */
+        }
 
-const { error:updateError } =
 
-await supabaseClient
+        /* =================================
+           UPDATE WITHDRAW REQUEST
+        ================================= */
 
-.from("withdraw_requests")
+        const {
+            error:updateError
+        } = await supabaseClient
 
-.update({
+            .from("withdraw_requests")
 
-status:"approved"
+            .update({
 
-})
+                status:"approved"
 
-.eq("id",id);
+            })
 
-if(updateError){
+            .eq("id",id);
 
-throw updateError;
 
-}
+        if(updateError){
 
-showAlert(
+            throw updateError;
 
-"Approved",
+        }
 
-"Withdraw request approved.",
 
-"success"
+        /* =================================
+           V4 — INSTANT PAGE REFRESH
+           
+           IMPORTANT:
+           Reload happens ONLY after both
+           database operations succeed.
+        ================================= */
 
-);
+        refreshAdminWalletNow();
 
-removeWithdrawCard(button);
+    }
 
-await refreshWithdrawSections();
+    catch(error){
 
-renderTreasuryOverview();
+        console.error(
+            "Approve Request Error:",
+            error
+        );
 
-loadAnalytics();
 
-}catch(error){
+        if(button){
 
-console.error(error);
+            button.disabled = false;
 
-showAlert(
+            button.innerHTML = `
+                <svg
+                    class="withdraw-svg"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-"Approve Failed",
+                    <path
+                        d="m8 12 2.5 2.5L16 9">
+                    </path>
+                </svg>
 
-error.message,
+                <span>Approve</span>
+            `;
 
-"error"
+        }
 
-);
 
-}
+        showAlert(
+            "Approve Failed",
+            error.message,
+            "error"
+        );
 
-   }
+    }
+
+     }
 
 /* =========================================
    REJECT REQUEST
@@ -913,65 +1024,112 @@ error.message,
 
 async function rejectRequest(id,button){
 
-try{
+    try{
 
-const { error } =
+        if(button){
 
-await supabaseClient
+            button.disabled = true;
 
-.from("withdraw_requests")
+            button.innerHTML = `
+                <svg
+                    class="withdraw-svg withdraw-spinner"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-.update({
+                    <path
+                        d="M12 3a9 9 0 0 1 9 9">
+                    </path>
+                </svg>
 
-status:"rejected",
+                <span>Rejecting...</span>
+            `;
 
-processed_at:new Date().toISOString()
+        }
 
-})
 
-.eq("id",id);
+        const {
+            error
+        } = await supabaseClient
 
-if(error){
+            .from("withdraw_requests")
 
-throw error;
+            .update({
+
+                status:"rejected",
+
+                processed_at:
+                    new Date().toISOString()
+
+            })
+
+            .eq("id",id);
+
+
+        if(error){
+
+            throw error;
+
+        }
+
+
+        /* =================================
+           V4 — INSTANT PAGE REFRESH
+        ================================= */
+
+        refreshAdminWalletNow();
+
+    }
+
+    catch(error){
+
+        console.error(
+            "Reject Request Error:",
+            error
+        );
+
+
+        if(button){
+
+            button.disabled = false;
+
+            button.innerHTML = `
+                <svg
+                    class="withdraw-svg"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
+
+                    <path
+                        d="m9 9 6 6M15 9l-6 6">
+                    </path>
+                </svg>
+
+                <span>Reject</span>
+            `;
+
+        }
+
+
+        showAlert(
+            "Reject Failed",
+            error.message,
+            "error"
+        );
+
+    }
 
 }
-
-showAlert(
-
-"Rejected",
-
-"Withdraw request rejected.",
-
-"success"
-
-);
-
-removeWithdrawCard(button);
-   
-await refreshWithdrawSections();
-
-renderTreasuryOverview();
-
-loadAnalytics();
-
-}catch(error){
-
-console.error(error);
-
-showAlert(
-
-"Reject Failed",
-
-error.message,
-
-"error"
-
-);
-
-}
-
-   }
 
 /* =========================================
    PAY REQUEST
