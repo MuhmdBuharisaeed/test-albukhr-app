@@ -1100,170 +1100,440 @@ async function renderApprovedRequests(){
 
 async function renderPaidRequests(){
 
-const box =
-document.getElementById("paidRequests");
+    const box =
+        document.getElementById("paidRequests");
 
-if(!box) return;
+    if(!box) return;
 
-box.innerHTML =
 
-`<div class="empty-state">
+    /* =========================================
+       LOADING
+    ========================================= */
 
-Loading paid withdrawals...
+    box.innerHTML = `
 
-</div>`;
+        <div class="empty-state">
 
-const requests =
-await fetchRequests("paid");
+            <div class="withdraw-loading-icon">
 
-if(!requests.length){
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
 
-renderEmpty(
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="9">
+                    </circle>
 
-box,
+                    <path
+                        d="M12 3a9 9 0 0 1 9 9">
+                    </path>
 
-"No Paid Withdrawals"
+                </svg>
 
-);
+            </div>
 
-return;
+            <span>
+                Loading paid withdrawals...
+            </span>
+
+        </div>
+
+    `;
+
+
+    /* =========================================
+       FETCH
+    ========================================= */
+
+    const requests =
+        await fetchRequests("paid");
+
+
+    if(!requests.length){
+
+        renderEmpty(
+            box,
+            "No Paid Withdrawals"
+        );
+
+        return;
+
+    }
+
+
+    /* =========================================
+       LIMIT
+    ========================================= */
+
+    const visible =
+        WITHDRAW_STATE.paidExpanded
+
+        ? requests
+
+        : requests.slice(0,3);
+
+
+    box.innerHTML = "";
+
+
+    /* =========================================
+       RENDER PAID REQUESTS
+    ========================================= */
+
+    visible.forEach(req=>{
+
+        const card =
+            document.createElement("div");
+
+
+        card.className =
+            "withdraw-item";
+
+
+        card.innerHTML = `
+
+            <!-- =================================
+                 LEFT SIDE
+            ================================= -->
+
+            <div class="withdraw-left">
+
+
+                <!-- PROJECT -->
+
+                <div class="withdraw-user">
+
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <rect
+                            x="3"
+                            y="5"
+                            width="18"
+                            height="15"
+                            rx="2">
+                        </rect>
+
+                        <path
+                            d="M8 5V3h8v2">
+                        </path>
+
+                        <path
+                            d="M3 10h18">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        ${req.project}
+                    </span>
+
+                </div>
+
+
+                <!-- USER -->
+
+                <div class="withdraw-date">
+
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <circle
+                            cx="12"
+                            cy="8"
+                            r="3.5">
+                        </circle>
+
+                        <path
+                            d="M5 20c.8-3.5 3.1-5.5 7-5.5s6.2 2 7 5.5">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        ${req.userid || "Unknown"}
+                    </span>
+
+                </div>
+
+
+                <!-- WALLET -->
+
+                <div class="withdraw-date">
+
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <rect
+                            x="3"
+                            y="6"
+                            width="18"
+                            height="14"
+                            rx="2">
+                        </rect>
+
+                        <path
+                            d="M3 10h18">
+                        </path>
+
+                        <path
+                            d="M7 6V4h10v2">
+                        </path>
+
+                        <circle
+                            cx="16"
+                            cy="15"
+                            r="1.5">
+                        </circle>
+
+                    </svg>
+
+                    <span>
+                        ${shortWallet(req.wallet)}
+                    </span>
+
+                </div>
+
+
+                <!-- PROCESSED DATE -->
+
+                <div class="withdraw-date">
+
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <rect
+                            x="4"
+                            y="5"
+                            width="16"
+                            height="16"
+                            rx="2">
+                        </rect>
+
+                        <path
+                            d="M8 3v4">
+                        </path>
+
+                        <path
+                            d="M16 3v4">
+                        </path>
+
+                        <path
+                            d="M4 9h16">
+                        </path>
+
+                        <path
+                            d="M8 13h2">
+                        </path>
+
+                        <path
+                            d="M14 13h2">
+                        </path>
+
+                        <path
+                            d="M8 17h2">
+                        </path>
+
+                        <path
+                            d="M14 17h2">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        ${formatDate(
+                            req.processed_at ||
+                            req.created_at
+                        )}
+                    </span>
+
+                </div>
+
+
+                <!-- PAID STATUS -->
+
+                <span class="status paid">
+
+                    <svg
+                        class="status-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8">
+                        </circle>
+
+                        <path
+                            d="M8 12l2.5 2.5L16 9">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        Paid
+                    </span>
+
+                </span>
+
+            </div>
+
+
+            <!-- =================================
+                 RIGHT SIDE
+            ================================= -->
+
+            <div class="withdraw-right">
+
+
+                <!-- AMOUNT -->
+
+                <div class="withdraw-amount">
+
+                    ${Number(req.amount).toFixed(2)} Pi
+
+                </div>
+
+
+                <!-- TYPE -->
+
+                <div class="withdraw-type">
+
+                    ${req.type}
+
+                </div>
+
+
+                <!-- TRANSACTION ID -->
+
+                <div class="withdraw-date tx-reference">
+
+                    <svg
+                        class="withdraw-row-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+
+                        <rect
+                            x="4"
+                            y="3"
+                            width="16"
+                            height="18"
+                            rx="2">
+                        </rect>
+
+                        <path
+                            d="M8 8h8">
+                        </path>
+
+                        <path
+                            d="M8 12h8">
+                        </path>
+
+                        <path
+                            d="M8 16h5">
+                        </path>
+
+                    </svg>
+
+                    <span>
+                        Tx:
+                        ${shortWallet(req.txid || "Pending")}
+                    </span>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        box.appendChild(card);
+
+    });
+
+
+    /* =========================================
+       SEE MORE / SHOW LESS
+    ========================================= */
+
+    if(requests.length > 3){
+
+        const wrap =
+            document.createElement("div");
+
+
+        wrap.className =
+            "withdraw-see-more";
+
+
+        wrap.innerHTML = `
+
+            <button
+                type="button"
+                class="see-more-btn"
+                onclick="
+                    WITHDRAW_STATE.paidExpanded =
+                    !WITHDRAW_STATE.paidExpanded;
+
+                    renderPaidRequests();
+                "
+            >
+
+                <span>
+
+                    ${
+                        WITHDRAW_STATE.paidExpanded
+                        ? "Show Less"
+                        : "See More"
+                    }
+
+                </span>
+
+
+                <svg
+                    class="see-more-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+
+                    <path
+                        d="${
+                            WITHDRAW_STATE.paidExpanded
+                            ? "m18 15-6-6-6 6"
+                            : "m6 9 6 6-6 6"
+                        }"
+                    ></path>
+
+                </svg>
+
+            </button>
+
+        `;
+
+
+        box.appendChild(wrap);
+
+    }
 
 }
-
-const visible =
-
-WITHDRAW_STATE.paidExpanded
-
-? requests
-
-: requests.slice(0,3);
-
-box.innerHTML = "";
-
-visible.forEach(req=>{
-
-const card =
-document.createElement("div");
-
-card.className =
-"withdraw-item";
-
-card.innerHTML = `
-
-<div class="withdraw-left">
-
-<div class="withdraw-user">
-
-📦 ${req.project}
-
-</div>
-
-<div class="withdraw-date">
-
-👤 ${req.userid || "Unknown"}
-
-</div>
-
-<div class="withdraw-date">
-
-💼 ${shortWallet(req.wallet)}
-
-</div>
-
-<div class="withdraw-date">
-
-📅 ${formatDate(req.processed_at || req.created_at)}
-
-</div>
-
-<span class="status paid">
-
-Paid
-
-</span>
-
-</div>
-
-<div class="withdraw-right">
-
-<div class="withdraw-amount">
-
-${Number(req.amount).toFixed(2)} Pi
-
-</div>
-
-<div class="withdraw-type">
-
-${req.type}
-
-</div>
-
-<div class="withdraw-date">
-
-Tx:
-
-${shortWallet(req.txid || "Pending")}
-
-</div>
-
-</div>
-
-`;
-
-box.appendChild(card);
-
-});
-
-/* See More */
-
-if(requests.length > 3){
-
-const wrap =
-document.createElement("div");
-
-wrap.style.textAlign="center";
-
-wrap.style.marginTop="14px";
-
-wrap.innerHTML = `
-
-<button
-
-class="see-more-btn"
-
-onclick="
-
-WITHDRAW_STATE.paidExpanded=
-
-!WITHDRAW_STATE.paidExpanded;
-
-renderPaidRequests();
-
-">
-
-${
-
-WITHDRAW_STATE.paidExpanded
-
-?
-
-"Show Less"
-
-:
-
-"See More"
-
-}
-
-</button>
-
-`;
-
-box.appendChild(wrap);
-
-}
-
-   }
 
 /* =========================================
    APPROVE REQUEST
