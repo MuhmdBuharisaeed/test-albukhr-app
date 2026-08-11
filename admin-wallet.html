@@ -1,539 +1,970 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
 <title>ALBUKHR – Admin Wallet Monitor</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- =========================================
+     GLOBAL CSS
+========================================= -->
 
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/global-core.css">
 <link rel="stylesheet" href="css/global-layout.css">
 <link rel="stylesheet" href="css/global-components.css">
 <link rel="stylesheet" href="css/global-style.css">
+
+<!-- ADMIN WALLET V4 -->
 <link rel="stylesheet" href="css/admin/admin-wallet.css">
 
-<!-- LOAD ORDER IMPORTANT -->
 
-<!-- Supabase SDK -->
+<!-- =========================================
+     SUPABASE
+========================================= -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Supabase Client -->
 <script src="js/supabase.js"></script>
 
-<!-- Wallet -->
+
+<!-- =========================================
+     ADMIN WALLET ENGINE
+     LOAD ORDER MUST NOT CHANGE
+========================================= -->
+
 <script src="js/admin/wallet-tracker.js"></script>
 
-<!-- Admin Modules -->
 <script src="js/admin/admin-treasury.js"></script>
+
 <script src="js/admin/admin-transactions.js"></script>
+
 <script src="js/admin/admin-alerts.js"></script>
+
 <script src="js/admin/admin-analytics.js"></script>
 
-<!-- Reward Engine -->
 <script src="js/admin/admin-reward-engine.js"></script>
 
-<!-- Withdraw System -->
 <script src="js/admin/admin-withdraw.js?v=2"></script>
 
-<!-- Main Loader (LAST) -->
+<!-- MAIN LOADER — LAST -->
 <script src="js/admin/admin-main.js"></script>
 
 </head>
 
-<!-- AUTO LIQUIDITY WARNING -->
-<div id="liquidityWarning"
-style="
-display:none;
-background:#f39c12;
-color:white;
-padding:12px;
-text-align:center;
-font-weight:700;
-">
-⚠️ Low Project Liquidity Detected
+
+<body class="admin-page admin-wallet-page">
+
+<!-- =========================================
+     LOW LIQUIDITY WARNING
+========================================= -->
+
+<div
+  id="liquidityWarning"
+  class="liquidity-warning"
+  style="display:none;"
+>
+
+  <svg
+    class="warning-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 3L22 20H2L12 3Z"
+    ></path>
+
+    <path
+      d="M12 9v5"
+    ></path>
+
+    <circle
+      cx="12"
+      cy="17.5"
+      r="1"
+    ></circle>
+  </svg>
+
+  <span>
+    Low Project Liquidity Detected
+  </span>
+
 </div>
 
-<body>
+
+<!-- =========================================
+     ADMIN HEADER
+========================================= -->
 
 <header class="admin-header">
 
-<div class="header-left">
+  <div class="header-left">
 
-<div class="brand">
+    <div class="brand">
+      ALBUKHR
+    </div>
 
-ALBUKHR
+    <div class="page-title">
+      Admin Wallet
+    </div>
 
-</div>
+  </div>
 
-<div class="page-title">
 
-Admin Wallet
+  <div class="header-right">
 
-</div>
+    <!-- REFRESH -->
 
-</div>
+    <button
+      type="button"
+      class="refresh-btn"
+      onclick="location.reload()"
+      aria-label="Refresh wallet"
+      title="Refresh"
+    >
 
-<div class="header-right">
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
 
-<button
-class="refresh-btn"
-onclick="location.reload()">
+        <path
+          d="M20 11a8 8 0 0 0-14.9-4M4 13a8 8 0 0 0 14.9 4"
+        ></path>
 
-⟳
+        <path
+          d="M5 3v4h4"
+        ></path>
 
-</button>
+        <path
+          d="M19 21v-4h-4"
+        ></path>
 
-<div class="notification-btn">
+      </svg>
 
-🔔
+    </button>
 
-<span
-id="adminNotifBadge"
-class="notification-badge">
 
-0
+    <!-- NOTIFICATIONS -->
 
-</span>
+    <button
+      type="button"
+      class="notification-btn"
+      aria-label="Notifications"
+      title="Notifications"
+    >
 
-</div>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
 
-</div>
+        <path
+          d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+        ></path>
+
+        <path
+          d="M10 21h4"
+        ></path>
+
+      </svg>
+
+      <span
+        id="adminNotifBadge"
+        class="notification-badge"
+      >
+        0
+      </span>
+
+    </button>
+
+  </div>
 
 </header>
 
 
-<!-- HERO -->
+<!-- =========================================
+     MAIN ADMIN WALLET CONTENT
+========================================= -->
 
-<section class="treasury-hero">
+<main class="admin-wallet-container">
 
-<div class="hero-info">
 
-<div class="hero-label">
+  <!-- =======================================
+       TREASURY HERO
+  ======================================== -->
 
-Main Treasury Wallet
+  <section class="treasury-hero">
 
-</div>
+    <div class="hero-info">
 
-<div
-class="hero-balance"
-id="adminBalance">
+      <div class="hero-label">
+        Main Treasury Wallet
+      </div>
 
-0.00 Pi
+      <div
+        class="hero-balance"
+        id="adminBalance"
+      >
+        0.00 Pi
+      </div>
 
-</div>
+      <div
+        id="walletStatus"
+        class="hero-status"
+      >
 
-<div
-id="walletStatus"
-class="hero-status">
+        <span class="status-dot"></span>
 
-🟢 SAFE
+        <span>
+          SAFE
+        </span>
 
-</div>
+      </div>
 
-</div>
+    </div>
 
-<div class="hero-icon">
 
-💼
+    <div class="hero-icon">
 
-</div>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
 
-</section>
+        <rect
+          x="3"
+          y="6"
+          width="18"
+          height="14"
+          rx="2"
+        ></rect>
 
+        <path
+          d="M3 10h18"
+        ></path>
 
-<!-- SUMMARY -->
+        <path
+          d="M7 6V4h10v2"
+        ></path>
 
-<section class="summary-grid">
+        <circle
+          cx="16"
+          cy="15"
+          r="1.5"
+        ></circle>
 
-<div class="summary-card">
+      </svg>
 
-<div class="summary-icon">
+    </div>
 
-💰
+  </section>
 
-</div>
 
-<div>
+  <!-- =======================================
+       SUMMARY
+  ======================================== -->
 
-<span>
+  <section class="summary-grid">
 
-Treasury
 
-</span>
+    <!-- TREASURY -->
 
-<b
-id="treasuryBalance">
+    <div class="summary-card">
 
-0.00 Pi
+      <div class="summary-icon">
 
-</b>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
 
-</div>
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+          ></circle>
 
-</div>
+          <path
+            d="M12 7v10"
+          ></path>
 
-<div class="summary-card">
+          <path
+            d="M15 9.5c-.8-.8-1.8-1.2-3-1.2-1.4 0-2.5.7-2.5 1.8s1 1.6 2.5 1.9 2.5.8 2.5 1.9-1.1 1.8-2.5 1.8c-1.2 0-2.2-.4-3-1.2"
+          ></path>
 
-<div class="summary-icon">
+        </svg>
 
-🟡
+      </div>
 
-</div>
+      <div>
 
-<div>
+        <span>
+          Treasury
+        </span>
 
-<span>
+        <b id="treasuryBalance">
+          0.00 Pi
+        </b>
 
-Pending
+      </div>
 
-</span>
+    </div>
 
-<b
-id="pendingTotal">
 
-0.00 Pi
+    <!-- PENDING -->
 
-</b>
+    <div class="summary-card">
 
-</div>
+      <div class="summary-icon">
 
-</div>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
 
-<div class="summary-card">
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+          ></circle>
 
-<div class="summary-icon">
+          <path
+            d="M12 8v4l3 2"
+          ></path>
 
-✅
+        </svg>
 
-</div>
+      </div>
 
-<div>
+      <div>
 
-<span>
+        <span>
+          Pending
+        </span>
 
-Approved
+        <b id="pendingTotal">
+          0.00 Pi
+        </b>
 
-</span>
+      </div>
 
-<b
-id="approvedTotal">
+    </div>
 
-0.00 Pi
 
-</b>
+    <!-- APPROVED -->
 
-</div>
+    <div class="summary-card">
 
-</div>
+      <div class="summary-icon">
 
-<div class="summary-card">
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
 
-<div class="summary-icon">
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+          ></circle>
 
-📊
+          <path
+            d="M8 12l2.5 2.5L16 9"
+          ></path>
 
-</div>
+        </svg>
 
-<div>
+      </div>
 
-<span>
+      <div>
 
-Transactions
+        <span>
+          Approved
+        </span>
 
-</span>
+        <b id="approvedTotal">
+          0.00 Pi
+        </b>
 
-<b
-id="totalTransactions">
+      </div>
 
-0
+    </div>
 
-</b>
 
-</div>
+    <!-- TRANSACTIONS -->
 
-</div>
+    <div class="summary-card">
 
-</section>
+      <div class="summary-icon">
 
-<section class="dashboard-charts">
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
 
-<div class="card">
+          <rect
+            x="5"
+            y="3"
+            width="14"
+            height="18"
+            rx="2"
+          ></rect>
 
-<h3>
+          <path
+            d="M8 8h8"
+          ></path>
 
-📈 Treasury Growth
+          <path
+            d="M8 12h8"
+          ></path>
 
-</h3>
+          <path
+            d="M8 16h5"
+          ></path>
 
-<div class="mini-chart">
+        </svg>
 
-<div
-id="growthBar"
-class="chart-bar">
+      </div>
 
-</div>
+      <div>
 
-</div>
+        <span>
+          Transactions
+        </span>
 
-<div
-id="growthText"
-class="chart-value">
+        <b id="totalTransactions">
+          0
+        </b>
 
-0%
+      </div>
 
-</div>
+    </div>
 
-</div>
+  </section>
 
-<div class="card">
 
-<h3>
+  <!-- =======================================
+       DASHBOARD CHARTS
+  ======================================== -->
 
-💧 Liquidity Usage
+  <section class="dashboard-charts">
 
-</h3>
 
-<div class="progress-circle">
+    <!-- TREASURY GROWTH -->
 
-<div
-id="liquidityPercent">
+    <div class="card">
 
-0%
+      <div class="card-heading">
 
-</div>
+        <div class="card-heading-icon">
 
-</div>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
 
-<div
-id="liquidityText"
-class="chart-value">
+            <path
+              d="M4 18l6-6 4 4 6-8"
+            ></path>
 
-Healthy
+            <path
+              d="M16 8h4v4"
+            ></path>
 
-</div>
+          </svg>
 
-</div>
+        </div>
 
-</section>
+        <h3>
+          Treasury Growth
+        </h3>
 
-<!-- ANALYTICS -->
+      </div>
 
-<section class="analytics-grid">
 
-<div class="card">
+      <div class="mini-chart">
 
-<h3>
+        <div
+          id="growthBar"
+          class="chart-bar"
+        ></div>
 
-📈 Wallet Analytics
+      </div>
 
-</h3>
 
-<div class="analytics-row">
+      <div
+        id="growthText"
+        class="chart-value"
+      >
+        0%
+      </div>
 
-<span>
+    </div>
 
-Received
 
-</span>
+    <!-- LIQUIDITY USAGE -->
 
-<b
-id="totalReceived">
+    <div class="card">
 
-0.00 Pi
+      <div class="card-heading">
 
-</b>
+        <div class="card-heading-icon">
 
-</div>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
 
-<div class="analytics-row">
+            <path
+              d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"
+            ></path>
 
-<span>
+            <path
+              d="M9 16c.6 1 1.6 1.5 3 1.5"
+            ></path>
 
-Sent
+          </svg>
 
-</span>
+        </div>
 
-<b
-id="totalSent">
+        <h3>
+          Liquidity Usage
+        </h3>
 
-0.00 Pi
+      </div>
 
-</b>
 
-</div>
+      <div class="progress-circle">
 
-<div class="analytics-row">
+        <div id="liquidityPercent">
+          0%
+        </div>
 
-<span>
+      </div>
 
-Net Flow
 
-</span>
+      <div
+        id="liquidityText"
+        class="chart-value"
+      >
+        Healthy
+      </div>
 
-<b
-id="netFlow">
+    </div>
 
-0.00 Pi
+  </section>
 
-</b>
 
-</div>
+  <!-- =======================================
+       ANALYTICS
+  ======================================== -->
 
-<div class="analytics-row">
+  <section class="analytics-grid">
 
-<span>
 
-Fees
+    <!-- WALLET ANALYTICS -->
 
-</span>
+    <div class="card">
 
-<b
-id="totalFees">
+      <div class="card-heading">
 
-0.00 Pi
+        <div class="card-heading-icon">
 
-</b>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
 
-</div>
+            <path
+              d="M4 19V5"
+            ></path>
 
-</div>
+            <path
+              d="M4 19h16"
+            ></path>
 
+            <path
+              d="M7 15l3-4 3 2 5-6"
+            ></path>
 
-<div class="card">
+          </svg>
 
-<h3>
+        </div>
 
-🏦 Treasury Overview
+        <h3>
+          Wallet Analytics
+        </h3>
 
-</h3>
+      </div>
 
-<div class="analytics-row">
 
-<span>
+      <div class="analytics-row">
 
-Liquidity
+        <span>
+          Received
+        </span>
 
-</span>
+        <b id="totalReceived">
+          0.00 Pi
+        </b>
 
-<b
-id="availableLiquidity">
+      </div>
 
-0.00 Pi
 
-</b>
+      <div class="analytics-row">
 
-</div>
+        <span>
+          Sent
+        </span>
 
-<div class="analytics-row">
+        <b id="totalSent">
+          0.00 Pi
+        </b>
 
-<span>
+      </div>
 
-Status
 
-</span>
+      <div class="analytics-row">
 
-<b
-id="liquidityStatus">
+        <span>
+          Net Flow
+        </span>
 
-SAFE
+        <b id="netFlow">
+          0.00 Pi
+        </b>
 
-</b>
+      </div>
 
-</div>
 
-</div>
+      <div class="analytics-row">
 
-</section>
+        <span>
+          Fees
+        </span>
 
+        <b id="totalFees">
+          0.00 Pi
+        </b>
 
-<!-- WITHDRAWALS -->
+      </div>
 
-<section class="withdraw-section">
+    </div>
 
-<div class="card">
 
-<h3>
+    <!-- TREASURY OVERVIEW -->
 
-🟡 Pending Requests
+    <div class="card">
 
-</h3>
+      <div class="card-heading">
 
-<div id="pendingRequests">
+        <div class="card-heading-icon">
 
-</div>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
 
-</div>
+            <path
+              d="M4 20h16"
+            ></path>
 
-<div class="card">
+            <path
+              d="M6 20V9h12v11"
+            ></path>
 
-<h3>
+            <path
+              d="M4 9l8-6 8 6"
+            ></path>
 
-✅ Approved
+            <path
+              d="M9 13h6"
+            ></path>
 
-</h3>
+            <path
+              d="M9 16h6"
+            ></path>
 
-<div id="approvedRequests">
+          </svg>
 
-</div>
+        </div>
 
-</div>
+        <h3>
+          Treasury Overview
+        </h3>
 
-<div class="card">
+      </div>
 
-<h3>
 
-💰 Paid
+      <div class="analytics-row">
 
-</h3>
+        <span>
+          Liquidity
+        </span>
 
-<div id="paidRequests">
+        <b id="availableLiquidity">
+          0.00 Pi
+        </b>
 
-</div>
+      </div>
 
-</div>
 
-</section>
+      <div class="analytics-row">
 
+        <span>
+          Status
+        </span>
 
-<!-- TRANSACTIONS -->
+        <b id="liquidityStatus">
+          SAFE
+        </b>
 
-<section class="card">
+      </div>
 
-<div class="transactions-header">
+    </div>
 
-<h3>
+  </section>
 
-📜 Recent Transactions
 
-</h3>
+  <!-- =======================================
+       WITHDRAWALS
+  ======================================== -->
 
-<input
+  <section class="withdraw-section">
 
-type="search"
 
-placeholder="Search wallet..."
+    <!-- PENDING REQUESTS -->
 
-id="txSearch"
+    <div class="card">
 
->
+      <div class="card-heading">
 
-</div>
+        <div class="card-heading-icon">
 
-<div id="adminTxList">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
 
-</div>
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
 
-</section>
+            <path
+              d="M12 8v4"
+            ></path>
 
+            <circle
+              cx="12"
+              cy="16"
+              r=".8"
+            ></circle>
+
+          </svg>
+
+        </div>
+
+        <h3>
+          Pending Requests
+        </h3>
+
+      </div>
+
+      <div id="pendingRequests"></div>
+
+    </div>
+
+
+    <!-- APPROVED REQUESTS -->
+
+    <div class="card">
+
+      <div class="card-heading">
+
+        <div class="card-heading-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
+
+            <path
+              d="M8 12l2.5 2.5L16 9"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <h3>
+          Approved
+        </h3>
+
+      </div>
+
+      <div id="approvedRequests"></div>
+
+    </div>
+
+
+    <!-- PAID REQUESTS -->
+
+    <div class="card">
+
+      <div class="card-heading">
+
+        <div class="card-heading-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
+
+            <path
+              d="M12 7v10"
+            ></path>
+
+            <path
+              d="M15 9.5c-.8-.8-1.8-1.2-3-1.2-1.4 0-2.5.7-2.5 1.8s1 1.6 2.5 1.9 2.5.8 2.5 1.9-1.1 1.8-2.5 1.8c-1.2 0-2.2-.4-3-1.2"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <h3>
+          Paid
+        </h3>
+
+      </div>
+
+      <div id="paidRequests"></div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =======================================
+       RECENT TRANSACTIONS
+  ======================================== -->
+
+  <section class="card">
+
+    <div class="transactions-header">
+
+      <div class="card-heading">
+
+        <div class="card-heading-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <path
+              d="M7 3h10l3 3v15H7z"
+            ></path>
+
+            <path
+              d="M17 3v4h4"
+            ></path>
+
+            <path
+              d="M10 11h7"
+            ></path>
+
+            <path
+              d="M10 15h7"
+            ></path>
+
+            <path
+              d="M10 19h4"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <h3>
+          Recent Transactions
+        </h3>
+
+      </div>
+
+
+      <div class="transaction-search">
+
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+
+          <circle
+            cx="11"
+            cy="11"
+            r="6"
+          ></circle>
+
+          <path
+            d="M16 16l5 5"
+          ></path>
+
+        </svg>
+
+        <input
+          type="search"
+          placeholder="Search wallet..."
+          id="txSearch"
+          aria-label="Search wallet transactions"
+        >
+
+      </div>
+
+    </div>
+
+
+    <div id="adminTxList"></div>
+
+  </section>
+
+</main>
+
+
+<!-- =========================================
+     ALERT SOUND
+========================================= -->
 
 <audio id="alertSound">
 
-<source
-src="alert.mp3"
-type="audio/mpeg">
+  <source
+    src="alert.mp3"
+    type="audio/mpeg"
+  >
 
 </audio>
 
+
 </body>
-  
-</html>
+ </html>
