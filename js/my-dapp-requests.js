@@ -58,11 +58,12 @@ async function getCurrentPiUser(){
 /* =========================
    LOAD MY REQUESTS
 ========================= */
+
 async function loadMyRequests(){
 
   box.innerHTML = `
     <div class="empty">
-      Loading requests...
+      Checking authentication...
     </div>
   `;
 
@@ -70,146 +71,83 @@ async function loadMyRequests(){
 
     const user = await getCurrentPiUser();
 
-    if(!user?.uid){
-      box.innerHTML = `
-        <div class="empty">
-          Please login with Pi Browser.
-        </div>
-      `;
-      return;
-    }
+    console.log("=================================");
+    console.log("MY DAPP DEBUG");
+    console.log("=================================");
 
-    console.log("Current user uid:", user.uid);
+    console.log("Current user object:", user);
+    console.log("Current UID:", user?.uid);
+    console.log("Current username:", user?.username);
 
     const { data, error } = await supabase
       .from("dapp_requests")
-      .select("*")
-      .eq("userid", user.uid)
-      .order("created_at", { ascending:false });
+      .select("id, userid, pi_user, project_name, status, created_at")
+      .order("created_at", {
+        ascending:false
+      });
 
-    console.log("Supabase result:", data, error);
+    console.log("ALL dApp REQUESTS:", data);
+    console.log("SUPABASE ERROR:", error);
 
     if(error){
-      console.error("loadMyRequests error:", error);
 
       box.innerHTML = `
         <div class="empty">
-          Failed to load requests.
+          Supabase error: ${escapeHtml(error.message)}
         </div>
       `;
+
       return;
     }
 
-    if(!data || !data.length){
-      box.innerHTML = `
-        <div class="empty">
-          You have not submitted any dApp request yet.
-        </div>
-      `;
-      return;
-    }
+    const matches = (data || []).filter(
+      r => String(r.userid) === String(user?.uid)
+    );
 
-    box.innerHTML = "";
+    console.log("MATCHING REQUESTS:", matches);
 
-    data.forEach(r=>{
+    box.innerHTML = `
+      <div class="card">
 
-      let telegram = "";
-      let adminNote = "";
-      let statusText = "";
-      let statusClass = "";
+        <strong>Authentication Diagnostic</strong>
 
-      /* STATUS */
-      if(r.status === "pending"){
-        statusText = "🟡 Under Review";
-        statusClass = "pending";
-      }else if(r.status === "approved"){
-        statusText = "🟢 Approved";
-        statusClass = "approved";
-      }else if(r.status === "rejected"){
-        statusText = "🔴 Rejected";
-        statusClass = "rejected";
-      }else{
-        statusText = escapeHtml(r.status || "Unknown");
-        statusClass = "";
-      }
+        <p>
+          <b>UID:</b><br>
+          ${escapeHtml(user?.uid || "NO UID")}
+        </p>
 
-      /* TELEGRAM LINK */
-      if(r.status === "approved" && r.telegram_unlocked){
-        telegram = `
-          <a class="btn"
-             href="https://t.me/+7A6IMz9PutMzZjVk"
-             target="_blank">
-             🔓 Join Private Telegram Group
-          </a>
-        `;
-      }
+        <p>
+          <b>Username:</b><br>
+          ${escapeHtml(user?.username || "NO USERNAME")}
+        </p>
 
-      /* ADMIN NOTE */
-      if(r.admin_note){
-        adminNote = `
-          <div class="notice">
-            <strong>📝 Admin Note:</strong><br>
-            ${escapeHtml(r.admin_note)}
-          </div>
-        `;
-      }
+        <p>
+          <b>Total Supabase Requests:</b>
+          ${data?.length || 0}
+        </p>
 
-      box.innerHTML += `
-        <div class="card">
+        <p>
+          <b>Requests Matching Current UID:</b>
+          ${matches.length}
+        </p>
 
-          <strong>${escapeHtml(r.project_name || "Untitled Project")}</strong>
-
-          <div class="meta">
-            🛠 ${escapeHtml(r.service_type || "-")}<br>
-            👤 ${escapeHtml(r.pi_user || "-")}
-          </div>
-
-          <div class="status ${statusClass}">
-            ${statusText}
-          </div>
-
-          <div class="desc">
-            <strong>Description:</strong><br>
-            ${escapeHtml(r.description || "—")}
-          </div>
-
-          <div class="receipt">
-            <strong>Payment Receipt:</strong><br>
-
-            ${
-              r.receipt_image
-              ? `<img src="${r.receipt_image}" alt="Receipt">`
-              : `<em>No receipt image</em>`
-            }
-
-            ${
-              r.receipt_ref
-              ? `
-                <div style="font-size:12px;color:#666;margin-top:6px">
-                  Ref: ${escapeHtml(r.receipt_ref)}
-                </div>
-              `
-              : ""
-            }
-          </div>
-
-          ${adminNote}
-          ${telegram}
-
-        </div>
-      `;
-    });
+      </div>
+    `;
 
   }catch(err){
-    console.error("loadMyRequests fatal error:", err);
+
+    console.error(
+      "MY DAPP DEBUG ERROR:",
+      err
+    );
 
     box.innerHTML = `
       <div class="empty">
-        Something went wrong while loading requests.
+        ${escapeHtml(err?.message || "Unknown error")}
       </div>
     `;
   }
-}
+    }
 
 /* =========================
    START
