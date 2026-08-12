@@ -1,3 +1,5 @@
+document.title = "MY DAPP JS RUNNING";
+
 const supabase = window.supabase.createClient(
   "https://qexmnghilahsvethlxem.supabase.co",
   "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
