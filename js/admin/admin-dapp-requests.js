@@ -572,25 +572,10 @@ function renderRequests(rows){
 
       <!-- DESCRIPTION -->
 
-      <div class="desc">
-
-        <div class="desc-title">
-          Description
-        </div>
-
-        <div class="desc-content">
-
-          ${escapeHtml(
-
-            row.description ||
-
-            "No description provided."
-
-          )}
-
-        </div>
-
-      </div>
+      ${renderDescription(
+  row.description,
+  row.id
+)}
 
 
       <!-- RECEIPT -->
@@ -1248,3 +1233,146 @@ document.addEventListener(
   }
 
 );
+
+/* =========================================
+   DESCRIPTION PREVIEW
+========================================= */
+
+function renderDescription(text, id){
+
+  const safeText =
+    escapeHtml(text || "No description provided.");
+
+  const plainText =
+    String(text || "");
+
+  const limit = 180;
+
+  if(plainText.length <= limit){
+
+    return `
+
+      <div class="desc">
+
+        <div class="desc-title">
+          Description
+        </div>
+
+        <div class="desc-content">
+          ${safeText}
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+  const preview =
+    escapeHtml(
+      plainText.slice(0, limit).trim()
+    );
+
+  return `
+
+    <div
+      class="desc description-collapsed"
+      id="description_${id}"
+    >
+
+      <div class="desc-title">
+        Description
+      </div>
+
+      <div class="desc-content">
+
+        <span class="description-preview">
+          ${preview}...
+        </span>
+
+        <span
+          class="description-full"
+          style="display:none;"
+        >
+          ${safeText}
+        </span>
+
+      </div>
+
+      <button
+        type="button"
+        class="description-toggle"
+        onclick="toggleDescription('${id}', this)"
+      >
+        See More
+      </button>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================
+   TOGGLE DESCRIPTION
+========================================= */
+
+function toggleDescription(id, button){
+
+  const box =
+    document.getElementById(
+      `description_${id}`
+    );
+
+  if(!box || !button) return;
+
+  const preview =
+    box.querySelector(
+      ".description-preview"
+    );
+
+  const full =
+    box.querySelector(
+      ".description-full"
+    );
+
+
+  if(!preview || !full) return;
+
+
+  const expanded =
+    box.classList.contains(
+      "description-expanded"
+    );
+
+
+  if(expanded){
+
+    full.style.display = "none";
+
+    preview.style.display = "inline";
+
+    box.classList.remove(
+      "description-expanded"
+    );
+
+    button.textContent =
+      "See More";
+
+  }else{
+
+    preview.style.display = "none";
+
+    full.style.display = "inline";
+
+    box.classList.add(
+      "description-expanded"
+    );
+
+    button.textContent =
+      "See Less";
+
+  }
+
+}
