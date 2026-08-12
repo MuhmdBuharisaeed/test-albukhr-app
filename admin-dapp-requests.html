@@ -1,32 +1,539 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>ALBUKHR Admin – dApp Requests</title>
 
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/albukhr-ui.css">
-<link rel="stylesheet" href="css/global-header.css">
+  <meta charset="UTF-8">
 
-<link rel="stylesheet" href="css/admin/admin-dapp-requests.css" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
+  <title>ALBUKHR – Admin dApp Requests</title>
+
+
+  <!-- =========================================
+       GLOBAL CSS
+  ========================================== -->
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/global-core.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/global-layout.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/global-components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/global-style.css"
+  >
+
+
+  <!-- =========================================
+       ADMIN dAPP REQUESTS V4
+  ========================================== -->
+
+  <link
+    rel="stylesheet"
+    href="css/admin/admin-dapp-requests.css"
+  >
+
+
+  <!-- =========================================
+       SUPABASE
+  ========================================== -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/supabase.js"></script>
+
 
 </head>
 
-<body>
 
-<header class="header">
-  <h1 class="brand">ALBUKHR • Admin</h1>
-</header>
+<body class="admin-page admin-dapp-requests-page">
 
-<section class="section">
-  <h3>🛠 dApp Requests Review</h3>
-  <div id="adminList"></div>
-</section>
 
-<script src="js/admin/admin-dapp-requests.js"></script>
-  
+  <!-- =========================================
+       ADMIN HEADER
+  ========================================== -->
+
+  <header class="admin-header">
+
+    <div class="header-left">
+
+      <div class="brand">
+        ALBUKHR
+      </div>
+
+      <div class="page-title">
+        dApp Requests
+      </div>
+
+    </div>
+
+
+    <div class="header-right">
+
+      <!-- REFRESH -->
+
+      <button
+        type="button"
+        class="refresh-btn"
+        id="refreshDappRequests"
+        aria-label="Refresh dApp requests"
+        title="Refresh"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M20 11a8 8 0 0 0-14.9-4"
+          ></path>
+
+          <path
+            d="M4 13a8 8 0 0 0 14.9 4"
+          ></path>
+
+          <path
+            d="M5 3v4h4"
+          ></path>
+
+          <path
+            d="M19 21v-4h-4"
+          ></path>
+
+        </svg>
+
+      </button>
+
+
+      <!-- NOTIFICATIONS -->
+
+      <button
+        type="button"
+        class="notification-btn"
+        aria-label="Notifications"
+        title="Notifications"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+          ></path>
+
+          <path
+            d="M10 21h4"
+          ></path>
+
+        </svg>
+
+        <span
+          id="adminNotifBadge"
+          class="notification-badge"
+        >
+          0
+        </span>
+
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =========================================
+       MAIN
+  ========================================== -->
+
+  <main class="admin-dapp-container">
+
+
+    <!-- =======================================
+         PAGE INTRO
+    ======================================== -->
+
+    <section class="dapp-page-hero">
+
+      <div class="dapp-hero-icon">
+
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+
+          <rect
+            x="4"
+            y="4"
+            width="16"
+            height="16"
+            rx="3"
+          ></rect>
+
+          <path
+            d="M8 9h8"
+          ></path>
+
+          <path
+            d="M8 12h5"
+          ></path>
+
+          <path
+            d="M8 15h6"
+          ></path>
+
+        </svg>
+
+      </div>
+
+
+      <div class="dapp-hero-content">
+
+        <h1>
+          dApp Requests Review
+        </h1>
+
+        <p>
+          Review, approve, or reject submitted dApp requests.
+        </p>
+
+      </div>
+
+
+      <div class="dapp-hero-status">
+
+        <span class="hero-status-dot"></span>
+
+        <span>
+          Admin Review
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================
+         REQUEST SUMMARY
+    ======================================== -->
+
+    <section class="dapp-summary-grid">
+
+
+      <!-- TOTAL -->
+
+      <div class="dapp-summary-card">
+
+        <div class="dapp-summary-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <rect
+              x="5"
+              y="3"
+              width="14"
+              height="18"
+              rx="2"
+            ></rect>
+
+            <path
+              d="M8 8h8"
+            ></path>
+
+            <path
+              d="M8 12h8"
+            ></path>
+
+            <path
+              d="M8 16h5"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <span>
+            Total Requests
+          </span>
+
+          <b id="totalDappRequests">
+            0
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <!-- PENDING -->
+
+      <div class="dapp-summary-card">
+
+        <div class="dapp-summary-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
+
+            <path
+              d="M12 8v4l3 2"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <span>
+            Pending
+          </span>
+
+          <b id="pendingDappRequests">
+            0
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <!-- APPROVED -->
+
+      <div class="dapp-summary-card">
+
+        <div class="dapp-summary-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
+
+            <path
+              d="M8 12l2.5 2.5L16 9"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <span>
+            Approved
+          </span>
+
+          <b id="approvedDappRequests">
+            0
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <!-- REJECTED -->
+
+      <div class="dapp-summary-card">
+
+        <div class="dapp-summary-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <circle
+              cx="12"
+              cy="12"
+              r="8"
+            ></circle>
+
+            <path
+              d="M9 9l6 6"
+            ></path>
+
+            <path
+              d="M15 9l-6 6"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <span>
+            Rejected
+          </span>
+
+          <b id="rejectedDappRequests">
+            0
+          </b>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================
+         REQUEST FILTER
+    ======================================== -->
+
+    <section class="dapp-toolbar">
+
+      <div class="dapp-toolbar-title">
+
+        <div class="toolbar-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <path
+              d="M4 6h16"
+            ></path>
+
+            <path
+              d="M7 12h10"
+            ></path>
+
+            <path
+              d="M10 18h4"
+            ></path>
+
+          </svg>
+
+        </div>
+
+        <div>
+
+          <h2>
+            Requests
+          </h2>
+
+          <span>
+            Manage submitted dApp applications
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div class="dapp-filter">
+
+        <label
+          for="dappStatusFilter"
+          class="sr-only"
+        >
+          Filter requests
+        </label>
+
+        <select
+          id="dappStatusFilter"
+          aria-label="Filter dApp requests"
+        >
+
+          <option value="all">
+            All Requests
+          </option>
+
+          <option value="pending">
+            Pending
+          </option>
+
+          <option value="approved">
+            Approved
+          </option>
+
+          <option value="rejected">
+            Rejected
+          </option>
+
+        </select>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================
+         REQUEST LIST
+    ======================================== -->
+
+    <section
+      id="adminList"
+      class="dapp-request-list"
+      aria-live="polite"
+    >
+
+      <div class="dapp-loading-state">
+
+        <div class="loading-spinner"></div>
+
+        <p>
+          Loading dApp requests...
+        </p>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- =========================================
+       ADMIN dAPP REQUEST ENGINE
+       LOAD LAST
+  ========================================== -->
+
+  <script src="js/admin/admin-dapp-requests.js"></script>
+
+
 </body>
-</html>
+
+            </html>
