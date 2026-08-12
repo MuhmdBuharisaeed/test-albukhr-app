@@ -635,7 +635,7 @@
 
         <a
           class="btn"
-          href="https://t.me/+7A6IMz9PutMzZjVk"
+          href="https://t.me/+u2cpwJfEBSA4NmNk"
           target="_blank"
           rel="noopener noreferrer"
         >
