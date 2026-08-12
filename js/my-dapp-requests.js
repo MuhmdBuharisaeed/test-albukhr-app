@@ -1,416 +1,535 @@
-document.title = "MY DAPP JS RUNNING";
-
-const supabase = window.supabase.createClient(
-  "https://qexmnghilahsvethlxem.supabase.co",
-  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-);
-
-const box = document.getElementById("list");
-
-function escapeHtml(text = ""){
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function showStage(title, message){
-
-  box.innerHTML = `
-    <div class="empty">
-
-      <strong>${escapeHtml(title)}</strong>
-
-      <br><br>
-
-      ${escapeHtml(message)}
-
-    </div>
-  `;
-
-}
-
 /* =========================================
-   TIMEOUT WRAPPER
+   ALBUKHR – MY dApp REQUESTS v4
+   USER REQUEST HISTORY
 ========================================= */
 
-function withTimeout(promise, ms, label){
+(() => {
 
-  return Promise.race([
+  "use strict";
 
-    promise,
+  const TABLE = "dapp_requests";
 
-    new Promise((_, reject)=>{
+  const box = document.getElementById("list");
 
-      setTimeout(()=>{
+  let loading = false;
 
-        reject(
-          new Error(
-            label + " timed out after " + ms + "ms"
-          )
-        );
 
-      }, ms);
+  /* =========================================
+     DOM
+  ========================================= */
 
-    })
+  function $(id) {
+    return document.getElementById(id);
+  }
 
-  ]);
 
-}
+  /* =========================================
+     ESCAPE HTML
+  ========================================= */
 
-/* =========================================
-   AUTH DIAGNOSTIC
-========================================= */
+  function escapeHtml(value = "") {
 
-async function getCurrentPiUser(){
+    return String(value)
 
-  showStage(
-    "STEP 1",
-    "Checking local Pi user..."
-  );
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
 
-  let user = null;
+  }
 
-  /* ===============================
-     LOCAL STORAGE
-  =============================== */
 
-  try{
+  /* =========================================
+     STATUS
+  ========================================= */
 
-    const raw =
-      localStorage.getItem("pi_user");
+  function getStatus(status) {
 
-    console.log("localStorage pi_user:", raw);
+    const value =
+      String(status || "unknown")
+        .toLowerCase();
 
-    if(raw){
+    if (value === "pending") {
 
-      const localUser =
-        JSON.parse(raw);
-
-      if(localUser?.uid){
-
-        user = localUser;
-
-      }
+      return {
+        text: "🟡 Under Review",
+        className: "pending"
+      };
 
     }
 
-  }catch(e){
+    if (value === "approved") {
 
-    console.warn(
-      "localStorage error:",
-      e
-    );
-
-  }
-
-  /* ===============================
-     LOCAL USER FOUND
-  =============================== */
-
-  if(user?.uid){
-
-    showStage(
-      "STEP 2",
-      "Local Pi user found. UID: " +
-      user.uid
-    );
-
-    return user;
-
-  }
-
-  /* ===============================
-     NO LOCAL USER
-  =============================== */
-
-  showStage(
-    "STEP 2",
-    "No local Pi user found. Checking Pi SDK..."
-  );
-
-  /* ===============================
-     PI SDK
-  =============================== */
-
-  if(!window.Pi){
-
-    throw new Error(
-      "Pi SDK is not available on this page."
-    );
-
-  }
-
-  if(
-    typeof Pi.getUser !== "function"
-  ){
-
-    throw new Error(
-      "Pi.getUser() is not available in this Pi SDK."
-    );
-
-  }
-
-  showStage(
-    "STEP 3",
-    "Calling Pi.getUser()..."
-  );
-
-  let piUser;
-
-  try{
-
-    piUser =
-      await withTimeout(
-        Pi.getUser(),
-        8000,
-        "Pi.getUser()"
-      );
-
-  }catch(e){
-
-    throw new Error(
-      e?.message ||
-      "Pi.getUser() failed."
-    );
-
-  }
-
-  console.log(
-    "Pi.getUser result:",
-    piUser
-  );
-
-  if(!piUser?.uid){
-
-    throw new Error(
-      "Pi.getUser() returned no UID."
-    );
-
-  }
-
-  user = {
-
-    uid: piUser.uid,
-
-    username:
-      piUser.username || ""
-
-  };
-
-  localStorage.setItem(
-    "pi_user",
-    JSON.stringify(user)
-  );
-
-  return user;
-
-}
-
-/* =========================================
-   LOAD REQUESTS
-========================================= */
-
-async function loadMyRequests(){
-
-  showStage(
-    "STARTING",
-    "Preparing My dApp Requests..."
-  );
-
-  try{
-
-    /* ===============================
-       AUTH
-    =============================== */
-
-    const user =
-      await getCurrentPiUser();
-
-    showStage(
-      "STEP 4",
-      "Pi user loaded. UID: " +
-      user.uid +
-      "\n\nConnecting to Supabase..."
-    );
-
-    /* ===============================
-       SUPABASE
-    =============================== */
-
-    const result =
-      await withTimeout(
-
-        supabase
-          .from("dapp_requests")
-          .select(
-            "id, userid, pi_user, project_name, service_type, status, created_at"
-          )
-          .order(
-            "created_at",
-            {
-              ascending:false
-            }
-          ),
-
-        10000,
-
-        "Supabase request"
-
-      );
-
-    const {
-      data,
-      error
-    } = result;
-
-    if(error){
-
-      throw new Error(
-        "Supabase error: " +
-        error.message
-      );
+      return {
+        text: "🟢 Approved",
+        className: "approved"
+      };
 
     }
 
-    showStage(
-      "STEP 5",
-      "Supabase connected.\n\n" +
-      "Total requests found: " +
-      (data?.length || 0) +
-      "\n\nCurrent UID:\n" +
-      user.uid
-    );
+    if (value === "rejected") {
 
-    /* ===============================
-       FILTER
-    =============================== */
-
-    const matches =
-      (data || []).filter(
-        row =>
-          String(row.userid) ===
-          String(user.uid)
-      );
-
-    console.log(
-      "Current user:",
-      user
-    );
-
-    console.log(
-      "All requests:",
-      data
-    );
-
-    console.log(
-      "Matching requests:",
-      matches
-    );
-
-    /* ===============================
-       FINAL RESULT
-    =============================== */
-
-    if(!matches.length){
-
-      box.innerHTML = `
-
-        <div class="empty">
-
-          <strong>
-            No requests found for this account.
-          </strong>
-
-          <br><br>
-
-          UID:
-
-          <br>
-
-          ${escapeHtml(user.uid)}
-
-          <br><br>
-
-          Supabase records:
-
-          ${data?.length || 0}
-
-        </div>
-
-      `;
-
-      return;
+      return {
+        text: "🔴 Rejected",
+        className: "rejected"
+      };
 
     }
 
-    box.innerHTML = "";
+    return {
+      text: escapeHtml(
+        status || "Unknown"
+      ),
+      className: ""
+    };
 
-    matches.forEach(r=>{
+  }
 
-      box.innerHTML += `
 
-        <div class="card">
+  /* =========================================
+     LOADING
+  ========================================= */
 
-          <strong>
-            ${escapeHtml(
-              r.project_name ||
-              "Untitled Project"
-            )}
-          </strong>
+  function renderLoading(message) {
 
-          <div class="meta">
-
-            🛠
-            ${escapeHtml(
-              r.service_type || "-"
-            )}
-
-            <br>
-
-            👤
-            ${escapeHtml(
-              r.pi_user || "-"
-            )}
-
-          </div>
-
-          <div class="status">
-
-            ${escapeHtml(
-              r.status || "pending"
-            )}
-
-          </div>
-
-        </div>
-
-      `;
-
-    });
-
-  }catch(error){
-
-    console.error(
-      "MY DAPP ERROR:",
-      error
-    );
+    if (!box) return;
 
     box.innerHTML = `
 
       <div class="empty">
 
+        <div>
+          ⏳
+        </div>
+
         <strong>
-          ❌ Diagnostic stopped
+          ${escapeHtml(message)}
         </strong>
 
-        <br><br>
+      </div>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     EMPTY
+  ========================================= */
+
+  function renderEmpty() {
+
+    if (!box) return;
+
+    box.innerHTML = `
+
+      <div class="empty">
+
+        <div>
+          📭
+        </div>
+
+        <strong>
+          You have not submitted any dApp request yet.
+        </strong>
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     ERROR
+  ========================================= */
+
+  function renderError(message, details = "") {
+
+    if (!box) return;
+
+    box.innerHTML = `
+
+      <div class="empty">
+
+        <div>
+          ⚠️
+        </div>
+
+        <strong>
+          Unable to Load Requests
+        </strong>
+
+        <p>
+          ${escapeHtml(message)}
+        </p>
+
+        ${
+          details
+            ? `
+              <small>
+                ${escapeHtml(details)}
+              </small>
+            `
+            : ""
+        }
+
+        <button
+          type="button"
+          class="btn"
+          id="retryMyDappRequests"
+          style="margin-top:12px"
+        >
+          Retry
+        </button>
+
+      </div>
+
+    `;
+
+
+    const retry =
+      $("retryMyDappRequests");
+
+
+    if (retry) {
+
+      retry.addEventListener(
+        "click",
+        loadMyRequests
+      );
+
+    }
+
+  }
+
+
+  /* =========================================
+     SUPABASE
+  ========================================= */
+
+  function getSupabaseClient() {
+
+    const client =
+      window.albukhrSupabase;
+
+
+    if (
+      !client ||
+      typeof client.from !== "function"
+    ) {
+
+      throw new Error(
+        "ALBUKHR Supabase client is not ready."
+      );
+
+    }
+
+
+    return client;
+
+  }
+
+
+  /* =========================================
+     PI USER
+  ========================================= */
+
+  async function getCurrentPiUser() {
+
+    renderLoading(
+      "Authenticating with Pi..."
+    );
+
+
+    /*
+     * IMPORTANT:
+     * First use existing pi_user.
+     */
+
+    try {
+
+      const stored =
+        localStorage.getItem("pi_user");
+
+
+      if (stored) {
+
+        const parsed =
+          JSON.parse(stored);
+
+
+        if (parsed?.uid) {
+
+          console.log(
+            "Using stored Pi user:",
+            {
+              uid: parsed.uid,
+              username:
+                parsed.username || ""
+            }
+          );
+
+
+          return {
+
+            uid:
+              parsed.uid,
+
+            username:
+              parsed.username || "",
+
+            wallet_address:
+              parsed.wallet_address || ""
+
+          };
+
+        }
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "Unable to parse stored Pi user:",
+        error
+      );
+
+    }
+
+
+    /*
+     * FALLBACK:
+     * Shared authentication only.
+     */
+
+    if (
+      typeof window.ensurePiAuth !==
+      "function"
+    ) {
+
+      throw new Error(
+        "Pi authentication system is not available."
+      );
+
+    }
+
+
+    const user =
+      await window.ensurePiAuth();
+
+
+    if (!user?.uid) {
+
+      throw new Error(
+        "Pi authentication completed without a UID."
+      );
+
+    }
+
+
+    console.log(
+      "Pi authentication user:",
+      {
+        uid: user.uid,
+        username:
+          user.username || ""
+      }
+    );
+
+
+    return user;
+
+  }
+
+
+  /* =========================================
+     QUERY MY REQUESTS
+  ========================================= */
+
+  async function queryMyRequests(uid) {
+
+    renderLoading(
+      "Connecting to ALBUKHR..."
+    );
+
+
+    const supabase =
+      getSupabaseClient();
+
+
+    console.log(
+      "Supabase client ready."
+    );
+
+
+    console.log(
+      "Querying table:",
+      TABLE
+    );
+
+
+    console.log(
+      "Filtering userid:",
+      uid
+    );
+
+
+    renderLoading(
+      "Loading your requests..."
+    );
+
+
+    const {
+
+      data,
+      error
+
+    } = await supabase
+
+      .from(TABLE)
+
+      .select("*")
+
+      .eq("userid", uid)
+
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+    console.log(
+      "Supabase query response:",
+      {
+        data,
+        error
+      }
+    );
+
+
+    if (error) {
+
+      console.error(
+        "MY dApp REQUESTS SUPABASE ERROR",
+        {
+          message:
+            error.message,
+
+          details:
+            error.details,
+
+          hint:
+            error.hint,
+
+          code:
+            error.code
+        }
+      );
+
+
+      const details = [
+
+        error.code
+          ? `Code: ${error.code}`
+          : "",
+
+        error.details
+          ? error.details
+          : ""
+
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
+
+      throw new Error(
+        details
+          ? `${error.message} — ${details}`
+          : error.message ||
+            "Supabase query failed."
+      );
+
+    }
+
+
+    return Array.isArray(data)
+      ? data
+      : [];
+
+  }
+
+
+  /* =========================================
+     TELEGRAM
+  ========================================= */
+
+  function renderTelegram(row) {
+
+    if (
+      String(row.status)
+        .toLowerCase() !==
+      "approved"
+    ) {
+
+      return "";
+
+    }
+
+
+    if (
+      row.telegram_unlocked !== true
+    ) {
+
+      return "";
+
+    }
+
+
+    return `
+
+      <a
+        class="btn"
+        href="https://t.me/+7A6IMz9PutMzZjVk"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        🔓 Join Private Telegram Group
+      </a>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     ADMIN NOTE
+  ========================================= */
+
+  function renderAdminNote(row) {
+
+    if (!row.admin_note) {
+
+      return "";
+
+    }
+
+
+    return `
+
+      <div class="notice">
+
+        <strong>
+          📝 Admin Note:
+        </strong>
+
+        <br>
 
         ${escapeHtml(
-          error?.message ||
-          "Unknown error"
+          row.admin_note
         )}
 
       </div>
@@ -419,15 +538,326 @@ async function loadMyRequests(){
 
   }
 
-}
 
-/* =========================================
-   START
-========================================= */
+  /* =========================================
+     RECEIPT
+  ========================================= */
 
-window.addEventListener(
-  "DOMContentLoaded",
-  ()=>{
-    loadMyRequests();
+  function renderReceipt(row) {
+
+    return `
+
+      <div class="receipt">
+
+        <strong>
+          Payment Receipt:
+        </strong>
+
+        <br>
+
+        ${
+          row.receipt_image
+
+            ?
+
+            `
+              <img
+                src="${escapeHtml(
+                  row.receipt_image
+                )}"
+                alt="Payment Receipt"
+                loading="lazy"
+              >
+            `
+
+            :
+
+            `
+              <em>
+                No receipt image
+              </em>
+            `
+        }
+
+
+        ${
+          row.receipt_ref
+
+            ?
+
+            `
+              <div
+                style="
+                  font-size:12px;
+                  color:#666;
+                  margin-top:6px
+                "
+              >
+                Ref:
+                ${escapeHtml(
+                  row.receipt_ref
+                )}
+              </div>
+            `
+
+            :
+
+            ""
+        }
+
+      </div>
+
+    `;
+
   }
-);
+
+
+  /* =========================================
+     RENDER CARD
+  ========================================= */
+
+  function renderRequest(row) {
+
+    const status =
+      getStatus(row.status);
+
+
+    return `
+
+      <div class="card">
+
+        <strong>
+          ${escapeHtml(
+            row.project_name ||
+            "Untitled Project"
+          )}
+        </strong>
+
+
+        <div class="meta">
+
+          🛠
+          ${escapeHtml(
+            row.service_type ||
+            "-"
+          )}
+
+          <br>
+
+          👤
+          ${escapeHtml(
+            row.pi_user ||
+            "-"
+          )}
+
+        </div>
+
+
+        <div
+          class="status ${status.className}"
+        >
+
+          ${status.text}
+
+        </div>
+
+
+        <div class="desc">
+
+          <strong>
+            Description:
+          </strong>
+
+          <br>
+
+          ${escapeHtml(
+            row.description ||
+            "—"
+          )}
+
+        </div>
+
+
+        ${renderReceipt(row)}
+
+
+        ${renderAdminNote(row)}
+
+
+        ${renderTelegram(row)}
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     RENDER LIST
+  ========================================= */
+
+  function renderRequests(rows) {
+
+    if (
+      !Array.isArray(rows) ||
+      rows.length === 0
+    ) {
+
+      renderEmpty();
+
+      return;
+
+    }
+
+
+    box.innerHTML = "";
+
+
+    const fragment =
+      document.createDocumentFragment();
+
+
+    rows.forEach(row => {
+
+      const wrapper =
+        document.createElement(
+          "div"
+        );
+
+
+      wrapper.innerHTML =
+        renderRequest(row);
+
+
+      while (
+        wrapper.firstElementChild
+      ) {
+
+        fragment.appendChild(
+          wrapper.firstElementChild
+        );
+
+      }
+
+    });
+
+
+    box.appendChild(
+      fragment
+    );
+
+  }
+
+
+  /* =========================================
+     LOAD
+  ========================================= */
+
+  async function loadMyRequests() {
+
+    if (!box) {
+
+      console.error(
+        "#list element was not found."
+      );
+
+      return;
+
+    }
+
+
+    if (loading) {
+
+      return;
+
+    }
+
+
+    loading = true;
+
+
+    try {
+
+      const user =
+        await getCurrentPiUser();
+
+
+      if (!user?.uid) {
+
+        throw new Error(
+          "No Pi user UID is available. Please login with Pi Browser."
+        );
+
+      }
+
+
+      console.log(
+        "Current authenticated UID:",
+        user.uid
+      );
+
+
+      const rows =
+        await queryMyRequests(
+          user.uid
+        );
+
+
+      renderRequests(
+        rows
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "loadMyRequests fatal error:",
+        error
+      );
+
+
+      renderError(
+        error?.message ||
+        "Something went wrong while loading requests."
+      );
+
+
+    } finally {
+
+      loading = false;
+
+    }
+
+  }
+
+
+  /* =========================================
+     GLOBAL EXPORT
+  ========================================= */
+
+  window.loadMyRequests =
+    loadMyRequests;
+
+
+  /* =========================================
+     START
+  ========================================= */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      loadMyRequests
+    );
+
+  } else {
+
+    loadMyRequests();
+
+  }
+
+})();
