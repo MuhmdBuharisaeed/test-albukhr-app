@@ -1,930 +1,311 @@
-/* =========================================
-   ALBUKHR – PI dApp REQUESTS v4
-   USER SUBMISSION ENGINE
-========================================= */
+/* =====================================
+   ALBUKHR – PI dApp ENGINE (SUPABASE)
+===================================== */
 
-(() => {
+const SUPABASE_URL = "https://qexmnghilahsvethlxem.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
 
-  "use strict";
+let __pendingAlertShown = false;
 
-  /* =========================================
-     CONFIG
-  ========================================== */
+/* -------------------------------------
+   GET CURRENT USER
+   order:
+   1) localStorage
+   2) Pi.getUser()
+   3) ensurePiAuth() only if needed
+------------------------------------- */
+async function getCurrentUser(){
 
-  const TABLE = "dapp_requests";
-  const MAX_RECEIPT_SIZE = 2 * 1024 * 1024;
+  /* 1) localStorage first */
+  try{
+    const local = localStorage.getItem("pi_user");
 
-  let pendingAlertShown = false;
-  let submitting = false;
+    if(local){
+      const parsed = JSON.parse(local);
 
-
-  /* =========================================
-     DOM HELPERS
-  ========================================= */
-
-  function $(id) {
-    return document.getElementById(id);
-  }
-
-
-  /* =========================================
-     ALERT
-  ========================================= */
-
-  function notify(title, message) {
-
-    if (typeof window.showAlert === "function") {
-      window.showAlert(title, message);
-      return;
+      if(parsed?.uid){
+        return {
+          uid: parsed.uid,
+          username: parsed.username || ""
+        };
+      }
     }
-
-    alert(`${title}\n\n${message}`);
+  }catch(e){
+    console.warn("localStorage pi_user parse failed:", e);
   }
 
+  /* 2) Pi.getUser */
+  if(window.Pi && Pi.getUser){
+    try{
+      const u = await Pi.getUser();
 
-  /* =========================================
-     SUPABASE CLIENT
-  ========================================= */
+      if(u?.uid){
 
-  function getSupabase() {
+        const user = {
+          uid: u.uid,
+          username: u.username || ""
+        };
 
-    const client = window.albukhrSupabase;
+        localStorage.setItem(
+          "pi_user",
+          JSON.stringify(user)
+        );
 
-    if (
-      !client ||
-      typeof client.from !== "function"
-    ) {
-
-      console.error(
-        "ALBUKHR Supabase client is not available."
-      );
-
-      return null;
+        return user;
+      }
+    }catch(e){
+      console.warn("Pi.getUser failed:", e);
     }
-
-    return client;
   }
 
+  /* 3) last fallback: ensurePiAuth */
+  try{
+    if(typeof ensurePiAuth === "function"){
+      const authUser = await ensurePiAuth();
 
-  /* =========================================
-     GET CURRENT PI USER
-     SINGLE AUTHORITY:
-     ensurePiAuth()
-  ========================================= */
+      if(authUser?.uid){
+        return {
+          uid: authUser.uid,
+          username: authUser.username || ""
+        };
+      }
+    }
+  }catch(e){
+    console.warn("ensurePiAuth failed:", e);
+  }
 
-  async function getCurrentUser() {
+  return null;
+}
 
-    /* ---------------------------------------
-       1. Existing local session
-    --------------------------------------- */
+/* -------------------------------------
+   CHECK PENDING REQUEST
+------------------------------------- */
+async function userHasPending(uid){
 
-    try {
+  try{
 
-      const stored =
-        localStorage.getItem("pi_user");
-
-      if (stored) {
-
-        const user =
-          JSON.parse(stored);
-
-        if (user?.uid) {
-
-          return {
-            uid: user.uid,
-            username: user.username || "",
-            wallet_address:
-              user.wallet_address || ""
-          };
-
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/dapp_requests?select=id,status&userid=eq.${uid}&status=eq.pending`,
+      {
+        headers:{
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
         }
-
       }
+    );
 
-    } catch (error) {
-
-      console.warn(
-        "Stored Pi user could not be read:",
-        error
-      );
-
+    if(!res.ok){
+      const errText = await res.text();
+      console.error("userHasPending fetch error:", errText);
+      return false;
     }
 
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0;
 
-    /* ---------------------------------------
-       2. Shared Pi authentication
-    --------------------------------------- */
+  }catch(e){
+    console.error("userHasPending network error:", e);
+    return false;
+  }
+}
 
-    if (
-      typeof window.ensurePiAuth !== "function"
-    ) {
+/* -------------------------------------
+   UI: SET PENDING MODE
+------------------------------------- */
+function setPendingUI(isPending){
 
-      console.error(
-        "ensurePiAuth() is not available."
-      );
+  const btn = document.getElementById("submitBtn");
+  const viewBox = document.getElementById("viewRequestBox");
 
-      return null;
+  if(btn){
+    if(isPending){
+      btn.disabled = true;
+      btn.innerText = "Pending Review";
+      btn.style.opacity = "0.6";
+      btn.style.pointerEvents = "none";
+    }else{
+      btn.disabled = false;
+      btn.innerText = "Submit for Review";
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
     }
-
-
-    try {
-
-      const user =
-        await window.ensurePiAuth();
-
-      if (!user?.uid) {
-
-        return null;
-      }
-
-
-      return {
-        uid: user.uid,
-        username: user.username || "",
-        wallet_address:
-          user.wallet_address || ""
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Pi authentication failed:",
-        error
-      );
-
-      return null;
-    }
-
   }
 
+  if(viewBox){
+    viewBox.style.display = isPending ? "block" : "none";
+  }
+}
 
-  /* =========================================
-     GET FORM DATA
-  ========================================= */
+/* -------------------------------------
+   SUBMIT REQUEST
+------------------------------------- */
+async function submitDappRequest(){
 
-  function getFormData() {
+  const user = await getCurrentUser();
 
-    return {
+  if(!user?.uid){
+    showAlert(
+      "Login Required",
+      "Please login with Pi Browser."
+    );
+    return;
+  }
 
-      piUser:
-        $("piUser")?.value.trim() || "",
+  const piUser = document.getElementById("piUser").value.trim();
+  const projectName = document.getElementById("projectName").value.trim();
+  const serviceType = document.getElementById("serviceType").value;
+  const description = document.getElementById("description").value.trim();
+  const receiptRef = document.getElementById("receiptRef").value.trim();
+  const fileInput = document.getElementById("receiptImg");
+  const agree = document.getElementById("agree").checked;
 
-      projectName:
-        $("projectName")?.value.trim() || "",
+  if(!piUser || !projectName || !serviceType || !description || !receiptRef){
+    showAlert(
+      "Missing Information",
+      "Please fill all required fields."
+    );
+    return;
+  }
 
-      serviceType:
-        $("serviceType")?.value || "",
+  if(!agree){
+    showAlert(
+      "Agreement Required",
+      "You must agree to the terms before submitting."
+    );
+    return;
+  }
 
-      description:
-        $("description")?.value.trim() || "",
+  const pending = await userHasPending(user.uid);
 
-      receiptRef:
-        $("receiptRef")?.value.trim() || "",
+  if(pending){
+    setPendingUI(true);
 
-      fileInput:
-        $("receiptImg"),
+    showAlert(
+      "Pending Request",
+      "You already have a pending request under review."
+    );
+    return;
+  }
 
-      agree:
-        $("agree")?.checked === true
+  if(!fileInput.files.length){
+    showAlert(
+      "Receipt Required",
+      "Please upload your payment receipt image."
+    );
+    return;
+  }
 
+  const file = fileInput.files[0];
+
+  if(file.size > 2 * 1024 * 1024){
+    showAlert(
+      "Image Too Large",
+      "Maximum allowed image size is 2 MB."
+    );
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async function(){
+
+    const payload = {
+      userid: user.uid,
+      pi_user: piUser,
+      project_name: projectName,
+      service_type: serviceType,
+      description: description,
+      receipt_ref: receiptRef,
+      receipt_image: reader.result,
+      status: "pending",
+      admin_note: "",
+      telegram_unlocked: false,
+      created_at: new Date().toISOString()
     };
 
-  }
+    try{
 
-
-  /* =========================================
-     VALIDATE FORM
-  ========================================= */
-
-  function validateForm(form) {
-
-    if (!form.piUser) {
-
-      notify(
-        "Missing Information",
-        "Please enter your Pi username."
-      );
-
-      return false;
-    }
-
-
-    if (!form.projectName) {
-
-      notify(
-        "Missing Information",
-        "Please enter your project name."
-      );
-
-      return false;
-    }
-
-
-    if (!form.serviceType) {
-
-      notify(
-        "Missing Information",
-        "Please select a service type."
-      );
-
-      return false;
-    }
-
-
-    if (!form.description) {
-
-      notify(
-        "Missing Information",
-        "Please describe your dApp."
-      );
-
-      return false;
-    }
-
-
-    if (!form.receiptRef) {
-
-      notify(
-        "Missing Information",
-        "Please enter your transaction reference."
-      );
-
-      return false;
-    }
-
-
-    if (!form.agree) {
-
-      notify(
-        "Agreement Required",
-        "You must agree to the terms before submitting."
-      );
-
-      return false;
-    }
-
-
-    if (
-      !form.fileInput ||
-      !form.fileInput.files ||
-      !form.fileInput.files.length
-    ) {
-
-      notify(
-        "Receipt Required",
-        "Please upload your payment receipt image."
-      );
-
-      return false;
-    }
-
-
-    const file =
-      form.fileInput.files[0];
-
-
-    if (file.size > MAX_RECEIPT_SIZE) {
-
-      notify(
-        "Image Too Large",
-        "Maximum allowed image size is 2 MB."
-      );
-
-      return false;
-    }
-
-
-    if (
-      !file.type ||
-      !file.type.startsWith("image/")
-    ) {
-
-      notify(
-        "Invalid Receipt",
-        "Please upload a valid receipt image."
-      );
-
-      return false;
-    }
-
-
-    return true;
-
-  }
-
-
-  /* =========================================
-     CHECK PENDING REQUEST
-  ========================================= */
-
-  async function userHasPending(uid) {
-
-    const supabase =
-      getSupabase();
-
-    if (!supabase) {
-
-      throw new Error(
-        "Supabase client is not available."
-      );
-
-    }
-
-
-    const {
-
-      data,
-      error
-
-    } = await supabase
-
-      .from(TABLE)
-
-      .select("id,status")
-
-      .eq("userid", uid)
-
-      .eq("status", "pending");
-
-
-    if (error) {
-
-      console.error(
-        "Pending request query failed:",
-        error
-      );
-
-      throw error;
-    }
-
-
-    return (
-      Array.isArray(data) &&
-      data.length > 0
-    );
-
-  }
-
-
-  /* =========================================
-     SET SUBMIT UI
-  ========================================= */
-
-  function setSubmitState(
-    processing
-  ) {
-
-    const button =
-      $("submitBtn");
-
-    if (!button) return;
-
-
-    if (processing) {
-
-      button.disabled = true;
-
-      button.dataset.originalText =
-        button.dataset.originalText ||
-        button.innerText;
-
-      button.innerText =
-        "Submitting...";
-
-      button.classList.add(
-        "is-processing"
-      );
-
-      return;
-    }
-
-
-    button.disabled = false;
-
-    button.innerText =
-      button.dataset.originalText ||
-      "Submit for Review";
-
-    button.classList.remove(
-      "is-processing"
-    );
-
-  }
-
-
-  /* =========================================
-     SET PENDING UI
-  ========================================= */
-
-  function setPendingUI(
-    pending
-  ) {
-
-    const button =
-      $("submitBtn");
-
-    const viewBox =
-      $("viewRequestBox");
-
-
-    if (button) {
-
-      button.disabled =
-        pending;
-
-      button.innerText =
-        pending
-          ? "Pending Review"
-          : "Submit for Review";
-
-      button.classList.toggle(
-        "is-pending",
-        pending
-      );
-
-    }
-
-
-    if (viewBox) {
-
-      viewBox.style.display =
-        pending
-          ? "block"
-          : "none";
-
-    }
-
-  }
-
-
-  /* =========================================
-     FILE → BASE64
-  ========================================= */
-
-  function fileToDataURL(file) {
-
-    return new Promise(
-      (resolve, reject) => {
-
-        const reader =
-          new FileReader();
-
-
-        reader.onload = () => {
-
-          resolve(
-            reader.result
-          );
-
-        };
-
-
-        reader.onerror = () => {
-
-          reject(
-            new Error(
-              "Unable to read receipt image."
-            )
-          );
-
-        };
-
-
-        reader.readAsDataURL(file);
-
-      }
-    );
-
-  }
-
-
-  /* =========================================
-     SUBMIT REQUEST
-  ========================================= */
-
-  async function submitDappRequest() {
-
-    if (submitting) {
-      return;
-    }
-
-
-    submitting = true;
-
-
-    try {
-
-      setSubmitState(true);
-
-
-      /* -------------------------------------
-         USER
-      ------------------------------------- */
-
-      const user =
-        await getCurrentUser();
-
-
-      if (!user?.uid) {
-
-        notify(
-          "Login Required",
-          "Please login with Pi Browser."
-        );
-
-        return;
-      }
-
-
-      /* -------------------------------------
-         FORM
-      ------------------------------------- */
-
-      const form =
-        getFormData();
-
-
-      if (!validateForm(form)) {
-        return;
-      }
-
-
-      /* -------------------------------------
-         PENDING
-      ------------------------------------- */
-
-      const pending =
-        await userHasPending(
-          user.uid
-        );
-
-
-      if (pending) {
-
-        setPendingUI(true);
-
-        notify(
-          "Pending Request",
-          "You already have a pending request under review."
-        );
-
-        return;
-      }
-
-
-      /* -------------------------------------
-         RECEIPT
-      ------------------------------------- */
-
-      const file =
-        form.fileInput.files[0];
-
-
-      const receiptImage =
-        await fileToDataURL(file);
-
-
-      /* -------------------------------------
-         PAYLOAD
-         SAME DATABASE MAPPING
-      ------------------------------------- */
-
-      const payload = {
-
-        userid:
-          user.uid,
-
-        pi_user:
-          form.piUser,
-
-        project_name:
-          form.projectName,
-
-        service_type:
-          form.serviceType,
-
-        description:
-          form.description,
-
-        receipt_ref:
-          form.receiptRef,
-
-        receipt_image:
-          receiptImage,
-
-        status:
-          "pending",
-
-        admin_note:
-          "",
-
-        telegram_unlocked:
-          false,
-
-        created_at:
-          new Date().toISOString()
-
-      };
-
-
-      console.log(
-        "Submitting dApp request:",
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/dapp_requests`,
         {
-          ...payload,
-          receipt_image:
-            "[base64 image omitted]"
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify(payload)
         }
       );
 
+      if(!res.ok){
+        const err = await res.text();
+        console.error("submitDappRequest supabase error:", err);
 
-      /* -------------------------------------
-         SUPABASE
-      ------------------------------------- */
-
-      const supabase =
-        getSupabase();
-
-
-      if (!supabase) {
-
-        throw new Error(
-          "Supabase client is not ready."
+        showAlert(
+          "Submission Failed",
+          "Unable to save request. Please try again."
         );
-
+        return;
       }
-
-
-      const {
-
-        data,
-        error
-
-      } = await supabase
-
-        .from(TABLE)
-
-        .insert(payload)
-
-        .select();
-
-
-      if (error) {
-
-        console.error(
-          "dApp request insert failed:",
-          error
-        );
-
-        throw error;
-      }
-
-
-      console.log(
-        "dApp request inserted:",
-        data
-      );
-
-
-      /* -------------------------------------
-         SUCCESS
-      ------------------------------------- */
 
       setPendingUI(true);
 
-
-      notify(
+      showAlert(
         "Request Submitted",
         "Your dApp launch request has been submitted successfully."
       );
 
-
-      setTimeout(() => {
-
-        window.location.href =
-          "my-dapp-requests.html";
-
+      setTimeout(()=>{
+        window.location.href = "my-dapp-requests.html";
       }, 1500);
 
+    }catch(e){
 
-    } catch (error) {
+      console.error("submitDappRequest network error:", e);
 
-      console.error(
-        "submitDappRequest error:",
-        error
+      showAlert(
+        "Network Error",
+        "Unable to connect to the server. Please try again."
       );
-
-
-      notify(
-        "Submission Failed",
-        error?.message ||
-        "Unable to save your request. Please try again."
-      );
-
-
-    } finally {
-
-      submitting = false;
-
-      if (
-        !$("submitBtn")?.classList.contains(
-          "is-pending"
-        )
-      ) {
-
-        setSubmitState(false);
-
-      }
-
     }
+  };
 
+  reader.readAsDataURL(file);
+}
+
+/* -------------------------------------
+   INIT PAGE STATE
+------------------------------------- */
+window.addEventListener("DOMContentLoaded", async ()=>{
+
+  const user = await getCurrentUser();
+
+  /* idan ba a login ba, a bar form a bude */
+  if(!user?.uid){
+    setPendingUI(false);
+    return;
   }
 
+  const pending = await userHasPending(user.uid);
 
-  /* =========================================
-     SERVICE TYPE
-  ========================================= */
+  if(pending){
 
-  function initServiceType() {
+    setPendingUI(true);
 
-    const select =
-      $("serviceType");
+    if(!__pendingAlertShown){
+      __pendingAlertShown = true;
 
-    const paymentBox =
-      $("paymentBox");
-
-
-    if (!select || !paymentBox) {
-      return;
-    }
-
-
-    function updatePaymentVisibility() {
-
-      paymentBox.style.display =
-        select.value
-          ? "block"
-          : "none";
-
-    }
-
-
-    select.addEventListener(
-      "change",
-      updatePaymentVisibility
-    );
-
-
-    updatePaymentVisibility();
-
-  }
-
-
-  /* =========================================
-     PI USER UI
-  ========================================= */
-
-  async function initPiUserUI() {
-
-    const input =
-      $("piUser");
-
-    if (!input) return;
-
-
-    try {
-
-      const user =
-        await getCurrentUser();
-
-
-      if (user?.username) {
-
-        input.value =
-          user.username;
-
-        input.readOnly =
-          true;
-
-        input.classList.add(
-          "is-readonly"
-        );
-
-      }
-
-    } catch (error) {
-
-      console.warn(
-        "Unable to initialize Pi username:",
-        error
+      showAlert(
+        "Pending Request",
+        "You already have a pending request under review."
       );
-
     }
 
+  }else{
+    /* idan babu pending, ko approved/rejected ne */
+    setPendingUI(false);
   }
 
-
-  /* =========================================
-     INITIAL PAGE STATE
-  ========================================= */
-
-  async function initPage() {
-
-    initServiceType();
-
-    await initPiUserUI();
-
-
-    const user =
-      await getCurrentUser();
-
-
-    if (!user?.uid) {
-
-      setPendingUI(false);
-
-      return;
-    }
-
-
-    try {
-
-      const pending =
-        await userHasPending(
-          user.uid
-        );
-
-
-      setPendingUI(
-        pending
-      );
-
-
-      if (
-        pending &&
-        !pendingAlertShown
-      ) {
-
-        pendingAlertShown =
-          true;
-
-
-        notify(
-          "Pending Request",
-          "You already have a pending request under review."
-        );
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Initial pending check failed:",
-        error
-      );
-
-      /*
-       * IMPORTANT:
-       * Kada mu hana user form saboda
-       * query error.
-       *
-       * User zai iya ganin form,
-       * amma submission zai sake tabbatar da
-       * pending status.
-       */
-
-      setPendingUI(false);
-
-    }
-
-  }
-
-
-  /* =========================================
-     GLOBAL EXPORT
-  ========================================= */
-
-  window.submitDappRequest =
-    submitDappRequest;
-
-
-  /* =========================================
-     START
-  ========================================= */
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      initPage
-    );
-
-  } else {
-
-    initPage();
-
-  }
-
-})();
+});
