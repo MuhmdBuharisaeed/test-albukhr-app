@@ -1,48 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My dApp Requests | ALBUKHR</title>
 
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/albukhr-ui.css">
-<link rel="stylesheet" href="css/global-header.css">
-<link rel="stylesheet" href="css/app-alert.css">
+  <meta charset="UTF-8">
 
-<link rel="stylesheet" href="css/my-dapp-requests.css">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>My dApp Requests | ALBUKHR</title>
+
+
+  <!-- =========================================
+       GLOBAL CSS
+  ========================================== -->
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/albukhr-ui.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/global-header.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/app-alert.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/my-dapp-requests.css"
+  >
+
 
 </head>
 
+
 <body>
 
-<header class="header">
-  <h1 class="brand">ALBUKHR</h1>
-</header>
 
-<section class="section">
-  <h3>📂 My dApp Requests</h3>
-  <div id="list">
-    <div class="empty">Loading requests...</div>
+  <!-- =========================================
+       HEADER
+  ========================================== -->
+
+  <header class="header">
+
+    <h1 class="brand">
+      ALBUKHR
+    </h1>
+
+  </header>
+
+
+  <!-- =========================================
+       MAIN
+  ========================================== -->
+
+  <section class="section">
+
+    <h3>
+      📂 My dApp Requests
+    </h3>
+
+
+    <div
+      id="list"
+      aria-live="polite"
+    >
+
+      <div class="empty">
+
+        Loading requests...
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================
+       PI SDK
+  ========================================== -->
+
+  <script
+    src="https://sdk.minepi.com/pi-sdk.js"
+  ></script>
+
+
+  <!-- =========================================
+       SUPABASE SDK
+  ========================================== -->
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+
+
+  <!-- =========================================
+       ALBUKHR SUPABASE CORE
+       MUST LOAD BEFORE PAGE ENGINE
+  ========================================== -->
+
+  <script src="js/supabase.js"></script>
+
+
+  <!-- =========================================
+       APPLICATION ALERT
+  ========================================== -->
+
+  <script src="js/app-alert.js"></script>
+
+
+  <!-- =========================================
+       PI AUTHORITY
+  ========================================== -->
+
+  <script src="js/pi-auth.js"></script>
+
+
+  <!-- =========================================
+       MY DAPP REQUESTS ENGINE
+       LOAD LAST
+  ========================================== -->
+
+  <script
+    src="js/my-dapp-requests.js?v=20260812_02"
+  ></script>
+
+
+  <!-- =========================================
+       ALERT UI
+  ========================================== -->
+
+  <div
+    id="appAlert"
+    class="app-alert"
+  >
+
+    <div class="app-alert-box">
+
+      <h3 id="appAlertTitle">
+        Notice
+      </h3>
+
+      <p id="appAlertText"></p>
+
+      <button
+        type="button"
+        onclick="closeAppAlert()"
+      >
+        OK
+      </button>
+
+    </div>
+
   </div>
-</section>
 
-<!-- ORDER YA DAWO HAKA -->
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="js/app-alert.js"></script>
-<script src="js/pi-auth.js"></script>
-
-<script src="js/my-dapp-requests.js?v=20260812_01"></script>
-
-<div id="appAlert" class="app-alert">
-  <div class="app-alert-box">
-    <h3 id="appAlertTitle">Notice</h3>
-    <p id="appAlertText"></p>
-    <button onclick="closeAppAlert()">OK</button>
-  </div>
-</div>
 
 </body>
+
 </html>
