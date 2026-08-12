@@ -5,9 +5,6 @@ const supabase = window.supabase.createClient(
 
 const box = document.getElementById("list");
 
-/* =========================
-   ESCAPE HTML
-========================= */
 function escapeHtml(text = ""){
   return String(text)
     .replace(/&/g, "&amp;")
@@ -17,141 +14,418 @@ function escapeHtml(text = ""){
     .replace(/'/g, "&#039;");
 }
 
-/* =========================
-   GET USER
-   MU GUJI ensurePiAuth NAN
-========================= */
-async function getCurrentPiUser(){
-
-  let user = null;
-
-  /* 1) Farko duba localStorage */
-  try{
-    const localUser = JSON.parse(localStorage.getItem("pi_user"));
-    if(localUser?.uid){
-      user = localUser;
-    }
-  }catch(e){
-    console.warn("localStorage pi_user parse failed:", e);
-  }
-
-  /* 2) Idan babu, sai mu gwada Pi.getUser() */
-  if(!user?.uid && window.Pi && typeof Pi.getUser === "function"){
-    try{
-      const piUser = await Pi.getUser();
-      if(piUser?.uid){
-        user = {
-          uid: piUser.uid,
-          username: piUser.username || ""
-        };
-
-        localStorage.setItem("pi_user", JSON.stringify(user));
-      }
-    }catch(e){
-      console.warn("Pi.getUser failed:", e);
-    }
-  }
-
-  return user;
-}
-
-/* =========================
-   LOAD MY REQUESTS
-========================= */
-
-async function loadMyRequests(){
+function showStage(title, message){
 
   box.innerHTML = `
     <div class="empty">
-      Checking authentication...
+
+      <strong>${escapeHtml(title)}</strong>
+
+      <br><br>
+
+      ${escapeHtml(message)}
+
     </div>
   `;
 
+}
+
+/* =========================================
+   TIMEOUT WRAPPER
+========================================= */
+
+function withTimeout(promise, ms, label){
+
+  return Promise.race([
+
+    promise,
+
+    new Promise((_, reject)=>{
+
+      setTimeout(()=>{
+
+        reject(
+          new Error(
+            label + " timed out after " + ms + "ms"
+          )
+        );
+
+      }, ms);
+
+    })
+
+  ]);
+
+}
+
+/* =========================================
+   AUTH DIAGNOSTIC
+========================================= */
+
+async function getCurrentPiUser(){
+
+  showStage(
+    "STEP 1",
+    "Checking local Pi user..."
+  );
+
+  let user = null;
+
+  /* ===============================
+     LOCAL STORAGE
+  =============================== */
+
   try{
 
-    const user = await getCurrentPiUser();
+    const raw =
+      localStorage.getItem("pi_user");
 
-    console.log("=================================");
-    console.log("MY DAPP DEBUG");
-    console.log("=================================");
+    console.log("localStorage pi_user:", raw);
 
-    console.log("Current user object:", user);
-    console.log("Current UID:", user?.uid);
-    console.log("Current username:", user?.username);
+    if(raw){
 
-    const { data, error } = await supabase
-      .from("dapp_requests")
-      .select("id, userid, pi_user, project_name, status, created_at")
-      .order("created_at", {
-        ascending:false
-      });
+      const localUser =
+        JSON.parse(raw);
 
-    console.log("ALL dApp REQUESTS:", data);
-    console.log("SUPABASE ERROR:", error);
+      if(localUser?.uid){
+
+        user = localUser;
+
+      }
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "localStorage error:",
+      e
+    );
+
+  }
+
+  /* ===============================
+     LOCAL USER FOUND
+  =============================== */
+
+  if(user?.uid){
+
+    showStage(
+      "STEP 2",
+      "Local Pi user found. UID: " +
+      user.uid
+    );
+
+    return user;
+
+  }
+
+  /* ===============================
+     NO LOCAL USER
+  =============================== */
+
+  showStage(
+    "STEP 2",
+    "No local Pi user found. Checking Pi SDK..."
+  );
+
+  /* ===============================
+     PI SDK
+  =============================== */
+
+  if(!window.Pi){
+
+    throw new Error(
+      "Pi SDK is not available on this page."
+    );
+
+  }
+
+  if(
+    typeof Pi.getUser !== "function"
+  ){
+
+    throw new Error(
+      "Pi.getUser() is not available in this Pi SDK."
+    );
+
+  }
+
+  showStage(
+    "STEP 3",
+    "Calling Pi.getUser()..."
+  );
+
+  let piUser;
+
+  try{
+
+    piUser =
+      await withTimeout(
+        Pi.getUser(),
+        8000,
+        "Pi.getUser()"
+      );
+
+  }catch(e){
+
+    throw new Error(
+      e?.message ||
+      "Pi.getUser() failed."
+    );
+
+  }
+
+  console.log(
+    "Pi.getUser result:",
+    piUser
+  );
+
+  if(!piUser?.uid){
+
+    throw new Error(
+      "Pi.getUser() returned no UID."
+    );
+
+  }
+
+  user = {
+
+    uid: piUser.uid,
+
+    username:
+      piUser.username || ""
+
+  };
+
+  localStorage.setItem(
+    "pi_user",
+    JSON.stringify(user)
+  );
+
+  return user;
+
+}
+
+/* =========================================
+   LOAD REQUESTS
+========================================= */
+
+async function loadMyRequests(){
+
+  showStage(
+    "STARTING",
+    "Preparing My dApp Requests..."
+  );
+
+  try{
+
+    /* ===============================
+       AUTH
+    =============================== */
+
+    const user =
+      await getCurrentPiUser();
+
+    showStage(
+      "STEP 4",
+      "Pi user loaded. UID: " +
+      user.uid +
+      "\n\nConnecting to Supabase..."
+    );
+
+    /* ===============================
+       SUPABASE
+    =============================== */
+
+    const result =
+      await withTimeout(
+
+        supabase
+          .from("dapp_requests")
+          .select(
+            "id, userid, pi_user, project_name, service_type, status, created_at"
+          )
+          .order(
+            "created_at",
+            {
+              ascending:false
+            }
+          ),
+
+        10000,
+
+        "Supabase request"
+
+      );
+
+    const {
+      data,
+      error
+    } = result;
 
     if(error){
 
+      throw new Error(
+        "Supabase error: " +
+        error.message
+      );
+
+    }
+
+    showStage(
+      "STEP 5",
+      "Supabase connected.\n\n" +
+      "Total requests found: " +
+      (data?.length || 0) +
+      "\n\nCurrent UID:\n" +
+      user.uid
+    );
+
+    /* ===============================
+       FILTER
+    =============================== */
+
+    const matches =
+      (data || []).filter(
+        row =>
+          String(row.userid) ===
+          String(user.uid)
+      );
+
+    console.log(
+      "Current user:",
+      user
+    );
+
+    console.log(
+      "All requests:",
+      data
+    );
+
+    console.log(
+      "Matching requests:",
+      matches
+    );
+
+    /* ===============================
+       FINAL RESULT
+    =============================== */
+
+    if(!matches.length){
+
       box.innerHTML = `
+
         <div class="empty">
-          Supabase error: ${escapeHtml(error.message)}
+
+          <strong>
+            No requests found for this account.
+          </strong>
+
+          <br><br>
+
+          UID:
+
+          <br>
+
+          ${escapeHtml(user.uid)}
+
+          <br><br>
+
+          Supabase records:
+
+          ${data?.length || 0}
+
         </div>
+
       `;
 
       return;
+
     }
 
-    const matches = (data || []).filter(
-      r => String(r.userid) === String(user?.uid)
-    );
+    box.innerHTML = "";
 
-    console.log("MATCHING REQUESTS:", matches);
+    matches.forEach(r=>{
 
-    box.innerHTML = `
-      <div class="card">
+      box.innerHTML += `
 
-        <strong>Authentication Diagnostic</strong>
+        <div class="card">
 
-        <p>
-          <b>UID:</b><br>
-          ${escapeHtml(user?.uid || "NO UID")}
-        </p>
+          <strong>
+            ${escapeHtml(
+              r.project_name ||
+              "Untitled Project"
+            )}
+          </strong>
 
-        <p>
-          <b>Username:</b><br>
-          ${escapeHtml(user?.username || "NO USERNAME")}
-        </p>
+          <div class="meta">
 
-        <p>
-          <b>Total Supabase Requests:</b>
-          ${data?.length || 0}
-        </p>
+            🛠
+            ${escapeHtml(
+              r.service_type || "-"
+            )}
 
-        <p>
-          <b>Requests Matching Current UID:</b>
-          ${matches.length}
-        </p>
+            <br>
 
-      </div>
-    `;
+            👤
+            ${escapeHtml(
+              r.pi_user || "-"
+            )}
 
-  }catch(err){
+          </div>
+
+          <div class="status">
+
+            ${escapeHtml(
+              r.status || "pending"
+            )}
+
+          </div>
+
+        </div>
+
+      `;
+
+    });
+
+  }catch(error){
 
     console.error(
-      "MY DAPP DEBUG ERROR:",
-      err
+      "MY DAPP ERROR:",
+      error
     );
 
     box.innerHTML = `
-      <div class="empty">
-        ${escapeHtml(err?.message || "Unknown error")}
-      </div>
-    `;
-  }
-    }
 
-/* =========================
+      <div class="empty">
+
+        <strong>
+          ❌ Diagnostic stopped
+        </strong>
+
+        <br><br>
+
+        ${escapeHtml(
+          error?.message ||
+          "Unknown error"
+        )}
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+/* =========================================
    START
-========================= */
-window.addEventListener("DOMContentLoaded", ()=>{
-  loadMyRequests();
-});
+========================================= */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  ()=>{
+    loadMyRequests();
+  }
+);
