@@ -1,328 +1,1250 @@
-const listBox = document.getElementById("adminList");
+/* =========================================
+   ALBUKHR ADMIN DAPP REQUESTS v4
+========================================= */
 
-/* ==========================
-ESCAPE HTML
-========================== */
+
+/* =========================================
+   DOM
+========================================= */
+
+const listBox =
+  document.getElementById("adminList");
+
+
+/* =========================================
+   ESCAPE HTML
+========================================= */
+
 function escapeHtml(text = ""){
+
   return String(text)
+
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+
 }
 
-/* ==========================
-STATUS BADGE
-========================== */
+
+/* =========================================
+   FORMAT DATE
+========================================= */
+
+function formatDate(date){
+
+  if(!date){
+
+    return "-";
+
+  }
+
+  return new Date(date)
+
+    .toLocaleString([],{
+
+      dateStyle:"medium",
+      timeStyle:"short"
+
+    });
+
+}
+
+
+/* =========================================
+   STATUS BADGE
+========================================= */
+
 function getStatusBadge(status){
 
   if(status === "approved"){
+
     return `
+
       <div class="status-badge status-approved">
-        🟢 Approved
+
+        <span class="status-dot"></span>
+
+        Approved
+
       </div>
+
     `;
+
   }
+
 
   if(status === "rejected"){
+
     return `
+
       <div class="status-badge status-rejected">
-        🔴 Rejected
+
+        <span class="status-dot"></span>
+
+        Rejected
+
       </div>
+
     `;
+
   }
 
+
   return `
+
     <div class="status-badge status-pending">
-      🟡 Pending
+
+      <span class="status-dot"></span>
+
+      Pending
+
     </div>
+
   `;
+
 }
 
-/* ==========================
-LOAD REQUESTS
-========================== */
+
+/* =========================================
+   LOADING STATE
+========================================= */
+
+function renderLoading(){
+
+  if(!listBox) return;
+
+  listBox.innerHTML = `
+
+    <div class="request-state loading-state">
+
+      <div class="loading-spinner"></div>
+
+      <h4>
+        Loading requests...
+      </h4>
+
+      <p>
+        Please wait while dApp requests are loaded.
+      </p>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+function renderEmpty(message){
+
+  if(!listBox) return;
+
+  listBox.innerHTML = `
+
+    <div class="request-state empty-state">
+
+      <div class="state-icon">
+        📭
+      </div>
+
+      <h4>
+        ${escapeHtml(message)}
+      </h4>
+
+      <p>
+        No dApp requests are currently available.
+      </p>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================
+   ERROR STATE
+========================================= */
+
+function renderError(message){
+
+  if(!listBox) return;
+
+  listBox.innerHTML = `
+
+    <div class="request-state error-state">
+
+      <div class="state-icon">
+        ⚠️
+      </div>
+
+      <h4>
+        Unable to Load Requests
+      </h4>
+
+      <p>
+        ${escapeHtml(message)}
+      </p>
+
+      <button
+        type="button"
+        class="retry-btn"
+        onclick="loadRequests()"
+      >
+        Retry
+      </button>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================
+   LOAD REQUESTS
+========================================= */
+
 async function loadRequests(){
 
-  listBox.innerHTML =
-    "<div class='empty'>Loading requests...</div>";
+  if(!listBox) return;
+
+  renderLoading();
 
   try{
 
-    const { data, error } =
+    const {
+
+      data,
+      error
+
+    } =
+
       await window.supabaseClient
+
         .from("dapp_requests")
+
         .select("*")
-        .order("created_at", {
+
+        .order("created_at",{
+
           ascending:false
+
         });
 
-    if(error){
-      console.error(error);
 
-      listBox.innerHTML =
-        "<div class='empty'>Failed to load requests.</div>";
+    if(error){
+
+      console.error(
+
+        "dApp Request Load Error:",
+
+        error
+
+      );
+
+      renderError(
+
+        error.message ||
+
+        "Failed to load requests."
+
+      );
 
       return;
+
     }
+
 
     renderRequests(data || []);
 
-  }catch(err){
 
-    console.error(err);
+  }catch(error){
 
-    listBox.innerHTML =
-      "<div class='empty'>Network error while loading requests.</div>";
+    console.error(
+
+      "dApp Request Network Error:",
+
+      error
+
+    );
+
+    renderError(
+
+      "Network error while loading requests."
+
+    );
+
   }
+
 }
 
-/* ==========================
-RENDER REQUESTS
-========================== */
+
+/* =========================================
+   RENDER REQUESTS
+========================================= */
+
 function renderRequests(rows){
 
   if(!Array.isArray(rows) || !rows.length){
 
-    listBox.innerHTML =
-      "<div class='empty'>No dApp requests found.</div>";
+    renderEmpty(
+
+      "No dApp Requests Found"
+
+    );
 
     return;
+
   }
 
+
   listBox.innerHTML = "";
+
 
   rows.forEach(row=>{
 
     const status =
-      (row.status || "pending").toLowerCase();
+
+      String(
+
+        row.status ||
+
+        "pending"
+
+      ).toLowerCase();
+
 
     const noteId =
+
       `note_${row.id}`;
+
+
+    /* =====================================
+       ACTION BUTTONS
+    ===================================== */
 
     let actionButtons = "";
 
+
     if(status === "pending"){
+
       actionButtons = `
+
         <div class="action-row">
-          <button
-            class="btn approve"
-            onclick="approveRequest('${row.id}')">
-            Approve
-          </button>
 
           <button
-            class="btn reject"
-            onclick="rejectRequest('${row.id}')">
-            Reject
+            type="button"
+            class="btn approve"
+            onclick="approveRequest('${escapeHtml(row.id)}', this)"
+          >
+
+            <span class="btn-icon">
+              ✓
+            </span>
+
+            Approve
+
           </button>
+
+
+          <button
+            type="button"
+            class="btn reject"
+            onclick="rejectRequest('${escapeHtml(row.id)}', this)"
+          >
+
+            <span class="btn-icon">
+              ×
+            </span>
+
+            Reject
+
+          </button>
+
         </div>
+
       `;
+
     }
+
 
     if(status === "approved"){
+
       actionButtons = `
+
         <div class="action-row">
-          <button class="btn approved disabled">
+
+          <button
+            type="button"
+            class="btn approved disabled"
+            disabled
+          >
+
+            <span class="btn-icon">
+              ✓
+            </span>
+
             Approved
+
           </button>
+
         </div>
+
       `;
+
     }
+
 
     if(status === "rejected"){
+
       actionButtons = `
+
         <div class="action-row">
-          <button class="btn rejected disabled">
+
+          <button
+            type="button"
+            class="btn rejected disabled"
+            disabled
+          >
+
+            <span class="btn-icon">
+              ×
+            </span>
+
             Rejected
+
           </button>
+
         </div>
+
       `;
+
     }
 
-    const card = document.createElement("div");
-    card.className = "card";
+
+    /* =====================================
+       CARD
+    ===================================== */
+
+    const card =
+
+      document.createElement("article");
+
+
+    card.className =
+
+      `dapp-request-card status-${status}`;
+
+
+    card.dataset.requestId =
+
+      row.id;
+
 
     card.innerHTML = `
+
+      <!-- REQUEST HEADER -->
+
       <div class="req-head">
 
-        <div>
+
+        <div class="req-heading">
+
+
           <div class="req-title">
-            ${escapeHtml(row.project_name || "Untitled Project")}
+
+            ${escapeHtml(
+
+              row.project_name ||
+
+              "Untitled Project"
+
+            )}
+
           </div>
 
+
           <div class="req-user">
-            👤 ${escapeHtml(row.pi_user || "-")}<br>
-            🛠 ${escapeHtml(row.service_type || "-")}
+
+            <span>
+              👤
+            </span>
+
+            ${escapeHtml(
+
+              row.pi_user ||
+
+              "-"
+
+            )}
+
+
+            <span class="separator">
+              •
+            </span>
+
+
+            <span>
+              🛠
+            </span>
+
+            ${escapeHtml(
+
+              row.service_type ||
+
+              "-"
+
+            )}
+
           </div>
+
+
         </div>
+
 
         ${getStatusBadge(status)}
 
+
       </div>
+
+
+      <!-- REQUEST META -->
 
       <div class="meta">
-        🆔 ${escapeHtml(row.userid || "-")}<br>
-        📅 ${
-          row.created_at
-          ? new Date(row.created_at).toLocaleString()
-          : "-"
-        }
+
+
+        <div class="meta-item">
+
+          <span class="meta-icon">
+            🆔
+          </span>
+
+          <span class="meta-label">
+            User ID
+          </span>
+
+          <span class="meta-value">
+
+            ${escapeHtml(
+
+              row.userid ||
+
+              "-"
+
+            )}
+
+          </span>
+
+        </div>
+
+
+        <div class="meta-item">
+
+          <span class="meta-icon">
+            📅
+          </span>
+
+          <span class="meta-label">
+            Submitted
+          </span>
+
+          <span class="meta-value">
+
+            ${formatDate(
+
+              row.created_at
+
+            )}
+
+          </span>
+
+        </div>
+
+
       </div>
+
+
+      <!-- DESCRIPTION -->
 
       <div class="desc">
-        <strong>Description</strong><br>
-        ${escapeHtml(row.description || "No description provided.")}
+
+        <div class="desc-title">
+          Description
+        </div>
+
+        <div class="desc-content">
+
+          ${escapeHtml(
+
+            row.description ||
+
+            "No description provided."
+
+          )}
+
+        </div>
+
       </div>
 
+
+      <!-- RECEIPT -->
+
       <div class="receipt-box">
+
+
         <div class="receipt-label">
+
+          <span>
+            🧾
+          </span>
+
           Payment Receipt
+
         </div>
+
 
         ${
           row.receipt_image
-          ? `
-            <img
-              src="${row.receipt_image}"
-              alt="Receipt">
+
+          ?
+
           `
-          : `
-            <div class="small-muted">
-              No receipt image uploaded.
+
+            <div class="receipt-preview">
+
+              <img
+                src="${escapeHtml(row.receipt_image)}"
+                alt="Payment receipt"
+                loading="lazy"
+              >
+
             </div>
+
           `
+
+          :
+
+          `
+
+            <div class="receipt-empty">
+
+              No receipt image uploaded.
+
+            </div>
+
+          `
+
         }
+
 
         ${
           row.receipt_ref
-          ? `
-            <div class="receipt-ref">
-              <strong>Ref:</strong>
-              ${escapeHtml(row.receipt_ref)}
-            </div>
+
+          ?
+
           `
-          : ""
+
+            <div class="receipt-ref">
+
+              <strong>
+                Reference:
+              </strong>
+
+              <span>
+
+                ${escapeHtml(
+
+                  row.receipt_ref
+
+                )}
+
+              </span>
+
+            </div>
+
+          `
+
+          :
+
+          ""
+
         }
+
+
       </div>
 
+
+      <!-- ADMIN NOTE -->
+
       <div class="note-area">
-        <label for="${noteId}">
+
+
+        <label
+          for="${noteId}"
+        >
+
           Admin Note
+
         </label>
+
 
         <textarea
           id="${noteId}"
           class="note-input"
-          placeholder="Write note for user...">${escapeHtml(row.admin_note || "")}</textarea>
+          placeholder="Write a note for the user..."
+        >${escapeHtml(
+
+          row.admin_note ||
+
+          ""
+
+        )}</textarea>
+
+
       </div>
+
 
       ${
         row.admin_note
-        ? `
-          <div class="admin-note-box">
-            <strong>Saved Note:</strong><br>
-            ${escapeHtml(row.admin_note)}
-          </div>
+
+        ?
+
         `
-        : ""
+
+          <div class="admin-note-box">
+
+            <div class="saved-note-title">
+
+              Saved Admin Note
+
+            </div>
+
+            <div class="saved-note-content">
+
+              ${escapeHtml(
+
+                row.admin_note
+
+              )}
+
+            </div>
+
+          </div>
+
+        `
+
+        :
+
+        ""
+
       }
 
+
+      <!-- ACTIONS -->
+
       ${actionButtons}
+
+
+      ${
+        status !== "pending" && row.reviewed_at
+
+        ?
+
+        `
+
+          <div class="reviewed-info">
+
+            Reviewed:
+
+            ${formatDate(
+
+              row.reviewed_at
+
+            )}
+
+          </div>
+
+        `
+
+        :
+
+        ""
+
+      }
+
     `;
 
+
     listBox.appendChild(card);
+
   });
+
 }
 
-/* ==========================
-APPROVE REQUEST
-========================== */
-async function approveRequest(id){
+
+/* =========================================
+   GET ADMIN NOTE
+========================================= */
+
+function getAdminNote(id){
 
   const noteEl =
-    document.getElementById(`note_${id}`);
+
+    document.getElementById(
+
+      `note_${id}`
+
+    );
+
+
+  return noteEl
+
+    ? noteEl.value.trim()
+
+    : "";
+
+}
+
+
+/* =========================================
+   SET BUTTON PROCESSING
+========================================= */
+
+function setButtonProcessing(
+
+  button,
+
+  text
+
+){
+
+  if(!button) return;
+
+
+  button.disabled = true;
+
+  button.classList.add(
+
+    "processing"
+
+  );
+
+
+  button.dataset.originalText =
+
+    button.innerHTML;
+
+
+  button.innerHTML = `
+
+    <span class="button-spinner"></span>
+
+    ${text}
+
+  `;
+
+}
+
+
+/* =========================================
+   APPROVE REQUEST
+========================================= */
+
+async function approveRequest(
+
+  id,
+
+  button
+
+){
 
   const note =
-    noteEl ? noteEl.value.trim() : "";
+
+    getAdminNote(id);
+
 
   const ok =
-    confirm("Approve this dApp request?");
+
+    confirm(
+
+      "Approve this dApp request?"
+
+    );
+
 
   if(!ok) return;
 
+
+  setButtonProcessing(
+
+    button,
+
+    "Approving..."
+
+  );
+
+
   try{
 
-    const { error } =
+    const {
+
+      error
+
+    } =
+
       await window.supabaseClient
+
         .from("dapp_requests")
+
         .update({
+
           status:"approved",
+
           telegram_unlocked:true,
+
           admin_note:note,
-          reviewed_at:new Date().toISOString()
+
+          reviewed_at:
+
+            new Date()
+
+              .toISOString()
+
         })
+
         .eq("id", id);
 
+
     if(error){
-      console.error(error);
-      alert(error.message || "Failed to approve request.");
+
+      console.error(
+
+        "Approve Error:",
+
+        error
+
+      );
+
+      alert(
+
+        error.message ||
+
+        "Failed to approve request."
+
+      );
+
+
+      if(button){
+
+        button.disabled = false;
+
+        button.classList.remove(
+
+          "processing"
+
+        );
+
+        button.innerHTML =
+
+          button.dataset.originalText ||
+
+          "Approve";
+
+      }
+
       return;
+
     }
 
-    loadRequests();
 
-  }catch(err){
-    console.error(err);
-    alert("Network error while approving request.");
+    /*
+     * IMMEDIATE REFRESH
+     */
+
+    await loadRequests();
+
+
+  }catch(error){
+
+    console.error(
+
+      "Approve Network Error:",
+
+      error
+
+    );
+
+
+    alert(
+
+      "Network error while approving request."
+
+    );
+
+
+    if(button){
+
+      button.disabled = false;
+
+      button.classList.remove(
+
+        "processing"
+
+      );
+
+      button.innerHTML =
+
+        button.dataset.originalText ||
+
+        "Approve";
+
+    }
+
   }
+
 }
 
-/* ==========================
-REJECT REQUEST
-========================== */
-async function rejectRequest(id){
 
-  const noteEl =
-    document.getElementById(`note_${id}`);
+/* =========================================
+   REJECT REQUEST
+========================================= */
+
+async function rejectRequest(
+
+  id,
+
+  button
+
+){
 
   const note =
-    noteEl ? noteEl.value.trim() : "";
+
+    getAdminNote(id);
+
 
   const ok =
-    confirm("Reject this dApp request?");
+
+    confirm(
+
+      "Reject this dApp request?"
+
+    );
+
 
   if(!ok) return;
 
+
+  setButtonProcessing(
+
+    button,
+
+    "Rejecting..."
+
+  );
+
+
   try{
 
-    const { error } =
+    const {
+
+      error
+
+    } =
+
       await window.supabaseClient
+
         .from("dapp_requests")
+
         .update({
+
           status:"rejected",
+
           telegram_unlocked:false,
+
           admin_note:note,
-          reviewed_at:new Date().toISOString()
+
+          reviewed_at:
+
+            new Date()
+
+              .toISOString()
+
         })
+
         .eq("id", id);
 
+
     if(error){
-      console.error(error);
-      alert(error.message || "Failed to reject request.");
+
+      console.error(
+
+        "Reject Error:",
+
+        error
+
+      );
+
+
+      alert(
+
+        error.message ||
+
+        "Failed to reject request."
+
+      );
+
+
+      if(button){
+
+        button.disabled = false;
+
+        button.classList.remove(
+
+          "processing"
+
+        );
+
+        button.innerHTML =
+
+          button.dataset.originalText ||
+
+          "Reject";
+
+      }
+
       return;
+
     }
+
+
+    /*
+     * IMMEDIATE REFRESH
+     */
+
+    await loadRequests();
+
+
+  }catch(error){
+
+    console.error(
+
+      "Reject Network Error:",
+
+      error
+
+    );
+
+
+    alert(
+
+      "Network error while rejecting request."
+
+    );
+
+
+    if(button){
+
+      button.disabled = false;
+
+      button.classList.remove(
+
+        "processing"
+
+      );
+
+      button.innerHTML =
+
+        button.dataset.originalText ||
+
+        "Reject";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================
+   AUTO REFRESH
+========================================= */
+
+let dappRequestRefreshTimer = null;
+
+
+function startDappRequestAutoRefresh(){
+
+  if(dappRequestRefreshTimer){
+
+    clearInterval(
+
+      dappRequestRefreshTimer
+
+    );
+
+  }
+
+
+  dappRequestRefreshTimer =
+
+    setInterval(
+
+      loadRequests,
+
+      30000
+
+    );
+
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+
+  "DOMContentLoaded",
+
+  ()=>{
 
     loadRequests();
 
-  }catch(err){
-    console.error(err);
-    alert("Network error while rejecting request.");
-  }
-}
+    startDappRequestAutoRefresh();
 
-/* ==========================
-START
-========================== */
-loadRequests();
+  }
+
+);
+
+
+/* =========================================
+   PAGE VISIBILITY REFRESH
+========================================= */
+
+document.addEventListener(
+
+  "visibilitychange",
+
+  ()=>{
+
+    if(
+
+      document.visibilityState ===
+
+      "visible"
+
+    ){
+
+      loadRequests();
+
+    }
+
+  }
+
+);
