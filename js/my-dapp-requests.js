@@ -1,274 +1,168 @@
 /* =========================================
-   ALBUKHR – MY dApp REQUESTS v4
-   USER REQUEST HISTORY
+   ALBUKHR – MY dApp REQUESTS
+   SUPABASE REST VERSION
+   Compatible with PI dApp ENGINE
 ========================================= */
 
 (() => {
 
   "use strict";
 
-  const TABLE = "dapp_requests";
 
-  const box = document.getElementById("list");
+  /* =========================================
+     CONFIG
+  ========================================== */
 
-  let loading = false;
+  const SUPABASE_URL =
+    "https://qexmnghilahsvethlxem.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
+
+  const TABLE =
+    "dapp_requests";
+
+  const REQUEST_TIMEOUT =
+    15000;
 
 
   /* =========================================
      DOM
-  ========================================= */
+  ========================================== */
 
-  function $(id) {
-    return document.getElementById(id);
-  }
+  const box =
+    document.getElementById("list");
 
 
   /* =========================================
-     ESCAPE HTML
-  ========================================= */
+     HTML ESCAPE
+  ========================================== */
 
-  function escapeHtml(value = "") {
+  function escapeHtml(text = "") {
 
-    return String(value)
+    return String(text)
 
       .replace(/&/g, "&amp;")
+
       .replace(/</g, "&lt;")
+
       .replace(/>/g, "&gt;")
+
       .replace(/"/g, "&quot;")
+
       .replace(/'/g, "&#039;");
 
   }
 
 
   /* =========================================
-     STATUS
-  ========================================= */
+     UI MESSAGE
+  ========================================== */
 
-  function getStatus(status) {
-
-    const value =
-      String(status || "unknown")
-        .toLowerCase();
-
-    if (value === "pending") {
-
-      return {
-        text: "🟡 Under Review",
-        className: "pending"
-      };
-
-    }
-
-    if (value === "approved") {
-
-      return {
-        text: "🟢 Approved",
-        className: "approved"
-      };
-
-    }
-
-    if (value === "rejected") {
-
-      return {
-        text: "🔴 Rejected",
-        className: "rejected"
-      };
-
-    }
-
-    return {
-      text: escapeHtml(
-        status || "Unknown"
-      ),
-      className: ""
-    };
-
-  }
-
-
-  /* =========================================
-     LOADING
-  ========================================= */
-
-  function renderLoading(message) {
+  function showStage(
+    title,
+    message
+  ) {
 
     if (!box) return;
 
     box.innerHTML = `
-
       <div class="empty">
 
-        <div>
-          ⏳
-        </div>
-
         <strong>
-          ${escapeHtml(message)}
+          ${escapeHtml(title)}
         </strong>
 
-      </div>
+        <br><br>
 
+        ${escapeHtml(message)}
+
+      </div>
     `;
 
   }
 
 
   /* =========================================
-     EMPTY
-  ========================================= */
+     FETCH WITH TIMEOUT
+  ========================================== */
 
-  function renderEmpty() {
+  async function fetchWithTimeout(
+    url,
+    options = {},
+    timeout = REQUEST_TIMEOUT
+  ) {
 
-    if (!box) return;
+    const controller =
+      new AbortController();
 
-    box.innerHTML = `
-
-      <div class="empty">
-
-        <div>
-          📭
-        </div>
-
-        <strong>
-          You have not submitted any dApp request yet.
-        </strong>
-
-      </div>
-
-    `;
-
-  }
-
-
-  /* =========================================
-     ERROR
-  ========================================= */
-
-  function renderError(message, details = "") {
-
-    if (!box) return;
-
-    box.innerHTML = `
-
-      <div class="empty">
-
-        <div>
-          ⚠️
-        </div>
-
-        <strong>
-          Unable to Load Requests
-        </strong>
-
-        <p>
-          ${escapeHtml(message)}
-        </p>
-
-        ${
-          details
-            ? `
-              <small>
-                ${escapeHtml(details)}
-              </small>
-            `
-            : ""
-        }
-
-        <button
-          type="button"
-          class="btn"
-          id="retryMyDappRequests"
-          style="margin-top:12px"
-        >
-          Retry
-        </button>
-
-      </div>
-
-    `;
-
-
-    const retry =
-      $("retryMyDappRequests");
-
-
-    if (retry) {
-
-      retry.addEventListener(
-        "click",
-        loadMyRequests
+    const timer =
+      setTimeout(
+        () => controller.abort(),
+        timeout
       );
-
-    }
-
-  }
-
-
-  /* =========================================
-     SUPABASE
-  ========================================= */
-
-  function getSupabaseClient() {
-
-    const client =
-      window.albukhrSupabase;
-
-
-    if (
-      !client ||
-      typeof client.from !== "function"
-    ) {
-
-      throw new Error(
-        "ALBUKHR Supabase client is not ready."
-      );
-
-    }
-
-
-    return client;
-
-  }
-
-
-  /* =========================================
-     PI USER
-  ========================================= */
-
-  async function getCurrentPiUser() {
-
-    renderLoading(
-      "Authenticating with Pi..."
-    );
-
-
-    /*
-     * IMPORTANT:
-     * First use existing pi_user.
-     */
 
     try {
 
-      const stored =
-        localStorage.getItem("pi_user");
+      return await fetch(
+        url,
+        {
+          ...options,
+          signal:
+            controller.signal
+        }
+      );
+
+    } finally {
+
+      clearTimeout(timer);
+
+    }
+
+  }
 
 
-      if (stored) {
+  /* =========================================
+     GET CURRENT PI USER
+     
+     SAME AUTHORITY AS OLD ENGINE:
+     
+     1. localStorage
+     2. Pi.getUser()
+     3. ensurePiAuth()
+  ========================================= */
+
+  async function getCurrentUser() {
+
+    /* ---------------------------------------
+       STEP 1
+       LOCAL STORAGE
+    --------------------------------------- */
+
+    try {
+
+      const local =
+        localStorage.getItem(
+          "pi_user"
+        );
+
+      console.log(
+        "ALBUKHR localStorage pi_user:",
+        local
+      );
+
+
+      if (local) {
 
         const parsed =
-          JSON.parse(stored);
+          JSON.parse(local);
 
 
         if (parsed?.uid) {
 
           console.log(
-            "Using stored Pi user:",
-            {
-              uid: parsed.uid,
-              username:
-                parsed.username || ""
-            }
+            "ALBUKHR local user found:",
+            parsed.uid
           );
 
 
@@ -278,10 +172,7 @@
               parsed.uid,
 
             username:
-              parsed.username || "",
-
-            wallet_address:
-              parsed.wallet_address || ""
+              parsed.username || ""
 
           };
 
@@ -292,335 +183,607 @@
     } catch (error) {
 
       console.warn(
-        "Unable to parse stored Pi user:",
+        "localStorage pi_user parse failed:",
         error
       );
 
     }
 
 
-    /*
-     * FALLBACK:
-     * Shared authentication only.
-     */
+    /* ---------------------------------------
+       STEP 2
+       PI GET USER
+    --------------------------------------- */
 
     if (
-      typeof window.ensurePiAuth !==
+      window.Pi &&
+      typeof Pi.getUser ===
+        "function"
+    ) {
+
+      try {
+
+        console.log(
+          "Trying Pi.getUser()..."
+        );
+
+
+        const piUser =
+          await Pi.getUser();
+
+
+        console.log(
+          "Pi.getUser result:",
+          piUser
+        );
+
+
+        if (piUser?.uid) {
+
+          const user = {
+
+            uid:
+              piUser.uid,
+
+            username:
+              piUser.username || ""
+
+          };
+
+
+          localStorage.setItem(
+            "pi_user",
+            JSON.stringify(user)
+          );
+
+
+          return user;
+
+        }
+
+      } catch (error) {
+
+        console.warn(
+          "Pi.getUser failed:",
+          error
+        );
+
+      }
+
+    }
+
+
+    /* ---------------------------------------
+       STEP 3
+       SHARED PI AUTH
+    --------------------------------------- */
+
+    if (
+      typeof window.ensurePiAuth ===
       "function"
     ) {
 
-      throw new Error(
-        "Pi authentication system is not available."
-      );
+      try {
 
-    }
-
-
-    const user =
-      await window.ensurePiAuth();
+        console.log(
+          "Trying ensurePiAuth()..."
+        );
 
 
-    if (!user?.uid) {
-
-      throw new Error(
-        "Pi authentication completed without a UID."
-      );
-
-    }
+        const authUser =
+          await window.ensurePiAuth();
 
 
-    console.log(
-      "Pi authentication user:",
-      {
-        uid: user.uid,
-        username:
-          user.username || ""
+        console.log(
+          "ensurePiAuth result:",
+          authUser
+        );
+
+
+        if (authUser?.uid) {
+
+          const user = {
+
+            uid:
+              authUser.uid,
+
+            username:
+              authUser.username || ""
+
+          };
+
+
+          localStorage.setItem(
+            "pi_user",
+            JSON.stringify(user)
+          );
+
+
+          return user;
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "ensurePiAuth failed:",
+          error
+        );
+
       }
-    );
+
+    }
 
 
-    return user;
+    return null;
 
   }
 
 
   /* =========================================
-     QUERY MY REQUESTS
+     LOAD USER REQUESTS
+     
+     DIRECT SUPABASE REST API
+     
+     NO window.albukhrSupabase
+     NO window.supabase.createClient()
   ========================================= */
 
-  async function queryMyRequests(uid) {
+  async function loadMyRequests() {
 
-    renderLoading(
-      "Connecting to ALBUKHR..."
+    showStage(
+      "Loading",
+      "Loading requests..."
     );
 
 
-    const supabase =
-      getSupabaseClient();
+    try {
+
+      /* -------------------------------------
+         USER
+      ------------------------------------- */
+
+      const user =
+        await getCurrentUser();
 
 
-    console.log(
-      "Supabase client ready."
-    );
+      if (!user?.uid) {
+
+        showStage(
+          "Login Required",
+          "Please login with Pi Browser."
+        );
+
+        return;
+
+      }
 
 
-    console.log(
-      "Querying table:",
-      TABLE
-    );
-
-
-    console.log(
-      "Filtering userid:",
-      uid
-    );
-
-
-    renderLoading(
-      "Loading your requests..."
-    );
-
-
-    const {
-
-      data,
-      error
-
-    } = await supabase
-
-      .from(TABLE)
-
-      .select("*")
-
-      .eq("userid", uid)
-
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
+      console.log(
+        "ALBUKHR current Pi UID:",
+        user.uid
       );
 
 
-    console.log(
-      "Supabase query response:",
-      {
-        data,
-        error
+      /* -------------------------------------
+         BUILD REST URL
+      ------------------------------------- */
+
+      const url =
+        `${SUPABASE_URL}/rest/v1/${TABLE}` +
+        `?select=*` +
+        `&userid=eq.${encodeURIComponent(user.uid)}` +
+        `&order=created_at.desc`;
+
+
+      console.log(
+        "ALBUKHR Supabase request URL:",
+        url
+      );
+
+
+      /* -------------------------------------
+         SUPABASE REST REQUEST
+      ------------------------------------- */
+
+      const response =
+        await fetchWithTimeout(
+
+          url,
+
+          {
+
+            method:
+              "GET",
+
+            headers: {
+
+              "apikey":
+                SUPABASE_KEY,
+
+              "Authorization":
+                `Bearer ${SUPABASE_KEY}`,
+
+              "Accept":
+                "application/json"
+
+            }
+
+          }
+
+        );
+
+
+      /* -------------------------------------
+         HTTP ERROR
+      ------------------------------------- */
+
+      if (!response.ok) {
+
+        const errorText =
+          await response.text();
+
+
+        console.error(
+          "Supabase REST error:",
+          response.status,
+          errorText
+        );
+
+
+        showStage(
+          "Failed to Load",
+          `Supabase returned HTTP ${response.status}.`
+        );
+
+
+        return;
+
       }
-    );
 
 
-    if (error) {
+      /* -------------------------------------
+         JSON
+      ------------------------------------- */
+
+      const data =
+        await response.json();
+
+
+      console.log(
+        "ALBUKHR dapp_requests result:",
+        data
+      );
+
+
+      /* -------------------------------------
+         NO DATA
+      ------------------------------------- */
+
+      if (
+        !Array.isArray(data) ||
+        data.length === 0
+      ) {
+
+        showStage(
+          "No Requests",
+          "You have not submitted any dApp request yet."
+        );
+
+
+        return;
+
+      }
+
+
+      /* -------------------------------------
+         RENDER
+      ------------------------------------- */
+
+      renderRequests(data);
+
+
+    } catch (error) {
 
       console.error(
-        "MY dApp REQUESTS SUPABASE ERROR",
-        {
-          message:
-            error.message,
-
-          details:
-            error.details,
-
-          hint:
-            error.hint,
-
-          code:
-            error.code
-        }
+        "loadMyRequests fatal error:",
+        error
       );
 
 
-      const details = [
+      if (
+        error?.name ===
+        "AbortError"
+      ) {
 
-        error.code
-          ? `Code: ${error.code}`
-          : "",
-
-        error.details
-          ? error.details
-          : ""
-
-      ]
-        .filter(Boolean)
-        .join(" | ");
+        showStage(
+          "Connection Timeout",
+          "Supabase took too long to respond. Please try again."
+        );
 
 
-      throw new Error(
-        details
-          ? `${error.message} — ${details}`
-          : error.message ||
-            "Supabase query failed."
+        return;
+
+      }
+
+
+      showStage(
+        "Something Went Wrong",
+        "Unable to load your dApp requests. Please try again."
       );
 
     }
-
-
-    return Array.isArray(data)
-      ? data
-      : [];
 
   }
 
 
   /* =========================================
-     TELEGRAM
+     RENDER REQUESTS
   ========================================= */
 
-  function renderTelegram(row) {
+  function renderRequests(
+    requests
+  ) {
+
+    if (!box) return;
+
+
+    box.innerHTML = "";
+
+
+    requests.forEach(
+      (request) => {
+
+        box.insertAdjacentHTML(
+          "beforeend",
+          createRequestCard(
+            request
+          )
+        );
+
+      }
+    );
+
+  }
+
+
+  /* =========================================
+     CREATE REQUEST CARD
+  ========================================= */
+
+  function createRequestCard(
+    r
+  ) {
+
+    /* ---------------------------------------
+       STATUS
+    --------------------------------------- */
+
+    let statusText =
+      "Unknown";
+
+    let statusClass =
+      "";
+
 
     if (
-      String(row.status)
-        .toLowerCase() !==
+      r.status ===
+      "pending"
+    ) {
+
+      statusText =
+        "🟡 Under Review";
+
+      statusClass =
+        "pending";
+
+    }
+
+    else if (
+      r.status ===
       "approved"
     ) {
 
-      return "";
+      statusText =
+        "🟢 Approved";
+
+      statusClass =
+        "approved";
 
     }
+
+    else if (
+      r.status ===
+      "rejected"
+    ) {
+
+      statusText =
+        "🔴 Rejected";
+
+      statusClass =
+        "rejected";
+
+    }
+
+    else {
+
+      statusText =
+        escapeHtml(
+          r.status ||
+          "Unknown"
+        );
+
+    }
+
+
+    /* ---------------------------------------
+       TELEGRAM
+    --------------------------------------- */
+
+    let telegram =
+      "";
 
 
     if (
-      row.telegram_unlocked !== true
+      r.status ===
+      "approved" &&
+      r.telegram_unlocked ===
+      true
     ) {
 
-      return "";
+      telegram = `
+
+        <a
+          class="btn"
+          href="https://t.me/+7A6IMz9PutMzZjVk"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+
+          🔓 Join Private Telegram Group
+
+        </a>
+
+      `;
 
     }
 
 
-    return `
+    /* ---------------------------------------
+       ADMIN NOTE
+    --------------------------------------- */
 
-      <a
-        class="btn"
-        href="https://t.me/+7A6IMz9PutMzZjVk"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        🔓 Join Private Telegram Group
-      </a>
-
-    `;
-
-  }
+    let adminNote =
+      "";
 
 
-  /* =========================================
-     ADMIN NOTE
-  ========================================= */
+    if (r.admin_note) {
 
-  function renderAdminNote(row) {
+      adminNote = `
 
-    if (!row.admin_note) {
+        <div class="notice">
 
-      return "";
+          <strong>
+            📝 Admin Note:
+          </strong>
+
+          <br>
+
+          ${escapeHtml(
+            r.admin_note
+          )}
+
+        </div>
+
+      `;
 
     }
 
 
-    return `
+    /* ---------------------------------------
+       RECEIPT IMAGE
+    --------------------------------------- */
 
-      <div class="notice">
-
-        <strong>
-          📝 Admin Note:
-        </strong>
-
-        <br>
-
-        ${escapeHtml(
-          row.admin_note
-        )}
-
-      </div>
-
-    `;
-
-  }
+    let receipt =
+      "";
 
 
-  /* =========================================
-     RECEIPT
-  ========================================= */
+    if (r.receipt_image) {
 
-  function renderReceipt(row) {
+      receipt = `
 
-    return `
+        <img
+          src="${escapeHtml(
+            r.receipt_image
+          )}"
+          alt="Payment Receipt"
+          style="
+            max-width:100%;
+            height:auto;
+            border-radius:10px;
+            margin-top:8px;
+          "
+        >
 
-      <div class="receipt">
+      `;
 
-        <strong>
-          Payment Receipt:
-        </strong>
+    } else {
 
-        <br>
+      receipt = `
 
-        ${
-          row.receipt_image
+        <em>
+          No receipt image
+        </em>
 
-            ?
+      `;
 
-            `
-              <img
-                src="${escapeHtml(
-                  row.receipt_image
-                )}"
-                alt="Payment Receipt"
-                loading="lazy"
-              >
-            `
-
-            :
-
-            `
-              <em>
-                No receipt image
-              </em>
-            `
-        }
+    }
 
 
-        ${
-          row.receipt_ref
+    /* ---------------------------------------
+       RECEIPT REFERENCE
+    --------------------------------------- */
 
-            ?
-
-            `
-              <div
-                style="
-                  font-size:12px;
-                  color:#666;
-                  margin-top:6px
-                "
-              >
-                Ref:
-                ${escapeHtml(
-                  row.receipt_ref
-                )}
-              </div>
-            `
-
-            :
-
-            ""
-        }
-
-      </div>
-
-    `;
-
-  }
+    let receiptRef =
+      "";
 
 
-  /* =========================================
-     RENDER CARD
-  ========================================= */
+    if (r.receipt_ref) {
 
-  function renderRequest(row) {
+      receiptRef = `
 
-    const status =
-      getStatus(row.status);
+        <div
+          style="
+            font-size:12px;
+            color:#666;
+            margin-top:6px;
+          "
+        >
 
+          Ref:
+          ${escapeHtml(
+            r.receipt_ref
+          )}
+
+        </div>
+
+      `;
+
+    }
+
+
+    /* ---------------------------------------
+       DATE
+    --------------------------------------- */
+
+    let createdAt =
+      "";
+
+
+    if (r.created_at) {
+
+      try {
+
+        createdAt =
+          new Date(
+            r.created_at
+          ).toLocaleString();
+
+      } catch (_) {
+
+        createdAt =
+          escapeHtml(
+            r.created_at
+          );
+
+      }
+
+    }
+
+
+    /* ---------------------------------------
+       CARD
+    --------------------------------------- */
 
     return `
 
@@ -628,7 +791,7 @@
 
         <strong>
           ${escapeHtml(
-            row.project_name ||
+            r.project_name ||
             "Untitled Project"
           )}
         </strong>
@@ -638,7 +801,7 @@
 
           🛠
           ${escapeHtml(
-            row.service_type ||
+            r.service_type ||
             "-"
           )}
 
@@ -646,18 +809,30 @@
 
           👤
           ${escapeHtml(
-            row.pi_user ||
+            r.pi_user ||
             "-"
           )}
+
+          ${
+            createdAt
+              ? `
+                <br>
+                🕒
+                ${escapeHtml(
+                  createdAt
+                )}
+              `
+              : ""
+          }
 
         </div>
 
 
         <div
-          class="status ${status.className}"
+          class="status ${statusClass}"
         >
 
-          ${status.text}
+          ${statusText}
 
         </div>
 
@@ -671,20 +846,31 @@
           <br>
 
           ${escapeHtml(
-            row.description ||
+            r.description ||
             "—"
           )}
 
         </div>
 
 
-        ${renderReceipt(row)}
+        <div class="receipt">
+
+          <strong>
+            Payment Receipt:
+          </strong>
+
+          <br>
+
+          ${receipt}
+
+          ${receiptRef}
+
+        </div>
 
 
-        ${renderAdminNote(row)}
+        ${adminNote}
 
-
-        ${renderTelegram(row)}
+        ${telegram}
 
       </div>
 
@@ -694,155 +880,41 @@
 
 
   /* =========================================
-     RENDER LIST
-  ========================================= */
+     START
+  ========================================== */
 
-  function renderRequests(rows) {
+  function start() {
 
-    if (
-      !Array.isArray(rows) ||
-      rows.length === 0
-    ) {
-
-      renderEmpty();
-
-      return;
-
-    }
-
-
-    box.innerHTML = "";
-
-
-    const fragment =
-      document.createDocumentFragment();
-
-
-    rows.forEach(row => {
-
-      const wrapper =
-        document.createElement(
-          "div"
-        );
-
-
-      wrapper.innerHTML =
-        renderRequest(row);
-
-
-      while (
-        wrapper.firstElementChild
-      ) {
-
-        fragment.appendChild(
-          wrapper.firstElementChild
-        );
-
-      }
-
-    });
-
-
-    box.appendChild(
-      fragment
+    console.log(
+      "================================="
     );
 
-  }
+    console.log(
+      "ALBUKHR My dApp Requests started"
+    );
+
+    console.log(
+      "Supabase REST mode"
+    );
+
+    console.log(
+      "Table:",
+      TABLE
+    );
+
+    console.log(
+      "================================="
+    );
 
 
-  /* =========================================
-     LOAD
-  ========================================= */
-
-  async function loadMyRequests() {
-
-    if (!box) {
-
-      console.error(
-        "#list element was not found."
-      );
-
-      return;
-
-    }
-
-
-    if (loading) {
-
-      return;
-
-    }
-
-
-    loading = true;
-
-
-    try {
-
-      const user =
-        await getCurrentPiUser();
-
-
-      if (!user?.uid) {
-
-        throw new Error(
-          "No Pi user UID is available. Please login with Pi Browser."
-        );
-
-      }
-
-
-      console.log(
-        "Current authenticated UID:",
-        user.uid
-      );
-
-
-      const rows =
-        await queryMyRequests(
-          user.uid
-        );
-
-
-      renderRequests(
-        rows
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "loadMyRequests fatal error:",
-        error
-      );
-
-
-      renderError(
-        error?.message ||
-        "Something went wrong while loading requests."
-      );
-
-
-    } finally {
-
-      loading = false;
-
-    }
+    loadMyRequests();
 
   }
 
 
   /* =========================================
-     GLOBAL EXPORT
-  ========================================= */
-
-  window.loadMyRequests =
-    loadMyRequests;
-
-
-  /* =========================================
-     START
-  ========================================= */
+     DOM READY
+  ========================================== */
 
   if (
     document.readyState ===
@@ -851,13 +923,14 @@
 
     document.addEventListener(
       "DOMContentLoaded",
-      loadMyRequests
+      start
     );
 
   } else {
 
-    loadMyRequests();
+    start();
 
   }
+
 
 })();
