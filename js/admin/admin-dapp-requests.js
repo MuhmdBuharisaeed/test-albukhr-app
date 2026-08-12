@@ -1197,7 +1197,7 @@ function startDappRequestAutoRefresh(){
 
       loadRequests,
 
-      30000
+      300000
 
     );
 
