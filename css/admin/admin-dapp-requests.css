@@ -1,473 +1,31 @@
 /* =========================================
-   ALBUKHR ADMIN dAPP REQUESTS V4
+   ALBUKHR ADMIN DAPP REQUESTS v4
 ========================================= */
 
 
 /* =========================================
-   PAGE
+   PAGE SECTION
 ========================================= */
 
-.admin-dapp-requests-page{
-  min-height:100vh;
-  background:#f4f7f5;
-  color:#17201a;
-}
+.section{
 
+  padding:16px;
 
-/* =========================================
-   MAIN CONTAINER
-========================================= */
+  max-width:1100px;
 
-.admin-dapp-container{
-  width:100%;
-  max-width:1180px;
   margin:0 auto;
-  padding:22px 18px 40px;
-  box-sizing:border-box;
-}
-
-
-/* =========================================
-   PAGE HERO
-========================================= */
-
-.dapp-page-hero{
-
-  display:flex;
-  align-items:center;
-  gap:16px;
-
-  background:#ffffff;
-
-  border:1px solid #e6ece8;
-
-  border-radius:18px;
-
-  padding:18px 20px;
-
-  margin-bottom:18px;
-
-  box-shadow:
-    0 6px 20px rgba(0,0,0,.05);
 
 }
 
+.section > h3{
 
-.dapp-hero-icon{
-
-  width:52px;
-  height:52px;
-
-  flex:0 0 52px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  border-radius:15px;
-
-  background:#eaf7ef;
-
-  color:#0f7a3d;
-
-}
-
-
-.dapp-hero-icon svg{
-
-  width:27px;
-  height:27px;
-
-  fill:none;
-
-  stroke:currentColor;
-
-  stroke-width:1.8;
-
-  stroke-linecap:round;
-
-  stroke-linejoin:round;
-
-}
-
-
-.dapp-hero-content{
-
-  min-width:0;
-  flex:1;
-
-}
-
-
-.dapp-hero-content h1{
-
-  margin:0;
-
-  font-size:20px;
-
-  line-height:1.25;
-
-  font-weight:800;
-
-  color:#142019;
-
-}
-
-
-.dapp-hero-content p{
-
-  margin:5px 0 0;
-
-  font-size:12px;
-
-  line-height:1.5;
-
-  color:#6d7771;
-
-}
-
-
-.dapp-hero-status{
-
-  display:inline-flex;
-
-  align-items:center;
-
-  gap:7px;
-
-  padding:8px 11px;
-
-  border-radius:999px;
-
-  background:#f1f8f3;
-
-  border:1px solid #d8ebde;
-
-  color:#0f7a3d;
-
-  font-size:11px;
-
-  font-weight:800;
-
-  white-space:nowrap;
-
-}
-
-
-.hero-status-dot{
-
-  width:7px;
-  height:7px;
-
-  border-radius:50%;
-
-  background:#18a558;
-
-  box-shadow:
-    0 0 0 3px rgba(24,165,88,.10);
-
-}
-
-
-/* =========================================
-   SUMMARY GRID
-========================================= */
-
-.dapp-summary-grid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(4,minmax(0,1fr));
-
-  gap:14px;
-
-  margin-bottom:18px;
-
-}
-
-
-.dapp-summary-card{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:12px;
-
-  min-width:0;
-
-  background:#ffffff;
-
-  border:1px solid #e7ece9;
-
-  border-radius:16px;
-
-  padding:15px;
-
-  box-sizing:border-box;
-
-  box-shadow:
-    0 5px 16px rgba(0,0,0,.045);
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease;
-
-}
-
-
-.dapp-summary-card:hover{
-
-  transform:translateY(-2px);
-
-  box-shadow:
-    0 9px 22px rgba(0,0,0,.07);
-
-}
-
-
-.dapp-summary-icon{
-
-  width:42px;
-  height:42px;
-
-  flex:0 0 42px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  border-radius:13px;
-
-  background:#f1f7f3;
-
-  color:#0f7a3d;
-
-}
-
-
-.dapp-summary-icon svg{
-
-  width:21px;
-  height:21px;
-
-  fill:none;
-
-  stroke:currentColor;
-
-  stroke-width:1.8;
-
-  stroke-linecap:round;
-
-  stroke-linejoin:round;
-
-}
-
-
-.dapp-summary-card > div:last-child{
-
-  min-width:0;
-
-}
-
-
-.dapp-summary-card span{
-
-  display:block;
-
-  font-size:11px;
-
-  color:#737c76;
-
-  margin-bottom:4px;
-
-}
-
-
-.dapp-summary-card b{
-
-  display:block;
+  margin:0 0 16px;
 
   font-size:18px;
 
-  line-height:1;
-
   font-weight:800;
 
-  color:#162019;
-
-}
-
-
-/* =========================================
-   TOOLBAR
-========================================= */
-
-.dapp-toolbar{
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  gap:15px;
-
-  background:#ffffff;
-
-  border:1px solid #e6ece8;
-
-  border-radius:16px;
-
-  padding:14px 16px;
-
-  margin-bottom:14px;
-
-  box-shadow:
-    0 5px 16px rgba(0,0,0,.04);
-
-}
-
-
-.dapp-toolbar-title{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:11px;
-
-  min-width:0;
-
-}
-
-
-.toolbar-icon{
-
-  width:40px;
-  height:40px;
-
-  flex:0 0 40px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  border-radius:12px;
-
-  background:#f2f7f4;
-
-  color:#0f7a3d;
-
-}
-
-
-.toolbar-icon svg{
-
-  width:20px;
-  height:20px;
-
-  fill:none;
-
-  stroke:currentColor;
-
-  stroke-width:1.8;
-
-  stroke-linecap:round;
-
-  stroke-linejoin:round;
-
-}
-
-
-.dapp-toolbar-title h2{
-
-  margin:0;
-
-  font-size:15px;
-
-  font-weight:800;
-
-  color:#172019;
-
-}
-
-
-.dapp-toolbar-title span{
-
-  display:block;
-
-  margin-top:3px;
-
-  font-size:11px;
-
-  color:#7a827d;
-
-}
-
-
-/* =========================================
-   FILTER
-========================================= */
-
-.dapp-filter{
-
-  flex:0 0 auto;
-
-}
-
-
-.dapp-filter select{
-
-  min-width:145px;
-
-  height:38px;
-
-  padding:0 34px 0 12px;
-
-  border:1px solid #dfe6e1;
-
-  border-radius:10px;
-
-  background:#ffffff;
-
-  color:#26312a;
-
-  font-size:12px;
-
-  font-weight:700;
-
-  outline:none;
-
-  cursor:pointer;
-
-}
-
-
-.dapp-filter select:focus{
-
-  border-color:#0f7a3d;
-
-  box-shadow:
-    0 0 0 3px rgba(15,122,61,.08);
-
-}
-
-
-/* =========================================
-   REQUEST LIST
-========================================= */
-
-.dapp-request-list{
-
-  display:flex;
-
-  flex-direction:column;
-
-  gap:14px;
+  color:#111;
 
 }
 
@@ -478,23 +36,26 @@
 
 .dapp-request-card{
 
-  background:#ffffff;
+  background:#fff;
 
-  border:1px solid #e5ebe7;
+  border:1px solid #e7ece9;
 
-  border-radius:17px;
+  border-radius:18px;
 
-  padding:17px;
+  padding:16px;
 
-  box-sizing:border-box;
+  margin-bottom:16px;
 
   box-shadow:
-    0 6px 18px rgba(0,0,0,.045);
+    0 6px 20px
+    rgba(0,0,0,.055);
 
   transition:
     transform .2s ease,
     box-shadow .2s ease,
     border-color .2s ease;
+
+  overflow:hidden;
 
 }
 
@@ -504,9 +65,31 @@
   transform:translateY(-1px);
 
   box-shadow:
-    0 9px 24px rgba(0,0,0,.065);
+    0 10px 26px
+    rgba(0,0,0,.075);
 
-  border-color:#d9e5dc;
+}
+
+
+/* =========================================
+   STATUS BORDER
+========================================= */
+
+.dapp-request-card.status-pending{
+
+  border-left:4px solid #d8a400;
+
+}
+
+.dapp-request-card.status-approved{
+
+  border-left:4px solid #0f7a3d;
+
+}
+
+.dapp-request-card.status-rejected{
+
+  border-left:4px solid #b02a37;
 
 }
 
@@ -515,81 +98,96 @@
    REQUEST HEADER
 ========================================= */
 
-.dapp-request-header{
+.req-head{
 
   display:flex;
 
-  align-items:flex-start;
-
   justify-content:space-between;
+
+  align-items:flex-start;
 
   gap:14px;
 
-  padding-bottom:14px;
-
-  border-bottom:1px solid #edf1ee;
+  margin-bottom:15px;
 
 }
 
 
-.dapp-request-title-wrap{
+.req-heading{
 
   min-width:0;
 
+  flex:1;
+
 }
 
 
-.dapp-request-title{
+.req-title{
 
-  margin:0;
+  font-size:17px;
 
-  font-size:16px;
-
-  line-height:1.3;
+  line-height:1.35;
 
   font-weight:800;
 
-  color:#172019;
+  color:#111;
 
   word-break:break-word;
 
 }
 
 
-.dapp-request-user{
+.req-user{
+
+  display:flex;
+
+  align-items:center;
+
+  flex-wrap:wrap;
+
+  gap:5px;
 
   margin-top:6px;
 
-  font-size:11px;
+  font-size:12px;
 
-  line-height:1.7;
+  line-height:1.6;
 
-  color:#707a74;
+  color:#666;
 
-  word-break:break-word;
+}
+
+
+.req-user .separator{
+
+  color:#aaa;
+
+  margin:0 2px;
 
 }
 
 
 /* =========================================
-   STATUS BADGES
+   STATUS BADGE
 ========================================= */
 
-.dapp-status{
+.status-badge{
 
   display:inline-flex;
 
   align-items:center;
 
-  gap:6px;
+  justify-content:center;
 
-  flex:0 0 auto;
+  gap:7px;
 
-  padding:7px 10px;
+  min-height:28px;
+
+  padding:6px 11px;
 
   border-radius:999px;
 
-  font-size:10px;
+  font-size:11px;
 
   line-height:1;
 
@@ -597,47 +195,83 @@
 
   white-space:nowrap;
 
-}
-
-
-.dapp-status-pending{
-
-  color:#946800;
-
-  background:#fff8e5;
-
-  border:1px solid #f0dc9c;
+  flex-shrink:0;
 
 }
 
 
-.dapp-status-approved{
+.status-dot{
+
+  width:7px;
+
+  height:7px;
+
+  border-radius:50%;
+
+  display:inline-block;
+
+}
+
+
+.status-pending{
+
+  color:#8a6500;
+
+  background:#fff8df;
+
+  border:1px solid #f0d78b;
+
+}
+
+
+.status-pending .status-dot{
+
+  background:#d8a400;
+
+}
+
+
+.status-approved{
 
   color:#0f7a3d;
 
   background:#eaf7ef;
 
-  border:1px solid #bfe2ca;
+  border:1px solid #b9e2c7;
 
 }
 
 
-.dapp-status-rejected{
+.status-approved .status-dot{
 
-  color:#ad303b;
+  background:#159447;
 
-  background:#fff0f1;
+}
 
-  border:1px solid #efc8cc;
+
+.status-rejected{
+
+  color:#b02a37;
+
+  background:#fff0f0;
+
+  border:1px solid #efc5ca;
+
+}
+
+
+.status-rejected .status-dot{
+
+  background:#d83b3b;
 
 }
 
 
 /* =========================================
-   REQUEST META
+   META
 ========================================= */
 
-.dapp-request-meta{
+.meta{
 
   display:grid;
 
@@ -646,50 +280,59 @@
 
   gap:9px;
 
-  padding:14px 0;
+  margin-bottom:14px;
 
 }
 
 
-.dapp-meta-item{
+.meta-item{
+
+  display:flex;
+
+  align-items:flex-start;
+
+  gap:7px;
 
   min-width:0;
 
-  padding:10px 11px;
+  padding:9px 10px;
+
+  border-radius:11px;
 
   background:#f7f9f8;
 
   border:1px solid #edf1ee;
 
-  border-radius:11px;
+  font-size:11px;
+
+  line-height:1.5;
 
 }
 
 
-.dapp-meta-label{
+.meta-icon{
 
-  display:block;
-
-  font-size:10px;
-
-  font-weight:700;
-
-  color:#818983;
-
-  margin-bottom:4px;
+  flex-shrink:0;
 
 }
 
 
-.dapp-meta-value{
+.meta-label{
 
-  display:block;
+  color:#777;
 
-  font-size:12px;
+  font-weight:600;
+
+}
+
+
+.meta-value{
+
+  color:#333;
 
   font-weight:700;
 
-  color:#28332c;
+  overflow-wrap:anywhere;
 
   word-break:break-word;
 
@@ -700,49 +343,47 @@
    DESCRIPTION
 ========================================= */
 
-.dapp-description{
+.desc{
 
-  margin-top:2px;
+  margin-top:4px;
 
   padding:12px;
+
+  border-radius:12px;
 
   background:#f7f9f8;
 
   border-left:4px solid #0f7a3d;
 
-  border-radius:10px;
-
 }
 
 
-.dapp-description-title{
+.desc-title{
 
-  display:block;
-
-  margin-bottom:6px;
-
-  font-size:11px;
+  font-size:12px;
 
   font-weight:800;
 
-  color:#29342d;
+  color:#222;
+
+  margin-bottom:6px;
 
 }
 
 
-.dapp-description-text{
-
-  margin:0;
+.desc-content{
 
   font-size:12px;
 
   line-height:1.7;
 
-  color:#4c5750;
+  color:#444;
 
   white-space:pre-wrap;
 
   word-break:break-word;
+
+  overflow-wrap:anywhere;
 
 }
 
@@ -751,18 +392,22 @@
    RECEIPT
 ========================================= */
 
-.dapp-receipt{
+.receipt-box{
 
-  margin-top:13px;
+  margin-top:14px;
 
-  padding-top:13px;
+  padding:12px;
 
-  border-top:1px solid #edf1ee;
+  border-radius:13px;
+
+  background:#fafcfb;
+
+  border:1px solid #e8eeea;
 
 }
 
 
-.dapp-receipt-title{
+.receipt-label{
 
   display:flex;
 
@@ -770,82 +415,109 @@
 
   gap:7px;
 
-  margin-bottom:8px;
+  margin-bottom:9px;
 
-  font-size:11px;
+  font-size:12px;
 
   font-weight:800;
 
-  color:#303a33;
+  color:#333;
 
 }
 
 
-.dapp-receipt-title svg{
+.receipt-preview{
 
-  width:17px;
-  height:17px;
+  width:100%;
 
-  fill:none;
+  display:flex;
 
-  stroke:#0f7a3d;
+  justify-content:center;
 
-  stroke-width:1.8;
+  align-items:center;
 
-  stroke-linecap:round;
+  padding:8px;
 
-  stroke-linejoin:round;
+  border-radius:12px;
+
+  background:#f4f6f5;
+
+  border:1px solid #e3e8e5;
+
+  box-sizing:border-box;
 
 }
 
 
-.dapp-receipt-image{
+.receipt-preview img{
 
   display:block;
 
   width:100%;
 
-  max-width:340px;
+  max-width:420px;
 
-  max-height:250px;
+  max-height:280px;
 
   object-fit:contain;
 
-  margin:0 auto;
+  border-radius:9px;
 
-  padding:7px;
-
-  box-sizing:border-box;
-
-  border:1px solid #e2e8e4;
-
-  border-radius:12px;
-
-  background:#fafbfa;
-
-  box-shadow:
-    0 4px 13px rgba(0,0,0,.05);
+  background:#fff;
 
 }
 
 
-.dapp-receipt-ref{
+.receipt-empty{
 
-  margin-top:8px;
+  padding:13px;
 
-  padding:9px 10px;
+  border-radius:10px;
 
-  background:#f7f9f8;
+  text-align:center;
 
-  border-radius:9px;
+  font-size:11px;
+
+  color:#888;
+
+  background:#f6f7f7;
+
+  border:1px dashed #d8dfdb;
+
+}
+
+
+.receipt-ref{
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:5px;
+
+  margin-top:10px;
 
   font-size:11px;
 
   line-height:1.6;
 
-  color:#69736d;
+  color:#666;
+
+}
+
+
+.receipt-ref strong{
+
+  color:#333;
+
+}
+
+
+.receipt-ref span{
 
   word-break:break-all;
+
+  overflow-wrap:anywhere;
 
 }
 
@@ -854,72 +526,79 @@
    ADMIN NOTE
 ========================================= */
 
-.dapp-note{
+.note-area{
 
   margin-top:14px;
 
 }
 
 
-.dapp-note-label{
+.note-area label{
 
   display:block;
 
-  margin-bottom:6px;
+  margin-bottom:7px;
 
-  font-size:11px;
+  font-size:12px;
 
   font-weight:800;
 
-  color:#333d36;
+  color:#333;
 
 }
 
 
-.dapp-note-input{
+.note-input{
+
+  display:block;
 
   width:100%;
 
-  min-height:88px;
-
-  padding:11px 12px;
+  min-height:95px;
 
   box-sizing:border-box;
 
-  resize:vertical;
+  padding:11px 12px;
 
-  border:1px solid #dce4df;
+  border:1px solid #d9dfdc;
 
-  border-radius:11px;
+  border-radius:12px;
 
   outline:none;
 
-  background:#ffffff;
+  resize:vertical;
 
-  color:#27312b;
+  background:#fff;
+
+  color:#222;
 
   font-family:inherit;
 
   font-size:12px;
 
-  line-height:1.6;
+  line-height:1.65;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
 
 }
 
 
-.dapp-note-input::placeholder{
+.note-input::placeholder{
 
-  color:#9aa29d;
+  color:#999;
 
 }
 
 
-.dapp-note-input:focus{
+.note-input:focus{
 
   border-color:#0f7a3d;
 
   box-shadow:
-    0 0 0 3px rgba(15,122,61,.08);
+    0 0 0 3px
+    rgba(15,122,61,.08);
 
 }
 
@@ -928,70 +607,73 @@
    SAVED ADMIN NOTE
 ========================================= */
 
-.dapp-saved-note{
+.admin-note-box{
 
-  margin-top:10px;
+  margin-top:12px;
 
-  padding:10px 11px;
+  padding:11px 12px;
 
-  border-left:4px solid #0f7a3d;
+  border-radius:11px;
 
-  border-radius:9px;
+  background:#fff6f6;
 
-  background:#f1f8f3;
+  border-left:4px solid #b02a37;
 
-  color:#48534c;
+}
+
+
+.saved-note-title{
+
+  margin-bottom:5px;
 
   font-size:11px;
 
-  line-height:1.7;
+  font-weight:800;
+
+  color:#8c2631;
+
+}
+
+
+.saved-note-content{
+
+  font-size:12px;
+
+  line-height:1.65;
+
+  color:#5d3438;
 
   white-space:pre-wrap;
 
   word-break:break-word;
 
-}
-
-
-.dapp-saved-note strong{
-
-  color:#0f7a3d;
+  overflow-wrap:anywhere;
 
 }
 
 
 /* =========================================
-   ACTIONS
+   ACTION ROW
 ========================================= */
 
-.dapp-action-row{
+.action-row{
 
   display:flex;
-
-  align-items:center;
 
   flex-wrap:wrap;
 
   gap:9px;
 
-  margin-top:14px;
-
-  padding-top:13px;
-
-  border-top:1px solid #edf1ee;
+  margin-top:15px;
 
 }
 
 
-.dapp-action-btn{
+/* =========================================
+   BUTTON BASE
+========================================= */
 
-  min-height:38px;
-
-  padding:0 14px;
-
-  border:0;
-
-  border-radius:10px;
+.btn{
 
   display:inline-flex;
 
@@ -1001,107 +683,47 @@
 
   gap:7px;
 
+  min-height:40px;
+
+  padding:9px 15px;
+
+  border:0;
+
+  border-radius:11px;
+
   font-family:inherit;
 
-  font-size:11px;
+  font-size:12px;
 
   font-weight:800;
+
+  line-height:1;
 
   cursor:pointer;
 
   transition:
     transform .18s ease,
-    opacity .18s ease,
-    box-shadow .18s ease;
+    box-shadow .18s ease,
+    opacity .18s ease;
 
 }
 
 
-.dapp-action-btn:hover{
+.btn:not(:disabled):hover{
 
   transform:translateY(-1px);
 
 }
 
 
-.dapp-action-btn:active{
+.btn:not(:disabled):active{
 
   transform:translateY(0);
 
 }
 
 
-.dapp-action-btn:disabled{
-
-  cursor:not-allowed;
-
-  opacity:.6;
-
-  transform:none;
-
-}
-
-
-.dapp-approve-btn{
-
-  background:#0f7a3d;
-
-  color:#ffffff;
-
-  box-shadow:
-    0 4px 10px rgba(15,122,61,.14);
-
-}
-
-
-.dapp-approve-btn:hover{
-
-  box-shadow:
-    0 6px 14px rgba(15,122,61,.20);
-
-}
-
-
-.dapp-reject-btn{
-
-  background:#b02a37;
-
-  color:#ffffff;
-
-  box-shadow:
-    0 4px 10px rgba(176,42,55,.12);
-
-}
-
-
-.dapp-reject-btn:hover{
-
-  box-shadow:
-    0 6px 14px rgba(176,42,55,.18);
-
-}
-
-
-.dapp-approved-btn{
-
-  background:#eaf7ef;
-
-  color:#0f7a3d;
-
-  border:1px solid #bfe2ca;
-
-  cursor:default;
-
-}
-
-
-.dapp-rejected-btn{
-
-  background:#fff0f1;
-
-  color:#ad303b;
-
-  border:1px solid #efc8cc;
+.btn:disabled{
 
   cursor:default;
 
@@ -1109,149 +731,289 @@
 
 
 /* =========================================
-   LOADING
+   BUTTON ICON
 ========================================= */
 
-.dapp-loading-state{
+.btn-icon{
 
-  min-height:180px;
-
-  display:flex;
-
-  flex-direction:column;
+  display:inline-flex;
 
   align-items:center;
 
   justify-content:center;
 
-  gap:10px;
+  width:17px;
 
-  background:#ffffff;
+  height:17px;
 
-  border:1px solid #e5ebe7;
+  font-size:15px;
 
-  border-radius:16px;
-
-  color:#737d76;
+  font-weight:900;
 
 }
 
 
-.loading-spinner{
+/* =========================================
+   APPROVE
+========================================= */
 
-  width:28px;
-  height:28px;
+.btn.approve{
 
-  border:3px solid #e2ebe5;
+  color:#fff;
 
-  border-top-color:#0f7a3d;
+  background:#0f7a3d;
+
+  box-shadow:
+    0 4px 10px
+    rgba(15,122,61,.18);
+
+}
+
+
+.btn.approve:hover{
+
+  background:#0b6833;
+
+}
+
+
+/* =========================================
+   REJECT
+========================================= */
+
+.btn.reject{
+
+  color:#fff;
+
+  background:#b02a37;
+
+  box-shadow:
+    0 4px 10px
+    rgba(176,42,55,.15);
+
+}
+
+
+.btn.reject:hover{
+
+  background:#97232f;
+
+}
+
+
+/* =========================================
+   APPROVED BUTTON
+========================================= */
+
+.btn.approved{
+
+  color:#fff;
+
+  background:#0f7a3d;
+
+}
+
+
+.btn.rejected{
+
+  color:#fff;
+
+  background:#b02a37;
+
+}
+
+
+/* =========================================
+   DISABLED
+========================================= */
+
+.btn.disabled{
+
+  opacity:.85;
+
+  pointer-events:none;
+
+}
+
+
+/* =========================================
+   PROCESSING
+========================================= */
+
+.btn.processing{
+
+  opacity:.85;
+
+  cursor:wait;
+
+}
+
+
+.button-spinner{
+
+  width:14px;
+
+  height:14px;
+
+  border:2px solid
+    rgba(255,255,255,.4);
+
+  border-top-color:#fff;
 
   border-radius:50%;
 
   animation:
-    dappSpin .8s linear infinite;
+    dappButtonSpin .7s
+    linear infinite;
 
 }
 
 
-.dapp-loading-state p{
-
-  margin:0;
-
-  font-size:12px;
-
-  font-weight:600;
-
-}
-
-
-@keyframes dappSpin{
+@keyframes dappButtonSpin{
 
   to{
+
     transform:rotate(360deg);
+
   }
 
 }
 
 
 /* =========================================
-   EMPTY STATE
+   REVIEWED INFO
 ========================================= */
 
-.dapp-empty-state{
+.reviewed-info{
 
-  padding:40px 20px;
+  margin-top:12px;
 
-  text-align:center;
+  padding-top:10px;
 
-  background:#ffffff;
+  border-top:1px solid #edf1ee;
 
-  border:1px solid #e5ebe7;
+  font-size:10px;
+
+  color:#888;
+
+}
+
+
+/* =========================================
+   REQUEST STATES
+========================================= */
+
+.request-state{
+
+  background:#fff;
+
+  border:1px solid #e7ece9;
 
   border-radius:16px;
 
-}
+  padding:30px 18px;
 
+  text-align:center;
 
-.dapp-empty-icon{
-
-  width:48px;
-  height:48px;
-
-  margin:0 auto 10px;
-
-  display:flex;
-
-  align-items:center;
-  justify-content:center;
-
-  border-radius:14px;
-
-  background:#f2f6f3;
-
-  color:#7b857e;
+  box-shadow:
+    0 5px 16px
+    rgba(0,0,0,.04);
 
 }
 
 
-.dapp-empty-icon svg{
+.request-state h4{
 
-  width:24px;
-  height:24px;
-
-  fill:none;
-
-  stroke:currentColor;
-
-  stroke-width:1.7;
-
-  stroke-linecap:round;
-
-  stroke-linejoin:round;
-
-}
-
-
-.dapp-empty-state h3{
-
-  margin:0;
+  margin:10px 0 5px;
 
   font-size:14px;
 
   font-weight:800;
 
-  color:#3a443d;
+  color:#222;
 
 }
 
 
-.dapp-empty-state p{
+.request-state p{
 
-  margin:6px 0 0;
+  margin:0;
 
-  font-size:11px;
+  font-size:12px;
 
-  color:#858d88;
+  line-height:1.6;
+
+  color:#777;
+
+}
+
+
+/* =========================================
+   STATE ICON
+========================================= */
+
+.state-icon{
+
+  width:48px;
+
+  height:48px;
+
+  margin:0 auto;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  border-radius:50%;
+
+  background:#f2f6f3;
+
+  font-size:22px;
+
+}
+
+
+/* =========================================
+   LOADING STATE
+========================================= */
+
+.loading-spinner{
+
+  width:28px;
+
+  height:28px;
+
+  margin:0 auto;
+
+  border:3px solid #dce8e1;
+
+  border-top-color:#0f7a3d;
+
+  border-radius:50%;
+
+  animation:
+    dappLoadingSpin .8s
+    linear infinite;
+
+}
+
+
+@keyframes dappLoadingSpin{
+
+  to{
+
+    transform:rotate(360deg);
+
+  }
+
+}
+
+
+.loading-state h4{
+
+  margin-top:13px;
 
 }
 
@@ -1260,68 +1022,66 @@
    ERROR STATE
 ========================================= */
 
-.dapp-error-state{
+.error-state{
 
-  padding:22px;
+  border-color:#f0d0d4;
 
-  text-align:center;
-
-  background:#fff5f5;
-
-  border:1px solid #f0d2d5;
-
-  border-radius:15px;
-
-  color:#8d2934;
+  background:#fffafa;
 
 }
 
 
-.dapp-error-state h3{
+.error-state .state-icon{
 
-  margin:0;
-
-  font-size:14px;
-
-  font-weight:800;
-
-}
-
-
-.dapp-error-state p{
-
-  margin:6px 0 0;
-
-  font-size:11px;
-
-  line-height:1.6;
-
-  color:#9b555d;
+  background:#fff0f0;
 
 }
 
 
 /* =========================================
-   SCREEN READER ONLY
+   RETRY BUTTON
 ========================================= */
 
-.sr-only{
+.retry-btn{
 
-  position:absolute;
+  display:inline-flex;
 
-  width:1px;
-  height:1px;
+  align-items:center;
 
-  padding:0;
-  margin:-1px;
+  justify-content:center;
 
-  overflow:hidden;
+  min-height:38px;
 
-  clip:rect(0,0,0,0);
+  margin-top:14px;
 
-  white-space:nowrap;
+  padding:9px 16px;
 
   border:0;
+
+  border-radius:10px;
+
+  background:#0f7a3d;
+
+  color:#fff;
+
+  font-family:inherit;
+
+  font-size:12px;
+
+  font-weight:800;
+
+  cursor:pointer;
+
+  transition:.2s ease;
+
+}
+
+
+.retry-btn:hover{
+
+  background:#0b6833;
+
+  transform:translateY(-1px);
 
 }
 
@@ -1330,19 +1090,89 @@
    MOBILE
 ========================================= */
 
-@media(max-width:800px){
+@media(max-width:700px){
 
-  .admin-dapp-container{
+  .section{
 
-    padding:
-      16px
-      12px
-      30px;
+    padding:13px;
 
   }
 
 
-  .dapp-summary-grid{
+  .section > h3{
+
+    font-size:16px;
+
+    margin-bottom:13px;
+
+  }
+
+
+  .dapp-request-card{
+
+    padding:14px;
+
+    border-radius:16px;
+
+  }
+
+
+  .req-head{
+
+    gap:10px;
+
+  }
+
+
+  .req-title{
+
+    font-size:15px;
+
+  }
+
+
+  .status-badge{
+
+    padding:6px 9px;
+
+    font-size:10px;
+
+  }
+
+
+  .meta{
+
+    grid-template-columns:1fr;
+
+    gap:7px;
+
+  }
+
+
+  .meta-item{
+
+    font-size:11px;
+
+  }
+
+
+  .desc-content{
+
+    font-size:12px;
+
+  }
+
+
+  .receipt-preview img{
+
+    max-height:230px;
+
+  }
+
+
+  .action-row{
+
+    display:grid;
 
     grid-template-columns:
       repeat(2,minmax(0,1fr));
@@ -1350,23 +1180,11 @@
   }
 
 
-  .dapp-page-hero{
+  .btn{
 
-    padding:15px;
+    width:100%;
 
-  }
-
-
-  .dapp-hero-status{
-
-    display:none;
-
-  }
-
-
-  .dapp-request-meta{
-
-    grid-template-columns:1fr;
+    min-height:42px;
 
   }
 
@@ -1377,132 +1195,25 @@
    SMALL MOBILE
 ========================================= */
 
-@media(max-width:520px){
+@media(max-width:420px){
 
-  .dapp-page-hero{
+  .section{
 
-    align-items:flex-start;
-
-  }
-
-
-  .dapp-hero-icon{
-
-    width:44px;
-    height:44px;
-
-    flex-basis:44px;
-
-  }
-
-
-  .dapp-hero-icon svg{
-
-    width:23px;
-    height:23px;
-
-  }
-
-
-  .dapp-hero-content h1{
-
-    font-size:17px;
-
-  }
-
-
-  .dapp-summary-grid{
-
-    gap:9px;
-
-  }
-
-
-  .dapp-summary-card{
-
-    padding:12px;
-
-    gap:9px;
-
-  }
-
-
-  .dapp-summary-icon{
-
-    width:36px;
-    height:36px;
-
-    flex-basis:36px;
-
-    border-radius:11px;
-
-  }
-
-
-  .dapp-summary-icon svg{
-
-    width:18px;
-    height:18px;
-
-  }
-
-
-  .dapp-summary-card b{
-
-    font-size:16px;
-
-  }
-
-
-  .dapp-toolbar{
-
-    align-items:flex-start;
-
-    flex-direction:column;
-
-  }
-
-
-  .dapp-filter{
-
-    width:100%;
-
-  }
-
-
-  .dapp-filter select{
-
-    width:100%;
+    padding:10px;
 
   }
 
 
   .dapp-request-card{
 
-    padding:13px;
+    padding:12px;
 
-    border-radius:15px;
-
-  }
-
-
-  .dapp-request-header{
-
-    flex-direction:column;
-
-    gap:9px;
+    margin-bottom:12px;
 
   }
 
 
-  .dapp-status{
-
-    align-self:flex-start;
-
-  }
-
-
-  .dapp-action-row{
+  .req-head{
 
     flex-direction:column;
 
@@ -1511,33 +1222,38 @@
   }
 
 
-  .dapp-action-btn{
+  .status-badge{
 
-    width:100%;
-
-  }
-
-}
-
-
-/* =========================================
-   REDUCED MOTION
-========================================= */
-
-@media(prefers-reduced-motion:reduce){
-
-  .dapp-summary-card,
-  .dapp-request-card,
-  .dapp-action-btn{
-
-    transition:none;
+    width:max-content;
 
   }
 
-  .loading-spinner{
 
-    animation:none;
+  .req-user{
+
+    font-size:11px;
 
   }
 
+
+  .meta-item{
+
+    padding:8px;
+
   }
+
+
+  .note-input{
+
+    min-height:90px;
+
+  }
+
+
+  .action-row{
+
+    grid-template-columns:1fr;
+
+  }
+
+   }
