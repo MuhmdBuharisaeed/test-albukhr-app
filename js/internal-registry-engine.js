@@ -42,20 +42,68 @@
   /* =========================================================
      CORE HELPERS
   ========================================================= */
-  function getSupabaseClient(){
-    const client =
-      window.supabaseClient ||
-      window.supabase ||
-      window.albukhrSupabase ||
-      null;
+function getSupabaseClient(){
 
-    if(!client){
-      throw new Error(
-        `${ENGINE_NAME}: Supabase client not found. Load js/supabase-core.js first.`
-      );
+  /* =========================================
+     PREFERRED: ALBUKHR SUPABASE CORE CLIENT
+     ========================================= */
+
+  if(
+    window.albukhrSupabase &&
+    typeof window.albukhrSupabase.from === "function"
+  ){
+    return window.albukhrSupabase;
+  }
+
+  /* =========================================
+     SECONDARY: OFFICIAL ALBUKHR CLIENT GETTER
+     ========================================= */
+
+  if(
+    typeof window.getAlbukhrSupabaseClient === "function"
+  ){
+    const client = window.getAlbukhrSupabaseClient();
+
+    if(
+      client &&
+      typeof client.from === "function"
+    ){
+      return client;
     }
+  }
 
-    return client;
+  /* =========================================
+     LEGACY CLIENT ALIAS
+     ========================================= */
+
+  if(
+    window.supabaseClient &&
+    typeof window.supabaseClient.from === "function"
+  ){
+    return window.supabaseClient;
+  }
+
+  /* =========================================
+     IMPORTANT:
+     window.supabase IS THE SDK NAMESPACE,
+     NOT THE DATABASE CLIENT.
+     ========================================= */
+
+  if(
+    window.supabase &&
+    typeof window.supabase.createClient === "function"
+  ){
+    throw new Error(
+      `${ENGINE_NAME}: Supabase SDK is loaded, but the ALBUKHR Supabase client is not available. ` +
+      `Use window.albukhrSupabase or getAlbukhrSupabaseClient().`
+    );
+  }
+
+  throw new Error(
+    `${ENGINE_NAME}: Supabase client not found. Load js/supabase-core.js first.`
+  );
+}
+   
   }
 
   function getContributorEngine(){
