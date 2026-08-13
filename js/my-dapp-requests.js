@@ -1,7 +1,7 @@
 /* =========================================
-   ALBUKHR – MY dApp REQUESTS
+   ALBUKHR – MY dApp REQUESTS v4
    SUPABASE REST VERSION
-   Compatible with PI dApp ENGINE
+   PI dApp ENGINE COMPATIBLE
 ========================================= */
 
 (() => {
@@ -41,15 +41,10 @@
   function escapeHtml(text = "") {
 
     return String(text)
-
       .replace(/&/g, "&amp;")
-
       .replace(/</g, "&lt;")
-
       .replace(/>/g, "&gt;")
-
       .replace(/"/g, "&quot;")
-
       .replace(/'/g, "&#039;");
 
   }
@@ -108,8 +103,7 @@
         url,
         {
           ...options,
-          signal:
-            controller.signal
+          signal: controller.signal
         }
       );
 
@@ -123,28 +117,19 @@
 
 
   /* =========================================
-     GET CURRENT PI USER
-     
-     SAME AUTHORITY AS OLD ENGINE:
-     
-     1. localStorage
-     2. Pi.getUser()
-     3. ensurePiAuth()
-  ========================================= */
+     CURRENT PI USER
+  ========================================== */
 
   async function getCurrentUser() {
 
     /* ---------------------------------------
-       STEP 1
        LOCAL STORAGE
     --------------------------------------- */
 
     try {
 
       const local =
-        localStorage.getItem(
-          "pi_user"
-        );
+        localStorage.getItem("pi_user");
 
       console.log(
         "ALBUKHR localStorage pi_user:",
@@ -159,12 +144,6 @@
 
 
         if (parsed?.uid) {
-
-          console.log(
-            "ALBUKHR local user found:",
-            parsed.uid
-          );
-
 
           return {
 
@@ -191,31 +170,18 @@
 
 
     /* ---------------------------------------
-       STEP 2
        PI GET USER
     --------------------------------------- */
 
     if (
       window.Pi &&
-      typeof Pi.getUser ===
-        "function"
+      typeof Pi.getUser === "function"
     ) {
 
       try {
 
-        console.log(
-          "Trying Pi.getUser()..."
-        );
-
-
         const piUser =
           await Pi.getUser();
-
-
-        console.log(
-          "Pi.getUser result:",
-          piUser
-        );
 
 
         if (piUser?.uid) {
@@ -254,7 +220,6 @@
 
 
     /* ---------------------------------------
-       STEP 3
        SHARED PI AUTH
     --------------------------------------- */
 
@@ -265,19 +230,8 @@
 
       try {
 
-        console.log(
-          "Trying ensurePiAuth()..."
-        );
-
-
         const authUser =
           await window.ensurePiAuth();
-
-
-        console.log(
-          "ensurePiAuth result:",
-          authUser
-        );
 
 
         if (authUser?.uid) {
@@ -322,12 +276,7 @@
 
   /* =========================================
      LOAD USER REQUESTS
-     
-     DIRECT SUPABASE REST API
-     
-     NO window.albukhrSupabase
-     NO window.supabase.createClient()
-  ========================================= */
+  ========================================== */
 
   async function loadMyRequests() {
 
@@ -338,10 +287,6 @@
 
 
     try {
-
-      /* -------------------------------------
-         USER
-      ------------------------------------- */
 
       const user =
         await getCurrentUser();
@@ -366,7 +311,7 @@
 
 
       /* -------------------------------------
-         BUILD REST URL
+         REST URL
       ------------------------------------- */
 
       const url =
@@ -376,14 +321,8 @@
         `&order=created_at.desc`;
 
 
-      console.log(
-        "ALBUKHR Supabase request URL:",
-        url
-      );
-
-
       /* -------------------------------------
-         SUPABASE REST REQUEST
+         REQUEST
       ------------------------------------- */
 
       const response =
@@ -393,10 +332,9 @@
 
           {
 
-            method:
-              "GET",
+            method:"GET",
 
-            headers: {
+            headers:{
 
               "apikey":
                 SUPABASE_KEY,
@@ -423,7 +361,6 @@
         const errorText =
           await response.text();
 
-
         console.error(
           "Supabase REST error:",
           response.status,
@@ -435,7 +372,6 @@
           "Failed to Load",
           `Supabase returned HTTP ${response.status}.`
         );
-
 
         return;
 
@@ -470,15 +406,10 @@
           "You have not submitted any dApp request yet."
         );
 
-
         return;
 
       }
 
-
-      /* -------------------------------------
-         RENDER
-      ------------------------------------- */
 
       renderRequests(data);
 
@@ -492,15 +423,13 @@
 
 
       if (
-        error?.name ===
-        "AbortError"
+        error?.name === "AbortError"
       ) {
 
         showStage(
           "Connection Timeout",
           "Supabase took too long to respond. Please try again."
         );
-
 
         return;
 
@@ -519,26 +448,20 @@
 
   /* =========================================
      RENDER REQUESTS
-  ========================================= */
+  ========================================== */
 
-  function renderRequests(
-    requests
-  ) {
+  function renderRequests(requests) {
 
     if (!box) return;
 
-
     box.innerHTML = "";
 
-
     requests.forEach(
-      (request) => {
+      request => {
 
         box.insertAdjacentHTML(
           "beforeend",
-          createRequestCard(
-            request
-          )
+          createRequestCard(request)
         );
 
       }
@@ -548,12 +471,148 @@
 
 
   /* =========================================
-     CREATE REQUEST CARD
-  ========================================= */
+     CREATE SEE MORE BLOCK
+  ========================================== */
 
-  function createRequestCard(
-    r
+  function createExpandableText(
+    text,
+    prefix = "description"
   ) {
+
+    const safeText =
+      escapeHtml(text || "—");
+
+    /*
+     * Very short text does not need
+     * See More.
+     */
+
+    if (
+      String(text || "").length <= 240
+    ) {
+
+      return `
+        <div class="desc-content">
+          ${safeText}
+        </div>
+      `;
+
+    }
+
+
+    const uniqueId =
+      `${prefix}_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2,8)}`;
+
+
+    return `
+
+      <div
+        id="${uniqueId}"
+        class="desc-content collapsed"
+      >
+        ${safeText}
+      </div>
+
+      <button
+        type="button"
+        class="see-more-btn"
+        data-target="${uniqueId}"
+        aria-expanded="false"
+      >
+        See More
+      </button>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     CREATE ADMIN NOTE
+  ========================================== */
+
+  function createAdminNote(
+    note
+  ) {
+
+    if (!note) return "";
+
+
+    const safeNote =
+      escapeHtml(note);
+
+
+    if (
+      String(note).length <= 240
+    ) {
+
+      return `
+
+        <div class="notice">
+
+          <strong>
+            📝 Admin Note:
+          </strong>
+
+          <br>
+
+          <div class="notice-content">
+            ${safeNote}
+          </div>
+
+        </div>
+
+      `;
+
+    }
+
+
+    const uniqueId =
+      `admin_note_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2,8)}`;
+
+
+    return `
+
+      <div class="notice">
+
+        <strong>
+          📝 Admin Note:
+        </strong>
+
+        <br>
+
+        <div
+          id="${uniqueId}"
+          class="notice-content collapsed"
+        >
+          ${safeNote}
+        </div>
+
+        <button
+          type="button"
+          class="see-more-btn"
+          data-target="${uniqueId}"
+          aria-expanded="false"
+        >
+          See More
+        </button>
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* =========================================
+     CREATE REQUEST CARD
+  ========================================== */
+
+  function createRequestCard(r) {
 
     /* ---------------------------------------
        STATUS
@@ -566,10 +625,7 @@
       "";
 
 
-    if (
-      r.status ===
-      "pending"
-    ) {
+    if (r.status === "pending") {
 
       statusText =
         "🟡 Under Review";
@@ -579,10 +635,7 @@
 
     }
 
-    else if (
-      r.status ===
-      "approved"
-    ) {
+    else if (r.status === "approved") {
 
       statusText =
         "🟢 Approved";
@@ -592,10 +645,7 @@
 
     }
 
-    else if (
-      r.status ===
-      "rejected"
-    ) {
+    else if (r.status === "rejected") {
 
       statusText =
         "🔴 Rejected";
@@ -609,8 +659,7 @@
 
       statusText =
         escapeHtml(
-          r.status ||
-          "Unknown"
+          r.status || "Unknown"
         );
 
     }
@@ -620,15 +669,12 @@
        TELEGRAM
     --------------------------------------- */
 
-    let telegram =
-      "";
+    let telegram = "";
 
 
     if (
-      r.status ===
-      "approved" &&
-      r.telegram_unlocked ===
-      true
+      r.status === "approved" &&
+      r.telegram_unlocked === true
     ) {
 
       telegram = `
@@ -639,9 +685,7 @@
           target="_blank"
           rel="noopener noreferrer"
         >
-
           🔓 Join Private Telegram Group
-
         </a>
 
       `;
@@ -653,39 +697,17 @@
        ADMIN NOTE
     --------------------------------------- */
 
-    let adminNote =
-      "";
-
-
-    if (r.admin_note) {
-
-      adminNote = `
-
-        <div class="notice">
-
-          <strong>
-            📝 Admin Note:
-          </strong>
-
-          <br>
-
-          ${escapeHtml(
-            r.admin_note
-          )}
-
-        </div>
-
-      `;
-
-    }
+    const adminNote =
+      createAdminNote(
+        r.admin_note
+      );
 
 
     /* ---------------------------------------
-       RECEIPT IMAGE
+       RECEIPT
     --------------------------------------- */
 
-    let receipt =
-      "";
+    let receipt = "";
 
 
     if (r.receipt_image) {
@@ -697,12 +719,7 @@
             r.receipt_image
           )}"
           alt="Payment Receipt"
-          style="
-            max-width:100%;
-            height:auto;
-            border-radius:10px;
-            margin-top:8px;
-          "
+          loading="lazy"
         >
 
       `;
@@ -724,23 +741,19 @@
        RECEIPT REFERENCE
     --------------------------------------- */
 
-    let receiptRef =
-      "";
+    let receiptRef = "";
 
 
     if (r.receipt_ref) {
 
       receiptRef = `
 
-        <div
-          style="
-            font-size:12px;
-            color:#666;
-            margin-top:6px;
-          "
-        >
+        <div class="receipt-ref">
 
-          Ref:
+          <strong>
+            Ref:
+          </strong>
+
           ${escapeHtml(
             r.receipt_ref
           )}
@@ -756,8 +769,7 @@
        DATE
     --------------------------------------- */
 
-    let createdAt =
-      "";
+    let createdAt = "";
 
 
     if (r.created_at) {
@@ -782,6 +794,17 @@
 
 
     /* ---------------------------------------
+       DESCRIPTION
+    --------------------------------------- */
+
+    const description =
+      createExpandableText(
+        r.description || "—",
+        "description"
+      );
+
+
+    /* ---------------------------------------
        CARD
     --------------------------------------- */
 
@@ -801,16 +824,14 @@
 
           🛠
           ${escapeHtml(
-            r.service_type ||
-            "-"
+            r.service_type || "-"
           )}
 
           <br>
 
           👤
           ${escapeHtml(
-            r.pi_user ||
-            "-"
+            r.pi_user || "-"
           )}
 
           ${
@@ -828,38 +849,33 @@
         </div>
 
 
-        <div
-          class="status ${statusClass}"
-        >
+        <div class="status ${statusClass}">
 
           ${statusText}
 
         </div>
 
 
+        <!-- DESCRIPTION -->
+
         <div class="desc">
 
-          <strong>
-            Description:
-          </strong>
+          <span class="desc-title">
+            Description
+          </span>
 
-          <br>
-
-          ${escapeHtml(
-            r.description ||
-            "—"
-          )}
+          ${description}
 
         </div>
 
 
+        <!-- RECEIPT -->
+
         <div class="receipt">
 
           <strong>
-            Payment Receipt:
+            🧾 Payment Receipt
           </strong>
-
-          <br>
 
           ${receipt}
 
@@ -868,13 +884,102 @@
         </div>
 
 
+        <!-- ADMIN NOTE -->
+
         ${adminNote}
+
+
+        <!-- TELEGRAM -->
 
         ${telegram}
 
       </div>
 
     `;
+
+  }
+
+
+  /* =========================================
+     SEE MORE / SEE LESS
+  ========================================== */
+
+  function handleSeeMore(event) {
+
+    const button =
+      event.target.closest(
+        ".see-more-btn"
+      );
+
+
+    if (!button) return;
+
+
+    const targetId =
+      button.dataset.target;
+
+
+    if (!targetId) return;
+
+
+    const target =
+      document.getElementById(
+        targetId
+      );
+
+
+    if (!target) return;
+
+
+    const expanded =
+      button.getAttribute(
+        "aria-expanded"
+      ) === "true";
+
+
+    if (expanded) {
+
+      target.classList.add(
+        "collapsed"
+      );
+
+      button.setAttribute(
+        "aria-expanded",
+        "false"
+      );
+
+      button.textContent =
+        "See More";
+
+    } else {
+
+      target.classList.remove(
+        "collapsed"
+      );
+
+      button.setAttribute(
+        "aria-expanded",
+        "true"
+      );
+
+      button.textContent =
+        "See Less";
+
+    }
+
+  }
+
+
+  /* =========================================
+     EVENT DELEGATION
+  ========================================== */
+
+  if (box) {
+
+    box.addEventListener(
+      "click",
+      handleSeeMore
+    );
 
   }
 
@@ -890,11 +995,15 @@
     );
 
     console.log(
-      "ALBUKHR My dApp Requests started"
+      "ALBUKHR My dApp Requests v4"
     );
 
     console.log(
       "Supabase REST mode"
+    );
+
+    console.log(
+      "See More system enabled"
     );
 
     console.log(
@@ -917,8 +1026,7 @@
   ========================================== */
 
   if (
-    document.readyState ===
-    "loading"
+    document.readyState === "loading"
   ) {
 
     document.addEventListener(
