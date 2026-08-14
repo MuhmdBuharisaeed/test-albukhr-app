@@ -592,10 +592,7 @@ function setPendingUI(
 
   if(viewBox){
 
-    viewBox.style.display =
-      isPending
-        ? "block"
-        : "none";
+  viewBox.style.display = "block";
 
   }
 
