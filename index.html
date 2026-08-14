@@ -40,94 +40,6 @@
 
   text-align: right;   /* 👈 KEY FIX */
 }
-
-/* =========================================
-   ENVIRONMENT INDICATOR
-========================================= */
-
-.environment-indicator{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-
-  padding:5px 9px;
-
-  border:1px solid rgba(255,255,255,0.35);
-  border-radius:20px;
-
-  background:rgba(255,255,255,0.10);
-
-  color:#fff;
-
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.5px;
-
-  cursor:pointer;
-
-  user-select:none;
-
-  transition:
-    background .2s ease,
-    transform .2s ease,
-    border-color .2s ease;
-}
-
-.environment-indicator:hover{
-  background:rgba(255,255,255,0.18);
-}
-
-.environment-indicator:active{
-  transform:scale(.95);
-}
-
-.environment-dot{
-  width:7px;
-  height:7px;
-
-  border-radius:50%;
-
-  background:#f0ad00;
-
-  box-shadow:
-    0 0 0 2px rgba(240,173,0,.15);
-}
-
-.environment-name{
-  line-height:1;
-  white-space:nowrap;
-}
-
-
-/* MAINNET */
-
-.environment-indicator.mainnet{
-  border-color:rgba(25,179,107,.55);
-}
-
-.environment-indicator.mainnet
-.environment-dot{
-  background:#19b36b;
-
-  box-shadow:
-    0 0 0 2px rgba(25,179,107,.16);
-}
-
-
-/* TESTNET */
-
-.environment-indicator.testnet{
-  border-color:rgba(240,173,0,.55);
-}
-
-.environment-indicator.testnet
-.environment-dot{
-  background:#f0ad00;
-
-  box-shadow:
-    0 0 0 2px rgba(240,173,0,.16);
-}
 </style>
 
 </head>
@@ -147,29 +59,9 @@
 
   <div class="header-left">
   <span class="brand">ALBUKHR</span>
-</div>
+  </div>
 
-<div
-  class="environment-indicator"
-  id="environmentIndicator"
-  role="button"
-  tabindex="0"
-  aria-label="Switch environment"
-  title="Switch environment"
->
-  <span
-    class="environment-dot"
-    id="environmentDot">
-  </span>
-
-  <span
-    class="environment-name"
-    id="environmentName">
-    TESTNET
-  </span>
-</div>
-
-<div class="header-right">
+  <div class="header-right">
 
   <div class="header-btn user-box" id="userBox">
   <div class="user-icon">👤</div>
@@ -321,8 +213,8 @@ Albukhr AI is under development
 
 <script>
 const supabase = window.supabase.createClient(
-  "https://qexmnghilahsvethlxem.supabase.co",
-  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+  "https://ribpntyqdleytsyktdfb.supabase.co",
+  "sb_publishable_6pRDCPwk97eCz2Fpu1cadg__XIQlZX2"
 );
 </script>
   
@@ -655,7 +547,7 @@ document.querySelectorAll(".dock-item").forEach(link=>{
 
         <div class="social-icon">
           <img
-            src="images/images (1) (1).jpeg"
+            src="images/images (1).jpeg"
             alt="Facebook">
         </div>
 
@@ -747,7 +639,7 @@ await getGlobalStakes();
 /* ✅ FALLBACK FOR NEW USERS */
 if(!Array.isArray(stakes)){
     stakes = [];
-}
+  }
 
     // ===== MAPS =====
     const userMap = {};
@@ -996,7 +888,7 @@ userAmount: Math.max(
     div.onclick = () =>
       location.href = `project.html?project=${item.name}`;
 
-div.innerHTML = `
+    div.innerHTML = `
 
 <div class="asset-icon">
     ${item.config.icon}
@@ -1054,11 +946,7 @@ div.innerHTML = `
 
     </div>
 
-    <div class="asset-status ${
-item.userAmount > 0
-? "active"
-: "inactive"
-}">
+    <div class="asset-status">
 
         ${
             item.userAmount > 0
@@ -1071,7 +959,7 @@ item.userAmount > 0
 </div>
 
 `;
-    
+
     container.appendChild(div);
 
   });
@@ -1339,7 +1227,5 @@ console.log("🚀 HOME LOAD");
 });
 </script>
 
-<script src="js/environment-switcher.js"></script>
-
 </body>
-  </html>
+      </html>
