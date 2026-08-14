@@ -43,3 +43,44 @@ textarea.input{min-height:90px}
   font-weight:600;
   cursor:pointer
 }
+
+/* =========================================
+   SUBMIT BUTTON – V4
+========================================= */
+
+#submitBtn{
+  position:relative;
+  transition:
+    opacity .2s ease,
+    transform .2s ease,
+    background .2s ease;
+}
+
+#submitBtn:disabled{
+  cursor:not-allowed;
+}
+
+#submitBtn.submitting{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+}
+
+.submit-spinner{
+  width:16px;
+  height:16px;
+  border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:
+    albukhrSubmitSpin .7s linear infinite;
+}
+
+@keyframes albukhrSubmitSpin{
+
+  to{
+    transform:rotate(360deg);
+  }
+
+}
