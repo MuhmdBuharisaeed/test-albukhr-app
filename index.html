@@ -282,30 +282,50 @@ document.querySelectorAll(".dock-item").forEach(link=>{
 <!-- SIDE DRAWER -->
 <div id="sideDrawer" class="side-drawer">
 
-  <!-- DRAWER HEADER -->
-  <div class="drawer-header">
+  
+<!-- DRAWER HEADER -->
+<div class="drawer-header">
 
-    <h3>Settings</h3>
+  <h3>Settings</h3>
 
-    <button
-      type="button"
-      class="close-drawer"
-      onclick="closeDrawer()"
-      aria-label="Close settings">
+  <!-- ENVIRONMENT SWITCHER -->
+  <button
+    type="button"
+    id="environmentSwitcher"
+    class="environment-switcher"
+    aria-label="Switch environment">
 
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true">
+    <span
+      id="environmentDot"
+      class="environment-dot">
+    </span>
 
-        <path d="M6 6L18 18"></path>
-        <path d="M18 6L6 18"></path>
+    <span
+      id="environmentLabel">
+      TESTNET
+    </span>
 
-      </svg>
+  </button>
 
-    </button>
+  <!-- CLOSE DRAWER -->
+  <button
+    type="button"
+    class="close-drawer"
+    onclick="closeDrawer()"
+    aria-label="Close settings">
 
-  </div>
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true">
 
+      <path d="M6 6L18 18"></path>
+      <path d="M18 6L6 18"></path>
+
+    </svg>
+
+  </button>
+
+</div>
 
   <!-- ORIGINAL LINKS (UNCHANGED) -->
   <div class="drawer-body">
@@ -1226,6 +1246,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
 console.log("🚀 HOME LOAD");
 });
 </script>
+
+<script src="js/environment-switcher.js"></script>
 
 </body>
       </html>
