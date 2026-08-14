@@ -1,7 +1,8 @@
 /* =========================================
    ALBUKHR ENVIRONMENT SWITCHER
    MAINNET / TESTNET
-   ========================================= */
+   SIDE DRAWER HEADER
+========================================= */
 
 (() => {
 
@@ -10,17 +11,17 @@
 
   /* =========================================
      ENVIRONMENT CONFIG
-  ========================================= */
+  ========================================== */
 
   const ENVIRONMENTS = {
 
     mainnet: {
-      name: "Mainnet",
+      name: "MAINNET",
       url: "https://app.albukhr.com"
     },
 
     testnet: {
-      name: "Testnet",
+      name: "TESTNET",
       url: "https://test.albukhr.com"
     }
 
@@ -29,7 +30,7 @@
 
   /* =========================================
      DETECT CURRENT ENVIRONMENT
-  ========================================= */
+  ========================================== */
 
   function getCurrentEnvironment() {
 
@@ -58,7 +59,7 @@
 
 
     /*
-       Local development fallback
+       Local / development fallback
     */
 
     return "mainnet";
@@ -67,20 +68,38 @@
 
 
   /* =========================================
-     CREATE SWITCHER
-  ========================================= */
+     UPDATE EXISTING SWITCHER
+  ========================================== */
 
-  function createEnvironmentSwitcher() {
+  function updateEnvironmentSwitcher() {
 
-    /*
-       Kada a saka shi sau biyu
-    */
+    const switcher =
+      document.getElementById(
+        "environmentSwitcher"
+      );
+
+
+    const dot =
+      document.getElementById(
+        "environmentDot"
+      );
+
+
+    const label =
+      document.getElementById(
+        "environmentLabel"
+      );
+
 
     if (
-      document.getElementById(
-        "albukhrEnvironmentSwitcher"
-      )
+      !switcher ||
+      !dot ||
+      !label
     ) {
+
+      console.warn(
+        "ALBUKHR Environment Switcher: drawer elements not found."
+      );
 
       return;
 
@@ -97,21 +116,32 @@
         : "mainnet";
 
 
-    const switcher =
-      document.createElement("button");
+    /* =====================================
+       LABEL
+    ===================================== */
+
+    label.textContent =
+      ENVIRONMENTS[current].name;
 
 
-    switcher.type =
-      "button";
+    /* =====================================
+       RESET ENVIRONMENT CLASSES
+    ===================================== */
+
+    switcher.classList.remove(
+      "mainnet",
+      "testnet"
+    );
 
 
-    switcher.id =
-      "albukhrEnvironmentSwitcher";
+    switcher.classList.add(
+      current
+    );
 
 
-    switcher.className =
-      "albukhr-environment-switcher";
-
+    /* =====================================
+       ACCESSIBILITY
+    ===================================== */
 
     switcher.setAttribute(
       "aria-label",
@@ -123,96 +153,37 @@
       `Switch to ${ENVIRONMENTS[target].name}`;
 
 
-    switcher.innerHTML = `
-
-      <span class="environment-dot"></span>
-
-      <span class="environment-text">
-        ${ENVIRONMENTS[current].name}
-      </span>
-
-    `;
-
-
-    /*
+    /* =====================================
        CLICK
-    */
+    ===================================== */
 
-    switcher.addEventListener(
-      "click",
-      () => {
+    switcher.onclick =
+      function () {
+
+        switcher.disabled = true;
 
         window.location.href =
           ENVIRONMENTS[target].url;
 
-      }
-    );
-
-
-    /*
-       INSERT INTO HEADER
-    */
-
-    const headerRight =
-      document.querySelector(
-        ".header-right"
-      );
-
-
-    if (!headerRight) {
-
-      console.warn(
-        "ALBUKHR Environment Switcher: .header-right not found."
-      );
-
-      return;
-
-    }
-
-
-    /*
-       Saka shi kafin notification
-       domin ya kasance kusa da user/settings area.
-    */
-
-    const notification =
-      headerRight.querySelector(
-        ".notification-btn"
-      );
-
-
-    if (notification) {
-
-      headerRight.insertBefore(
-        switcher,
-        notification
-      );
-
-    } else {
-
-      headerRight.appendChild(
-        switcher
-      );
-
-    }
+      };
 
   }
 
 
   /* =========================================
      START
-  ========================================= */
+  ========================================== */
 
   function initEnvironmentSwitcher() {
 
-    createEnvironmentSwitcher();
+    updateEnvironmentSwitcher();
 
   }
 
 
   /* =========================================
      DOM READY
-  ========================================= */
+  ========================================== */
 
   if (
     document.readyState ===
