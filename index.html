@@ -40,6 +40,116 @@
 
   text-align: right;   /* 👈 KEY FIX */
 }
+
+/* =========================================
+   ALBUKHR – ENVIRONMENT SWITCHER
+   SIDE DRAWER HEADER
+========================================= */
+
+.environment-switcher{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+
+  min-width:68px;
+  height:28px;
+
+  padding:4px 8px;
+
+  border:1px solid rgba(255,255,255,0.35);
+  border-radius:20px;
+
+  background:rgba(255,255,255,0.10);
+
+  color:#fff;
+
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.5px;
+
+  cursor:pointer;
+  user-select:none;
+
+  appearance:none;
+  -webkit-appearance:none;
+
+  transition:
+    background .2s ease,
+    transform .2s ease,
+    border-color .2s ease;
+}
+
+.environment-switcher:hover{
+  background:rgba(255,255,255,0.18);
+}
+
+.environment-switcher:active{
+  transform:scale(.95);
+}
+
+
+/* =========================================
+   ENVIRONMENT DOT
+========================================= */
+
+.environment-dot{
+  width:7px;
+  height:7px;
+
+  flex:0 0 7px;
+
+  border-radius:50%;
+
+  background:#f0ad00;
+
+  box-shadow:
+    0 0 0 2px rgba(240,173,0,.15);
+}
+
+
+/* =========================================
+   ENVIRONMENT LABEL
+========================================= */
+
+#environmentLabel{
+  line-height:1;
+  white-space:nowrap;
+}
+
+
+/* =========================================
+   MAINNET
+========================================= */
+
+.environment-switcher.mainnet{
+  border-color:rgba(25,179,107,.55);
+}
+
+.environment-switcher.mainnet
+.environment-dot{
+  background:#19b36b;
+
+  box-shadow:
+    0 0 0 2px rgba(25,179,107,.16);
+}
+
+
+/* =========================================
+   TESTNET
+========================================= */
+
+.environment-switcher.testnet{
+  border-color:rgba(240,173,0,.55);
+}
+
+.environment-switcher.testnet
+.environment-dot{
+  background:#f0ad00;
+
+  box-shadow:
+    0 0 0 2px rgba(240,173,0,.16);
+  }
 </style>
 
 </head>
