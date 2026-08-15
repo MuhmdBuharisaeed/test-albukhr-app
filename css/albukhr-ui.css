@@ -302,10 +302,12 @@ body::before{
     right:0;
 }
 
-/* HEADER */
+/* =========================================
+   DRAWER HEADER
+========================================= */
+
 .drawer-header{
     display:flex;
-    justify-content:space-between;
     align-items:center;
 
     padding:18px 20px;
@@ -319,6 +321,33 @@ body::before{
     position:sticky;
     top:0;
     z-index:2;
+
+    gap:10px;
+}
+
+
+/* SETTINGS TITLE */
+
+.drawer-header h3{
+    margin:0;
+
+    flex:1;
+
+    min-width:0;
+}
+
+
+/* ENVIRONMENT SWITCHER */
+
+.drawer-header .environment-switcher{
+    flex:0 0 auto;
+}
+
+
+/* CLOSE BUTTON */
+
+.drawer-header .close-drawer{
+    flex:0 0 auto;
 }
 
 /* BODY */
