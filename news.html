@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -7,8 +6,8 @@
 <meta charset="UTF-8">
 
 <meta
-name="viewport"
-content="width=device-width,initial-scale=1.0">
+  name="viewport"
+  content="width=device-width,initial-scale=1.0">
 
 <title>ALBUKHR News</title>
 
@@ -28,6 +27,10 @@ content="width=device-width,initial-scale=1.0">
 <link rel="stylesheet" href="css/news.css">
 
 <style>
+
+/* =========================================
+   HEADER
+========================================= */
 
 .header-right{
   display:flex;
@@ -84,38 +87,6 @@ content="width=device-width,initial-scale=1.0">
   stroke:none;
 }
 
-.news-icon .svg-icon{
-  width:30px;
-  height:30px;
-}
-
-.hero-badge .svg-icon{
-  width:17px;
-  height:17px;
-}
-
-.summary-icon .svg-icon{
-  width:24px;
-  height:24px;
-}
-
-.search-icon .svg-icon{
-  width:19px;
-  height:19px;
-}
-
-.news-tab .svg-icon{
-  width:17px;
-  height:17px;
-}
-
-.primary-btn .svg-icon,
-.secondary-btn .svg-icon,
-.refresh-news-btn .svg-icon{
-  width:17px;
-  height:17px;
-}
-
 .empty-icon .svg-icon{
   width:42px;
   height:42px;
@@ -146,16 +117,27 @@ content="width=device-width,initial-scale=1.0">
 
 (function(){
 
-  const user =
-    JSON.parse(
-      localStorage.getItem("pi_user")
+  try{
+
+    const user =
+      JSON.parse(
+        localStorage.getItem("pi_user")
+      );
+
+    if(!user || !user.uid){
+
+      window.location.replace("login.html");
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "ALBUKHR login check failed:",
+      error
     );
 
-  if(!user || !user.uid){
-
-    window.location.replace(
-      "login.html"
-    );
+    window.location.replace("login.html");
 
   }
 
@@ -171,69 +153,73 @@ content="width=device-width,initial-scale=1.0">
 
   <div class="header-left">
 
-<span class="brand">
-  ALBUKHR
-</span>
+    <span class="brand">
+      ALBUKHR
+    </span>
 
   </div>
 
   <div class="header-right">
 
-<!-- USER -->
+    <!-- USER -->
 
-<div
-  class="header-btn user-box"
-  id="userBox">
+    <div
+      class="header-btn user-box"
+      id="userBox">
 
-  <div class="user-icon">
+      <div class="user-icon">
 
-    <svg
-      class="svg-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true">
+        <svg
+          class="svg-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true">
 
-      <circle cx="12" cy="8" r="3.5"></circle>
+          <circle
+            cx="12"
+            cy="8"
+            r="3.5">
+          </circle>
 
-      <path
-        d="M5 20c0-3.2 3.1-5.5 7-5.5s7 2.3 7 5.5">
-      </path>
+          <path
+            d="M5 20c0-3.2 3.1-5.5 7-5.5s7 2.3 7 5.5">
+          </path>
 
-    </svg>
+        </svg>
 
-  </div>
+      </div>
 
-  <div id="piUser"></div>
+      <div id="piUser"></div>
 
-</div>
+    </div>
 
-<!-- NOTIFICATIONS -->
+    <!-- NOTIFICATIONS -->
 
-<div
-  class="header-btn notification-btn"
-  onclick="openNotifications()"
-  aria-label="Notifications">
+    <div
+      class="header-btn notification-btn"
+      onclick="openNotifications()"
+      aria-label="Notifications">
 
-  <svg
-    class="svg-icon"
-    viewBox="0 0 24 24"
-    aria-hidden="true">
+      <svg
+        class="svg-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
 
-    <path
-      d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
-    </path>
+        <path
+          d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9">
+        </path>
 
-    <path
-      d="M10 21h4">
-    </path>
+        <path
+          d="M10 21h4">
+        </path>
 
-  </svg>
+      </svg>
 
-  <span
-    id="notifBadge"
-    class="notification-badge">
-  </span>
+      <span
+        id="notifBadge"
+        class="notification-badge">
+      </span>
 
-</div>
+    </div>
 
   </div>
 
@@ -249,19 +235,19 @@ content="width=device-width,initial-scale=1.0">
     id="newsFeed"
     class="news-feed">
 
-<div class="loading-card">
+    <div class="loading-card">
 
-  <div class="loading-spinner"></div>
+      <div class="loading-spinner"></div>
 
-  <h3>
-    Loading News...
-  </h3>
+      <h3>
+        Loading News...
+      </h3>
 
-  <p>
-    Please wait while we load the latest updates.
-  </p>
+      <p>
+        Please wait while we load the latest updates.
+      </p>
 
-</div>
+    </div>
 
   </section>
 
@@ -274,74 +260,71 @@ content="width=device-width,initial-scale=1.0">
     class="news-empty"
     style="display:none;">
 
-<div class="empty-icon">
+    <div class="empty-icon">
 
-  <svg
-    class="svg-icon"
-    viewBox="0 0 24 24"
-    aria-hidden="true">
+      <svg
+        class="svg-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
 
-    <rect
-      x="4"
-      y="4"
-      width="16"
-      height="16"
-      rx="2">
-    </rect>
+        <rect
+          x="4"
+          y="4"
+          width="16"
+          height="16"
+          rx="2">
+        </rect>
 
-    <path d="M8 9h8"></path>
+        <path d="M8 9h8"></path>
 
-    <path d="M8 13h5"></path>
+        <path d="M8 13h5"></path>
 
-    <path d="M8 17h7"></path>
+        <path d="M8 17h7"></path>
 
-  </svg>
+      </svg>
 
-</div>
+    </div>
 
+    <h3>
+      No News Available
+    </h3>
 
-<h3>
-  No News Available
-</h3>
+    <p>
+      There are currently no announcements or
+      project updates available.
+      Please check again later.
+    </p>
 
+    <button
+      id="refreshEmptyBtn"
+      class="primary-btn">
 
-<p>
-  There are currently no announcements or
-  project updates available.
-  Please check again later.
-</p>
+      <svg
+        class="svg-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
 
+        <path
+          d="M20 11a8 8 0 0 0-14.9-4">
+        </path>
 
-<button
-  id="refreshEmptyBtn"
-  class="primary-btn">
+        <polyline
+          points="4 4 4 8 8 8">
+        </polyline>
 
-  <svg
-    class="svg-icon"
-    viewBox="0 0 24 24"
-    aria-hidden="true">
+        <path
+          d="M4 13a8 8 0 0 0 14.9 4">
+        </path>
 
-    <path
-      d="M20 11a8 8 0 0 0-14.9-4">
-    </path>
+        <polyline
+          points="20 20 20 16 16 16">
+        </polyline>
 
-    <polyline
-      points="4 4 4 8 8 8">
-    </polyline>
+      </svg>
 
-    <path
-      d="M4 13a8 8 0 0 0 14.9 4">
-    </path>
+      Refresh
 
-    <polyline
-      points="20 20 20 16 16 16">
-    </polyline>
-
-  </svg>
-
-  Refresh
-
-</button>
+    </button>
 
   </section>
 
@@ -362,39 +345,38 @@ content="width=device-width,initial-scale=1.0">
 
   <div class="image-preview-box">
 
-<button
-  class="image-close-btn"
-  onclick="closeImagePreview()"
-  aria-label="Close image preview">
+    <button
+      class="image-close-btn"
+      onclick="closeImagePreview()"
+      aria-label="Close image preview">
 
-  <svg
-    class="svg-icon"
-    viewBox="0 0 24 24"
-    aria-hidden="true">
+      <svg
+        class="svg-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
 
-    <line
-      x1="6"
-      y1="6"
-      x2="18"
-      y2="18">
-    </line>
+        <line
+          x1="6"
+          y1="6"
+          x2="18"
+          y2="18">
+        </line>
 
-    <line
-      x1="18"
-      y1="6"
-      x2="6"
-      y2="18">
-    </line>
+        <line
+          x1="18"
+          y1="6"
+          x2="6"
+          y2="18">
+        </line>
 
-  </svg>
+      </svg>
 
-</button>
+    </button>
 
-
-<img
-  id="previewImage"
-  src=""
-  alt="News image preview">
+    <img
+      id="previewImage"
+      src=""
+      alt="News image preview">
 
   </div>
 
@@ -415,143 +397,137 @@ content="width=device-width,initial-scale=1.0">
 
   <div class="news-modal-box">
 
-<!-- HEADER -->
+    <!-- HEADER -->
 
-<div class="news-modal-header">
+    <div class="news-modal-header">
 
-  <div>
+      <div>
 
-    <h2 id="modalTitle">
-      Loading...
-    </h2>
+        <h2 id="modalTitle">
+          Loading...
+        </h2>
 
+        <div class="news-modal-meta">
 
-    <div class="news-modal-meta">
+          <span id="modalCategory">
+          </span>
 
-      <span id="modalCategory">
-      </span>
+          <span class="dot">
+            •
+          </span>
 
-      <span class="dot">
-        •
-      </span>
+          <span id="modalDate">
+          </span>
 
-      <span id="modalDate">
-      </span>
+        </div>
+
+      </div>
+
+      <button
+        class="modal-close-btn"
+        onclick="closeNewsModal()"
+        aria-label="Close">
+
+        <svg
+          class="svg-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true">
+
+          <line
+            x1="6"
+            y1="6"
+            x2="18"
+            y2="18">
+          </line>
+
+          <line
+            x1="18"
+            y1="6"
+            x2="6"
+            y2="18">
+          </line>
+
+        </svg>
+
+      </button>
 
     </div>
 
-  </div>
+    <!-- IMAGE -->
 
+    <img
+      id="modalImage"
+      class="modal-image"
+      src=""
+      alt="">
 
-  <button
-    class="modal-close-btn"
-    onclick="closeNewsModal()"
-    aria-label="Close">
+    <!-- CONTENT -->
 
-    <svg
-      class="svg-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true">
+    <div
+      id="modalContent"
+      class="modal-content">
+    </div>
 
-      <line
-        x1="6"
-        y1="6"
-        x2="18"
-        y2="18">
-      </line>
+    <!-- FOOTER -->
 
-      <line
-        x1="18"
-        y1="6"
-        x2="6"
-        y2="18">
-      </line>
+    <div class="news-modal-footer">
 
-    </svg>
+      <button
+        id="shareNewsBtn"
+        class="secondary-btn">
 
-  </button>
+        <svg
+          class="svg-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true">
 
-</div>
+          <circle
+            cx="18"
+            cy="5"
+            r="2.5">
+          </circle>
 
+          <circle
+            cx="6"
+            cy="12"
+            r="2.5">
+          </circle>
 
-<!-- IMAGE -->
+          <circle
+            cx="18"
+            cy="19"
+            r="2.5">
+          </circle>
 
-<img
-  id="modalImage"
-  class="modal-image"
-  src=""
-  alt="">
+          <line
+            x1="8.2"
+            y1="10.8"
+            x2="15.8"
+            y2="6.2">
+          </line>
 
+          <line
+            x1="8.2"
+            y1="13.2"
+            x2="15.8"
+            y2="17.8">
+          </line>
 
-<!-- CONTENT -->
+        </svg>
 
-<div
-  id="modalContent"
-  class="modal-content">
-</div>
+        Share
 
+      </button>
 
-<!-- FOOTER -->
+      <button
+        onclick="closeNewsModal()"
+        class="primary-btn">
 
-<div class="news-modal-footer">
+        Close
 
-  <button
-    id="shareNewsBtn"
-    class="secondary-btn">
+      </button>
 
-    <svg
-      class="svg-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true">
-
-      <circle
-        cx="18"
-        cy="5"
-        r="2.5">
-      </circle>
-
-      <circle
-        cx="6"
-        cy="12"
-        r="2.5">
-      </circle>
-
-      <circle
-        cx="18"
-        cy="19"
-        r="2.5">
-      </circle>
-
-      <line
-        x1="8.2"
-        y1="10.8"
-        x2="15.8"
-        y2="6.2">
-      </line>
-
-      <line
-        x1="8.2"
-        y1="13.2"
-        x2="15.8"
-        y2="17.8">
-      </line>
-
-    </svg>
-
-    Share
-
-  </button>
-
-
-  <button
-    onclick="closeNewsModal()"
-    class="primary-btn">
-
-    Close
-
-  </button>
-
-</div>
+    </div>
 
   </div>
 
@@ -572,56 +548,53 @@ content="width=device-width,initial-scale=1.0">
 
   <div class="share-box">
 
-<h3>
-  Share News
-</h3>
+    <h3>
+      Share News
+    </h3>
 
+    <input
+      id="shareLink"
+      type="text"
+      readonly>
 
-<input
-  id="shareLink"
-  type="text"
-  readonly>
+    <div class="share-actions">
 
+      <button
+        id="copyShareLink"
+        class="primary-btn">
 
-<div class="share-actions">
+        <svg
+          class="svg-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true">
 
-  <button
-    id="copyShareLink"
-    class="primary-btn">
+          <rect
+            x="8"
+            y="8"
+            width="11"
+            height="11"
+            rx="2">
+          </rect>
 
-    <svg
-      class="svg-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true">
+          <path
+            d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2">
+          </path>
 
-      <rect
-        x="8"
-        y="8"
-        width="11"
-        height="11"
-        rx="2">
-      </rect>
+        </svg>
 
-      <path
-        d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2">
-      </path>
+        Copy Link
 
-    </svg>
+      </button>
 
-    Copy Link
+      <button
+        onclick="closeShareModal()"
+        class="secondary-btn">
 
-  </button>
+        Close
 
+      </button>
 
-  <button
-    onclick="closeShareModal()"
-    class="secondary-btn">
-
-    Close
-
-  </button>
-
-</div>
+    </div>
 
   </div>
 
@@ -655,19 +628,19 @@ content="width=device-width,initial-scale=1.0">
 
   <div class="app-alert-box">
 
-<h3 id="appAlertTitle">
-  Notice
-</h3>
+    <h3 id="appAlertTitle">
+      Notice
+    </h3>
 
-<p id="appAlertText">
-</p>
+    <p id="appAlertText">
+    </p>
 
-<button
-  onclick="closeAppAlert()">
+    <button
+      onclick="closeAppAlert()">
 
-  OK
+      OK
 
-</button>
+    </button>
 
   </div>
 
@@ -708,4 +681,5 @@ content="width=device-width,initial-scale=1.0">
 <script src="js/news.js"></script>
 
 </body>
-      </html>
+
+</html>
