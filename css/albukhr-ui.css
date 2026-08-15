@@ -1004,3 +1004,27 @@ transform:translateY(0);
     }
 
     }
+/* =========================================
+   ENVIRONMENT SWITCHER – TEXT VISIBILITY FIX
+========================================= */
+
+.drawer-header .environment-switcher #environmentLabel{
+  color:#0f7a3d !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  display:inline-block !important;
+  font-size:9px;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+}
+
+/* MAINNET */
+.drawer-header .environment-switcher.mainnet #environmentLabel{
+  color:#0f7a3d !important;
+}
+
+/* TESTNET */
+.drawer-header .environment-switcher.testnet #environmentLabel{
+  color:#8a6200 !important;
+}
