@@ -1,20 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ALBUKHR Admin – Internal Projects</title>
+
 <link rel="stylesheet" href="css/admin/admin-internal-projects.css">
+
 </head>
+
 <body>
-<div class="header"><div class="header-brand"><span class="header-mark"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M8 9.5 12 12l4-2.5M12 12v6"/></svg></span>ALBUKHR • Admin Internal Projects Panel</div></div>
-<div class="subbar"><div class="subbar-inner"><div class="subbar-title">Internal Project Review</div><div class="subbar-text">Review internal ALBUKHR projects submitted by approved contributors, inspect project structure and governance fields, then approve or reject each submission from the internal registry pipeline.</div></div></div>
-<section class="section">
-<div class="top-grid">
-<div class="card"><h3 class="panel-title"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5v15M8 7h8M8 11h7"/></svg></span>Internal Project Review Control</h3><div class="muted">This panel loads internal projects from Supabase through the internal registry engine. Projects can be filtered by review status and searched by project name, contributor email, creator name, Albukhr ID, category, stage, or confidentiality level.</div><div class="action-row"><button class="primary-btn" id="refreshProjectsBtn"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-4"/><path d="M4 4v4h4M4 13a8 8 0 0 0 14.9 4"/><path d="M20 20v-4h-4"/></svg>Refresh Internal Projects</button></div><div id="pageNotice" class="notice info hidden"></div></div>
-<div class="card"><h3 class="panel-title"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/></svg></span>Internal Project Overview</h3><div class="toolbar"><div class="search-wrap"><div class="field-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 5 5"/></svg><input type="text" class="input" id="searchInput" placeholder="Search by project, creator, email, internal ID, category..." autocomplete="off"></div></div><div class="filter-wrap"><div class="field-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg><select id="statusFilter"><option value="all">All statuses</option><option value="internal_pending">Pending only</option><option value="internal_approved">Approved only</option><option value="internal_rejected">Rejected only</option></select></div></div></div><div class="stats-grid"><div class="stat-box"><div class="stat-label">Total</div><div class="stat-value" id="statTotal">0</div></div><div class="stat-box pending"><div class="stat-label">Pending</div><div class="stat-value" id="statPending">0</div></div><div class="stat-box approved"><div class="stat-label">Approved</div><div class="stat-value" id="statApproved">0</div></div><div class="stat-box rejected"><div class="stat-label">Rejected</div><div class="stat-value" id="statRejected">0</div></div></div></div>
+
+<div class="header">ALBUKHR • Admin Internal Projects Panel</div>
+
+<div class="subbar">
+  <div class="subbar-inner">
+    <div class="subbar-title">Internal Project Review</div>
+    <div class="subbar-text">
+      Review internal ALBUKHR projects submitted by approved contributors, inspect project structure and governance fields,
+      then approve or reject each submission from the internal registry pipeline.
+    </div>
+  </div>
 </div>
-<div class="list-head"><div><h3>Internal Projects</h3><small>Internal registry review queue</small></div><div class="list-count" id="listCount">0 records</div></div>
-<section id="list"></section>
+
+<section class="section">
+
+  <!-- TOP AREA -->
+  <div class="top-grid">
+    <!-- CONTROL PANEL -->
+    <div class="card">
+      <h3 class="panel-title">🗂 Internal Project Review Control</h3>
+      <div class="muted">
+        This panel loads internal projects from Supabase through the internal registry engine.
+        Projects can be filtered by review status and searched by project name, contributor email,
+        creator name, Albukhr ID, category, stage, or confidentiality level.
+      </div>
+
+      <div class="action-row">
+        <button class="primary-btn" id="refreshProjectsBtn">
+          Refresh Internal Projects
+        </button>
+      </div>
+
+      <div id="pageNotice" class="notice info hidden"></div>
+    </div>
+
+    <!-- STATS / FILTER PANEL -->
+    <div class="card">
+      <h3 class="panel-title">📊 Internal Project Overview</h3>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input
+            type="text"
+            class="input"
+            id="searchInput"
+            placeholder="Search by project, creator, email, internal ID, category..."
+          >
+        </div>
+
+        <div class="filter-wrap">
+          <select id="statusFilter">
+            <option value="all">All statuses</option>
+            <option value="internal_pending">Pending only</option>
+            <option value="internal_approved">Approved only</option>
+            <option value="internal_rejected">Rejected only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" id="statPending">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value" id="statApproved">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-value" id="statRejected">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST AREA -->
+  <div class="list-head" style="margin-top:14px">
+    <h3>Internal Projects</h3>
+    <div class="list-count" id="listCount">0 records</div>
+  </div>
+
+  <section id="list"></section>
 </section>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-core.js"></script><script src="js/contributor-engine.js"></script><script src="js/internal-registry-engine.js"></script><script src="js/admin/admin-internal-projects.js"></script>
-</body></html>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-core.js"></script>
+
+<!-- ENGINES -->
+<script src="js/contributor-engine.js"></script>
+<script src="js/internal-registry-engine.js"></script>
+
+<script src="js/admin/admin-internal-projects.js"></script>
+
+</body>
+</html>
