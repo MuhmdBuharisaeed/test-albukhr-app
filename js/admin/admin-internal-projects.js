@@ -1,27 +1,900 @@
+/* =========================================================
+   ALBUKHR ADMIN INTERNAL PROJECTS
+   FINAL SUPABASE VERSION
+   PATCHED READ PATH + FIELD COMPATIBILITY + SAFE ADMIN ACTOR
+========================================================= */
+
 "use strict";
-const S={projects:[],filtered:[],loading:false};
-const E={list:document.getElementById("list"),refresh:document.getElementById("refreshProjectsBtn"),notice:document.getElementById("pageNotice"),search:document.getElementById("searchInput"),filter:document.getElementById("statusFilter"),total:document.getElementById("statTotal"),pending:document.getElementById("statPending"),approved:document.getElementById("statApproved"),rejected:document.getElementById("statRejected"),count:document.getElementById("listCount")};
-const I={check:`<svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>`,close:`<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>`,clock:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>`,mail:`<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>`,phone:`<svg viewBox="0 0 24 24"><path d="M7 3h3l1.5 4-2 1.5a14 14 0 0 0 6 6l1.5-2 4 1.5v3c0 1.1-.9 2-2 2C10.4 19 5 13.6 5 7c0-1.1.9-2 2-2Z"/></svg>`,user:`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.2 3.1-5.5 7-5.5s7 2.3 7 5.5"/></svg>`,id:`<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg>`,time:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/></svg>`};
-const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-const txt=(v,f="—")=>v===null||v===undefined||v===""?f:String(v);
-function engine(){if(!window.AlbukhrInternalRegistryEngine)throw Error("AlbukhrInternalRegistryEngine not found. Load js/internal-registry-engine.js first.");return window.AlbukhrInternalRegistryEngine}
-function actor(){const a=window.admin||{};return{email:a.email||a.username||localStorage.getItem("albukhr_current_email")||localStorage.getItem("currentUserEmail")||"",name:a.username||a.name||localStorage.getItem("albukhr_current_username")||localStorage.getItem("currentUserName")||"ALBUKHR Admin"}}
-function status(v){v=String(v||"").toLowerCase();return v==="pending"?"internal_pending":v==="approved"?"internal_approved":v==="rejected"?"internal_rejected":v||"internal_pending"}
-const name=p=>p.project_name||p.projectName||"Unnamed Internal Project",creator=p=>p.creator_name||p.creatorName||"—",email=p=>(p.creator_email||p.email||p.creatorEmail||"").toLowerCase(),phone=p=>p.creator_phone||p.phone||p.creatorPhone||"—",iid=p=>p.internal_id||p.albukhr_id||p.albukhrId||"—",field=(p,k)=>p[k]||"—";
-function date(v){return v?new Date(v).toLocaleString():"—"}
-function badge(s){s=status(s);if(s==="internal_approved")return`<span class="badge approved">${I.check} Approved</span>`;if(s==="internal_rejected")return`<span class="badge rejected">${I.close} Rejected</span>`;return`<span class="badge pending">${I.clock} Pending</span>`}
-function notice(m,t="info"){E.notice.className="notice "+t;E.notice.textContent=m;E.notice.classList.remove("hidden")}
-function hide(){E.notice.className="notice info hidden";E.notice.textContent=""}
-async function copyText(v){try{await navigator.clipboard.writeText(String(v));alert("Albukhr Internal ID copied: "+v)}catch{alert("Unable to copy this value.")}}
-async function directList(){const c=engine().getSupabaseClient();const r=await c.from("albukhr_internal_projects").select("*").order("created_at",{ascending:false}).limit(500);if(r.error)throw Error(r.error.message);return r.data||[]}
-async function directApprove(id){const c=engine().getSupabaseClient(),a=actor(),now=new Date().toISOString();const r=await c.from("albukhr_internal_projects").update({status:"internal_approved",project_approved:true,approved_at:now,rejected_at:null,approved_by_email:a.email,approved_by_name:a.name,reviewed_by_email:a.email,reviewed_by_name:a.name,rejection_reason:null,updated_at:now}).eq("id",id).select().single();if(r.error)throw Error(r.error.message);return r.data}
-async function directReject(id,reason){const c=engine().getSupabaseClient(),a=actor(),now=new Date().toISOString();const r=await c.from("albukhr_internal_projects").update({status:"internal_rejected",project_approved:false,rejected_at:now,approved_at:null,rejected_by_email:a.email,rejected_by_name:a.name,reviewed_by_email:a.email,reviewed_by_name:a.name,rejection_reason:reason||null,updated_at:now}).eq("id",id).select().single();if(r.error)throw Error(r.error.message);return r.data}
-function stats(a){E.total.textContent=a.length;E.pending.textContent=a.filter(p=>status(p.status)==="internal_pending").length;E.approved.textContent=a.filter(p=>status(p.status)==="internal_approved").length;E.rejected.textContent=a.filter(p=>status(p.status)==="internal_rejected").length}
-function filter(){let a=[...S.projects],q=(E.search.value||"").trim().toLowerCase(),f=E.filter.value;if(f!=="all")a=a.filter(p=>status(p.status)===f);if(q)a=a.filter(p=>[name(p),creator(p),email(p),phone(p),iid(p),field(p,"category"),field(p,"stage"),field(p,"creator_role"),field(p,"summary"),field(p,"problem"),field(p,"solution"),field(p,"impact"),field(p,"funding"),field(p,"risk"),field(p,"confidentiality"),p.rejection_reason||p.review_note||p.review_reason].join(" ").toLowerCase().includes(q));S.filtered=a;render()}
-async function load(){try{S.loading=true;hide();E.refresh.disabled=true;E.list.innerHTML='<div class="empty">Loading internal projects...</div>';let a=[];const x=engine();if(typeof x.adminListInternalProjects==="function"){try{a=await x.adminListInternalProjects({status:"",limit:500})}catch(e){console.warn(e)}}if(!Array.isArray(a)||!a.length)a=await directList();S.projects=a;stats(a);filter();if(!a.length)notice("No internal projects were found in Supabase.")}catch(e){console.error(e);S.projects=[];S.filtered=[];stats([]);E.list.innerHTML='<div class="empty">Failed to load internal projects.</div>';notice(e.message||"Unable to load internal project list.","error")}finally{S.loading=false;E.refresh.disabled=false}}
-async function approve(id){if(!confirm("Approve this internal project?"))return;try{const x=engine(),a=actor();if(typeof x.adminApproveInternalProject==="function")await x.adminApproveInternalProject({projectId:id,approvedBy:a.email,approvedByEmail:a.email,approvedByName:a.name});else await directApprove(id);await load();alert("Internal project approved successfully.")}catch(e){alert(e.message||"Unable to approve internal project.")}}
-async function reject(id){const reason=prompt("Optional rejection reason (you can leave this blank):","")||"";if(!confirm("Reject this internal project?"))return;try{const x=engine(),a=actor();if(typeof x.adminRejectInternalProject==="function")await x.adminRejectInternalProject({projectId:id,reason,rejectedBy:a.email,rejectedByEmail:a.email,rejectedByName:a.name});else await directReject(id,reason);await load();alert("Internal project rejected successfully.")}catch(e){alert(e.message||"Unable to reject internal project.")}}
-function render(){const a=S.filtered||[];E.count.textContent=`${a.length} record${a.length===1?"":"s"}`;if(!a.length){E.list.innerHTML='<div class="empty">No internal projects found for the current filter.</div>';return}E.list.innerHTML=a.map(p=>{const s=status(p.status),id=esc(p.id),internal=esc(iid(p)),reason=p.rejection_reason||p.review_note||p.review_reason||"";let actions=s==="internal_pending"?`<button class="approve" onclick="approveInternalProject('${id}')">${I.check} Approve</button><button class="reject" onclick="rejectInternalProject('${id}')">${I.close} Reject</button>`:badge(s);const review=(s!=="internal_pending"||reason)?`<div class="review-box"><div class="review-title">Review Record</div><div class="meta"><b>Status:</b> ${esc(s)}<br><b>Reviewed By:</b> ${esc(p.reviewed_by_name||p.approved_by_name||p.rejected_by_name||"—")}<br><b>Reviewed At:</b> ${esc(date(p.reviewed_at))}<br><b>Approved At:</b> ${esc(date(p.approved_at))}<br><b>Rejected At:</b> ${esc(date(p.rejected_at))}${reason?`<br><b>Reason:</b> ${esc(reason)}`:""}</div></div>`:"";const info=(l,v)=>`<div class="info-box"><div class="info-label">${l}</div><div class="info-value">${esc(v)}</div></div>`;return`<div class="project-card"><div class="project-top"><div><h3 class="project-name">${esc(name(p))}</h3><div class="meta"><span class="meta-line">${I.mail}${esc(email(p)||"—")}</span><span class="meta-line">${I.phone}${esc(phone(p))}</span><span class="meta-line">${I.user}${esc(creator(p))}</span><span class="meta-line">${I.id}${internal}${internal!=="—"?`<button class="copy-btn" onclick="copyInternalProjectId('${internal}')">Copy</button>`:""}</span><span class="meta-line">${I.time}Submitted: ${esc(date(p.created_at))}</span></div></div><div>${badge(s)}</div></div><div class="info-grid">${info("Category",field(p,"category"))}${info("Stage",field(p,"stage"))}${info("Role",p.creator_role||p.role||"—")}${info("Funding",field(p,"funding"))}${info("Risk",field(p,"risk"))}${info("Confidentiality",field(p,"confidentiality"))}${info("Expected ROI (%)",p.roi??"—")}${info("Initial Liquidity (Pi)",p.initial_liquidity??"—")}${info("Contributor Email",email(p)||"—")}</div><div class="block"><b>Project Summary</b><br>${esc(p.summary||"—")}</div><div class="block"><b>Problem Statement</b><br>${esc(p.problem||"—")}</div><div class="block"><b>Solution / Innovation</b><br>${esc(p.solution||"—")}</div><div class="block"><b>Expected Impact</b><br>${esc(p.impact||"—")}</div>${review}<div class="actions">${actions}</div></div>`}).join("")}
-function bind(){E.refresh.addEventListener("click",load);E.search.addEventListener("input",filter);E.filter.addEventListener("change",filter)}
-window.copyInternalProjectId=copyText;window.approveInternalProject=approve;window.rejectInternalProject=reject;
-document.addEventListener("DOMContentLoaded",async()=>{try{bind();await load()}catch(e){console.error(e);notice(e.message||"Failed to initialize internal project admin panel.","error")}});
+
+const adminInternalProjectState = {
+  projects: [],
+  filtered: [],
+  loading: false
+};
+
+const els = {
+  list: document.getElementById("list"),
+  refreshProjectsBtn: document.getElementById("refreshProjectsBtn"),
+  pageNotice: document.getElementById("pageNotice"),
+  searchInput: document.getElementById("searchInput"),
+  statusFilter: document.getElementById("statusFilter"),
+  statTotal: document.getElementById("statTotal"),
+  statPending: document.getElementById("statPending"),
+  statApproved: document.getElementById("statApproved"),
+  statRejected: document.getElementById("statRejected"),
+  listCount: document.getElementById("listCount")
+};
+
+function safeText(v, fallback = "—"){
+  if(v === null || v === undefined || v === "") return fallback;
+  return String(v);
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function setBtnBusy(btn, busy, busyText = "Please wait..."){
+  if(!btn) return;
+  if(busy){
+    if(!btn.dataset.originalText){
+      btn.dataset.originalText = btn.textContent;
+    }
+    btn.disabled = true;
+    btn.textContent = busyText;
+  }else{
+    btn.disabled = false;
+    btn.textContent = btn.dataset.originalText || btn.textContent;
+  }
+}
+
+function showPageNotice(message, type = "info"){
+  if(!els.pageNotice) return;
+  els.pageNotice.className = "notice " + type;
+  els.pageNotice.textContent = message;
+  els.pageNotice.classList.remove("hidden");
+}
+
+function hidePageNotice(){
+  if(!els.pageNotice) return;
+  els.pageNotice.className = "notice info hidden";
+  els.pageNotice.textContent = "";
+}
+
+async function copyText(text, successMessage = "Copied successfully"){
+  try{
+    if(navigator.clipboard &&
+       typeof navigator.clipboard.writeText === "function"){
+      await navigator.clipboard.writeText(String(text));
+    }else{
+      const textarea = document.createElement("textarea");
+      textarea.value = String(text);
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    alert(successMessage);
+  }catch(err){
+    console.error("Copy failed:", err);
+    alert("Unable to copy this value.");
+  }
+}
+
+function getInternalEngine(){
+  const engine = window.AlbukhrInternalRegistryEngine;
+  if(!engine){
+    throw new Error(
+      "AlbukhrInternalRegistryEngine not found. Load js/internal-registry-engine.js first."
+    );
+  }
+  return engine;
+}
+
+function getAdminActor(){
+  const adminObject =
+    (typeof window.admin !== "undefined" && window.admin)
+      ? window.admin
+      : {};
+
+  return {
+    email:
+      adminObject.email ||
+      adminObject.username ||
+      localStorage.getItem("albukhr_current_email") ||
+      localStorage.getItem("currentUserEmail") ||
+      "",
+    name:
+      adminObject.username ||
+      adminObject.name ||
+      localStorage.getItem("albukhr_current_username") ||
+      localStorage.getItem("currentUserName") ||
+      "ALBUKHR Admin"
+  };
+}
+
+function normalizeProjectStatus(status){
+  const s = String(status || "").trim().toLowerCase();
+
+  if(s === "internal_pending" || s === "pending") return "internal_pending";
+  if(s === "internal_approved" || s === "approved") return "internal_approved";
+  if(s === "internal_rejected" || s === "rejected") return "internal_rejected";
+
+  return s || "internal_pending";
+}
+
+function statusBadge(status){
+  const s = normalizeProjectStatus(status);
+
+  if(s === "internal_approved"){
+    return `<span class="badge approved">✓ Approved</span>`;
+  }
+  if(s === "internal_rejected"){
+    return `<span class="badge rejected">✗ Rejected</span>`;
+  }
+  if(s === "internal_pending"){
+    return `<span class="badge pending">⏳ Pending</span>`;
+  }
+
+  return `<span class="badge other">${escapeHtml(s)}</span>`;
+}
+
+/* =========================================================
+   DATABASE FIELD READERS
+   Source-of-truth fields include creator_email/creator_role.
+========================================================= */
+function projectName(p){
+  return p.project_name || p.projectName || "Unnamed Internal Project";
+}
+
+function projectCreator(p){
+  return p.creator_name || p.creatorName || "—";
+}
+
+function projectEmail(p){
+  return (
+    p.creator_email ||
+    p.email ||
+    p.creatorEmail ||
+    ""
+  ).toLowerCase();
+}
+
+function projectPhone(p){
+  return (
+    p.creator_phone ||
+    p.phone ||
+    p.creatorPhone ||
+    "—"
+  );
+}
+
+function projectInternalId(p){
+  return p.internal_id || p.albukhr_id || p.albukhrId || "—";
+}
+
+function projectCategory(p){ return p.category || "—"; }
+function projectStage(p){ return p.stage || "—"; }
+function projectSummary(p){ return p.summary || "—"; }
+function projectProblem(p){ return p.problem || "—"; }
+function projectSolution(p){ return p.solution || "—"; }
+function projectImpact(p){ return p.impact || "—"; }
+function projectFunding(p){ return p.funding || "—"; }
+function projectRisk(p){ return p.risk || "—"; }
+function projectConfidentiality(p){ return p.confidentiality || "—"; }
+
+function projectRole(p){
+  return p.creator_role || p.role || "—";
+}
+
+function projectRoi(p){
+  if(p.roi === null || p.roi === undefined || p.roi === "") return "—";
+  return String(p.roi);
+}
+
+function projectLiquidity(p){
+  if(p.initial_liquidity === null ||
+     p.initial_liquidity === undefined ||
+     p.initial_liquidity === ""){
+    return "—";
+  }
+  return String(p.initial_liquidity);
+}
+
+function projectStatus(p){
+  return normalizeProjectStatus(p.status);
+}
+
+function projectCreatedAt(p){
+  return p.created_at ? new Date(p.created_at).toLocaleString() : "—";
+}
+
+function projectApprovedAt(p){
+  return p.approved_at ? new Date(p.approved_at).toLocaleString() : "—";
+}
+
+function projectRejectedAt(p){
+  return p.rejected_at ? new Date(p.rejected_at).toLocaleString() : "—";
+}
+
+function projectReviewedAt(p){
+  return p.reviewed_at ? new Date(p.reviewed_at).toLocaleString() : "—";
+}
+
+function projectReviewedBy(p){
+  return p.reviewed_by_name ||
+    p.approved_by_name ||
+    p.rejected_by_name ||
+    "—";
+}
+
+function projectReviewReason(p){
+  return p.rejection_reason ||
+    p.review_note ||
+    p.review_reason ||
+    "";
+}
+
+/* =========================================================
+   DIRECT SUPABASE READ FALLBACK
+   READ-ONLY. Does not replace submission RPC.
+========================================================= */
+async function directListInternalProjects(){
+  const engine = getInternalEngine();
+
+  if(typeof engine.getSupabaseClient !== "function"){
+    throw new Error(
+      "Internal Registry Engine Supabase client is unavailable."
+    );
+  }
+
+  const supabase = engine.getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to load internal projects."
+    );
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+/* =========================================================
+   DIRECT APPROVE FALLBACK
+========================================================= */
+async function directApproveInternalProject(projectId){
+  const engine = getInternalEngine();
+  const supabase = engine.getSupabaseClient();
+  const actor = getAdminActor();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_approved",
+      project_approved: true,
+      approved_at: now,
+      rejected_at: null,
+      approved_by_email: actor.email,
+      approved_by_name: actor.name,
+      reviewed_by_email: actor.email,
+      reviewed_by_name: actor.name,
+      rejection_reason: null,
+      updated_at: now
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to approve internal project."
+    );
+  }
+
+  return data;
+}
+
+/* =========================================================
+   DIRECT REJECT FALLBACK
+========================================================= */
+async function directRejectInternalProject(projectId, reason = ""){
+  const engine = getInternalEngine();
+  const supabase = engine.getSupabaseClient();
+  const actor = getAdminActor();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("albukhr_internal_projects")
+    .update({
+      status: "internal_rejected",
+      project_approved: false,
+      rejected_at: now,
+      approved_at: null,
+      rejected_by_email: actor.email,
+      rejected_by_name: actor.name,
+      reviewed_by_email: actor.email,
+      reviewed_by_name: actor.name,
+      rejection_reason: reason || null,
+      updated_at: now
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if(error){
+    throw new Error(
+      error.message || "Failed to reject internal project."
+    );
+  }
+
+  return data;
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+function updateStats(list){
+  const total = list.length;
+  const pending = list.filter(
+    p => projectStatus(p) === "internal_pending"
+  ).length;
+  const approved = list.filter(
+    p => projectStatus(p) === "internal_approved"
+  ).length;
+  const rejected = list.filter(
+    p => projectStatus(p) === "internal_rejected"
+  ).length;
+
+  if(els.statTotal) els.statTotal.textContent = total;
+  if(els.statPending) els.statPending.textContent = pending;
+  if(els.statApproved) els.statApproved.textContent = approved;
+  if(els.statRejected) els.statRejected.textContent = rejected;
+}
+
+/* =========================================================
+   FILTER
+========================================================= */
+function applyFilters(){
+  if(!els.searchInput || !els.statusFilter) return;
+
+  const q = (els.searchInput.value || "").trim().toLowerCase();
+  const status = els.statusFilter.value || "all";
+
+  let list = [...adminInternalProjectState.projects];
+
+  if(status !== "all"){
+    list = list.filter(
+      p => projectStatus(p) === status
+    );
+  }
+
+  if(q){
+    list = list.filter(p => {
+      const hay = [
+        projectName(p),
+        projectCreator(p),
+        projectEmail(p),
+        projectPhone(p),
+        projectInternalId(p),
+        projectCategory(p),
+        projectStage(p),
+        projectRole(p),
+        projectSummary(p),
+        projectProblem(p),
+        projectSolution(p),
+        projectImpact(p),
+        projectFunding(p),
+        projectRisk(p),
+        projectConfidentiality(p),
+        projectReviewReason(p)
+      ].join(" ").toLowerCase();
+
+      return hay.includes(q);
+    });
+  }
+
+  adminInternalProjectState.filtered = list;
+  renderList();
+}
+
+/* =========================================================
+   FETCH
+   Primary: Internal Registry Engine.
+   Fallback: direct table read if RPC fails OR returns zero rows.
+========================================================= */
+async function fetchInternalProjects(){
+  try{
+    adminInternalProjectState.loading = true;
+    hidePageNotice();
+
+    setBtnBusy(
+      els.refreshProjectsBtn,
+      true,
+      "Refreshing..."
+    );
+
+    els.list.innerHTML =
+      `<div class="empty">Loading internal projects...</div>`;
+
+    const engine = getInternalEngine();
+    let list = [];
+
+    if(typeof engine.adminListInternalProjects === "function"){
+      try{
+        list = await engine.adminListInternalProjects({
+          status: "",
+          limit: 500
+        });
+      }catch(engineError){
+        console.warn(
+          "Admin engine list failed. Trying direct Supabase read.",
+          engineError
+        );
+        list = [];
+      }
+    }
+
+    if(!Array.isArray(list) || list.length === 0){
+      console.warn(
+        "Admin engine returned no projects. Reading albukhr_internal_projects directly."
+      );
+      list = await directListInternalProjects();
+    }
+
+    adminInternalProjectState.projects =
+      Array.isArray(list) ? list : [];
+
+    updateStats(adminInternalProjectState.projects);
+    applyFilters();
+
+    if(adminInternalProjectState.projects.length === 0){
+      showPageNotice(
+        "No internal projects were found in Supabase.",
+        "info"
+      );
+    }else{
+      hidePageNotice();
+    }
+
+  }catch(err){
+    console.error(
+      "Internal project fetch error:",
+      err
+    );
+
+    adminInternalProjectState.projects = [];
+    adminInternalProjectState.filtered = [];
+
+    updateStats([]);
+
+    els.list.innerHTML =
+      `<div class="empty">Failed to load internal projects.</div>`;
+
+    showPageNotice(
+      err?.message ||
+      "Unable to load internal project list.",
+      "error"
+    );
+
+  }finally{
+    adminInternalProjectState.loading = false;
+    setBtnBusy(
+      els.refreshProjectsBtn,
+      false
+    );
+  }
+}
+
+/* =========================================================
+   APPROVE
+========================================================= */
+async function approveInternalProject(projectId){
+  if(!confirm("Approve this internal project?")) return;
+
+  try{
+    const engine = getInternalEngine();
+    const actor = getAdminActor();
+
+    if(typeof engine.adminApproveInternalProject === "function"){
+      await engine.adminApproveInternalProject({
+        projectId,
+        approvedBy: actor.email,
+        approvedByEmail: actor.email,
+        approvedByName: actor.name
+      });
+    }else{
+      await directApproveInternalProject(projectId);
+    }
+
+    await fetchInternalProjects();
+
+    alert(
+      "Internal project approved successfully."
+    );
+
+  }catch(err){
+    console.error(
+      "Approve internal project error:",
+      err
+    );
+
+    alert(
+      err?.message ||
+      "Unable to approve internal project."
+    );
+  }
+}
+
+/* =========================================================
+   REJECT
+========================================================= */
+async function rejectInternalProject(projectId){
+  const reason =
+    prompt(
+      "Optional rejection reason (you can leave this blank):",
+      ""
+    ) || "";
+
+  if(!confirm("Reject this internal project?")) return;
+
+  try{
+    const engine = getInternalEngine();
+    const actor = getAdminActor();
+
+    if(typeof engine.adminRejectInternalProject === "function"){
+      await engine.adminRejectInternalProject({
+        projectId,
+        reason,
+        rejectedBy: actor.email,
+        rejectedByEmail: actor.email,
+        rejectedByName: actor.name
+      });
+    }else{
+      await directRejectInternalProject(
+        projectId,
+        reason
+      );
+    }
+
+    await fetchInternalProjects();
+
+    alert(
+      "Internal project rejected successfully."
+    );
+
+  }catch(err){
+    console.error(
+      "Reject internal project error:",
+      err
+    );
+
+    alert(
+      err?.message ||
+      "Unable to reject internal project."
+    );
+  }
+}
+
+function copyInternalProjectId(id){
+  if(!id || id === "—") return;
+
+  copyText(
+    id,
+    "Albukhr Internal ID copied: " + id
+  );
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function renderList(){
+  const list =
+    adminInternalProjectState.filtered || [];
+
+  if(els.listCount){
+    els.listCount.textContent =
+      `${list.length} record${
+        list.length === 1 ? "" : "s"
+      }`;
+  }
+
+  if(!list.length){
+    els.list.innerHTML =
+      `<div class="empty">
+        No internal projects found for the current filter.
+      </div>`;
+    return;
+  }
+
+  els.list.innerHTML = list.map(p => {
+    const status = projectStatus(p);
+    const internalId = projectInternalId(p);
+    const reviewReason = projectReviewReason(p);
+
+    const pendingActions =
+      status === "internal_pending"
+        ? `
+          <button
+            class="approve"
+            onclick="approveInternalProject('${String(p.id).replace(/'/g, "\\'")}')"
+          >
+            Approve
+          </button>
+          <button
+            class="reject"
+            onclick="rejectInternalProject('${String(p.id).replace(/'/g, "\\'")}')"
+          >
+            Reject
+          </button>
+        `
+        : status === "internal_approved"
+          ? `<span class="badge approved">✓ Approved</span>`
+          : status === "internal_rejected"
+            ? `<span class="badge rejected">✗ Rejected</span>`
+            : "";
+
+    const reviewBox =
+      (
+        status === "internal_approved" ||
+        status === "internal_rejected" ||
+        reviewReason
+      )
+        ? `
+          <div class="review-box">
+            <div class="review-title">
+              Review Record
+            </div>
+            <div class="meta">
+              <b>Status:</b>
+              ${escapeHtml(status)}
+              <br>
+
+              <b>Reviewed By:</b>
+              ${escapeHtml(projectReviewedBy(p))}
+              <br>
+
+              <b>Reviewed At:</b>
+              ${escapeHtml(projectReviewedAt(p))}
+              <br>
+
+              <b>Approved At:</b>
+              ${escapeHtml(projectApprovedAt(p))}
+              <br>
+
+              <b>Rejected At:</b>
+              ${escapeHtml(projectRejectedAt(p))}
+
+              ${
+                reviewReason
+                  ? `<br><b>Reason:</b> ${escapeHtml(reviewReason)}`
+                  : ""
+              }
+            </div>
+          </div>
+        `
+        : "";
+
+    return `
+      <div class="project-card">
+
+        <div class="project-top">
+          <div>
+            <h3 class="project-name">
+              ${escapeHtml(projectName(p))}
+            </h3>
+
+            <div class="meta">
+              📧 ${escapeHtml(projectEmail(p) || "—")}<br>
+              📱 ${escapeHtml(projectPhone(p))}<br>
+              👤 ${escapeHtml(projectCreator(p))}<br>
+
+              🆔 ${escapeHtml(internalId)}
+              ${
+                internalId && internalId !== "—"
+                  ? `
+                    <button
+                      class="copy-btn small"
+                      onclick="copyInternalProjectId('${String(internalId).replace(/'/g, "\\'")}')"
+                      style="margin-left:6px"
+                    >
+                      Copy
+                    </button>
+                  `
+                  : ""
+              }
+              <br>
+
+              🕒 Submitted:
+              ${escapeHtml(projectCreatedAt(p))}
+            </div>
+          </div>
+
+          <div>
+            ${statusBadge(status)}
+          </div>
+        </div>
+
+        <div class="info-grid">
+
+          <div class="info-box">
+            <div class="info-label">Category</div>
+            <div class="info-value">
+              ${escapeHtml(projectCategory(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Stage</div>
+            <div class="info-value">
+              ${escapeHtml(projectStage(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Role</div>
+            <div class="info-value">
+              ${escapeHtml(projectRole(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Funding</div>
+            <div class="info-value">
+              ${escapeHtml(projectFunding(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Risk</div>
+            <div class="info-value">
+              ${escapeHtml(projectRisk(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Confidentiality</div>
+            <div class="info-value">
+              ${escapeHtml(projectConfidentiality(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Expected ROI (%)</div>
+            <div class="info-value">
+              ${escapeHtml(projectRoi(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Initial Liquidity (Pi)</div>
+            <div class="info-value">
+              ${escapeHtml(projectLiquidity(p))}
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-label">Contributor Email</div>
+            <div class="info-value">
+              ${escapeHtml(projectEmail(p) || "—")}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="block">
+          <b>Project Summary</b><br>
+          ${escapeHtml(projectSummary(p))}
+        </div>
+
+        <div class="block">
+          <b>Problem Statement</b><br>
+          ${escapeHtml(projectProblem(p))}
+        </div>
+
+        <div class="block">
+          <b>Solution / Innovation</b><br>
+          ${escapeHtml(projectSolution(p))}
+        </div>
+
+        <div class="block">
+          <b>Expected Impact</b><br>
+          ${escapeHtml(projectImpact(p))}
+        </div>
+
+        ${reviewBox}
+
+        <div class="actions">
+          ${pendingActions}
+        </div>
+
+      </div>
+    `;
+  }).join("");
+}
+
+/* =========================================================
+   EVENTS
+========================================================= */
+function bindEvents(){
+  if(els.refreshProjectsBtn){
+    els.refreshProjectsBtn.addEventListener(
+      "click",
+      fetchInternalProjects
+    );
+  }
+
+  if(els.searchInput){
+    els.searchInput.addEventListener(
+      "input",
+      applyFilters
+    );
+  }
+
+  if(els.statusFilter){
+    els.statusFilter.addEventListener(
+      "change",
+      applyFilters
+    );
+  }
+}
+
+/* =========================================================
+   GLOBALS FOR INLINE BUTTONS
+========================================================= */
+window.copyInternalProjectId =
+  copyInternalProjectId;
+
+window.approveInternalProject =
+  approveInternalProject;
+
+window.rejectInternalProject =
+  rejectInternalProject;
+
+/* =========================================================
+   INIT
+========================================================= */
+document.addEventListener(
+  "DOMContentLoaded",
+  async function(){
+
+    try{
+      bindEvents();
+
+      if(!window.AlbukhrInternalRegistryEngine){
+        throw new Error(
+          "js/internal-registry-engine.js failed to load."
+        );
+      }
+
+      await fetchInternalProjects();
+
+    }catch(err){
+
+      console.error(
+        "Admin internal projects init error:",
+        err
+      );
+
+      showPageNotice(
+        err?.message ||
+        "Failed to initialize internal project admin panel.",
+        "error"
+      );
+    }
+  }
+);
