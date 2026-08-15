@@ -1,20 +1,950 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALBUKHR Admin – Internal Projects</title>
-<link rel="stylesheet" href="css/admin/admin-internal-projects.css">
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+ALBUKHR Admin • Permissions
+</title>
+
+<!-- =====================================
+GLOBAL ADMIN CSS
+===================================== -->
+
+<link rel="stylesheet" href="css/style.css">
+
+<link rel="stylesheet" href="css/admin/admin-permissions.css">
+
+<link rel="stylesheet" href="css/global-header.css">
+
+<link rel="stylesheet" href="css/app-alert.css">
+
+<!-- =====================================
+SUPABASE
+===================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-core.js"></script>
+
+<!-- =====================================
+ADMIN ENGINES
+===================================== -->
+
+<script src="js/supabase-admin-auth/admin-core.js"></script>
+
+<script src="js/supabase-admin-auth/admin-session.js"></script>
+
+<script src="js/supabase-admin-auth/admin-permissions.js"></script>
+
+<script src="js/supabase-admin-auth/admin-logs.js"></script>
+
+<script src="js/supabase-admin-auth/admin-auth.js"></script>
+
+<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
+
+<script src="js/supabase-admin-auth/admin-guard.js"></script>
+
+<script src="js/app-alert.js"></script>
+
+<script>
+
+/* =====================================
+INITIALIZE
+===================================== */
+
+(async()=>{
+
+await initializeAdmin();
+
+await requireSuperAdmin();
+
+})();
+
+</script>
+
 </head>
+
 <body>
-<div class="header"><div class="header-brand"><span class="header-mark"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M8 9.5 12 12l4-2.5M12 12v6"/></svg></span>ALBUKHR • Admin Internal Projects Panel</div></div>
-<div class="subbar"><div class="subbar-inner"><div class="subbar-title">Internal Project Review</div><div class="subbar-text">Review internal ALBUKHR projects submitted by approved contributors, inspect project structure and governance fields, then approve or reject each submission from the internal registry pipeline.</div></div></div>
-<section class="section">
-<div class="top-grid">
-<div class="card"><h3 class="panel-title"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5v15M8 7h8M8 11h7"/></svg></span>Internal Project Review Control</h3><div class="muted">This panel loads internal projects from Supabase through the internal registry engine. Projects can be filtered by review status and searched by project name, contributor email, creator name, Albukhr ID, category, stage, or confidentiality level.</div><div class="action-row"><button class="primary-btn" id="refreshProjectsBtn"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-4"/><path d="M4 4v4h4M4 13a8 8 0 0 0 14.9 4"/><path d="M20 20v-4h-4"/></svg>Refresh Internal Projects</button></div><div id="pageNotice" class="notice info hidden"></div></div>
-<div class="card"><h3 class="panel-title"><span class="panel-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/></svg></span>Internal Project Overview</h3><div class="toolbar"><div class="search-wrap"><div class="field-wrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 5 5"/></svg><input type="text" class="input" id="searchInput" placeholder="Search by project, creator, email, internal ID, category..." autocomplete="off"></div></div><div class="filter-wrap"><div class="field-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg><select id="statusFilter"><option value="all">All statuses</option><option value="internal_pending">Pending only</option><option value="internal_approved">Approved only</option><option value="internal_rejected">Rejected only</option></select></div></div></div><div class="stats-grid"><div class="stat-box"><div class="stat-label">Total</div><div class="stat-value" id="statTotal">0</div></div><div class="stat-box pending"><div class="stat-label">Pending</div><div class="stat-value" id="statPending">0</div></div><div class="stat-box approved"><div class="stat-label">Approved</div><div class="stat-value" id="statApproved">0</div></div><div class="stat-box rejected"><div class="stat-label">Rejected</div><div class="stat-value" id="statRejected">0</div></div></div></div>
+
+<!-- =====================================
+LOADING
+===================================== -->
+
+<div
+id="adminLoading"
+class="admin-loading">
+
+<div class="loading-spinner"></div>
+
+<p>
+
+Loading Permission Center...
+
+</p>
+
 </div>
-<div class="list-head"><div><h3>Internal Projects</h3><small>Internal registry review queue</small></div><div class="list-count" id="listCount">0 records</div></div>
-<section id="list"></section>
+
+<!-- =====================================
+APP ALERT
+===================================== -->
+
+<div
+id="appAlert"
+class="app-alert">
+
+<div class="app-alert-box">
+
+<h3 id="appAlertTitle">
+
+Notice
+
+</h3>
+
+<p id="appAlertText"></p>
+
+<button onclick="closeAppAlert()">
+
+OK
+
+</button>
+
+</div>
+
+</div>
+
+<!-- =====================================
+HEADER
+===================================== -->
+
+<header class="header">
+
+<div class="header-left">
+
+<span class="brand">
+
+ALBUKHR
+
+</span>
+
+</div>
+
+<div class="header-right">
+
+<button
+class="secondary-btn"
+onclick="adminLogout()">
+
+Logout
+
+</button>
+
+</div>
+
+</header>
+
+<!-- =====================================
+MAIN PAGE
+===================================== -->
+
+<div class="admin-page">
+
+<!-- =====================================
+HERO
+===================================== -->
+
+<section
+class="permissions-hero">
+
+<div class="hero-left">
+
+<h2>
+
+Admin Permission Center
+
+</h2>
+
+<p>
+
+Manage administrator accounts,
+roles,
+permissions,
+activity logs,
+and access control
+across the entire
+ALBUKHR ecosystem.
+
+</p>
+
+</div>
+
+<div class="hero-right">
+
+<button
+id="refreshAdmins"
+class="secondary-btn">
+
+Refresh
+
+</button>
+
+<button
+id="addAdminBtn"
+class="primary-btn">
+
++ Add Admin
+
+</button>
+
+</div>
+
 </section>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-core.js"></script><script src="js/contributor-engine.js"></script><script src="js/internal-registry-engine.js"></script><script src="js/admin/admin-internal-projects.js"></script>
-</body></html>
+
+<!-- =====================================
+STATISTICS
+===================================== -->
+
+<section
+class="permission-stats">
+
+<div class="stat-card">
+
+<span>
+
+Total Admins
+
+</span>
+
+<strong
+id="totalAdmins">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Super Admins
+
+</span>
+
+<strong
+id="superAdmins">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Active
+
+</span>
+
+<strong
+id="activeAdmins">
+
+0
+
+</strong>
+
+</div>
+
+<div class="stat-card">
+
+<span>
+
+Disabled
+
+</span>
+
+<strong
+id="disabledAdmins">
+
+0
+
+</strong>
+
+</div>
+
+</section>
+<!-- =====================================
+SEARCH
+===================================== -->
+
+<section class="permission-search">
+
+<input
+type="text"
+id="adminSearch"
+placeholder="Search by username, email or role...">
+
+</section>
+
+<!-- =====================================
+ROLE FILTERS
+===================================== -->
+
+<section class="role-filter">
+
+<button
+class="active"
+data-role-filter="all">
+
+All
+
+</button>
+
+<button
+data-role-filter="super_admin">
+
+Super Admin
+
+</button>
+
+<button
+data-role-filter="finance_admin">
+
+Finance
+
+</button>
+
+<button
+data-role-filter="review_admin">
+
+Review
+
+</button>
+
+<button
+data-role-filter="viewer_admin">
+
+Viewer
+
+</button>
+
+</section>
+
+<!-- =====================================
+PERMISSION TABLE
+===================================== -->
+
+<section
+class="permission-table-wrapper">
+
+<table
+class="permission-table">
+
+<thead>
+
+<tr>
+
+<th>
+
+Administrator
+
+</th>
+
+<th>
+
+Role
+
+</th>
+
+<th>
+
+Status
+
+</th>
+
+<th>
+
+Last Login
+
+</th>
+
+<th>
+
+Permissions
+
+</th>
+
+<th>
+
+Actions
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody
+id="permissionsTableBody">
+
+<tr>
+
+<td
+colspan="6"
+class="text-center">
+
+Loading administrators...
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- =====================================
+EMPTY STATE
+===================================== -->
+
+<section
+id="permissionEmpty"
+class="permission-empty hidden">
+
+<div class="icon">
+
+🛡️
+
+</div>
+
+<h3>
+
+No Administrators Found
+
+</h3>
+
+<p>
+
+There are currently no administrator
+accounts matching this search or filter.
+
+</p>
+
+</section>
+
+<!-- =====================================
+FOOTER
+===================================== -->
+
+<section
+class="permission-footer">
+
+<button
+id="loadMoreAdmins">
+
+Load More
+
+</button>
+
+<button
+id="viewLogsBtn">
+
+Activity Logs
+
+</button>
+
+  </section>
+  <!-- =====================================
+ADD / EDIT ADMIN MODAL
+===================================== -->
+
+<div
+id="adminModal"
+class="admin-modal">
+
+<div
+class="admin-modal-box">
+
+<!-- HEADER -->
+
+<div class="modal-header">
+
+<h2
+id="adminModalTitle">
+
+Add Administrator
+
+</h2>
+
+<button
+class="modal-close"
+onclick="closeAdminModal()">
+
+✕
+
+</button>
+
+</div>
+
+<!-- BODY -->
+
+<div class="modal-body">
+
+<div class="form-grid">
+
+<!-- USERNAME -->
+
+<div class="form-group">
+
+<label>
+
+Username
+
+</label>
+
+<input
+type="text"
+id="adminUsername"
+placeholder="Administrator username">
+
+</div>
+
+<!-- EMAIL -->
+
+<div class="form-group">
+
+<label>
+
+Email Address
+
+</label>
+
+<input
+type="email"
+id="adminEmail"
+placeholder="admin@example.com">
+
+</div>
+
+<!-- ROLE -->
+
+<div class="form-group">
+
+<label>
+
+Role
+
+</label>
+
+<select
+id="adminRole">
+
+<option value="">
+
+Select Role
+
+</option>
+
+<option value="super_admin">
+
+Super Admin
+
+</option>
+
+<option value="finance_admin">
+
+Finance Admin
+
+</option>
+
+<option value="review_admin">
+
+Review Admin
+
+</option>
+
+<option value="viewer_admin">
+
+Viewer Admin
+
+</option>
+
+</select>
+
+</div>
+
+<!-- STATUS -->
+
+<div class="form-group">
+
+<label>
+
+Status
+
+</label>
+
+<select
+id="adminStatus">
+
+<option value="active">
+
+Active
+
+</option>
+
+<option value="disabled">
+
+Disabled
+
+</option>
+
+</select>
+
+</div>
+
+<!-- NOTES -->
+
+<div class="form-group form-full">
+
+<label>
+
+Internal Notes
+
+</label>
+
+<textarea
+id="adminNotes"
+placeholder="Optional notes...">
+
+</textarea>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- FOOTER -->
+
+<div class="modal-footer">
+
+<button
+class="modal-cancel"
+onclick="closeAdminModal()">
+
+Cancel
+
+</button>
+
+<button
+id="saveAdminBtn"
+class="modal-save">
+
+Save Administrator
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =====================================
+PERMISSION MATRIX MODAL
+===================================== -->
+
+<div
+id="permissionModal"
+class="permission-modal">
+
+<div
+class="permission-modal-box">
+
+<div class="modal-header">
+
+<h2>
+
+Permission Matrix
+
+</h2>
+
+<button
+class="modal-close"
+onclick="closePermissionModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+class="modal-body">
+
+<div
+id="permissionGrid"
+class="permission-grid">
+
+<!-- Loaded dynamically -->
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+class="modal-cancel"
+onclick="closePermissionModal()">
+
+Close
+
+</button>
+
+<button
+id="savePermissionsBtn"
+class="modal-save">
+
+Save Permissions
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+<!-- =====================================
+ACTIVITY LOGS MODAL
+===================================== -->
+
+<div
+id="logsModal"
+class="logs-modal">
+
+<div
+class="logs-modal-box">
+
+<div class="modal-header">
+
+<h2>
+
+Administrator Activity Logs
+
+</h2>
+
+<button
+class="modal-close"
+onclick="closeLogsModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div
+class="modal-body">
+
+<div
+id="logsContainer"
+class="logs-container">
+
+<div class="text-center">
+
+Loading activity logs...
+
+</div>
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+class="modal-cancel"
+onclick="closeLogsModal()">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =====================================
+DELETE CONFIRM MODAL
+===================================== -->
+
+<div
+id="deleteModal"
+class="permission-modal">
+
+<div
+class="permission-modal-box">
+
+<div class="modal-header">
+
+<h2>
+
+Delete Administrator
+
+</h2>
+
+<button
+class="modal-close"
+onclick="closeDeleteModal()">
+
+✕
+
+</button>
+
+</div>
+
+<div class="modal-body">
+
+<p>
+
+Are you sure you want to permanently
+remove this administrator?
+
+</p>
+
+<p class="text-danger">
+
+This action cannot be undone.
+
+</p>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+class="modal-cancel"
+onclick="closeDeleteModal()">
+
+Cancel
+
+</button>
+
+<button
+id="confirmDeleteBtn"
+class="modal-save">
+
+Delete
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- =====================================
+PAGE ENGINE
+===================================== -->
+
+<script src="js/admin/admin-permissions-page.js"></script>
+
+<script>
+
+/* =====================================
+PAGE START
+===================================== */
+
+document.addEventListener(
+
+"DOMContentLoaded",
+
+async()=>{
+
+try{
+
+document.getElementById(
+
+"adminLoading"
+
+).style.display="flex";
+
+await initializeAdmin();
+
+await requireSuperAdmin();
+
+if(
+
+typeof initializePermissionPage===
+
+"function"
+
+){
+
+await initializePermissionPage();
+
+}
+
+}catch(error){
+
+console.error(
+
+"[ADMIN PERMISSIONS]",
+
+error
+
+);
+
+if(
+
+typeof openAppAlert==="function"
+
+){
+
+openAppAlert(
+
+"Initialization Failed",
+
+error.message
+
+);
+
+}else{
+
+alert(error.message);
+
+}
+
+}finally{
+
+document.getElementById(
+
+"adminLoading"
+
+).style.display="none";
+
+}
+
+});
+
+</script>
+
+</div>
+
+</body>
+
+  </html>
