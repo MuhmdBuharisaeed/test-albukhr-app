@@ -1,1614 +1,792 @@
 /* =========================================
    ALBUKHR NEWS
-   PART 1
+   CLEAN NEWS CSS
+   Compatible with simplified news.html
 ========================================= */
 
-/* ===========================
-PAGE
-=========================== */
+/* =========================================
+   PAGE
+========================================= */
 
 body{
-
-margin:0;
-padding:0;
-background:#f5f7f8;
-font-family:Inter,Arial,sans-serif;
-color:#222;
-overflow-x:hidden;
-
-}
-
-/* ===========================
-CONTAINER
-=========================== */
-
-.news-container{
-
-width:100%;
-max-width:900px;
-margin:auto;
-padding:18px;
-
-}
-
-/* ===========================
-HEADER
-=========================== */
-
-.news-header{
-
-display:flex;
-justify-content:space-between;
-align-items:center;
-
-padding:18px;
-
-margin:18px 0;
-
-background:#fff;
-
-border-radius:18px;
-
-box-shadow:
-0 8px 28px
-rgba(0,0,0,.06);
-
-}
-
-.news-title{
-
-display:flex;
-align-items:center;
-gap:14px;
-
-}
-
-.news-icon{
-
-width:58px;
-height:58px;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-border-radius:16px;
-
-background:#16a34a;
-color:#fff;
-
-font-size:28px;
-
-}
-
-.news-title h2{
-
-margin:0;
-font-size:23px;
-font-weight:700;
-color:#111;
-
-}
-
-.news-title p{
-
-margin-top:5px;
-margin-bottom:0;
-
-font-size:13px;
-line-height:1.6;
-
-color:#666;
-
-max-width:420px;
-
-}
-
-/* ===========================
-REFRESH BUTTON
-=========================== */
-
-.refresh-news-btn{
-
-border:none;
-outline:none;
-
-padding:12px 20px;
-
-border-radius:12px;
-
-background:#16a34a;
-
-color:#fff;
-
-font-size:14px;
-font-weight:600;
-
-cursor:pointer;
-
-transition:.25s;
-
-}
-
-.refresh-news-btn:hover{
-
-background:#12863d;
-
-transform:translateY(-2px);
-
-}
-
-/* ===========================
-HERO
-=========================== */
-
-.news-hero{
-
-background:#ffffff;
-
-border-radius:18px;
-
-padding:22px;
-
-margin-bottom:18px;
-
-box-shadow:
-0 8px 28px
-rgba(0,0,0,.05);
-
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:18px;
-
-}
-
-.hero-left{
-
-flex:1;
-
-}
-
-.hero-badge{
-
-display:inline-block;
-
-padding:7px 14px;
-
-border-radius:40px;
-
-background:#ecfdf3;
-
-color:#16a34a;
-
-font-size:12px;
-font-weight:700;
-
-margin-bottom:14px;
-
-}
-
-.news-hero h1{
-
-margin:0;
-
-font-size:28px;
-font-weight:700;
-
-color:#111;
-
-}
-
-.news-hero p{
-
-margin-top:12px;
-
-line-height:1.8;
-
-font-size:14px;
-
-color:#666;
-
-}
-
-/* ===========================
-SUMMARY
-=========================== */
-
-.news-summary{
-
-display:grid;
-
-grid-template-columns:
-repeat(2,1fr);
-
-gap:15px;
-
-margin-bottom:20px;
-
-}
-
-.summary-card{
-
-background:#fff;
-
-border-radius:16px;
-
-padding:18px;
-
-display:flex;
-
-align-items:center;
-
-gap:15px;
-
-box-shadow:
-0 6px 22px
-rgba(0,0,0,.05);
-
-}
-
-.summary-icon{
-
-width:52px;
-height:52px;
-
-border-radius:14px;
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-font-size:24px;
-
-background:#ecfdf3;
-
-}
-
-.summary-info{
-
-display:flex;
-flex-direction:column;
-
-}
-
-.summary-info span{
-
-font-size:13px;
-
-color:#777;
-
-}
-
-.summary-info strong{
-
-margin-top:4px;
-
-font-size:23px;
-
-font-weight:700;
-
-color:#16a34a;
-
-}
-
-/* ===========================
-SEARCH
-=========================== */
-
-.news-search{
-
-margin-bottom:20px;
-
-}
-
-.search-box{
-
-display:flex;
-align-items:center;
-
-background:#fff;
-
-border-radius:14px;
-
-padding:0 14px;
-
-height:56px;
-
-box-shadow:
-0 6px 20px
-rgba(0,0,0,.05);
-
-}
-
-.search-icon{
-
-font-size:20px;
-
-margin-right:10px;
-
-color:#888;
-
-}
-
-.search-box input{
-
-flex:1;
-
-border:none;
-outline:none;
-
-background:transparent;
-
-font-size:15px;
-
-color:#222;
-
-}
-
-/* ===========================
-TABS
-=========================== */
-
-.news-tabs{
-
-display:flex;
-
-gap:12px;
-
-margin-bottom:22px;
-
-overflow-x:auto;
-
-padding-bottom:4px;
-
-}
-
-.news-tab{
-
-border:none;
-
-padding:12px 18px;
-
-border-radius:12px;
-
-background:#fff;
-
-font-size:14px;
-font-weight:600;
-
-color:#444;
-
-cursor:pointer;
-
-transition:.25s;
-
-white-space:nowrap;
-
-box-shadow:
-0 4px 15px
-rgba(0,0,0,.04);
-
-}
-
-.news-tab:hover{
-
-background:#ecfdf3;
-
-}
-
-.news-tab.active{
-
-background:#16a34a;
-
-color:#fff;
-
+  margin:0;
+  padding:0;
+  background:#f5f7f8;
+  font-family:Inter,Arial,sans-serif;
+  color:#222;
+  overflow-x:hidden;
 }
 
 /* =========================================
-   ALBUKHR NEWS
-   PART 2
-   NEWS CARDS
+   NEWS CONTAINER
 ========================================= */
 
-/* ===========================
-NEWS FEED
-=========================== */
-
-.news-feed{
-
-display:flex;
-
-flex-direction:column;
-
-gap:18px;
-
-margin-bottom:24px;
-
+.news-container{
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  padding:18px;
+  box-sizing:border-box;
 }
 
-/* ===========================
-NEWS CARD
-=========================== */
+/* =========================================
+   NEWS FEED
+========================================= */
+
+.news-feed{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  margin-bottom:24px;
+}
+
+/* =========================================
+   NEWS CARD
+========================================= */
 
 .news-card{
-
-background:#fff;
-
-border-radius:18px;
-
-overflow:hidden;
-
-box-shadow:
-0 8px 26px
-rgba(0,0,0,.06);
-
-transition:.25s;
-
+  background:#fff;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:
+    0 8px 26px rgba(0,0,0,.06);
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
 }
 
 .news-card:hover{
-
-transform:translateY(-3px);
-
-box-shadow:
-0 12px 30px
-rgba(0,0,0,.08);
-
+  transform:translateY(-3px);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.08);
 }
 
-/* ===========================
-TOP
-=========================== */
+/* =========================================
+   NEWS CARD HEADER
+========================================= */
 
-.news-card-top{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-padding:18px;
-
-padding-bottom:10px;
-
+.news-card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:18px 18px 10px;
 }
 
-/* ===========================
-AUTHOR
-=========================== */
-
-.news-author{
-
-display:flex;
-
-align-items:center;
-
-gap:12px;
-
-}
-
-.news-avatar{
-
-width:46px;
-
-height:46px;
-
-border-radius:50%;
-
-background:#16a34a;
-
-color:#fff;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-font-size:20px;
-
-font-weight:bold;
-
-overflow:hidden;
-
-}
-
-.news-avatar img{
-
-width:100%;
-
-height:100%;
-
-object-fit:cover;
-
-border-radius:50%;
-
-}
-
-.news-author-info{
-
-display:flex;
-
-flex-direction:column;
-
-}
-
-.news-author-name{
-
-font-size:15px;
-
-font-weight:700;
-
-color:#111;
-
+.news-category{
+  padding:7px 14px;
+  border-radius:30px;
+  background:#e8f7ed;
+  color:#159947;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
 }
 
 .news-date{
-
-font-size:12px;
-
-color:#888;
-
-margin-top:4px;
-
+  font-size:12px;
+  color:#888;
+  text-align:right;
 }
-
-/* ===========================
-CATEGORY BADGES
-=========================== */
-
-.news-category{
-
-padding:7px 14px;
-
-border-radius:30px;
-
-font-size:12px;
-
-font-weight:700;
-
-white-space:nowrap;
-
-}
-
-/* Official */
-
-.news-category.official{
-
-background:#e8f7ed;
-
-color:#159947;
-
-}
-
-/* Project */
-
-.news-category.project{
-
-background:#eef5ff;
-
-color:#2267d8;
-
-}
-
-/* Alert */
-
-.news-category.alert{
-
-background:#fff4e4;
-
-color:#d97706;
-
-}
-
-/* ===========================
-TITLE
-=========================== */
-
-.news-title{
-
-padding:0 18px;
-
-font-size:20px;
-
-font-weight:700;
-
-line-height:1.5;
-
-color:#111;
-
-}
-
-/* ===========================
-IMAGE
-=========================== */
-
-.news-image{
-
-margin-top:16px;
-
-width:100%;
-
-height:240px;
-
-background:#eee;
-
-overflow:hidden;
-
-cursor:pointer;
-
-}
-
-.news-image img{
-
-width:100%;
-
-height:100%;
-
-object-fit:cover;
-
-transition:.35s;
-
-display:block;
-
-}
-
-.news-image:hover img{
-
-transform:scale(1.05);
-
-}
-
-/* ===========================
-CONTENT
-=========================== */
-
-.news-content{
-
-padding:18px;
-
-padding-top:16px;
-
-font-size:14px;
-
-line-height:1.9;
-
-color:#555;
-
-}
-
-/* ===========================
-READ MORE
-=========================== */
-
-.news-content.collapsed{
-
-display:-webkit-box;
-
--webkit-line-clamp:4;
-
--webkit-box-orient:vertical;
-
-overflow:hidden;
-
-}
-
-.news-content.expanded{
-
-display:block;
-
-}
-
-.read-more{
-
-display:inline-block;
-
-margin-top:12px;
-
-font-size:13px;
-
-font-weight:700;
-
-color:#16a34a;
-
-cursor:pointer;
-
-user-select:none;
-
-transition:.2s;
-
-}
-
-.read-more:hover{
-
-opacity:.75;
-
-}
-
-/* ===========================
-NEWS META
-=========================== */
-
-.news-meta{
-
-display:flex;
-
-align-items:center;
-
-flex-wrap:wrap;
-
-gap:16px;
-
-padding:0 18px 16px;
-
-font-size:12px;
-
-color:#888;
-
-}
-
-.news-meta span{
-
-display:flex;
-
-align-items:center;
-
-gap:6px;
-
-}
-
-/* ===========================
-DIVIDER
-=========================== */
-
-.news-divider{
-
-height:1px;
-
-background:#f1f1f1;
-
-margin:0 18px;
-
-  }
 
 /* =========================================
-   ALBUKHR NEWS
-   PART 3
-   FOOTER • LOADING • EMPTY STATE
+   NEWS TITLE
 ========================================= */
 
-/* ===========================
-CARD FOOTER
-=========================== */
-
-.news-footer{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-padding:14px 18px;
-
-border-top:1px solid #f1f1f1;
-
-background:#fafafa;
-
+.news-title{
+  margin:0;
+  padding:0 18px;
+  font-size:20px;
+  font-weight:700;
+  line-height:1.5;
+  color:#111;
 }
 
-/* ===========================
-LEFT ACTIONS
-=========================== */
+/* =========================================
+   NEWS IMAGE
+========================================= */
 
-.news-actions{
-
-display:flex;
-
-align-items:center;
-
-gap:10px;
-
-flex-wrap:wrap;
-
+.news-image{
+  display:block;
+  width:calc(100% - 36px);
+  height:240px;
+  margin:16px 18px 0;
+  object-fit:cover;
+  background:#eee;
+  border-radius:14px;
+  cursor:pointer;
+  transition:transform .35s ease;
 }
 
-/* ===========================
-ACTION BUTTON
-=========================== */
-
-.news-action{
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-gap:8px;
-
-padding:10px 14px;
-
-border:none;
-
-border-radius:12px;
-
-background:#f5f5f5;
-
-cursor:pointer;
-
-font-size:13px;
-
-font-weight:600;
-
-color:#555;
-
-transition:.25s;
-
+.news-image:hover{
+  transform:scale(1.015);
 }
 
-.news-action:hover{
+/* =========================================
+   NEWS DESCRIPTION
+========================================= */
 
-background:#e9f8ef;
-
-color:#16a34a;
-
+.news-description{
+  margin:0;
+  padding:16px 18px;
+  font-size:14px;
+  line-height:1.9;
+  color:#555;
 }
 
-.news-action.active{
+/* =========================================
+   CARD ACTIONS
+========================================= */
 
-background:#16a34a;
-
-color:#fff;
-
+.news-card-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:0 18px 18px;
 }
 
-/* ===========================
-RIGHT BUTTON
-=========================== */
+/* =========================================
+   READ MORE
+========================================= */
 
-.read-full-btn{
-
-padding:10px 18px;
-
-border:none;
-
-border-radius:12px;
-
-background:#16a34a;
-
-color:#fff;
-
-font-size:13px;
-
-font-weight:700;
-
-cursor:pointer;
-
-transition:.25s;
-
+.read-more-btn{
+  border:none;
+  outline:none;
+  padding:10px 16px;
+  border-radius:12px;
+  background:#16a34a;
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:
+    background .25s ease,
+    transform .25s ease;
 }
 
-.read-full-btn:hover{
-
-background:#13853d;
-
+.read-more-btn:hover{
+  background:#13853d;
+  transform:translateY(-1px);
 }
 
-/* ===========================
-LOAD MORE
-=========================== */
-
-.news-load-more{
-
-display:flex;
-
-justify-content:center;
-
-margin:28px 0;
-
+.read-more-btn:active{
+  transform:scale(.97);
 }
 
-.news-load-more button{
-
-padding:14px 30px;
-
-border:none;
-
-border-radius:14px;
-
-background:#16a34a;
-
-color:#fff;
-
-font-size:15px;
-
-font-weight:700;
-
-cursor:pointer;
-
-transition:.25s;
-
-}
-
-.news-load-more button:hover{
-
-background:#13853d;
-
-transform:translateY(-2px);
-
-}
-
-/* ===========================
-EMPTY STATE
-=========================== */
+/* =========================================
+   EMPTY STATE
+========================================= */
 
 .news-empty{
-
-display:flex;
-
-flex-direction:column;
-
-align-items:center;
-
-justify-content:center;
-
-padding:70px 20px;
-
-text-align:center;
-
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:300px;
+  padding:60px 20px;
+  text-align:center;
+  box-sizing:border-box;
 }
 
-.news-empty-icon{
+.empty-icon{
+  width:76px;
+  height:76px;
+  margin-bottom:20px;
+  border-radius:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#ecfdf3;
+  color:#16a34a;
+}
 
-font-size:70px;
-
-margin-bottom:20px;
-
-opacity:.8;
-
+.empty-icon .svg-icon{
+  width:42px;
+  height:42px;
 }
 
 .news-empty h3{
-
-margin:0;
-
-font-size:22px;
-
-color:#222;
-
+  margin:0;
+  font-size:22px;
+  color:#222;
 }
 
 .news-empty p{
-
-margin-top:12px;
-
-max-width:420px;
-
-line-height:1.8;
-
-font-size:14px;
-
-color:#777;
-
+  margin:12px 0 20px;
+  max-width:420px;
+  line-height:1.8;
+  font-size:14px;
+  color:#777;
 }
-
-/* ===========================
-LOADING CARD
-=========================== */
-
-.loading-card{
-
-background:#fff;
-
-border-radius:18px;
-
-padding:22px;
-
-box-shadow:
-0 8px 25px
-rgba(0,0,0,.05);
-
-margin-bottom:18px;
-
-}
-
-/* ===========================
-SKELETON
-=========================== */
-
-.skeleton{
-
-background:linear-gradient(
-
-90deg,
-
-#eeeeee 25%,
-
-#f8f8f8 50%,
-
-#eeeeee 75%
-
-);
-
-background-size:200% 100%;
-
-animation:skeletonLoading 1.3s infinite linear;
-
-border-radius:10px;
-
-}
-
-.skeleton-avatar{
-
-width:48px;
-
-height:48px;
-
-border-radius:50%;
-
-margin-bottom:18px;
-
-}
-
-.skeleton-title{
-
-width:70%;
-
-height:18px;
-
-margin-bottom:14px;
-
-}
-
-.skeleton-line{
-
-width:100%;
-
-height:12px;
-
-margin-bottom:10px;
-
-}
-
-.skeleton-line.short{
-
-width:60%;
-
-}
-
-.skeleton-image{
-
-width:100%;
-
-height:220px;
-
-margin-top:18px;
-
-border-radius:14px;
-
-}
-
-/* ===========================
-LOADING SPINNER
-=========================== */
-
-.loading-spinner{
-
-width:42px;
-
-height:42px;
-
-border:4px solid #e6e6e6;
-
-border-top:4px solid #16a34a;
-
-border-radius:50%;
-
-margin:auto;
-
-animation:spin .9s linear infinite;
-
-}
-
-/* ===========================
-ANIMATION
-=========================== */
-
-@keyframes spin{
-
-to{
-
-transform:rotate(360deg);
-
-}
-
-}
-
-@keyframes skeletonLoading{
-
-0%{
-
-background-position:200% 0;
-
-}
-
-100%{
-
-background-position:-200% 0;
-
-}
-
-  }
 
 /* =========================================
-   ALBUKHR NEWS
-   PART 4
-   MODALS • RESPONSIVE
+   LOADING CARD
 ========================================= */
 
-/* ===========================
-NEWS MODAL
-=========================== */
+.loading-card{
+  background:#fff;
+  border-radius:18px;
+  padding:36px 22px;
+  box-shadow:
+    0 8px 25px rgba(0,0,0,.05);
+  text-align:center;
+}
+
+.loading-card h3{
+  margin:18px 0 8px;
+  font-size:18px;
+  color:#222;
+}
+
+.loading-card p{
+  margin:0;
+  font-size:13px;
+  color:#777;
+  line-height:1.6;
+}
+
+/* =========================================
+   LOADING SPINNER
+========================================= */
+
+.loading-spinner{
+  width:42px;
+  height:42px;
+  border:4px solid #e6e6e6;
+  border-top:4px solid #16a34a;
+  border-radius:50%;
+  margin:auto;
+  box-sizing:border-box;
+  animation:spin .9s linear infinite;
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg);
+  }
+}
+
+/* =========================================
+   PRIMARY / SECONDARY BUTTONS
+   Used by simplified news.html
+========================================= */
+
+.primary-btn,
+.secondary-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:42px;
+  padding:10px 16px;
+  border-radius:12px;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  transition:
+    background .25s ease,
+    color .25s ease,
+    border-color .25s ease,
+    transform .2s ease;
+  box-sizing:border-box;
+}
+
+.primary-btn{
+  border:1px solid #16a34a;
+  background:#16a34a;
+  color:#fff;
+}
+
+.primary-btn:hover{
+  background:#13853d;
+  border-color:#13853d;
+  transform:translateY(-1px);
+}
+
+.secondary-btn{
+  border:1px solid #dfe5e1;
+  background:#fff;
+  color:#555;
+}
+
+.secondary-btn:hover{
+  background:#ecfdf3;
+  color:#16a34a;
+  border-color:#bfe8ce;
+  transform:translateY(-1px);
+}
+
+.primary-btn:active,
+.secondary-btn:active{
+  transform:scale(.97);
+}
+
+/* =========================================
+   FULL NEWS MODAL
+========================================= */
 
 .news-modal{
-
-position:fixed;
-
-top:0;
-left:0;
-
-width:100%;
-height:100%;
-
-display:none;
-
-align-items:center;
-justify-content:center;
-
-background:rgba(0,0,0,.65);
-
-z-index:9999;
-
-padding:20px;
-
-box-sizing:border-box;
-
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  box-sizing:border-box;
+  background:rgba(0,0,0,.65);
+  z-index:9999;
 }
 
 .news-modal.active{
+  display:flex;
+}
 
-display:flex;
-
+.news-modal-overlay{
+  position:absolute;
+  inset:0;
 }
 
 .news-modal-box{
-
-width:100%;
-max-width:760px;
-
-max-height:90vh;
-
-overflow:auto;
-
-background:#fff;
-
-border-radius:20px;
-
-animation:modalOpen .25s ease;
-
-box-shadow:
-0 18px 50px
-rgba(0,0,0,.25);
-
+  position:relative;
+  z-index:1;
+  width:100%;
+  max-width:760px;
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:20px;
+  box-shadow:
+    0 18px 50px rgba(0,0,0,.25);
+  animation:modalOpen .25s ease;
 }
 
-/* ===========================
-MODAL HEADER
-=========================== */
+/* =========================================
+   MODAL HEADER
+========================================= */
 
 .news-modal-header{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
-padding:22px;
-
-border-bottom:1px solid #ececec;
-
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  padding:22px;
+  border-bottom:1px solid #ececec;
 }
 
 .news-modal-header h2{
-
-margin:0;
-
-font-size:22px;
-
-color:#111;
-
-}
-
-.modal-close-btn{
-
-width:42px;
-height:42px;
-
-border:none;
-
-border-radius:50%;
-
-background:#f3f3f3;
-
-font-size:20px;
-
-cursor:pointer;
-
-transition:.25s;
-
-}
-
-.modal-close-btn:hover{
-
-background:#16a34a;
-
-color:#fff;
-
-}
-
-/* ===========================
-MODAL BODY
-=========================== */
-
-.news-modal-body{
-
-padding:22px;
-
+  margin:0;
+  font-size:22px;
+  line-height:1.4;
+  color:#111;
 }
 
 .news-modal-meta{
-
-display:flex;
-
-gap:12px;
-
-flex-wrap:wrap;
-
-font-size:13px;
-
-color:#777;
-
-margin-bottom:18px;
-
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:8px;
+  font-size:13px;
+  color:#777;
 }
+
+.news-modal-meta .dot{
+  color:#bbb;
+}
+
+.modal-close-btn{
+  flex:0 0 auto;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:50%;
+  background:#f3f3f3;
+  color:#444;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:
+    background .25s ease,
+    color .25s ease,
+    transform .2s ease;
+}
+
+.modal-close-btn:hover{
+  background:#16a34a;
+  color:#fff;
+  transform:rotate(3deg);
+}
+
+/* =========================================
+   MODAL IMAGE
+========================================= */
 
 .modal-image{
-
-width:100%;
-
-border-radius:16px;
-
-margin-bottom:20px;
-
-display:block;
-
+  width:calc(100% - 44px);
+  max-height:420px;
+  margin:22px;
+  object-fit:cover;
+  border-radius:16px;
+  display:block;
 }
+
+/* =========================================
+   MODAL CONTENT
+========================================= */
 
 .modal-content{
-
-font-size:15px;
-
-line-height:2;
-
-color:#444;
-
+  padding:0 22px 22px;
+  font-size:15px;
+  line-height:2;
+  color:#444;
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 
-/* ===========================
-MODAL FOOTER
-=========================== */
+/* =========================================
+   MODAL FOOTER
+========================================= */
 
 .news-modal-footer{
-
-display:flex;
-
-justify-content:flex-end;
-
-gap:12px;
-
-padding:20px;
-
-border-top:1px solid #ececec;
-
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  padding:20px 22px;
+  border-top:1px solid #ececec;
 }
 
-/* ===========================
-IMAGE PREVIEW
-=========================== */
+/* =========================================
+   IMAGE PREVIEW MODAL
+========================================= */
 
 .image-preview-modal{
-
-position:fixed;
-
-top:0;
-left:0;
-
-width:100%;
-height:100%;
-
-display:none;
-
-align-items:center;
-justify-content:center;
-
-background:rgba(0,0,0,.85);
-
-z-index:10000;
-
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.85);
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
 }
 
 .image-preview-modal.active{
+  display:flex;
+}
 
-display:flex;
-
+.image-preview-overlay{
+  position:absolute;
+  inset:0;
 }
 
 .image-preview-box{
-
-position:relative;
-
-max-width:95%;
-
-max-height:90%;
-
+  position:relative;
+  z-index:1;
+  max-width:95%;
+  max-height:90%;
 }
 
 .image-preview-box img{
-
-max-width:100%;
-
-max-height:90vh;
-
-border-radius:16px;
-
-display:block;
-
+  max-width:100%;
+  max-height:90vh;
+  border-radius:16px;
+  display:block;
+  object-fit:contain;
 }
 
 .image-close-btn{
-
-position:absolute;
-
-top:-15px;
-
-right:-15px;
-
-width:42px;
-
-height:42px;
-
-border:none;
-
-border-radius:50%;
-
-background:#fff;
-
-cursor:pointer;
-
-font-size:18px;
-
-font-weight:bold;
-
+  position:absolute;
+  top:-15px;
+  right:-15px;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:50%;
+  background:#fff;
+  color:#333;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  z-index:2;
+  transition:
+    background .25s ease,
+    color .25s ease;
 }
 
-/* ===========================
-SHARE MODAL
-=========================== */
+.image-close-btn:hover{
+  background:#16a34a;
+  color:#fff;
+}
+
+/* =========================================
+   SHARE MODAL
+========================================= */
 
 .share-modal{
-
-position:fixed;
-
-top:0;
-left:0;
-
-width:100%;
-height:100%;
-
-display:none;
-
-align-items:center;
-justify-content:center;
-
-background:rgba(0,0,0,.55);
-
-z-index:10001;
-
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.55);
+  z-index:10001;
+  padding:20px;
+  box-sizing:border-box;
 }
 
 .share-modal.active{
+  display:flex;
+}
 
-display:flex;
-
+.share-overlay{
+  position:absolute;
+  inset:0;
 }
 
 .share-box{
-
-width:90%;
-max-width:420px;
-
-background:#fff;
-
-padding:24px;
-
-border-radius:18px;
-
-box-shadow:
-0 15px 40px
-rgba(0,0,0,.2);
-
+  position:relative;
+  z-index:1;
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  padding:24px;
+  border-radius:18px;
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.2);
+  box-sizing:border-box;
 }
 
 .share-box h3{
-
-margin-top:0;
-
-margin-bottom:18px;
-
+  margin:0 0 18px;
+  font-size:19px;
+  color:#222;
 }
 
 .share-box input{
+  width:100%;
+  padding:14px;
+  border:1px solid #ddd;
+  border-radius:12px;
+  outline:none;
+  font-family:inherit;
+  font-size:14px;
+  color:#444;
+  box-sizing:border-box;
+  background:#fafafa;
+}
 
-width:100%;
-
-padding:14px;
-
-border:1px solid #ddd;
-
-border-radius:12px;
-
-font-size:14px;
-
-box-sizing:border-box;
-
+.share-box input:focus{
+  border-color:#16a34a;
 }
 
 .share-actions{
-
-display:flex;
-
-justify-content:flex-end;
-
-gap:10px;
-
-margin-top:20px;
-
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:20px;
 }
 
-/* ===========================
-RESPONSIVE
-=========================== */
+/* =========================================
+   APP ALERT
+========================================= */
+
+.app-alert{
+  display:none;
+}
+
+/* =========================================
+   GENERIC SVG SUPPORT
+========================================= */
+
+.svg-icon{
+  width:20px;
+  height:20px;
+  display:inline-block;
+  vertical-align:middle;
+  flex-shrink:0;
+}
+
+.svg-icon path,
+.svg-icon circle,
+.svg-icon rect,
+.svg-icon line,
+.svg-icon polyline,
+.svg-icon polygon{
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.svg-icon.fill path,
+.svg-icon.fill circle{
+  fill:currentColor;
+  stroke:none;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
 
 @media(max-width:768px){
 
-.news-header{
+  .news-container{
+    padding:14px;
+  }
 
-flex-direction:column;
+  .news-card{
+    border-radius:16px;
+  }
 
-align-items:flex-start;
+  .news-image{
+    height:210px;
+  }
 
-gap:18px;
+  .news-title{
+    font-size:18px;
+  }
 
-}
+  .news-modal{
+    padding:12px;
+  }
 
-.news-summary{
+  .news-modal-box{
+    max-height:95vh;
+    border-radius:17px;
+  }
 
-grid-template-columns:1fr;
+  .news-modal-header{
+    padding:18px;
+  }
 
-}
+  .news-modal-header h2{
+    font-size:19px;
+  }
 
-.news-title{
+  .modal-image{
+    width:calc(100% - 36px);
+    margin:18px;
+    max-height:330px;
+  }
 
-font-size:18px;
+  .modal-content{
+    padding:0 18px 18px;
+    font-size:14px;
+    line-height:1.85;
+  }
 
-}
-
-.news-image{
-
-height:210px;
-
-}
-
-.news-footer{
-
-flex-direction:column;
-
-align-items:flex-start;
-
-gap:14px;
-
-}
-
-.news-actions{
-
-width:100%;
-
-justify-content:space-between;
-
-}
-
-.news-modal-box{
-
-max-height:95vh;
-
-}
+  .news-modal-footer{
+    padding:16px 18px;
+  }
 
 }
 
 @media(max-width:480px){
 
-.news-container{
+  .news-container{
+    padding:10px;
+  }
 
-padding:14px;
+  .news-card{
+    border-radius:14px;
+  }
+
+  .news-card-header{
+    padding:15px 15px 8px;
+  }
+
+  .news-title{
+    padding:0 15px;
+    font-size:17px;
+  }
+
+  .news-image{
+    width:calc(100% - 30px);
+    height:190px;
+    margin:14px 15px 0;
+    border-radius:12px;
+  }
+
+  .news-description{
+    padding:14px 15px;
+    font-size:13px;
+    line-height:1.8;
+  }
+
+  .news-card-actions{
+    padding:0 15px 15px;
+  }
+
+  .news-empty{
+    min-height:260px;
+    padding:45px 16px;
+  }
+
+  .news-empty h3{
+    font-size:20px;
+  }
+
+  .news-empty p{
+    font-size:13px;
+  }
+
+  .news-modal-header{
+    gap:10px;
+  }
+
+  .modal-close-btn{
+    width:38px;
+    height:38px;
+  }
+
+  .news-modal-footer{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .news-modal-footer .primary-btn,
+  .news-modal-footer .secondary-btn{
+    width:100%;
+  }
+
+  .share-box{
+    padding:18px;
+  }
+
+  .share-actions{
+    flex-direction:column;
+  }
+
+  .share-actions .primary-btn,
+  .share-actions .secondary-btn{
+    width:100%;
+  }
+
+  .image-close-btn{
+    top:8px;
+    right:8px;
+  }
 
 }
 
-.news-card{
-
-border-radius:16px;
-
-}
-
-.news-image{
-
-height:190px;
-
-}
-
-.news-title{
-
-font-size:17px;
-
-}
-
-.modal-content{
-
-font-size:14px;
-
-}
-
-.share-box{
-
-padding:18px;
-
-}
-
-}
-
-/* ===========================
-ANIMATION
-=========================== */
+/* =========================================
+   MODAL ANIMATION
+========================================= */
 
 @keyframes modalOpen{
-
-from{
-
-opacity:0;
-
-transform:scale(.95);
-
-}
-
-to{
-
-opacity:1;
-
-transform:scale(1);
-
-}
-
+  from{
+    opacity:0;
+    transform:scale(.95);
   }
+
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
