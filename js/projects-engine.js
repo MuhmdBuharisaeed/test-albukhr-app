@@ -1,26 +1,105 @@
 /* =========================================
    ALBUKHR PROJECTS ENGINE v3
-   NETWORK-AWARE PROJECT REGISTRY
+   NETWORK-AWARE SUPABASE PROJECT REGISTRY
+========================================= */
 
-   DEPENDS ON:
-   1) @supabase/supabase-js
-   2) js/environment-switcher.js
-   3) js/supabase-core.js
+/*
+  SINGLE SOURCE OF TRUTH:
+  - Supabase projects table
 
-   PURPOSE:
-   - Single source of truth for project metadata
-   - Strict MAINNET / TESTNET project isolation
-   - Supabase-first project registry
-   - Local fallback only when Supabase is unavailable
-   - Compatible with treasury / liquidity / dashboards
+  NETWORK ISOLATION:
+  - mainnet => projects.network = "mainnet"
+  - testnet => projects.network = "testnet"
 
-   PROJECT TYPES:
-   - core
-   - internal
-   - external
+  IMPORTANT:
+  This engine does NOT use localStorage.
+  Project cache is memory-only and is never persisted.
+
+  DEPENDS ON:
+  - supabase-core.js
+  - ALBUKHR network/environment resolver
+*/
+
+/* =========================================
+   TABLE CONFIG
 ========================================= */
 
 const ALBUKHR_PROJECTS_TABLE = "projects";
+
+
+/* =========================================
+   NETWORK RESOLUTION
+   =========================================
+   We support the shared network resolver if one
+   exists. Otherwise we resolve from the official
+   ALBUKHR hostname so this file remains safe
+   during the migration.
+========================================= */
+
+function getProjectsNetwork(){
+
+  if(
+    typeof window.requireAlbukhrNetwork ===
+    "function"
+  ){
+
+    return window.requireAlbukhrNetwork();
+
+  }
+
+  if(
+    typeof window.getAlbukhrNetwork ===
+    "function"
+  ){
+
+    const network =
+      window.getAlbukhrNetwork();
+
+    if(
+      network === "mainnet" ||
+      network === "testnet"
+    ){
+
+      return network;
+
+    }
+
+  }
+
+  const hostname =
+    String(
+      window.location.hostname || ""
+    ).toLowerCase();
+
+  if(
+    hostname === "test.albukhr.com" ||
+    hostname.startsWith("test.")
+  ){
+
+    return "testnet";
+
+  }
+
+  if(
+    hostname === "app.albukhr.com" ||
+    hostname.startsWith("app.")
+  ){
+
+    return "mainnet";
+
+  }
+
+  /*
+    Development/local fallback.
+
+    This matches the existing ALBUKHR
+    environment convention: local defaults
+    to mainnet unless explicitly hosted on test.
+  */
+
+  return "mainnet";
+
+}
 
 
 /* =========================================
@@ -37,7 +116,11 @@ function getProjectsSupabaseClient(){
     const client =
       window.getAlbukhrSupabaseClient();
 
-    if(client) return client;
+    if(client){
+
+      return client;
+
+    }
 
   }
 
@@ -57,31 +140,7 @@ function getProjectsSupabaseClient(){
 
 
 /* =========================================
-   NETWORK
-========================================= */
-
-function getProjectsNetwork(){
-
-  if(
-    typeof window.requireAlbukhrNetwork !==
-    "function"
-  ){
-
-    throw new Error(
-      "ALBUKHR Network Core is required before projects-engine.js."
-    );
-
-  }
-
-  return window.requireAlbukhrNetwork();
-
-}
-
-
-/* =========================================
-   FALLBACK LOCAL CONFIG
-   Metadata only.
-   Network is attached at runtime.
+   FALLBACK PROJECT METADATA
 ========================================= */
 
 const ALBUKHR_PROJECTS_FALLBACK = [
@@ -238,13 +297,18 @@ const ALBUKHR_PROJECTS_FALLBACK = [
 
 /* =========================================
    CACHE STATE
-========================================= */
+   ========================================= */
 
 let __albukhrProjectsCache = [];
+
 let __albukhrProjectsLoaded = false;
+
 let __albukhrProjectsLoading = false;
+
 let __albukhrProjectsLastLoadedAt = null;
+
 let __albukhrProjectsLastSource = "none";
+
 let __albukhrProjectsLastNetwork = null;
 
 
@@ -252,9 +316,13 @@ let __albukhrProjectsLastNetwork = null;
    HELPERS
 ========================================= */
 
-function safeNum(value,fallback=0){
+function safeNum(
+  value,
+  fallback=0
+){
 
-  const n = Number(value);
+  const n =
+    Number(value);
 
   return Number.isFinite(n)
     ? n
@@ -263,7 +331,10 @@ function safeNum(value,fallback=0){
 }
 
 
-function safeStr(value,fallback=""){
+function safeStr(
+  value,
+  fallback=""
+){
 
   if(
     value === null ||
@@ -279,46 +350,89 @@ function safeStr(value,fallback=""){
 }
 
 
-function normalizeProjectType(type){
+function normalizeProjectType(
+  type
+){
 
   const t =
     safeStr(type)
       .trim()
       .toLowerCase();
 
-  if(t === "core") return "core";
-  if(t === "internal") return "internal";
-  if(t === "external") return "external";
+  if(t === "core"){
+
+    return "core";
+
+  }
+
+  if(t === "internal"){
+
+    return "internal";
+
+  }
+
+  if(t === "external"){
+
+    return "external";
+
+  }
 
   return "core";
 
 }
 
 
-function normalizeProjectStatus(status){
+function normalizeProjectStatus(
+  status
+){
 
   const s =
     safeStr(status)
       .trim()
       .toLowerCase();
 
-  if(s === "active") return "active";
-  if(s === "inactive") return "inactive";
-  if(s === "archived") return "archived";
-  if(s === "disabled") return "inactive";
+  if(s === "active"){
+
+    return "active";
+
+  }
+
+  if(s === "inactive"){
+
+    return "inactive";
+
+  }
+
+  if(s === "archived"){
+
+    return "archived";
+
+  }
+
+  if(s === "disabled"){
+
+    return "inactive";
+
+  }
 
   return "active";
 
 }
 
 
-function normalizeDurations(value){
+function normalizeDurations(
+  value
+){
 
-  if(Array.isArray(value)){
+  if(
+    Array.isArray(value)
+  ){
 
     const arr =
       value
-        .map(v => Number(v))
+        .map(
+          v => Number(v)
+        )
         .filter(
           v =>
             Number.isFinite(v) &&
@@ -359,13 +473,8 @@ function normalizeDurations(value){
 }
 
 
-/* =========================================
-   NORMALIZE PROJECT ROW
-========================================= */
-
 function normalizeProjectRow(
-  row = {},
-  networkOverride = null
+  row={}
 ){
 
   const code =
@@ -384,27 +493,11 @@ function normalizeProjectRow(
       "Unnamed Project"
     ).trim();
 
-  let network = null;
-
-  try{
-
-    network =
-      networkOverride ||
-      safeStr(row.network)
-        .trim()
-        .toLowerCase() ||
-      null;
-
-  }catch(e){
-
-    network = null;
-
-  }
-
   return {
 
     id:
-      row.id ?? null,
+      row.id ??
+      null,
 
     project_code:
       code,
@@ -499,13 +592,19 @@ function normalizeProjectRow(
         ""
       ),
 
-    network,
-
     created_at:
-      row.created_at || null,
+      row.created_at ||
+      null,
 
     updated_at:
-      row.updated_at || null,
+      row.updated_at ||
+      null,
+
+    network:
+      safeStr(
+        row.network,
+        getProjectsNetwork()
+      ),
 
     raw:
       row
@@ -519,10 +618,14 @@ function normalizeProjectRow(
    SORT PROJECTS
 ========================================= */
 
-function sortProjects(rows=[]){
+function sortProjects(
+  rows=[]
+){
 
-  return [...rows].sort(
-    (a,b) => {
+  return [
+    ...rows
+  ].sort(
+    (a,b)=>{
 
       const aSort =
         safeNum(
@@ -536,9 +639,12 @@ function sortProjects(rows=[]){
           9999
         );
 
-      if(aSort !== bSort){
+      if(
+        aSort !== bSort
+      ){
 
-        return aSort - bSort;
+        return aSort -
+               bSort;
 
       }
 
@@ -558,7 +664,6 @@ function sortProjects(rows=[]){
 
 /* =========================================
    FETCH PROJECTS FROM SUPABASE
-   STRICT CURRENT-NETWORK FILTER
 ========================================= */
 
 async function fetchProjectsFromSupabase(){
@@ -572,32 +677,48 @@ async function fetchProjectsFromSupabase(){
   if(!supabase){
 
     return {
+
       success:false,
+
+      network,
+
       error:
-        "Supabase core client not available",
-      network
+        "Supabase core client not available"
+
     };
 
   }
 
   try{
 
-    const query =
-      supabase
+    const {
+      data,
+      error
+    } =
+      await supabase
+
         .from(
           ALBUKHR_PROJECTS_TABLE
         )
+
         .select("*")
+
+        /*
+          CRITICAL NETWORK ISOLATION
+        */
+
         .eq(
           "network",
           network
         )
+
         .order(
           "sort_order",
           {
             ascending:true
           }
         )
+
         .order(
           "project_name",
           {
@@ -605,46 +726,51 @@ async function fetchProjectsFromSupabase(){
           }
         );
 
-    const {
-      data,
-      error
-    } = await query;
-
     if(error){
 
       return {
+
         success:false,
+
+        network,
+
         error:
           error.message ||
-          "Failed to load projects",
-        network
+          "Failed to load projects"
+
       };
 
     }
 
     const normalized =
-      (data || [])
+      (
+        data ||
+        []
+      )
         .map(
-          row =>
-            normalizeProjectRow(
-              row,
-              network
-            )
+          normalizeProjectRow
         )
+        /*
+          Defensive second filter.
+          Even if an unexpected row enters
+          the response, never expose it.
+        */
         .filter(
-          p => p.project_code
+          p =>
+            p.project_code &&
+            p.network === network
         );
 
     return {
 
       success:true,
 
+      network,
+
       data:
         sortProjects(
           normalized
-        ),
-
-      network
+        )
 
     };
 
@@ -654,15 +780,39 @@ async function fetchProjectsFromSupabase(){
 
       success:false,
 
+      network,
+
       error:
         e?.message ||
-        "Projects fetch failed",
-
-      network
+        "Projects fetch failed"
 
     };
 
   }
+
+}
+
+
+/* =========================================
+   NETWORK-SAFE FALLBACK
+========================================= */
+
+function getProjectsFallbackForNetwork(
+  network
+){
+
+  return (
+    ALBUKHR_PROJECTS_FALLBACK
+      .map(
+        row => ({
+          ...row,
+          network
+        })
+      )
+      .map(
+        normalizeProjectRow
+      )
+  );
 
 }
 
@@ -679,56 +829,59 @@ async function loadProjects(
   const network =
     getProjectsNetwork();
 
-
   /*
-    Cache is network-bound.
-    Never reuse MAINNET cache in TESTNET
-    or TESTNET cache in MAINNET.
+    Never reuse an in-memory cache belonging
+    to another network.
   */
 
   if(
-    __albukhrProjectsLoaded &&
-    __albukhrProjectsLastNetwork !== network
+    __albukhrProjectsLastNetwork !==
+    network
   ){
 
     __albukhrProjectsCache = [];
+
     __albukhrProjectsLoaded = false;
-    __albukhrProjectsLastLoadedAt = null;
-    __albukhrProjectsLastSource = "none";
+
+    __albukhrProjectsLoading = false;
+
+    __albukhrProjectsLastNetwork =
+      network;
 
   }
-
 
   if(
     __albukhrProjectsLoaded &&
     !forceRefresh
   ){
 
-    return __albukhrProjectsCache;
+    return [
+      ...__albukhrProjectsCache
+    ];
 
   }
-
 
   if(
     __albukhrProjectsLoading &&
     !forceRefresh
   ){
 
-    return __albukhrProjectsCache;
+    return [
+      ...__albukhrProjectsCache
+    ];
 
   }
 
-
   __albukhrProjectsLoading = true;
-
 
   const remote =
     await fetchProjectsFromSupabase();
 
-
   if(
     remote.success &&
-    Array.isArray(remote.data) &&
+    Array.isArray(
+      remote.data
+    ) &&
     remote.data.length
   ){
 
@@ -750,31 +903,23 @@ async function loadProjects(
     __albukhrProjectsLastNetwork =
       network;
 
-    return __albukhrProjectsCache;
+    return [
+      ...__albukhrProjectsCache
+    ];
 
   }
 
-
   /*
     IMPORTANT:
-    Fallback is metadata only.
-    It is tagged with the CURRENT network
-    so consumers cannot mistake its origin.
+    This fallback is memory-only.
+    It is NOT localStorage and is never
+    written to Supabase.
   */
 
   const fallbackRows =
-    ALBUKHR_PROJECTS_FALLBACK
-      .map(
-        row =>
-          normalizeProjectRow(
-            {
-              ...row,
-              network
-            },
-            network
-          )
-      );
-
+    getProjectsFallbackForNetwork(
+      network
+    );
 
   __albukhrProjectsCache =
     sortProjects(
@@ -796,17 +941,17 @@ async function loadProjects(
   __albukhrProjectsLastNetwork =
     network;
 
-
   console.warn(
     "Projects engine fallback in use:",
     remote.error ||
-      "Supabase unavailable",
+    "Supabase returned no projects",
     "network:",
     network
   );
 
-
-  return __albukhrProjectsCache;
+  return [
+    ...__albukhrProjectsCache
+  ];
 
 }
 
@@ -817,7 +962,9 @@ async function loadProjects(
 
 async function refreshProjectsCache(){
 
-  return await loadProjects(true);
+  return await loadProjects(
+    true
+  );
 
 }
 
@@ -836,10 +983,13 @@ async function getAllProjects(
     );
 
   let result =
-    [...rows];
+    [
+      ...rows
+    ];
 
-
-  if(options.visibleOnly){
+  if(
+    options.visibleOnly
+  ){
 
     result =
       result.filter(
@@ -849,58 +999,76 @@ async function getAllProjects(
 
   }
 
-
-  if(options.activeOnly){
-
-    result =
-      result.filter(
-        p =>
-          p.status === "active"
-      );
-
-  }
-
-
-  if(options.treasuryEnabledOnly){
+  if(
+    options.activeOnly
+  ){
 
     result =
       result.filter(
         p =>
-          p.treasury_enabled !== false
+          p.status ===
+          "active"
       );
 
   }
 
-
-  if(options.stakingEnabledOnly){
+  if(
+    options.treasuryEnabledOnly
+  ){
 
     result =
       result.filter(
         p =>
-          p.staking_enabled !== false
+          p.treasury_enabled !==
+          false
       );
 
   }
 
-
-  if(options.contributionsEnabledOnly){
+  if(
+    options.stakingEnabledOnly
+  ){
 
     result =
       result.filter(
         p =>
-          p.contributions_enabled !== false
+          p.staking_enabled !==
+          false
       );
 
   }
 
+  if(
+    options.contributionsEnabledOnly
+  ){
 
-  return result;
+    result =
+      result.filter(
+        p =>
+          p.contributions_enabled !==
+          false
+      );
+
+  }
+
+  /*
+    Final defensive network filter.
+  */
+
+  const network =
+    getProjectsNetwork();
+
+  return result.filter(
+    p =>
+      p.network ===
+      network
+  );
 
 }
 
 
 /* =========================================
-   LEGACY ALIAS
+   LEGACY ALIASES
 ========================================= */
 
 async function getProjects(
@@ -913,10 +1081,6 @@ async function getProjects(
 
 }
 
-
-/* =========================================
-   GET ACTIVE PROJECTS
-========================================= */
 
 async function getActiveProjects(
   options={}
@@ -954,7 +1118,8 @@ async function getProjectsByType(
 
   return rows.filter(
     p =>
-      p.project_type === type
+      p.project_type ===
+      type
   );
 
 }
@@ -1011,6 +1176,9 @@ async function groupProjectsByType(
 
   return {
 
+    network:
+      getProjectsNetwork(),
+
     core:
       rows.filter(
         p =>
@@ -1054,7 +1222,6 @@ async function getProjectByCode(
   const rows =
     await getAllProjects();
 
-
   const code =
     safeStr(
       projectCode
@@ -1062,15 +1229,18 @@ async function getProjectByCode(
       .trim()
       .toLowerCase();
 
-
-  return rows.find(
-    p =>
-      safeStr(
-        p.project_code
-      )
-        .trim()
-        .toLowerCase() === code
-  ) || null;
+  return (
+    rows.find(
+      p =>
+        safeStr(
+          p.project_code
+        )
+          .trim()
+          .toLowerCase() ===
+        code
+    ) ||
+    null
+  );
 
 }
 
@@ -1143,7 +1313,8 @@ async function getProjectIcon(
       projectCode
     );
 
-  return p?.icon || "📦";
+  return p?.icon ||
+    "📦";
 
 }
 
@@ -1208,7 +1379,8 @@ async function getProjectType(
       projectCode
     );
 
-  return p?.project_type || null;
+  return p?.project_type ||
+    null;
 
 }
 
@@ -1222,7 +1394,8 @@ async function getProjectStatus(
       projectCode
     );
 
-  return p?.status || null;
+  return p?.status ||
+    null;
 
 }
 
@@ -1242,6 +1415,17 @@ async function projectExists(
 
 
 /* =========================================
+   NETWORK HELPER
+========================================= */
+
+function getCurrentProjectsNetwork(){
+
+  return getProjectsNetwork();
+
+}
+
+
+/* =========================================
    CHECK PROJECT FLAGS
 ========================================= */
 
@@ -1254,8 +1438,11 @@ async function isProjectActive(
       projectCode
     );
 
-  return !!p &&
-    p.status === "active";
+  return (
+    !!p &&
+    p.status ===
+    "active"
+  );
 
 }
 
@@ -1269,8 +1456,11 @@ async function isProjectVisible(
       projectCode
     );
 
-  return !!p &&
-    p.is_visible !== false;
+  return (
+    !!p &&
+    p.is_visible !==
+    false
+  );
 
 }
 
@@ -1284,8 +1474,11 @@ async function isCoreProject(
       projectCode
     );
 
-  return !!p &&
-    p.project_type === "core";
+  return (
+    !!p &&
+    p.project_type ===
+    "core"
+  );
 
 }
 
@@ -1299,8 +1492,11 @@ async function isInternalProject(
       projectCode
     );
 
-  return !!p &&
-    p.project_type === "internal";
+  return (
+    !!p &&
+    p.project_type ===
+    "internal"
+  );
 
 }
 
@@ -1314,8 +1510,11 @@ async function isExternalProject(
       projectCode
     );
 
-  return !!p &&
-    p.project_type === "external";
+  return (
+    !!p &&
+    p.project_type ===
+    "external"
+  );
 
 }
 
@@ -1329,8 +1528,11 @@ async function isProjectTreasuryEnabled(
       projectCode
     );
 
-  return !!p &&
-    p.treasury_enabled !== false;
+  return (
+    !!p &&
+    p.treasury_enabled !==
+    false
+  );
 
 }
 
@@ -1344,8 +1546,11 @@ async function isProjectStakingEnabled(
       projectCode
     );
 
-  return !!p &&
-    p.staking_enabled !== false;
+  return (
+    !!p &&
+    p.staking_enabled !==
+    false
+  );
 
 }
 
@@ -1359,8 +1564,11 @@ async function isProjectContributionsEnabled(
       projectCode
     );
 
-  return !!p &&
-    p.contributions_enabled !== false;
+  return (
+    !!p &&
+    p.contributions_enabled !==
+    false
+  );
 
 }
 
@@ -1378,23 +1586,27 @@ async function getProjectRules(
       projectCode
     );
 
-
   if(!p){
 
     return {
 
-      reserve_percent:0.30,
+      reserve_percent:
+        0.30,
 
-      min_liquidity:100,
+      min_liquidity:
+        100,
 
-      reward_rate:0.02
+      reward_rate:
+        0.02
 
     };
 
   }
 
-
   return {
+
+    network:
+      getProjectsNetwork(),
 
     reserve_percent:
       safeNum(
@@ -1425,19 +1637,16 @@ async function getProjectRules(
 
 async function getProjectsEngineSummary(){
 
-  const network =
-    getProjectsNetwork();
-
   const all =
     await getAllProjects();
 
   const grouped =
     await groupProjectsByType();
 
-
   return {
 
-    network,
+    network:
+      getProjectsNetwork(),
 
     total:
       all.length,
@@ -1474,6 +1683,12 @@ async function getProjectsEngineSummary(){
 /* =========================================
    GLOBAL EXPORTS
 ========================================= */
+
+window.getAlbukhrProjectsNetwork =
+  getProjectsNetwork;
+
+window.getCurrentProjectsNetwork =
+  getCurrentProjectsNetwork;
 
 window.loadProjects =
   loadProjects;
@@ -1578,7 +1793,7 @@ window.getProjectsEngineSummary =
 
 window.addEventListener(
   "DOMContentLoaded",
-  () => {
+  ()=>{
 
     loadProjects()
       .catch(
