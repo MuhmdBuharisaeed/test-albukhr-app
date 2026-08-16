@@ -1,19 +1,103 @@
-/* Allow all main admin roles */
-requireRole(["super_admin","finance_admin","review_admin","viewer_admin"]);
+/* =========================================
+   ALBUKHR SUPABASE ADMIN GUARD
+========================================= */
 
-/* Get current admin */
-const admin = getAdmin();
+(async function(){
 
-/* Show role badge */
-if(admin){
-  document.getElementById("adminRoleBadge").innerText =
-    admin.role.replace("_"," ").toUpperCase();
+"use strict";
 
-  /* Show Super Admin button only if role is super_admin */
-  if(admin.role === "super_admin"){
-    document.getElementById("superAdminBtn").style.display = "block";
+try{
+
+  /* -----------------------------------------
+     REQUIRE SUPABASE ADMIN SESSION
+  ----------------------------------------- */
+
+  const admin = await getCurrentAdmin();
+
+  if(!admin){
+
+    location.replace("admin-login.html");
+
+    return;
+
   }
+
+  /* -----------------------------------------
+     CURRENT ROLE
+  ----------------------------------------- */
+
+  const role =
+    String(admin.role_code || "")
+      .trim()
+      .toLowerCase();
+
+  /* -----------------------------------------
+     CURRENT DATABASE ROLES
+     
+     A yanzu Supabase ya tabbatar da:
+     super_admin
+     
+     Sauran roles za mu ƙara daga baya.
+  ----------------------------------------- */
+
+  const allowedRoles = [
+    "super_admin"
+  ];
+
+  if(!allowedRoles.includes(role)){
+
+    alert("You are not authorized to access the Admin Control Center.");
+
+    await adminLogout();
+
+    return;
+
+  }
+
+  /* -----------------------------------------
+     ROLE BADGE
+  ----------------------------------------- */
+
+  const roleBadge =
+    document.getElementById("adminRoleBadge");
+
+  if(roleBadge){
+
+    roleBadge.innerText =
+      role
+        .replace(/_/g, " ")
+        .toUpperCase();
+
+  }
+
+  /* -----------------------------------------
+     SUPER ADMIN BUTTON
+  ----------------------------------------- */
+
+  const superAdminBtn =
+    document.getElementById("superAdminBtn");
+
+  if(superAdminBtn){
+
+    superAdminBtn.style.display =
+      role === "super_admin"
+        ? "block"
+        : "none";
+
+  }
+
+}catch(error){
+
+  console.error(
+    "ALBUKHR Admin Guard Error:",
+    error
+  );
+
+  location.replace("admin-login.html");
+
 }
+
+})();
 
 function go(page){
   window.location.href = page;
