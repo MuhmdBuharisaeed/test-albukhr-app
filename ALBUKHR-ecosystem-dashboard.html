@@ -6,7 +6,10 @@
 
 <title>ALBUKHR Ecosystem Dashboard</title>
 
-<link rel="stylesheet" href="css/admin/ALBUKHR-ecosystem-dashboard.css" />
+<link
+  rel="stylesheet"
+  href="css/admin/ALBUKHR-ecosystem-dashboard.css"
+/>
 
 </head>
 
@@ -18,36 +21,58 @@
 
 <div class="container">
 
-  <!-- TOP TOTALS -->
+  <!-- =========================================
+       TOP TOTALS
+  ========================================== -->
+
   <div class="grid">
 
     <div class="card">
       <div class="card-label">Total Projects</div>
-      <div class="big" id="totalProjects">0</div>
+
+      <div class="big" id="totalProjects">
+        0
+      </div>
+
       <div class="sub" id="projectTypeBreakdown">
         Core: 0 • Internal: 0 • External: 0
       </div>
     </div>
 
+
     <div class="card">
       <div class="card-label">Total Liquidity</div>
-      <div class="big" id="totalLiquidity">0 Pi</div>
+
+      <div class="big" id="totalLiquidity">
+        0 Pi
+      </div>
+
       <div class="sub" id="totalUsableLiquidity">
         Usable: 0 Pi
       </div>
     </div>
 
+
     <div class="card">
       <div class="card-label">Total Investors</div>
-      <div class="big" id="totalInvestors">0</div>
+
+      <div class="big" id="totalInvestors">
+        0
+      </div>
+
       <div class="sub" id="totalActiveProjects">
         Active Projects: 0
       </div>
     </div>
 
+
     <div class="card">
       <div class="card-label">Total Reserve</div>
-      <div class="big" id="totalReserve">0 Pi</div>
+
+      <div class="big" id="totalReserve">
+        0 Pi
+      </div>
+
       <div class="sub" id="lastRefreshAt">
         Last refresh: —
       </div>
@@ -55,80 +80,317 @@
 
   </div>
 
-  <!-- ECOSYSTEM TREASURY PANEL -->
-  <div class="panel" id="ecosystemTreasuryPanel">
-    <h3 class="section-title">Ecosystem Treasury</h3>
+
+  <!-- =========================================
+       ECOSYSTEM TREASURY
+  ========================================== -->
+
+  <div
+    class="panel"
+    id="ecosystemTreasuryPanel"
+  >
+
+    <h3 class="section-title">
+      Ecosystem Treasury
+    </h3>
+
 
     <div class="row">
-      <div><strong>Main Treasury Balance</strong></div>
-      <div id="ecoMainBalance">0 Pi</div>
+      <div>
+        <strong>Main Treasury Balance</strong>
+      </div>
+
+      <div id="ecoMainBalance">
+        0 Pi
+      </div>
     </div>
 
-    <div class="row">
-      <div><strong>Available Liquidity</strong></div>
-      <div id="ecoAvailableLiquidity">0 Pi</div>
-    </div>
 
     <div class="row">
-      <div><strong>Pending Funding</strong></div>
-      <div id="ecoPendingFunding">0 Pi</div>
+      <div>
+        <strong>Available Liquidity</strong>
+      </div>
+
+      <div id="ecoAvailableLiquidity">
+        0 Pi
+      </div>
     </div>
 
-    <div class="row">
-      <div><strong>Approved Funding</strong></div>
-      <div id="ecoApprovedFunding">0 Pi</div>
-    </div>
 
     <div class="row">
-      <div><strong>Treasury Status</strong></div>
-      <div id="ecoTreasuryStatus">—</div>
+      <div>
+        <strong>Pending Funding</strong>
+      </div>
+
+      <div id="ecoPendingFunding">
+        0 Pi
+      </div>
     </div>
+
+
+    <div class="row">
+      <div>
+        <strong>Approved Funding</strong>
+      </div>
+
+      <div id="ecoApprovedFunding">
+        0 Pi
+      </div>
+    </div>
+
+
+    <div class="row">
+      <div>
+        <strong>Treasury Status</strong>
+      </div>
+
+      <div id="ecoTreasuryStatus">
+        —
+      </div>
+    </div>
+
   </div>
 
-  <!-- TYPE TOTALS -->
+
+  <!-- =========================================
+       PROJECT TYPE LIQUIDITY
+  ========================================== -->
+
   <div class="panel">
-    <h3 class="section-title">Project Type Liquidity</h3>
+
+    <h3 class="section-title">
+      Project Type Liquidity
+    </h3>
+
 
     <div class="row">
-      <div><strong>Core Projects</strong></div>
-      <div id="coreLiquidity">0 Pi</div>
+      <div>
+        <strong>Core Projects</strong>
+      </div>
+
+      <div id="coreLiquidity">
+        0 Pi
+      </div>
     </div>
 
-    <div class="row">
-      <div><strong>Internal Projects</strong></div>
-      <div id="internalLiquidity">0 Pi</div>
-    </div>
 
     <div class="row">
-      <div><strong>External Projects</strong></div>
-      <div id="externalLiquidity">0 Pi</div>
+      <div>
+        <strong>Internal Projects</strong>
+      </div>
+
+      <div id="internalLiquidity">
+        0 Pi
+      </div>
     </div>
+
+
+    <div class="row">
+      <div>
+        <strong>External Projects</strong>
+      </div>
+
+      <div id="externalLiquidity">
+        0 Pi
+      </div>
+    </div>
+
   </div>
 
-  <!-- PROJECT LIST -->
-  <h3 class="section-title">All Projects</h3>
-  <div id="projectList" class="loading">Loading dashboard...</div>
+
+  <!-- =========================================
+       PROJECT LIST
+  ========================================== -->
+
+  <h3 class="section-title">
+    All Projects
+  </h3>
+
+  <div
+    id="projectList"
+    class="loading"
+  >
+    Loading dashboard...
+  </div>
 
 </div>
 
+
+<!-- =========================================
+     ADMIN AUTH
+========================================= -->
+
 <script src="js/supabase-admin-auth/admin-auth.js"></script>
 
-<!-- Supabase -->
+
+<!-- =========================================
+     SUPABASE SDK
+========================================= -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<!-- =========================================
+     ALBUKHR SUPABASE CORE
+========================================= -->
+
 <script src="js/supabase-core.js"></script>
 
-<!-- New engines -->
+
+<!-- =========================================
+     PROJECT ENGINE
+========================================= -->
+
 <script src="js/projects-engine.js"></script>
+
+
+<!-- =========================================
+     PROJECT TREASURY
+========================================= -->
+
 <script src="js/project-treasury.js"></script>
+
+
+<!-- =========================================
+     SMART LIQUIDITY
+========================================= -->
+
 <script src="js/smart-liquidity-engine.js"></script>
+
+
+<!-- =========================================
+     ECOSYSTEM TREASURY
+========================================= -->
+
 <script src="js/ecosystem-treasury.js"></script>
 
-<!-- Optional modules -->
-<script src="js/staking.js"></script>
+
+<!-- =========================================
+     ENVIRONMENT-AWARE STAKING LOADER
+========================================= -->
+
+<script>
+
+(function(){
+
+  "use strict";
+
+
+  const hostname =
+    window.location.hostname.toLowerCase();
+
+
+  let stakingScript = null;
+
+
+  /*
+    MAINNET
+    app.albukhr.com
+  */
+
+  if(
+    hostname === "app.albukhr.com" ||
+    hostname.startsWith("app.")
+  ){
+
+    stakingScript =
+      "js/staking-mainnet-v2.js";
+
+  }
+
+
+  /*
+    TESTNET
+    test.albukhr.com
+  */
+
+  else if(
+    hostname === "test.albukhr.com" ||
+    hostname.startsWith("test.")
+  ){
+
+    stakingScript =
+      "js/staking-testnet-v2.js";
+
+  }
+
+
+  /*
+    DEVELOPMENT / LOCAL
+    Default to TESTNET for safety.
+  */
+
+  else{
+
+    stakingScript =
+      "js/staking-testnet-v2.js";
+
+    console.warn(
+      "ALBUKHR: Unknown hostname. " +
+      "Testnet staking engine selected for safety."
+    );
+
+  }
+
+
+  /*
+    LOAD ONLY ONE STAKING ENGINE
+  */
+
+  const script =
+    document.createElement("script");
+
+  script.src =
+    stakingScript;
+
+  script.async = false;
+
+  script.onload = function(){
+
+    console.log(
+      "✅ ALBUKHR staking engine loaded:",
+      stakingScript
+    );
+
+  };
+
+  script.onerror = function(){
+
+    console.error(
+      "❌ Failed to load staking engine:",
+      stakingScript
+    );
+
+  };
+
+
+  document.head.appendChild(script);
+
+})();
+
+</script>
+
+
+<!-- =========================================
+     CAPITAL PROTECTION
+========================================= -->
+
 <script src="js/capital-protection-engine.js"></script>
+
+
+<!-- =========================================
+     PROJECT DEPLOYMENT
+========================================= -->
+
 <script src="js/albukhr-project-deployment-engine.js"></script>
+
+
+<!-- =========================================
+     ECOSYSTEM DASHBOARD
+========================================= -->
 
 <script src="js/admin/ALBUKHR-ecosystem-dashboard.js"></script>
 
+
 </body>
-  </html>
+</html>
