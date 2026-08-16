@@ -1,54 +1,143 @@
 // =======================================
-// ALBUKHR TESTNET STAKING ENGINE v1
-// Pi Testnet • Supabase
+// ALBUKHR TESTNET STAKING ENGINE v2
+// Pi Testnet • Supabase Core
+// NETWORK ISOLATED
+// =======================================
+//
+// DEPENDS ON:
+// 1) js/supabase-core.js
+// 2) js/projects-engine.js
+// 3) existing Pi authentication/payment helpers
+//
+// IMPORTANT:
+// - No localStorage persistence.
+// - Testnet ONLY.
+// - Every stakes read/write is filtered by network=testnet.
+// - Supabase is the source of truth.
+//
+// This file intentionally preserves the existing public API:
+//   addStake()
+//   getStakes()
+//   getAllStakesMerged()
+//   getGlobalStakes()
+//   getProjectTotals()
+//   getUserStakes()
+//   withdrawProjectReward()
+//   withdrawCapital()
+//   loadData()
+//   getInternalTotals()
+//   getInternalProjectTotals()
+//   addInternalStake()
 // =======================================
 
-const SUPABASE_URL =
-"https://qexmnghilahsvethlxem.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
-
-const INTERNAL_KEY =
-"albukhr_testnet_stakes";
+const STAKES_TABLE = "stakes";
+const STAKING_NETWORK = "testnet";
 
 /* ======================================
-   STORAGE
+   SUPABASE CLIENT
 ====================================== */
 
-function _safeParse(key){
+function getStakingSupabaseClient(){
 
-  try{
+  if(
+    typeof window.getAlbukhrSupabaseClient ===
+    "function"
+  ){
 
-    const data =
-      JSON.parse(
-        localStorage.getItem(key)
+    const client =
+      window.getAlbukhrSupabaseClient();
+
+    if(client){
+      return client;
+    }
+
+  }
+
+  if(window.albukhrSupabase){
+    return window.albukhrSupabase;
+  }
+
+  console.warn(
+    "staking-testnet: ALBUKHR Supabase Core client not found."
+  );
+
+  return null;
+}
+
+
+/* ======================================
+   SAFE HELPERS
+====================================== */
+
+function stakingSafeNumber(
+  value,
+  fallback=0
+){
+
+  const n = Number(value);
+
+  return Number.isFinite(n)
+    ? n
+    : fallback;
+
+}
+
+
+function stakingSafeString(
+  value,
+  fallback=""
+){
+
+  if(
+    value === null ||
+    value === undefined
+  ){
+
+    return fallback;
+
+  }
+
+  return String(value);
+
+}
+
+
+/* ======================================
+   CURRENT NETWORK ASSERTION
+====================================== */
+
+function assertMainnetStakingNetwork(){
+
+  /*
+    The file itself is testnet-only.
+
+    If the shared environment resolver exists,
+    refuse to operate when the browser is explicitly
+    on testnet.
+  */
+
+  if(
+    typeof window.getAlbukhrProjectsNetwork ===
+    "function"
+  ){
+
+    const network =
+      window.getAlbukhrProjectsNetwork();
+
+    if(network !== STAKING_NETWORK){
+
+      throw new Error(
+        "Mainnet staking engine cannot operate on testnet."
       );
 
-    return Array.isArray(data)
-      ? data
-      : [];
-
-  }catch{
-
-    return [];
+    }
 
   }
 
-}
-
-function _save(key,data){
-
-  if(Array.isArray(data)){
-
-    localStorage.setItem(
-      key,
-      JSON.stringify(data)
-    );
-
-  }
+  return STAKING_NETWORK;
 
 }
+
 
 /* ======================================
    CURRENT USER
@@ -58,17 +147,24 @@ function getCurrentUser(){
 
   try{
 
-    if(window.Pi && Pi.getUser){
+    if(
+      window.Pi &&
+      typeof window.Pi.getUser ===
+      "function"
+    ){
 
-      const user = Pi.getUser();
+      const user =
+        window.Pi.getUser();
 
       if(user?.uid){
 
-        return{
+        return {
 
-          uid:user.uid,
+          uid:
+            user.uid,
 
-          username:user.username || "",
+          username:
+            user.username || "",
 
           wallet_address:
             user.wallet_address || ""
@@ -82,56 +178,70 @@ function getCurrentUser(){
   }catch(e){
 
     console.warn(
-      "Pi user not ready",
+      "Pi user not ready:",
       e
     );
 
   }
 
-  try{
+  /*
+    No localStorage fallback.
 
-    const localUser =
-      JSON.parse(
-        localStorage.getItem("pi_user")
-      );
-
-    if(localUser?.uid){
-      return localUser;
-    }
-
-  }catch(e){}
+    Authentication/session state must come from
+    the active ALBUKHR/Pi authentication layer.
+  */
 
   return null;
 
 }
 
+
 /* ======================================
    PROJECT RULES
 ====================================== */
 
-const PROJECT_RULES={
+const PROJECT_RULES = {
 
-Raheem:{minStake:10},
+  Raheem:{
+    minStake:10
+  },
 
-Hauwal:{minStake:10},
+  Hauwal:{
+    minStake:10
+  },
 
-Barsh:{minStake:10},
+  Barsh:{
+    minStake:10
+  },
 
-Khairat:{minStake:10},
+  Khairat:{
+    minStake:10
+  },
 
-Urban:{minStake:10},
+  Urban:{
+    minStake:10
+  },
 
-Labbaika:{minStake:10},
+  Labbaika:{
+    minStake:10
+  },
 
-Azman:{minStake:10}
+  Azman:{
+    minStake:10
+  }
 
 };
 
+
 function getMinStake(project){
 
-return PROJECT_RULES?.[project]?.minStake || 0;
+  return (
+    PROJECT_RULES?.[project]?.minStake ||
+    0
+  );
 
 }
+
 
 /* ======================================
    STAKING LOCK
@@ -139,33 +249,71 @@ return PROJECT_RULES?.[project]?.minStake || 0;
 
 let __stakingLock = false;
 
+
 /* ======================================
    REWARD RATES
 ====================================== */
 
-function getRate(project,duration){
+function getRate(
+  project,
+  duration
+){
 
-const table={
+  const table = {
 
-Raheem:{30:0.01,60:0.025,90:0.05},
+    Raheem:{
+      30:0.01,
+      60:0.025,
+      90:0.05
+    },
 
-Hauwal:{30:0.02,60:0.04,90:0.08},
+    Hauwal:{
+      30:0.02,
+      60:0.04,
+      90:0.08
+    },
 
-Khairat:{30:0.025,60:0.05,90:0.09},
+    Khairat:{
+      30:0.025,
+      60:0.05,
+      90:0.09
+    },
 
-Barsh:{30:0.03,60:0.06,90:0.10},
+    Barsh:{
+      30:0.03,
+      60:0.06,
+      90:0.10
+    },
 
-Labbaika:{30:0.02,60:0.045,90:0.075},
+    Labbaika:{
+      30:0.02,
+      60:0.045,
+      90:0.075
+    },
 
-Urban:{30:0.12,60:0.12,90:0.12},
+    Urban:{
+      30:0.12,
+      60:0.12,
+      90:0.12
+    },
 
-Azman:{30:0.04,60:0.07,90:0.12}
+    Azman:{
+      30:0.04,
+      60:0.07,
+      90:0.12
+    }
 
-};
+  };
 
-return table?.[project]?.[Number(duration)] || 0;
+  return (
+    table?.[project]?.[
+      Number(duration)
+    ] ||
+    0
+  );
 
 }
+
 
 /* ======================================
    CREATE PENDING STAKE
@@ -173,140 +321,200 @@ return table?.[project]?.[Number(duration)] || 0;
 
 async function createPendingStake({
 
-user,
+  user,
 
-project,
+  project,
 
-amount,
+  amount,
 
-duration
+  duration
 
 }){
 
-const reward =
-Number(amount) *
-getRate(project,Number(duration));
+  assertMainnetStakingNetwork();
 
-const res = await fetch(
+  const supabase =
+    getStakingSupabaseClient();
 
-`${SUPABASE_URL}/rest/v1/stakes`,
+  if(!supabase){
 
-{
+    throw new Error(
+      "Supabase client not available"
+    );
 
-method:"POST",
+  }
 
-headers:{
+  const reward =
+    Number(amount) *
+    getRate(
+      project,
+      Number(duration)
+    );
 
-"Content-Type":"application/json",
+  const payload = {
 
-"apikey":SUPABASE_KEY,
+    userid:
+      user.uid,
 
-"Authorization":
-`Bearer ${SUPABASE_KEY}`,
+    wallet:
+      user.wallet_address || "",
 
-"Prefer":"return=representation"
+    project,
 
-},
+    amount:
+      Number(amount),
 
-body:JSON.stringify({
+    duration:
+      Number(duration),
 
-userid:user.uid,
+    reward,
 
-wallet:
-user.wallet_address || "",
+    withdrawnReward:
+      0,
 
-project,
+    withdrawnCapital:
+      0,
 
-amount:Number(amount),
+    unlockTime:
+      Date.now() +
+      (
+        Number(duration) *
+        86400000
+      ),
 
-duration:Number(duration),
+    type:
+      "stake",
 
-reward,
+    status:
+      "pending",
 
-withdrawnReward:0,
+    network:
+      STAKING_NETWORK,
 
-withdrawnCapital:0,
+    payment_id:
+      null,
 
-unlockTime:
-Date.now() +
-(Number(duration) * 86400000),
+    txid:
+      null
 
-type:"stake",
+  };
 
-status:"pending",
+  const {
+    data,
+    error
+  } =
+    await supabase
 
-network:"testnet",
+      .from(STAKES_TABLE)
 
-payment_id:null,
+      .insert(payload)
 
-txid:null
+      .select()
 
-})
+      .single();
+
+  if(error){
+
+    throw new Error(
+      error.message ||
+      "Failed to create pending stake"
+    );
+
+  }
+
+  return data;
 
 }
 
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const rows =
-await res.json();
-
-return rows[0];
-
-}
 
 /* ======================================
    UPDATE PENDING STAKE
 ====================================== */
 
 async function updatePendingStake(
-id,
-values
+  id,
+  values
 ){
 
-const res = await fetch(
+  assertMainnetStakingNetwork();
 
-`${SUPABASE_URL}/rest/v1/stakes?id=eq.${id}&network=eq.testnet`,
+  const supabase =
+    getStakingSupabaseClient();
 
-{
+  if(!supabase){
 
-method:"PATCH",
+    throw new Error(
+      "Supabase client not available"
+    );
 
-headers:{
+  }
 
-"Content-Type":"application/json",
+  if(!id){
 
-"apikey":SUPABASE_KEY,
+    throw new Error(
+      "Stake id is required"
+    );
 
-"Authorization":
-`Bearer ${SUPABASE_KEY}`
+  }
 
-},
+  const safeValues = {
 
-body:JSON.stringify(values)
+    ...values,
+
+    /*
+      Prevent accidental cross-network mutation.
+    */
+
+    network:
+      STAKING_NETWORK
+
+  };
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+
+      .from(STAKES_TABLE)
+
+      .update(safeValues)
+
+      .eq(
+        "id",
+        id
+      )
+
+      .eq(
+        "network",
+        STAKING_NETWORK
+      )
+
+      .select()
+
+      .maybeSingle();
+
+  if(error){
+
+    throw new Error(
+      error.message ||
+      "Failed to update stake"
+    );
+
+  }
+
+  if(!data){
+
+    throw new Error(
+      "Stake not found in testnet"
+    );
+
+  }
+
+  return data;
 
 }
 
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-return true;
-
-   }
 
 /* ======================================
    ADD STAKE (TESTNET)
@@ -314,901 +522,1229 @@ return true;
 
 async function addStake({
 
-project,
+  project,
 
-amount,
+  amount,
 
-duration
+  duration
 
 }){
 
-if(__stakingLock){
+  if(__stakingLock){
 
-return{
-error:"Processing..."
-};
+    return {
+      error:
+        "Processing..."
+    };
 
-}
+  }
 
-__stakingLock = true;
+  __stakingLock = true;
 
-try{
+  try{
 
-/* ===============================
-GET USER
-=============================== */
+    /* ===============================
+       NETWORK
+    =============================== */
 
-let user = null;
+    assertMainnetStakingNetwork();
 
-try{
 
-user = await ensurePiAuth();
+    /* ===============================
+       GET USER
+    =============================== */
 
-}catch(e){
+    let user = null;
 
-console.warn(e);
+    try{
 
-}
+      if(
+        typeof ensurePiAuth ===
+        "function"
+      ){
 
-if(!user?.uid){
+        user =
+          await ensurePiAuth();
 
-user = getCurrentUser();
+      }
 
-}
+    }catch(e){
 
-if(!user?.uid){
-
-__stakingLock = false;
-
-return{
-error:"Login required"
-};
-
-}
-
-/* ===============================
-VALIDATION
-=============================== */
-
-const safeAmount =
-Number(amount);
-
-const safeDuration =
-Number(duration);
-
-if(!project){
-
-__stakingLock = false;
-
-return{
-error:"Invalid project"
-};
-
-}
-
-if(
-!Number.isFinite(safeAmount) ||
-safeAmount<=0
-){
-
-__stakingLock = false;
-
-return{
-error:"Invalid amount"
-};
-
-}
-
-if(
-safeAmount <
-getMinStake(project)
-){
-
-__stakingLock = false;
-
-return{
-error:"Minimum stake not reached"
-};
-
-}
-
-/* ===============================
-CREATE PENDING
-=============================== */
-
-const pending =
-await createPendingStake({
-
-user,
-
-project,
-
-amount:safeAmount,
-
-duration:safeDuration
-
-});
-
-/* ===============================
-PI PAYMENT
-=============================== */
-
-let payment;
-
-try{
-
-payment =
-await startPiPayment({
-
-amount:safeAmount,
-
-memo:
-`Stake in ${project}`,
-
-stakeId:
-pending.id
-
-});
-
-}catch(error){
-
-await updatePendingStake(
-
-pending.id,
-
-{
-
-status:"cancelled"
-
-}
-
-);
-
-__stakingLock=false;
-
-return{
-
-error:
-error.message ||
-"Payment cancelled"
-
-};
-
-}
-
-/* ===============================
-VERIFY PAYMENT
-=============================== */
-
-if(!payment){
-
-await updatePendingStake(
-
-pending.id,
-
-{
-
-status:"cancelled"
-
-}
-
-);
-
-__stakingLock=false;
-
-return{
-
-error:"Payment failed"
-
-};
-
-}
-
-/* ===============================
-SUCCESS
-=============================== */
-
-await updatePendingStake(
-
-pending.id,
-
-{
-
-payment_id:
-payment.paymentId ||
-
-payment.identifier ||
-
-null,
-
-txid:
-payment.txid ||
-
-payment.transaction?.txid ||
-
-payment.paymentId ||
-
-null,
-
-status:"paid",
-
-network:"testnet"
-
-}
-
-);
-
-/* ===============================
-TRANSACTION HISTORY
-=============================== */
-
-if(typeof recordTx==="function"){
-
-recordTx({
-
-type:"stake",
-
-project,
-
-amount:safeAmount,
-
-timestamp:Date.now(),
-
-network:"testnet"
-
-});
-
-}
-
-__stakingLock=false;
-
-return{
-
-success:true,
-
-payment
-
-};
-
-}catch(error){
-
-console.error(error);
-
-__stakingLock=false;
-
-return{
-
-error:
-error.message ||
-"Unknown staking error"
-
-};
-
-}
-
-}
-
-/* ======================================
-   GET ALL STAKES (TESTNET)
-====================================== */
-
-async function getAllStakesMerged(){
-
-const user = getCurrentUser();
-
-if(!user?.uid){
-
-return [];
-
-}
-
-try{
-
-const res = await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&network=eq.testnet&order=created_at.desc`,
-
-{
-
-headers:{
-
-"apikey":SUPABASE_KEY,
-
-"Authorization":
-`Bearer ${SUPABASE_KEY}`
-
-}
-
-}
-
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const data =
-await res.json();
-
-return Array.isArray(data)
-
-? data.filter(s=>
-
-s.status==="paid"
-
-)
-
-:[];
-
-}catch(error){
-
-console.error(
-
-"GET STAKES:",
-
-error
-
-);
-
-return [];
-
-}
-
-}
-
-/* ======================================
-   GLOBAL STAKES (TESTNET)
-====================================== */
-
-async function getGlobalStakes(){
-
-try{
-
-const res = await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?select=*&network=eq.testnet&status=eq.paid`,
-
-{
-
-headers:{
-
-"apikey":SUPABASE_KEY,
-
-"Authorization":
-`Bearer ${SUPABASE_KEY}`
-
-}
-
-}
-
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const data =
-await res.json();
-
-return Array.isArray(data)
-
-?data
-
-:[];
-
-}catch(error){
-
-console.error(
-
-"GLOBAL:",
-
-error
-
-);
-
-return[];
-
-}
-
-   }
-
-/* ======================================
-   PROJECT TOTALS (TESTNET)
-====================================== */
-
-async function getProjectTotals(project){
-
-  const stakes = await getAllStakesMerged();
-
-  const projectData = stakes.filter(s=>
-
-    String(s.project).trim().toLowerCase()===
-
-    String(project).trim().toLowerCase()
-
-  );
-
-  let stake = 0;
-
-  let reward = 0;
-
-  projectData.forEach(s=>{
-
-    const amount = Number(s.amount)||0;
-
-    if(s.type==="stake"){
-
-      stake += amount;
-
-      const total =
-      Number(s.reward)||0;
-
-      const withdrawn =
-      Number(s.withdrawnReward)||0;
-
-      reward += Math.max(
-        0,
-        total-withdrawn
+      console.warn(
+        "ensurePiAuth failed:",
+        e
       );
 
     }
 
-  });
+    if(!user?.uid){
 
-  return{
+      user =
+        getCurrentUser();
+
+    }
+
+    if(!user?.uid){
+
+      return {
+        error:
+          "Login required"
+      };
+
+    }
+
+
+    /* ===============================
+       VALIDATION
+    =============================== */
+
+    const safeAmount =
+      Number(amount);
+
+    const safeDuration =
+      Number(duration);
+
+    if(!project){
+
+      return {
+        error:
+          "Invalid project"
+      };
+
+    }
+
+    if(
+      !Number.isFinite(
+        safeAmount
+      ) ||
+      safeAmount <= 0
+    ){
+
+      return {
+        error:
+          "Invalid amount"
+      };
+
+    }
+
+    if(
+      !Number.isFinite(
+        safeDuration
+      ) ||
+      safeDuration <= 0
+    ){
+
+      return {
+        error:
+          "Invalid duration"
+      };
+
+    }
+
+    if(
+      safeAmount <
+      getMinStake(project)
+    ){
+
+      return {
+        error:
+          "Minimum stake not reached"
+      };
+
+    }
+
+
+    /* ===============================
+       PROJECT VALIDATION
+    =============================== */
+
+    if(
+      typeof getProjectMeta ===
+      "function"
+    ){
+
+      const projectMeta =
+        await getProjectMeta(
+          project
+        );
+
+      if(!projectMeta){
+
+        return {
+          error:
+            "Invalid project"
+        };
+
+      }
+
+      if(
+        projectMeta.network &&
+        projectMeta.network !==
+        STAKING_NETWORK
+      ){
+
+        return {
+          error:
+            "Project belongs to another network"
+        };
+
+      }
+
+      if(
+        projectMeta.status !==
+        "active"
+      ){
+
+        return {
+          error:
+            "Project is not active"
+        };
+
+      }
+
+      if(
+        projectMeta.staking_enabled ===
+        false
+      ){
+
+        return {
+          error:
+            "Staking is disabled for this project"
+        };
+
+      }
+
+    }
+
+
+    /* ===============================
+       CREATE PENDING
+    =============================== */
+
+    const pending =
+      await createPendingStake({
+
+        user,
+
+        project,
+
+        amount:
+          safeAmount,
+
+        duration:
+          safeDuration
+
+      });
+
+
+    /* ===============================
+       PI PAYMENT
+    =============================== */
+
+    let payment;
+
+    try{
+
+      if(
+        typeof startPiPayment !==
+        "function"
+      ){
+
+        throw new Error(
+          "Pi payment engine is not available"
+        );
+
+      }
+
+      payment =
+        await startPiPayment({
+
+          amount:
+            safeAmount,
+
+          memo:
+            `Stake in ${project}`,
+
+          stakeId:
+            pending.id
+
+        });
+
+    }catch(error){
+
+      await updatePendingStake(
+
+        pending.id,
+
+        {
+          status:
+            "cancelled"
+        }
+
+      );
+
+      return {
+
+        error:
+          error?.message ||
+          "Payment cancelled"
+
+      };
+
+    }
+
+
+    /* ===============================
+       PAYMENT FAILED
+    =============================== */
+
+    if(!payment){
+
+      await updatePendingStake(
+
+        pending.id,
+
+        {
+          status:
+            "cancelled"
+        }
+
+      );
+
+      return {
+
+        error:
+          "Payment failed"
+
+      };
+
+    }
+
+
+    /* ===============================
+       PAYMENT SUCCESS
+    =============================== */
+
+    const updated =
+      await updatePendingStake(
+
+        pending.id,
+
+        {
+
+          payment_id:
+            payment.paymentId ||
+            payment.identifier ||
+            null,
+
+          txid:
+            payment.txid ||
+            payment.transaction?.txid ||
+            payment.paymentId ||
+            null,
+
+          status:
+            "paid",
+
+          network:
+            STAKING_NETWORK
+
+        }
+
+      );
+
+
+    /*
+      DO NOT call the old recordTx() here.
+
+      The previous implementation could route transaction
+      history through localStorage. Until the dedicated
+      network-aware transaction ledger is connected,
+      staking must not create a second persistent source
+      of truth.
+    */
+
+
+    return {
+
+      success:
+        true,
+
+      network:
+        STAKING_NETWORK,
+
+      stake:
+        updated,
+
+      payment
+
+    };
+
+  }catch(error){
+
+    console.error(
+      "TESTNET STAKING ERROR:",
+      error
+    );
+
+    return {
+
+      error:
+        error?.message ||
+        "Unknown staking error"
+
+    };
+
+  }finally{
+
+    __stakingLock =
+      false;
+
+  }
+
+}
+
+
+/* ======================================
+   GET ALL STAKES FOR CURRENT USER
+====================================== */
+
+async function getAllStakesMerged(){
+
+  assertMainnetStakingNetwork();
+
+  const user =
+    getCurrentUser();
+
+  if(!user?.uid){
+
+    return [];
+
+  }
+
+  const supabase =
+    getStakingSupabaseClient();
+
+  if(!supabase){
+
+    return [];
+
+  }
+
+  try{
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+
+        .from(STAKES_TABLE)
+
+        .select("*")
+
+        .eq(
+          "userid",
+          user.uid
+        )
+
+        .eq(
+          "network",
+          STAKING_NETWORK
+        )
+
+        .order(
+          "created_at",
+          {
+            ascending:false
+          }
+        );
+
+    if(error){
+
+      throw new Error(
+        error.message
+      );
+
+    }
+
+    return Array.isArray(data)
+
+      ? data.filter(
+          stake =>
+            stake.status ===
+            "paid"
+        )
+
+      : [];
+
+  }catch(error){
+
+    console.error(
+      "GET TESTNET STAKES:",
+      error
+    );
+
+    return [];
+
+  }
+
+}
+
+
+/* ======================================
+   GLOBAL STAKES
+====================================== */
+
+async function getGlobalStakes(){
+
+  assertMainnetStakingNetwork();
+
+  const supabase =
+    getStakingSupabaseClient();
+
+  if(!supabase){
+
+    return [];
+
+  }
+
+  try{
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+
+        .from(STAKES_TABLE)
+
+        .select("*")
+
+        .eq(
+          "network",
+          STAKING_NETWORK
+        )
+
+        .eq(
+          "status",
+          "paid"
+        )
+
+        .order(
+          "created_at",
+          {
+            ascending:false
+          }
+        );
+
+    if(error){
+
+      throw new Error(
+        error.message
+      );
+
+    }
+
+    return Array.isArray(data)
+      ? data
+      : [];
+
+  }catch(error){
+
+    console.error(
+      "GLOBAL TESTNET STAKES:",
+      error
+    );
+
+    return [];
+
+  }
+
+}
+
+
+/* ======================================
+   PROJECT TOTALS
+====================================== */
+
+async function getProjectTotals(
+  project
+){
+
+  const stakes =
+    await getAllStakesMerged();
+
+  const projectData =
+    stakes.filter(
+      stake =>
+        String(
+          stake.project
+        )
+          .trim()
+          .toLowerCase() ===
+        String(
+          project
+        )
+          .trim()
+          .toLowerCase()
+    );
+
+  let stake =
+    0;
+
+  let reward =
+    0;
+
+  projectData.forEach(
+    s => {
+
+      const amount =
+        Number(s.amount) ||
+        0;
+
+      if(
+        s.type ===
+        "stake"
+      ){
+
+        stake +=
+          amount;
+
+        const total =
+          Number(
+            s.reward
+          ) || 0;
+
+        const withdrawn =
+          Number(
+            s.withdrawnReward
+          ) || 0;
+
+        reward +=
+          Math.max(
+            0,
+            total -
+            withdrawn
+          );
+
+      }
+
+    }
+  );
+
+  return {
 
     stake,
 
     reward,
 
-    stakes:projectData
+    stakes:
+      projectData
 
   };
 
 }
 
+
 /* ======================================
-   USER STAKES (TESTNET)
+   USER STAKES
 ====================================== */
 
 async function getUserStakes(){
 
-const user =
-getCurrentUser();
-
-if(!user?.uid){
-
-return [];
+  return await getAllStakesMerged();
 
 }
 
-try{
-
-const res =
-await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&network=eq.testnet&status=eq.paid&order=created_at.desc`,
-
-{
-
-headers:{
-
-apikey:SUPABASE_KEY,
-
-Authorization:
-`Bearer ${SUPABASE_KEY}`
-
-}
-
-}
-
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const data =
-await res.json();
-
-return Array.isArray(data)
-
-?data
-
-:[];
-
-}catch(e){
-
-console.error(e);
-
-return[];
-
-}
-
-}
 
 /* ======================================
-   WITHDRAW PROJECT REWARD (TESTNET)
+   WITHDRAW PROJECT REWARD
 ====================================== */
 
 async function withdrawProjectReward(
-project,
-amount
+  project,
+  amount
 ){
 
-const user =
-await ensurePiAuth();
+  assertMainnetStakingNetwork();
 
-if(!user?.uid){
+  let user = null;
 
-return{
-error:"Login required"
-};
+  try{
+
+    if(
+      typeof ensurePiAuth ===
+      "function"
+    ){
+
+      user =
+        await ensurePiAuth();
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "ensurePiAuth failed:",
+      e
+    );
+
+  }
+
+  if(!user?.uid){
+
+    user =
+      getCurrentUser();
+
+  }
+
+  if(!user?.uid){
+
+    return {
+      error:
+        "Login required"
+    };
+
+  }
+
+  let remaining =
+    Number(amount);
+
+  if(
+    !Number.isFinite(
+      remaining
+    ) ||
+    remaining <= 0
+  ){
+
+    return {
+      error:
+        "Invalid amount"
+    };
+
+  }
+
+  const supabase =
+    getStakingSupabaseClient();
+
+  if(!supabase){
+
+    return {
+      error:
+        "Supabase client not available"
+    };
+
+  }
+
+  try{
+
+    const {
+      data:stakes,
+      error
+    } =
+      await supabase
+
+        .from(STAKES_TABLE)
+
+        .select("*")
+
+        .eq(
+          "userid",
+          user.uid
+        )
+
+        .eq(
+          "project",
+          project
+        )
+
+        .eq(
+          "network",
+          STAKING_NETWORK
+        )
+
+        .eq(
+          "status",
+          "paid"
+        )
+
+        .order(
+          "created_at",
+          {
+            ascending:true
+          }
+        );
+
+    if(error){
+
+      throw new Error(
+        error.message
+      );
+
+    }
+
+    for(
+      const stake of
+      stakes || []
+    ){
+
+      if(
+        remaining <= 0
+      ){
+
+        break;
+
+      }
+
+      const reward =
+        Number(
+          stake.reward
+        ) || 0;
+
+      const withdrawn =
+        Number(
+          stake.withdrawnReward
+        ) || 0;
+
+      const available =
+        Math.max(
+          0,
+          reward -
+          withdrawn
+        );
+
+      if(
+        available <= 0
+      ){
+
+        continue;
+
+      }
+
+      const take =
+        Math.min(
+          available,
+          remaining
+        );
+
+      const updated =
+        await supabase
+
+          .from(STAKES_TABLE)
+
+          .update({
+
+            withdrawnReward:
+              withdrawn +
+              take
+
+          })
+
+          .eq(
+            "id",
+            stake.id
+          )
+
+          .eq(
+            "userid",
+            user.uid
+          )
+
+          .eq(
+            "project",
+            project
+          )
+
+          .eq(
+            "network",
+            STAKING_NETWORK
+          )
+
+          .eq(
+            "status",
+            "paid"
+          )
+
+          .select()
+          .maybeSingle();
+
+      if(updated.error){
+
+        throw new Error(
+          updated.error.message
+        );
+
+      }
+
+      if(!updated.data){
+
+        throw new Error(
+          "Reward update affected no testnet stake"
+        );
+
+      }
+
+      remaining -=
+        take;
+
+    }
+
+    if(
+      remaining > 0
+    ){
+
+      return {
+
+        error:
+          "Insufficient reward"
+
+      };
+
+    }
+
+    return {
+
+      success:
+        true,
+
+      network:
+        STAKING_NETWORK,
+
+      amount:
+        Number(amount)
+
+    };
+
+  }catch(e){
+
+    console.error(
+      "TESTNET REWARD WITHDRAW:",
+      e
+    );
+
+    return {
+
+      error:
+        e?.message ||
+        "Reward withdrawal failed"
+
+    };
+
+  }
 
 }
 
-let remaining =
-Number(amount);
-
-if(
-!Number.isFinite(remaining) ||
-remaining<=0
-){
-
-return{
-error:"Invalid amount"
-};
-
-}
-
-try{
-
-const res =
-await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&project=eq.${project}&network=eq.testnet&status=eq.paid&order=created_at.asc`,
-
-{
-
-headers:{
-
-apikey:SUPABASE_KEY,
-
-Authorization:
-`Bearer ${SUPABASE_KEY}`
-
-}
-
-}
-
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const stakes =
-await res.json();
-
-for(const stake of stakes){
-
-const reward =
-Number(stake.reward)||0;
-
-const withdrawn =
-Number(stake.withdrawnReward)||0;
-
-const available =
-reward-withdrawn;
-
-if(available<=0){
-
-continue;
-
-}
-
-const take =
-Math.min(
-available,
-remaining
-);
-
-const update =
-await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?id=eq.${stake.id}`,
-
-{
-
-method:"PATCH",
-
-headers:{
-
-"Content-Type":"application/json",
-
-apikey:SUPABASE_KEY,
-
-Authorization:
-`Bearer ${SUPABASE_KEY}`
-
-},
-
-body:JSON.stringify({
-
-withdrawnReward:
-withdrawn+take
-
-})
-
-}
-
-);
-
-if(!update.ok){
-
-throw new Error(
-await update.text()
-);
-
-}
-
-remaining -= take;
-
-if(remaining<=0){
-
-break;
-
-}
-
-}
-
-if(remaining>0){
-
-return{
-
-error:
-"Insufficient reward"
-
-};
-
-}
-
-return{
-
-success:true,
-
-amount
-
-};
-
-}catch(e){
-
-console.error(e);
-
-return{
-
-error:e.message
-
-};
-
-}
-
-   }
 
 /* ======================================
-   WITHDRAW CAPITAL (TESTNET)
+   WITHDRAW CAPITAL
 ====================================== */
 
 async function withdrawCapital({
 
-project,
+  project,
 
-amount
+  amount
 
 }){
 
-const user =
-await ensurePiAuth();
+  assertMainnetStakingNetwork();
 
-if(!user?.uid){
+  let user = null;
 
-return{
+  try{
 
-error:"Login required"
+    if(
+      typeof ensurePiAuth ===
+      "function"
+    ){
 
-};
+      user =
+        await ensurePiAuth();
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "ensurePiAuth failed:",
+      e
+    );
+
+  }
+
+  if(!user?.uid){
+
+    user =
+      getCurrentUser();
+
+  }
+
+  if(!user?.uid){
+
+    return {
+
+      error:
+        "Login required"
+
+    };
+
+  }
+
+  let remaining =
+    Number(amount);
+
+  if(
+    !Number.isFinite(
+      remaining
+    ) ||
+    remaining <= 0
+  ){
+
+    return {
+
+      error:
+        "Invalid amount"
+
+    };
+
+  }
+
+  const supabase =
+    getStakingSupabaseClient();
+
+  if(!supabase){
+
+    return {
+
+      error:
+        "Supabase client not available"
+
+    };
+
+  }
+
+  try{
+
+    const {
+      data:stakes,
+      error
+    } =
+      await supabase
+
+        .from(STAKES_TABLE)
+
+        .select("*")
+
+        .eq(
+          "userid",
+          user.uid
+        )
+
+        .eq(
+          "project",
+          project
+        )
+
+        .eq(
+          "network",
+          STAKING_NETWORK
+        )
+
+        .eq(
+          "status",
+          "paid"
+        )
+
+        .order(
+          "created_at",
+          {
+            ascending:true
+          }
+        );
+
+    if(error){
+
+      throw new Error(
+        error.message
+      );
+
+    }
+
+    const now =
+      Date.now();
+
+    for(
+      const stake of
+      stakes || []
+    ){
+
+      if(
+        remaining <= 0
+      ){
+
+        break;
+
+      }
+
+      const unlockTime =
+        Number(
+          stake.unlockTime
+        ) || 0;
+
+      if(
+        now <
+        unlockTime
+      ){
+
+        continue;
+
+      }
+
+      const available =
+        Math.max(
+
+          0,
+
+          (
+            Number(
+              stake.amount
+            ) || 0
+          ) -
+          (
+            Number(
+              stake.withdrawnCapital
+            ) || 0
+          )
+
+        );
+
+      if(
+        available <= 0
+      ){
+
+        continue;
+
+      }
+
+      const withdrawnCapital =
+        Number(
+          stake.withdrawnCapital
+        ) || 0;
+
+      const take =
+        Math.min(
+          available,
+          remaining
+        );
+
+      const updated =
+        await supabase
+
+          .from(STAKES_TABLE)
+
+          .update({
+
+            withdrawnCapital:
+              withdrawnCapital +
+              take
+
+          })
+
+          .eq(
+            "id",
+            stake.id
+          )
+
+          .eq(
+            "userid",
+            user.uid
+          )
+
+          .eq(
+            "project",
+            project
+          )
+
+          .eq(
+            "network",
+            STAKING_NETWORK
+          )
+
+          .eq(
+            "status",
+            "paid"
+          )
+
+          .select()
+          .maybeSingle();
+
+      if(updated.error){
+
+        throw new Error(
+          updated.error.message
+        );
+
+      }
+
+      if(!updated.data){
+
+        throw new Error(
+          "Capital update affected no testnet stake"
+        );
+
+      }
+
+      remaining -=
+        take;
+
+    }
+
+    if(
+      remaining > 0
+    ){
+
+      return {
+
+        error:
+          "Insufficient unlocked capital"
+
+      };
+
+    }
+
+    return {
+
+      success:
+        true,
+
+      network:
+        STAKING_NETWORK,
+
+      amount:
+        Number(amount)
+
+    };
+
+  }catch(e){
+
+    console.error(
+      "TESTNET CAPITAL WITHDRAW:",
+      e
+    );
+
+    return {
+
+      error:
+        e?.message ||
+        "Capital withdrawal failed"
+
+    };
+
+  }
 
 }
 
-let remaining =
-Number(amount);
-
-if(
-!Number.isFinite(remaining) ||
-remaining<=0
-){
-
-return{
-
-error:"Invalid amount"
-
-};
-
-}
-
-try{
-
-const res =
-await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?select=*&userid=eq.${user.uid}&project=eq.${project}&network=eq.testnet&status=eq.paid&order=created_at.asc`,
-
-{
-
-headers:{
-
-apikey:SUPABASE_KEY,
-
-Authorization:
-`Bearer ${SUPABASE_KEY}`
-
-}
-
-}
-
-);
-
-if(!res.ok){
-
-throw new Error(
-await res.text()
-);
-
-}
-
-const stakes =
-await res.json();
-
-const now =
-Date.now();
-
-for(const stake of stakes){
-
-if(remaining<=0){
-
-break;
-
-}
-
-/* LOCK CHECK */
-
-const unlockTime =
-Number(stake.unlockTime)||0;
-
-if(now<unlockTime){
-
-continue;
-
-}
-
-/* AVAILABLE CAPITAL */
-
-const available =
-
-(Number(stake.amount)||0)
-
--
-
-(Number(stake.withdrawnCapital)||0);
-
-if(available<=0){
-
-continue;
-
-}
-
-const take =
-Math.min(
-available,
-remaining
-);
-
-const update =
-await fetch(
-
-`${SUPABASE_URL}/rest/v1/stakes?id=eq.${stake.id}`,
-
-{
-
-method:"PATCH",
-
-headers:{
-
-"Content-Type":"application/json",
-
-apikey:SUPABASE_KEY,
-
-Authorization:
-`Bearer ${SUPABASE_KEY}`
-
-},
-
-body:JSON.stringify({
-
-withdrawnCapital:
-
-(Number(stake.withdrawnCapital)||0)
-
-+
-
-take
-
-})
-
-}
-
-);
-
-if(!update.ok){
-
-throw new Error(
-await update.text()
-);
-
-}
-
-remaining -= take;
-
-}
-
-if(remaining>0){
-
-return{
-
-error:
-"Insufficient unlocked capital"
-
-};
-
-}
-
-return{
-
-success:true,
-
-amount
-
-};
-
-}catch(e){
-
-console.error(e);
-
-return{
-
-error:e.message
-
-};
-
-}
-
-   }
 
 /* ======================================
    LOAD DATA
@@ -1216,55 +1752,126 @@ error:e.message
 
 async function loadData(){
 
-try{
+  try{
 
-const stakes =
-await getAllStakesMerged();
+    const stakes =
+      await getAllStakesMerged();
 
-console.log(
-"TESTNET STAKES:",
-stakes
-);
+    console.log(
+      "TESTNET STAKES:",
+      stakes
+    );
 
-return stakes;
+    return stakes;
 
-}catch(error){
+  }catch(error){
 
-console.error(
-"LOAD DATA:",
-error
-);
+    console.error(
+      "LOAD TESTNET STAKES:",
+      error
+    );
 
-return[];
+    return [];
+
+  }
 
 }
 
-}
 
 /* ======================================
-   HELPERS
+   LEGACY HELPERS
 ====================================== */
 
 function getStakes(){
 
-return getAllStakesMerged();
+  return getAllStakesMerged();
 
 }
+
 
 function getInternalTotals(){
 
-return getProjectTotals();
+  return getProjectTotals();
 
 }
 
-function getInternalProjectTotals(project){
 
-return getProjectTotals(project);
+function getInternalProjectTotals(
+  project
+){
+
+  return getProjectTotals(
+    project
+  );
 
 }
 
-function addInternalStake(data){
 
-return addStake(data);
+function addInternalStake(
+  data
+){
+
+  return addStake(
+    data
+  );
 
 }
+
+
+/* ======================================
+   GLOBAL EXPORTS
+====================================== */
+
+window.STAKING_NETWORK =
+  STAKING_NETWORK;
+
+window.getCurrentUser =
+  getCurrentUser;
+
+window.getMinStake =
+  getMinStake;
+
+window.getRate =
+  getRate;
+
+window.createPendingStake =
+  createPendingStake;
+
+window.updatePendingStake =
+  updatePendingStake;
+
+window.addStake =
+  addStake;
+
+window.getAllStakesMerged =
+  getAllStakesMerged;
+
+window.getGlobalStakes =
+  getGlobalStakes;
+
+window.getProjectTotals =
+  getProjectTotals;
+
+window.getUserStakes =
+  getUserStakes;
+
+window.withdrawProjectReward =
+  withdrawProjectReward;
+
+window.withdrawCapital =
+  withdrawCapital;
+
+window.loadData =
+  loadData;
+
+window.getStakes =
+  getStakes;
+
+window.getInternalTotals =
+  getInternalTotals;
+
+window.getInternalProjectTotals =
+  getInternalProjectTotals;
+
+window.addInternalStake =
+  addInternalStake;
