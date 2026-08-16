@@ -1,251 +1,335 @@
 /* =========================================
    ALBUKHR ENVIRONMENT SWITCHER v2
-   NETWORK IDENTITY PROVIDER
    MAINNET / TESTNET
    SIDE DRAWER HEADER
+
+   PURPOSE:
+   - Detect the active ALBUKHR network
+   - Provide one authoritative network resolver
+   - Keep environment switching in the Side Drawer header
+   - Expose network helpers for Supabase/data engines
+
+   NETWORKS:
+   MAINNET → https://app.albukhr.com
+   TESTNET → https://test.albukhr.com
+
+   IMPORTANT:
+   This file does NOT persist the selected network in LocalStorage.
+   The hostname is the source of truth.
 ========================================= */
 
 (() => {
+
   "use strict";
 
+
+  /* =========================================
+     ENVIRONMENT CONFIG
+  ========================================== */
+
   const ENVIRONMENTS = Object.freeze({
+
     mainnet: Object.freeze({
       name: "MAINNET",
-      network: "mainnet",
       url: "https://app.albukhr.com"
     }),
+
     testnet: Object.freeze({
       name: "TESTNET",
-      network: "testnet",
       url: "https://test.albukhr.com"
     })
+
   });
 
-  let __albukhrEnvironment = null;
 
-  function detectEnvironment() {
+  /* =========================================
+     DETECT CURRENT ENVIRONMENT
+     HOSTNAME IS THE SOURCE OF TRUTH
+  ========================================== */
+
+  function getCurrentEnvironment() {
+
     const hostname =
-      String(window.location.hostname || "").trim().toLowerCase();
+      String(
+        window.location.hostname || ""
+      )
+        .trim()
+        .toLowerCase();
 
-    if (
-      hostname === "app.albukhr.com" ||
-      hostname.startsWith("app.")
-    ) {
-      return "mainnet";
-    }
 
     if (
       hostname === "test.albukhr.com" ||
       hostname.startsWith("test.")
     ) {
+
       return "testnet";
+
     }
+
+
+    if (
+      hostname === "app.albukhr.com" ||
+      hostname.startsWith("app.")
+    ) {
+
+      return "mainnet";
+
+    }
+
 
     /*
-      SECURITY:
-      Unknown/local/development hosts MUST NOT
-      silently become MAINNET.
+       Development/local fallback.
+
+       Existing ALBUKHR behaviour is preserved:
+       unknown/local hosts resolve to MAINNET.
+
+       Production network isolation still depends on
+       the real app/test hostnames.
     */
-    return null;
+
+    return "mainnet";
+
   }
 
-  function getCurrentEnvironment() {
-    if (__albukhrEnvironment) {
-      return __albukhrEnvironment;
-    }
 
-    __albukhrEnvironment = detectEnvironment();
-    return __albukhrEnvironment;
-  }
+  /* =========================================
+     AUTHORITATIVE NETWORK API
+  ========================================== */
 
   function getAlbukhrNetwork() {
-    const environment = getCurrentEnvironment();
 
-    if (!environment) {
-      return null;
-    }
+    const network =
+      getCurrentEnvironment();
 
-    return ENVIRONMENTS[environment].network;
-  }
-
-  function getAlbukhrEnvironment() {
-    const environment = getCurrentEnvironment();
-
-    if (!environment) {
-      return {
-        environment: null,
-        network: null,
-        name: "UNKNOWN",
-        url: null,
-        hostname: window.location.hostname || ""
-      };
-    }
-
-    return {
-      environment,
-      network: ENVIRONMENTS[environment].network,
-      name: ENVIRONMENTS[environment].name,
-      url: ENVIRONMENTS[environment].url,
-      hostname: window.location.hostname || ""
-    };
-  }
-
-  function isAlbukhrMainnet() {
-    return getAlbukhrNetwork() === "mainnet";
-  }
-
-  function isAlbukhrTestnet() {
-    return getAlbukhrNetwork() === "testnet";
-  }
-
-  function requireAlbukhrNetwork() {
-    const network = getAlbukhrNetwork();
 
     if (
       network !== "mainnet" &&
       network !== "testnet"
     ) {
+
       throw new Error(
-        "ALBUKHR network could not be determined safely. " +
-        "Refusing network-sensitive operation on unknown host."
+        "ALBUKHR: invalid network detected."
       );
+
     }
+
 
     return network;
+
   }
 
+
+  function requireAlbukhrNetwork() {
+
+    const network =
+      getAlbukhrNetwork();
+
+
+    if (
+      network !== "mainnet" &&
+      network !== "testnet"
+    ) {
+
+      throw new Error(
+        "ALBUKHR: MAINNET/TESTNET network is required."
+      );
+
+    }
+
+
+    return network;
+
+  }
+
+
+  function isAlbukhrMainnet() {
+
+    return getAlbukhrNetwork() ===
+      "mainnet";
+
+  }
+
+
+  function isAlbukhrTestnet() {
+
+    return getAlbukhrNetwork() ===
+      "testnet";
+
+  }
+
+
+  function getAlbukhrEnvironmentConfig() {
+
+    const network =
+      getAlbukhrNetwork();
+
+    return {
+      network,
+      name:
+        ENVIRONMENTS[network].name,
+      url:
+        ENVIRONMENTS[network].url
+    };
+
+  }
+
+
+  /* =========================================
+     UPDATE EXISTING SWITCHER
+  ========================================== */
+
   function updateEnvironmentSwitcher() {
+
     const switcher =
-      document.getElementById("environmentSwitcher");
+      document.getElementById(
+        "environmentSwitcher"
+      );
+
 
     const dot =
-      document.getElementById("environmentDot");
+      document.getElementById(
+        "environmentDot"
+      );
+
 
     const label =
-      document.getElementById("environmentLabel");
-
-    /*
-      Some pages may not contain the drawer.
-      Network API must still remain available.
-    */
-    if (!switcher || !dot || !label) {
-      return;
-    }
-
-    const current = getCurrentEnvironment();
-
-    if (!current) {
-      label.textContent = "UNKNOWN";
-
-      switcher.classList.remove(
-        "mainnet",
-        "testnet"
+      document.getElementById(
+        "environmentLabel"
       );
 
-      switcher.classList.add("unknown");
 
-      dot.classList.remove(
-        "mainnet",
-        "testnet"
-      );
-
-      dot.classList.add("unknown");
-
-      switcher.setAttribute(
-        "aria-label",
-        "Network could not be determined"
-      );
-
-      switcher.title =
-        "Network could not be determined";
-
-      switcher.onclick = null;
-      switcher.disabled = true;
+    if (
+      !switcher ||
+      !dot ||
+      !label
+    ) {
 
       console.warn(
-        "ALBUKHR Environment Switcher: " +
-        "unknown host. Network switching disabled."
+        "ALBUKHR Environment Switcher: drawer elements not found."
       );
 
       return;
+
     }
+
+
+    const current =
+      getAlbukhrNetwork();
+
 
     const target =
       current === "mainnet"
         ? "testnet"
         : "mainnet";
 
+
+    /* =====================================
+       LABEL
+    ===================================== */
+
     label.textContent =
       ENVIRONMENTS[current].name;
 
+
+    /* =====================================
+       RESET ENVIRONMENT CLASSES
+    ===================================== */
+
     switcher.classList.remove(
       "mainnet",
-      "testnet",
-      "unknown"
+      "testnet"
     );
 
-    switcher.classList.add(current);
+
+    switcher.classList.add(
+      current
+    );
+
+
+    /* =====================================
+       OPTIONAL DOT STATE
+    ===================================== */
 
     dot.classList.remove(
       "mainnet",
-      "testnet",
-      "unknown"
+      "testnet"
     );
 
-    dot.classList.add(current);
+    dot.classList.add(
+      current
+    );
+
+
+    /* =====================================
+       DATA ATTRIBUTES
+    ===================================== */
+
+    switcher.dataset.network =
+      current;
+
+
+    switcher.dataset.targetNetwork =
+      target;
+
+
+    /* =====================================
+       ACCESSIBILITY
+    ===================================== */
 
     switcher.setAttribute(
       "aria-label",
       `Switch to ${ENVIRONMENTS[target].name}`
     );
 
+
     switcher.title =
       `Switch to ${ENVIRONMENTS[target].name}`;
 
-    switcher.disabled = false;
 
-    switcher.onclick = function () {
-      switcher.disabled = true;
+    /* =====================================
+       CLICK
+    ===================================== */
 
-      window.location.href =
-        ENVIRONMENTS[target].url;
-    };
+    switcher.onclick =
+      function () {
+
+        switcher.disabled = true;
+
+
+        window.location.href =
+          ENVIRONMENTS[target].url;
+
+      };
+
   }
+
+
+  /* =========================================
+     START
+  ========================================== */
 
   function initEnvironmentSwitcher() {
-    const environment =
-      getCurrentEnvironment();
-
-    if (environment) {
-      console.log(
-        `ALBUKHR Network: ${environment.toUpperCase()}`
-      );
-    } else {
-      console.warn(
-        "ALBUKHR Network: UNKNOWN HOST"
-      );
-    }
 
     updateEnvironmentSwitcher();
+
   }
 
-  /*
-    GLOBAL NETWORK API
-  */
-  window.ALBUKHR_ENVIRONMENTS =
-    ENVIRONMENTS;
 
-  window.ALBUKHR_ENVIRONMENT =
-    getCurrentEnvironment();
+  /* =========================================
+     GLOBAL EXPORTS
 
-  window.ALBUKHR_NETWORK =
-    getAlbukhrNetwork();
+     These are intentionally read-only APIs.
+     No network state is persisted locally.
+  ========================================== */
+
+  window.getCurrentEnvironment =
+    getCurrentEnvironment;
 
   window.getAlbukhrNetwork =
     getAlbukhrNetwork;
 
-  window.getAlbukhrEnvironment =
-    getAlbukhrEnvironment;
+  window.requireAlbukhrNetwork =
+    requireAlbukhrNetwork;
 
   window.isAlbukhrMainnet =
     isAlbukhrMainnet;
@@ -253,16 +337,32 @@
   window.isAlbukhrTestnet =
     isAlbukhrTestnet;
 
-  window.requireAlbukhrNetwork =
-    requireAlbukhrNetwork;
+  window.getAlbukhrEnvironmentConfig =
+    getAlbukhrEnvironmentConfig;
 
-  if (document.readyState === "loading") {
+  window.ALBUKHR_ENVIRONMENTS =
+    ENVIRONMENTS;
+
+
+  /* =========================================
+     DOM READY
+  ========================================== */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       initEnvironmentSwitcher
     );
+
   } else {
+
     initEnvironmentSwitcher();
+
   }
+
 
 })();
