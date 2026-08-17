@@ -1,20 +1,22 @@
 /* =========================================
    ALBUKHR UNIFIED ADMIN BUTTONS
-   Version 2.0 SAFE PATCH
+   Version 3.0
 
    DEPENDS ON:
-   1) supabase-core.js
+   1) admin-supabase-auth.js
    2) admin-session.js
    3) admin-permissions.js
-   4) admin-bootstrap.js (optional but recommended)
+   4) admin-bootstrap.js
 
    PURPOSE:
    - Unified Admin Control Center
+   - Use Admin Bootstrap as source of truth
    - Role detection
    - Permission-aware buttons
    - Admin alerts
    - Critical risk monitoring
    - MAINNET / TESTNET awareness
+   - No second Admin authentication flow
 
    IMPORTANT:
    This engine does NOT modify:
@@ -22,6 +24,7 @@
    - treasury engines
    - liquidity engines
    - transaction engines
+   - ecosystem Supabase Core
 ========================================= */
 
 (function(window){
@@ -34,21 +37,26 @@
 ========================================= */
 
 const ADMIN_ROLES = [
+
     "super_admin",
+
     "finance_admin",
+
     "review_admin",
+
     "viewer_admin"
+
 ];
 
 
-/*
-   Permission mapping.
+/* =========================================
+   BUTTON PERMISSIONS
 
-   These are only button-access rules.
-   Ba su canza database permissions ba.
+   These are UI access rules.
 
-   "*" = Super Admin full access.
-*/
+   Database permissions remain the
+   final authorization source.
+========================================= */
 
 const BUTTON_PERMISSIONS = {
 
@@ -120,51 +128,117 @@ const BUTTON_PERMISSIONS = {
 
 
 /* =========================================
-   CURRENT ENVIRONMENT
+   BUTTON MAP
 ========================================= */
 
-function getAdminEnvironment(){
+const BUTTON_MAP = {
 
-    const hostname =
-        String(
-            window.location.hostname || ""
-        ).toLowerCase();
+    coreProjectsDashboard: {
 
-    if(
-        hostname === "test.albukhr.com" ||
-        hostname.startsWith("test.")
-    ){
+        selector:
+            'button[onclick*="Albukhr-core-projects-dashboard.html"]'
 
-        return "testnet";
+    },
+
+    ecosystemDashboard: {
+
+        selector:
+            'button[onclick*="ALBUKHR-ecosystem-dashboard.html"]'
+
+    },
+
+    dappRequests: {
+
+        selector:
+            'button[onclick*="admin-dapp-requests.html"]'
+
+    },
+
+    contributors: {
+
+        selector:
+            'button[onclick*="admin-contributors.html"]'
+
+    },
+
+    transactions: {
+
+        selector:
+            'button[onclick*="admin-transactions.html"]'
+
+    },
+
+    riskMonitor: {
+
+        selector:
+            'button[onclick*="admin-risk-monitor.html"]'
+
+    },
+
+    internalProjects: {
+
+        selector:
+            'button[onclick*="admin-internal-projects.html"]'
+
+    },
+
+    externalAdmin: {
+
+        selector:
+            'button[onclick*="admin-external-panel.html"]'
+
+    },
+
+    externalDashboard: {
+
+        selector:
+            'button[onclick*="admin-external-dashboard.html"]'
+
+    },
+
+    externalReviews: {
+
+        selector:
+            'button[onclick*="external-project-view.html"]'
+
+    },
+
+    escrow: {
+
+        selector:
+            'button[onclick*="escrow-admin.html"]'
+
+    },
+
+    superAdmin: {
+
+        selector:
+            'button[onclick*="super-admin-dashboard.html"]'
+
+    },
+
+    permissions: {
+
+        selector:
+            'button[onclick*="admin-permissions.html"]'
+
+    },
+
+    wallet: {
+
+        selector:
+            'button[onclick*="admin-wallet.html"]'
+
+    },
+
+    controlCenter: {
+
+        selector:
+            'button[onclick*="ALBUKHR-ecosystem-control-center.html"]'
 
     }
 
-    if(
-        hostname === "app.albukhr.com" ||
-        hostname.startsWith("app.")
-    ){
-
-        return "mainnet";
-
-    }
-
-    /*
-       Local development fallback.
-       We deliberately keep this as mainnet
-       to match the approved environment logic.
-    */
-
-    return "mainnet";
-
-}
-
-
-const CURRENT_ENVIRONMENT =
-    getAdminEnvironment();
-
-
-window.ALBUKHR_ADMIN_ENVIRONMENT =
-    CURRENT_ENVIRONMENT;
+};
 
 
 /* =========================================
@@ -195,24 +269,223 @@ function safeNumber(
     fallback = 0
 ){
 
-    const n =
+    const number =
         Number(value);
 
-    return Number.isFinite(n)
-        ? n
+    return Number.isFinite(number)
+        ? number
         : fallback;
 
 }
 
 
 /* =========================================
-   GET CURRENT ADMIN
+   ADMIN ENVIRONMENT
+=========================================
+
+   IMPORTANT:
+   Admin Auth Core is authoritative.
+
+   We do not create a second network
+   resolution system here.
+========================================= */
+
+function getAdminEnvironment(){
+
+    try{
+
+        if(
+            typeof window.getAlbukhrAdminEnvironment ===
+            "function"
+        ){
+
+            const environment =
+                window.getAlbukhrAdminEnvironment();
+
+
+            if(
+                environment === "mainnet" ||
+                environment === "testnet"
+            ){
+
+                return environment;
+
+            }
+
+        }
+
+    }catch(error){
+
+        console.warn(
+            "[UNIFIED ADMIN] Admin environment lookup failed:",
+            error
+        );
+
+    }
+
+
+    /*
+       Fallback only.
+    */
+
+    const hostname =
+        String(
+            window.location.hostname || ""
+        )
+        .toLowerCase();
+
+
+    if(
+        hostname === "test.albukhr.com" ||
+        hostname.startsWith("test.")
+    ){
+
+        return "testnet";
+
+    }
+
+
+    if(
+        hostname === "app.albukhr.com" ||
+        hostname.startsWith("app.")
+    ){
+
+        return "mainnet";
+
+    }
+
+
+    return "mainnet";
+
+}
+
+
+/* =========================================
+   CURRENT ENVIRONMENT
+========================================= */
+
+function getCurrentAdminEnvironment(){
+
+    return getAdminEnvironment();
+
+}
+
+
+window.getAdminEnvironment =
+    getAdminEnvironment;
+
+
+/* =========================================
+   ADMIN NETWORK
+========================================= */
+
+function getAdminNetwork(){
+
+    try{
+
+        if(
+            typeof window.getAlbukhrAdminNetwork ===
+            "function"
+        ){
+
+            return window.getAlbukhrAdminNetwork();
+
+        }
+
+    }catch(error){
+
+        console.warn(
+            "[UNIFIED ADMIN] Admin network lookup failed:",
+            error
+        );
+
+    }
+
+
+    return getAdminEnvironment();
+
+}
+
+
+window.getAdminNetwork =
+    getAdminNetwork;
+
+
+/* =========================================
+   GLOBAL ENVIRONMENT
+========================================= */
+
+window.ALBUKHR_ADMIN_ENVIRONMENT =
+    getCurrentAdminEnvironment();
+
+
+window.ALBUKHR_ADMIN_NETWORK =
+    getAdminNetwork();
+
+
+/* =========================================
+   GET BOOTSTRAPPED ADMIN
 ========================================= */
 
 async function getUnifiedAdmin(){
 
     /*
-       New Supabase Admin Session Engine
+       PRIMARY SOURCE:
+       Admin Bootstrap.
+    */
+
+    if(
+        window.Admin &&
+        window.Admin.ready === true &&
+        window.Admin.profile
+    ){
+
+        return window.Admin.profile;
+
+    }
+
+
+    /*
+       If bootstrap has not completed yet,
+       wait for it.
+    */
+
+    if(
+        typeof window.initializeAdmin ===
+        "function"
+    ){
+
+        try{
+
+            const ready =
+                await window.initializeAdmin();
+
+
+            if(
+                ready &&
+                window.Admin &&
+                window.Admin.ready &&
+                window.Admin.profile
+            ){
+
+                return window.Admin.profile;
+
+            }
+
+        }catch(error){
+
+            console.warn(
+                "[UNIFIED ADMIN] Bootstrap failed:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /*
+       Final compatibility fallback.
     */
 
     if(
@@ -222,19 +495,12 @@ async function getUnifiedAdmin(){
 
         try{
 
-            const admin =
-                await window.getCurrentAdmin();
-
-            if(admin){
-
-                return admin;
-
-            }
+            return await window.getCurrentAdmin();
 
         }catch(error){
 
             console.warn(
-                "[UNIFIED ADMIN] getCurrentAdmin failed:",
+                "[UNIFIED ADMIN] Session fallback failed:",
                 error
             );
 
@@ -242,57 +508,14 @@ async function getUnifiedAdmin(){
 
     }
 
-
-    /*
-       Bootstrap fallback
-    */
-
-    if(
-        window.Admin &&
-        window.Admin.user
-    ){
-
-        return window.Admin.user;
-
-    }
-
-
-    /*
-       Legacy compatibility
-    */
-
-    if(
-        typeof window.getAdmin ===
-        "function"
-    ){
-
-        try{
-
-            const admin =
-                await Promise.resolve(
-                    window.getAdmin()
-                );
-
-            if(admin){
-
-                return admin;
-
-            }
-
-        }catch(error){
-
-            console.warn(
-                "[UNIFIED ADMIN] Legacy getAdmin failed:",
-                error
-            );
-
-        }
-
-    }
 
     return null;
 
 }
+
+
+window.getUnifiedAdmin =
+    getUnifiedAdmin;
 
 
 /* =========================================
@@ -305,9 +528,28 @@ function getUnifiedAdminRole(
 
     if(!admin){
 
+        /*
+           Try Bootstrap state.
+        */
+
+        if(
+            window.Admin &&
+            window.Admin.ready
+        ){
+
+            return safeString(
+                window.Admin.role,
+                ""
+            )
+            .trim()
+            .toLowerCase();
+
+        }
+
         return "";
 
     }
+
 
     return safeString(
 
@@ -324,6 +566,10 @@ function getUnifiedAdminRole(
 }
 
 
+window.getUnifiedAdminRole =
+    getUnifiedAdminRole;
+
+
 /* =========================================
    ROLE VALIDATION
 ========================================= */
@@ -333,17 +579,22 @@ function isAllowedAdminRole(
 ){
 
     return ADMIN_ROLES.includes(
+
         safeString(role)
             .trim()
             .toLowerCase()
+
     );
 
 }
 
 
+window.isAllowedAdminRole =
+    isAllowedAdminRole;
+
+
 /* =========================================
    REQUIRE ROLE
-   Compatibility helper
 ========================================= */
 
 async function requireRole(
@@ -352,6 +603,7 @@ async function requireRole(
 
     const admin =
         await getUnifiedAdmin();
+
 
     if(!admin){
 
@@ -363,21 +615,34 @@ async function requireRole(
 
     }
 
+
     const role =
         getUnifiedAdminRole(admin);
+
 
     const allowed =
         Array.isArray(roles)
             ? roles
             : [roles];
 
+
+    const normalized =
+        allowed.map(
+            item =>
+                safeString(item)
+                    .trim()
+                    .toLowerCase()
+        );
+
+
     if(
-        !allowed.includes(role)
+        !normalized.includes(role)
     ){
 
         alert(
             "You are not authorized to access this Admin area."
         );
+
 
         if(
             typeof window.adminLogout ===
@@ -399,51 +664,121 @@ async function requireRole(
 
         }
 
+
         return null;
 
     }
 
+
     return admin;
 
 }
+
 
 window.requireRole =
     requireRole;
 
 
 /* =========================================
-   PERMISSION CHECK
+   CHECK PERMISSION
 ========================================= */
 
 async function checkPermission(
     permission
 ){
 
-    const admin =
-        await getUnifiedAdmin();
+    const required =
+        safeString(
+            permission
+        )
+        .trim()
+        .toLowerCase();
 
-    if(!admin){
+
+    if(!required){
 
         return false;
 
     }
 
-    const role =
-        getUnifiedAdminRole(admin);
 
     /*
-       Super Admin = full permission.
+       Bootstrap state is preferred.
     */
 
-    if(role === "super_admin"){
+    if(
+        window.Admin &&
+        window.Admin.ready === true
+    ){
 
-        return true;
+        const role =
+            safeString(
+                window.Admin.role,
+                ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        /*
+           Super Admin.
+        */
+
+        if(
+            role ===
+            "super_admin"
+        ){
+
+            return true;
+
+        }
+
+
+        const permissions =
+            Array.isArray(
+                window.Admin.permissions
+            )
+                ? window.Admin.permissions
+                : [];
+
+
+        const normalized =
+            permissions.map(
+                item =>
+                    typeof item === "string"
+                        ? item.trim().toLowerCase()
+                        : safeString(
+                            item?.permission,
+                            ""
+                        )
+                        .trim()
+                        .toLowerCase()
+            )
+            .filter(Boolean);
+
+
+        if(
+            normalized.includes("*")
+        ){
+
+            return true;
+
+        }
+
+
+        if(
+            normalized.includes(required)
+        ){
+
+            return true;
+
+        }
 
     }
 
 
     /*
-       Use existing permission engine.
+       Database permission engine fallback.
     */
 
     if(
@@ -454,14 +789,14 @@ async function checkPermission(
         try{
 
             return await window.hasPermission(
-                permission
+                required
             );
 
         }catch(error){
 
             console.warn(
                 "[UNIFIED ADMIN] Permission check failed:",
-                permission,
+                required,
                 error
             );
 
@@ -470,43 +805,13 @@ async function checkPermission(
     }
 
 
-    /*
-       Bootstrap permissions fallback.
-
-       This is only used if
-       admin-permissions.js is not available.
-    */
-
-    if(
-        window.Admin &&
-        Array.isArray(window.Admin.permissions)
-    ){
-
-        const list =
-            window.Admin.permissions
-                .map(
-                    item =>
-                        typeof item === "string"
-                            ? item
-                            : item?.permission
-                )
-                .filter(Boolean);
-
-        if(list.includes("*")){
-
-            return true;
-
-        }
-
-        return list.includes(
-            permission
-        );
-
-    }
-
     return false;
 
 }
+
+
+window.checkPermission =
+    checkPermission;
 
 
 /* =========================================
@@ -517,29 +822,15 @@ async function hasAnyPermission(
     permissions = []
 ){
 
-    const admin =
-        await getUnifiedAdmin();
-
-    if(!admin){
-
-        return false;
-
-    }
-
-    const role =
-        getUnifiedAdminRole(admin);
-
-    if(role === "super_admin"){
-
-        return true;
-
-    }
-
-    if(!Array.isArray(permissions)){
+    if(
+        !Array.isArray(permissions) ||
+        !permissions.length
+    ){
 
         return false;
 
     }
+
 
     for(
         const permission
@@ -558,9 +849,14 @@ async function hasAnyPermission(
 
     }
 
+
     return false;
 
 }
+
+
+window.hasAnyPermission =
+    hasAnyPermission;
 
 
 /* =========================================
@@ -576,18 +872,22 @@ async function canUseButton(
             buttonKey
         ];
 
+
     if(!permissions){
 
         /*
-           Unknown button:
-           deny by default.
-
-           This prevents accidental exposure.
+           Deny unknown buttons.
         */
 
         return false;
 
     }
+
+
+    /*
+       Super Admin button specifically
+       requires super_admin.
+    */
 
     if(
         permissions.includes("*")
@@ -596,12 +896,14 @@ async function canUseButton(
         const admin =
             await getUnifiedAdmin();
 
+
         return (
-            getUnifiedAdminRole(admin)
-            === "super_admin"
+            getUnifiedAdminRole(admin) ===
+            "super_admin"
         );
 
     }
+
 
     return await hasAnyPermission(
         permissions
@@ -610,92 +912,12 @@ async function canUseButton(
 }
 
 
-/* =========================================
-   BUTTON ELEMENT MAP
-========================================= */
-
-const BUTTON_MAP = {
-
-    coreProjectsDashboard: {
-        selector:
-            'button[onclick*="Albukhr-core-projects-dashboard.html"]'
-    },
-
-    ecosystemDashboard: {
-        selector:
-            'button[onclick*="ALBUKHR-ecosystem-dashboard.html"]'
-    },
-
-    dappRequests: {
-        selector:
-            'button[onclick*="admin-dapp-requests.html"]'
-    },
-
-    contributors: {
-        selector:
-            'button[onclick*="admin-contributors.html"]'
-    },
-
-    transactions: {
-        selector:
-            'button[onclick*="admin-transactions.html"]'
-    },
-
-    riskMonitor: {
-        selector:
-            'button[onclick*="admin-risk-monitor.html"]'
-    },
-
-    internalProjects: {
-        selector:
-            'button[onclick*="admin-internal-projects.html"]'
-    },
-
-    externalAdmin: {
-        selector:
-            'button[onclick*="admin-external-panel.html"]'
-    },
-
-    externalDashboard: {
-        selector:
-            'button[onclick*="admin-external-dashboard.html"]'
-    },
-
-    externalReviews: {
-        selector:
-            'button[onclick*="external-project-view.html"]'
-    },
-
-    escrow: {
-        selector:
-            'button[onclick*="escrow-admin.html"]'
-    },
-
-    superAdmin: {
-        selector:
-            'button[onclick*="super-admin-dashboard.html"]'
-    },
-
-    permissions: {
-        selector:
-            'button[onclick*="admin-permissions.html"]'
-    },
-
-    wallet: {
-        selector:
-            'button[onclick*="admin-wallet.html"]'
-    },
-
-    controlCenter: {
-        selector:
-            'button[onclick*="ALBUKHR-ecosystem-control-center.html"]'
-    }
-
-};
+window.canUseButton =
+    canUseButton;
 
 
 /* =========================================
-   APPLY BUTTON ACCESS
+   APPLY BUTTON PERMISSIONS
 ========================================= */
 
 async function applyButtonPermissions(){
@@ -705,7 +927,9 @@ async function applyButtonPermissions(){
             key,
             config
         ]
-        of Object.entries(BUTTON_MAP)
+        of Object.entries(
+            BUTTON_MAP
+        )
     ){
 
         const button =
@@ -713,22 +937,19 @@ async function applyButtonPermissions(){
                 config.selector
             );
 
+
         if(!button){
 
             continue;
 
         }
 
+
         const allowed =
-            await canUseButton(key);
+            await canUseButton(
+                key
+            );
 
-
-        /*
-           Hide unauthorized buttons.
-
-           We do not remove the element.
-           This preserves existing HTML/CSS.
-        */
 
         if(allowed){
 
@@ -740,6 +961,10 @@ async function applyButtonPermissions(){
 
             button.removeAttribute(
                 "aria-disabled"
+            );
+
+            button.removeAttribute(
+                "data-admin-hidden"
             );
 
         }else{
@@ -755,11 +980,20 @@ async function applyButtonPermissions(){
                 "true"
             );
 
+            button.setAttribute(
+                "data-admin-hidden",
+                "true"
+            );
+
         }
 
     }
 
 }
+
+
+window.applyButtonPermissions =
+    applyButtonPermissions;
 
 
 /* =========================================
@@ -775,25 +1009,35 @@ function renderRoleBadge(
             "adminRoleBadge"
         );
 
+
     if(!badge){
 
         return;
 
     }
 
+
     const role =
-        getUnifiedAdminRole(admin);
+        getUnifiedAdminRole(
+            admin
+        );
+
 
     badge.innerText =
         role
-            .replace(/_/g, " ")
-            .toUpperCase();
+            ? role
+                .replace(
+                    /_/g,
+                    " "
+                )
+                .toUpperCase()
+            : "ADMIN";
 
 }
 
 
 /* =========================================
-   OPTIONAL ENVIRONMENT BADGE
+   ENVIRONMENT BADGE
 ========================================= */
 
 function renderEnvironmentBadge(){
@@ -803,18 +1047,33 @@ function renderEnvironmentBadge(){
             "adminEnvironmentBadge"
         );
 
+
     if(!badge){
 
         return;
 
     }
 
+
+    const environment =
+        getCurrentAdminEnvironment();
+
+
+    const network =
+        getAdminNetwork();
+
+
     badge.innerText =
-        CURRENT_ENVIRONMENT
+        environment
             .toUpperCase();
 
+
     badge.dataset.environment =
-        CURRENT_ENVIRONMENT;
+        environment;
+
+
+    badge.dataset.network =
+        network;
 
 }
 
@@ -831,10 +1090,12 @@ function go(page){
 
     }
 
+
     window.location.href =
         page;
 
 }
+
 
 window.go =
     go;
@@ -851,11 +1112,13 @@ async function updateTxBadge(){
             "txBadge"
         );
 
+
     if(!badge){
 
         return;
 
     }
+
 
     let transactions = [];
 
@@ -884,7 +1147,11 @@ async function updateTxBadge(){
     }
 
 
-    if(!Array.isArray(transactions)){
+    if(
+        !Array.isArray(
+            transactions
+        )
+    ){
 
         transactions = [];
 
@@ -928,6 +1195,7 @@ async function updateWalletBadge(){
             "walletBadge"
         );
 
+
     if(!badge){
 
         return;
@@ -955,6 +1223,7 @@ async function updateWalletBadge(){
                 window.getAdminTreasury()
             );
 
+
         const balance =
             safeNumber(
                 treasury?.treasury,
@@ -962,7 +1231,9 @@ async function updateWalletBadge(){
             );
 
 
-        if(balance < 100){
+        if(
+            balance < 100
+        ){
 
             badge.style.display =
                 "inline-block";
@@ -993,8 +1264,26 @@ async function updateWalletBadge(){
 
 
 /* =========================================
+   LEGACY STORAGE KEY
+========================================= */
+
+function getNetworkStorageKey(
+    baseKey
+){
+
+    const network =
+        getCurrentAdminEnvironment();
+
+
+    return (
+        `${baseKey}_${network}`
+    );
+
+}
+
+
+/* =========================================
    EXTERNAL PROJECT BADGE
-   LEGACY COMPATIBILITY
 ========================================= */
 
 function updateExternalBadge(){
@@ -1003,6 +1292,7 @@ function updateExternalBadge(){
         document.getElementById(
             "externalBadge"
         );
+
 
     if(!badge){
 
@@ -1013,17 +1303,26 @@ function updateExternalBadge(){
 
     let projects = [];
 
+
     try{
+
+        const key =
+            getNetworkStorageKey(
+                "albukhr_external_projects"
+            );
+
 
         const raw =
             localStorage.getItem(
-                "albukhr_external_projects"
+                key
             );
+
 
         const data =
             raw
                 ? JSON.parse(raw)
                 : [];
+
 
         projects =
             Array.isArray(data)
@@ -1033,7 +1332,7 @@ function updateExternalBadge(){
     }catch(error){
 
         console.warn(
-            "[UNIFIED ADMIN] External local cache unavailable:",
+            "[UNIFIED ADMIN] External project cache unavailable:",
             error
         );
 
@@ -1044,7 +1343,8 @@ function updateExternalBadge(){
         projects.filter(
             project =>
                 project &&
-                project.status === "pending"
+                project.status ===
+                    "pending"
         );
 
 
@@ -1068,7 +1368,6 @@ function updateExternalBadge(){
 
 /* =========================================
    DAPP BADGE
-   LEGACY COMPATIBILITY
 ========================================= */
 
 function updateDappBadge(){
@@ -1077,6 +1376,7 @@ function updateDappBadge(){
         document.getElementById(
             "dappBadge"
         );
+
 
     if(!badge){
 
@@ -1087,17 +1387,26 @@ function updateDappBadge(){
 
     let dapps = [];
 
+
     try{
+
+        const key =
+            getNetworkStorageKey(
+                "albukhr_dapp_requests"
+            );
+
 
         const raw =
             localStorage.getItem(
-                "albukhr_dapp_requests"
+                key
             );
+
 
         const data =
             raw
                 ? JSON.parse(raw)
                 : [];
+
 
         dapps =
             Array.isArray(data)
@@ -1107,7 +1416,7 @@ function updateDappBadge(){
     }catch(error){
 
         console.warn(
-            "[UNIFIED ADMIN] DApp local cache unavailable:",
+            "[UNIFIED ADMIN] DApp cache unavailable:",
             error
         );
 
@@ -1155,6 +1464,7 @@ async function updateRiskBadgeSafe(){
 
     }
 
+
     try{
 
         await Promise.resolve(
@@ -1200,6 +1510,10 @@ async function updateAdminAlerts(){
 }
 
 
+window.updateAdminAlerts =
+    updateAdminAlerts;
+
+
 /* =========================================
    CRITICAL RISK
 ========================================= */
@@ -1226,13 +1540,17 @@ async function checkCriticalRisk(){
                     window.getAdminTreasury()
                 );
 
+
             const balance =
                 safeNumber(
                     treasury?.treasury,
                     0
                 );
 
-            if(balance < 50){
+
+            if(
+                balance < 50
+            ){
 
                 critical =
                     true;
@@ -1256,6 +1574,7 @@ async function checkCriticalRisk(){
     ====================================== */
 
     if(
+        !critical &&
         typeof window.getProjectTreasuryStatus ===
         "function"
     ){
@@ -1263,11 +1582,17 @@ async function checkCriticalRisk(){
         const projects = [
 
             "Barsh",
+
             "Labbaika",
+
             "Raheem",
+
             "Urban",
+
             "Khairat",
+
             "Azman",
+
             "Hauwal"
 
         ];
@@ -1279,11 +1604,6 @@ async function checkCriticalRisk(){
         ){
 
             try{
-
-                /*
-                   IMPORTANT:
-                   This function is async.
-                */
 
                 const status =
                     await window.getProjectTreasuryStatus(
@@ -1308,7 +1628,9 @@ async function checkCriticalRisk(){
                     );
 
 
-                if(liquidity < 30){
+                if(
+                    liquidity < 30
+                ){
 
                     critical =
                         true;
@@ -1336,13 +1658,18 @@ async function checkCriticalRisk(){
         critical
     );
 
+
     return critical;
 
 }
 
 
+window.checkCriticalRisk =
+    checkCriticalRisk;
+
+
 /* =========================================
-   TRIGGER CRITICAL ALERT
+   CRITICAL ALERT
 ========================================= */
 
 function triggerCriticalAlert(
@@ -1354,10 +1681,12 @@ function triggerCriticalAlert(
             "criticalAlert"
         );
 
+
     const sound =
         document.getElementById(
             "alertSound"
         );
+
 
     if(!alert){
 
@@ -1391,177 +1720,247 @@ function triggerCriticalAlert(
 }
 
 
+window.triggerCriticalAlert =
+    triggerCriticalAlert;
+
+
 /* =========================================
-   INITIALIZE
+   INITIALIZE UNIFIED ADMIN
 ========================================= */
+
+let unifiedInitialization =
+    null;
+
 
 async function initializeUnifiedAdminButtons(){
 
-    const admin =
-        await getUnifiedAdmin();
+    /*
+       Prevent duplicate initialization.
+    */
 
+    if(unifiedInitialization){
 
-    if(!admin){
-
-        window.location.replace(
-            "admin-login.html"
-        );
-
-        return false;
+        return unifiedInitialization;
 
     }
 
 
-    const role =
-        getUnifiedAdminRole(admin);
+    unifiedInitialization =
+        (async function(){
+
+            /*
+               IMPORTANT:
+
+               Wait for Admin Bootstrap first.
+               This eliminates the previous race
+               between Bootstrap and Unified Admin.
+            */
+
+            if(
+                typeof window.initializeAdmin ===
+                "function"
+            ){
+
+                const ready =
+                    await window.initializeAdmin();
 
 
-    if(
-        !isAllowedAdminRole(role)
-    ){
+                if(!ready){
 
-        alert(
-            "You are not authorized to access the Admin Control Center."
-        );
+                    return false;
 
-        if(
-            typeof window.adminLogout ===
-            "function"
-        ){
-
-            try{
-
-                await window.adminLogout();
-
-            }catch(error){
-
-                console.warn(
-                    "[UNIFIED ADMIN] Logout failed:",
-                    error
-                );
+                }
 
             }
 
-        }
+
+            /* ==============================
+               GET BOOTSTRAPPED ADMIN
+            ============================== */
+
+            const admin =
+                await getUnifiedAdmin();
+
+
+            if(!admin){
+
+                window.location.replace(
+                    "admin-login.html"
+                );
+
+                return false;
+
+            }
+
+
+            /* ==============================
+               ROLE
+            ============================== */
+
+            const role =
+                getUnifiedAdminRole(
+                    admin
+                );
+
+
+            if(
+                !isAllowedAdminRole(
+                    role
+                )
+            ){
+
+                alert(
+                    "You are not authorized to access the Admin Control Center."
+                );
+
+
+                if(
+                    typeof window.adminLogout ===
+                    "function"
+                ){
+
+                    try{
+
+                        await window.adminLogout();
+
+                    }catch(error){
+
+                        console.warn(
+                            "[UNIFIED ADMIN] Logout failed:",
+                            error
+                        );
+
+                    }
+
+                }
+
+
+                return false;
+
+            }
+
+
+            /* ==============================
+               ROLE BADGE
+            ============================== */
+
+            renderRoleBadge(
+                admin
+            );
+
+
+            /* ==============================
+               ENVIRONMENT
+            ============================== */
+
+            renderEnvironmentBadge();
+
+
+            /* ==============================
+               BUTTON PERMISSIONS
+            ============================== */
+
+            await applyButtonPermissions();
+
+
+            /* ==============================
+               ALERTS
+            ============================== */
+
+            await updateAdminAlerts();
+
+
+            /* ==============================
+               CRITICAL RISK
+            ============================== */
+
+            await checkCriticalRisk();
+
+
+            /* ==============================
+               CURRENT ADMIN
+            ============================== */
+
+            window.ALBUKHR_CURRENT_ADMIN =
+                admin;
+
+
+            window.ALBUKHR_CURRENT_ADMIN_ROLE =
+                role;
+
+
+            window.ALBUKHR_CURRENT_ADMIN_ENVIRONMENT =
+                getCurrentAdminEnvironment();
+
+
+            window.ALBUKHR_CURRENT_ADMIN_NETWORK =
+                getAdminNetwork();
+
+
+            console.log(
+                "✅ ALBUKHR Unified Admin Buttons Ready"
+            );
+
+
+            console.log(
+                "Environment:",
+                getCurrentAdminEnvironment()
+            );
+
+
+            console.log(
+                "Network:",
+                getAdminNetwork()
+            );
+
+
+            console.log(
+                "Role:",
+                role
+            );
+
+
+            return true;
+
+        })();
+
+
+    try{
+
+        return await unifiedInitialization;
+
+    }catch(error){
+
+        console.error(
+            "[UNIFIED ADMIN] Initialization failed:",
+            error
+        );
 
         return false;
 
+    }finally{
+
+        /*
+           Allow retry after a failed
+           initialization.
+        */
+
+        if(
+            !(
+                window.Admin &&
+                window.Admin.ready === true
+            )
+        ){
+
+            unifiedInitialization =
+                null;
+
+        }
+
     }
-
-
-    /*
-       Role badge.
-    */
-
-    renderRoleBadge(
-        admin
-    );
-
-
-    /*
-       Environment.
-    */
-
-    renderEnvironmentBadge();
-
-
-    /*
-       Apply database permissions.
-    */
-
-    await applyButtonPermissions();
-
-
-    /*
-       Alerts.
-    */
-
-    await updateAdminAlerts();
-
-
-    /*
-       Critical treasury checks.
-    */
-
-    await checkCriticalRisk();
-
-
-    /*
-       Expose current admin state.
-    */
-
-    window.ALBUKHR_CURRENT_ADMIN =
-        admin;
-
-
-    console.log(
-        "✅ ALBUKHR Unified Admin Buttons Ready"
-    );
-
-    console.log(
-        "Environment:",
-        CURRENT_ENVIRONMENT
-    );
-
-    console.log(
-        "Role:",
-        role
-    );
-
-
-    return true;
 
 }
 
-
-/* =========================================
-   EXPORTS
-========================================= */
-
-window.getAdminEnvironment =
-    getAdminEnvironment;
-
-window.getUnifiedAdmin =
-    getUnifiedAdmin;
-
-window.getUnifiedAdminRole =
-    getUnifiedAdminRole;
-
-window.isAllowedAdminRole =
-    isAllowedAdminRole;
-
-window.checkPermission =
-    checkPermission;
-
-window.hasAnyPermission =
-    hasAnyPermission;
-
-window.canUseButton =
-    canUseButton;
-
-window.applyButtonPermissions =
-    applyButtonPermissions;
-
-window.updateAdminAlerts =
-    updateAdminAlerts;
-
-window.updateTxBadge =
-    updateTxBadge;
-
-window.updateWalletBadge =
-    updateWalletBadge;
-
-window.updateExternalBadge =
-    updateExternalBadge;
-
-window.updateDappBadge =
-    updateDappBadge;
-
-window.checkCriticalRisk =
-    checkCriticalRisk;
-
-window.triggerCriticalAlert =
-    triggerCriticalAlert;
 
 window.initializeUnifiedAdminButtons =
     initializeUnifiedAdminButtons;
@@ -1571,33 +1970,87 @@ window.initializeUnifiedAdminButtons =
    DOM READY
 ========================================= */
 
+function startUnifiedAdmin(){
+
+    initializeUnifiedAdminButtons()
+        .catch(
+            error => {
+
+                console.error(
+                    "[UNIFIED ADMIN] Startup failed:",
+                    error
+                );
+
+            }
+        );
+
+}
+
+
+/*
+   Bootstrap itself also starts on DOMContentLoaded.
+
+   We therefore wait one microtask after DOM
+   readiness before starting Unified Admin.
+*/
+
 if(
     document.readyState ===
     "loading"
 ){
 
     document.addEventListener(
+
         "DOMContentLoaded",
-        initializeUnifiedAdminButtons
+
+        function(){
+
+            setTimeout(
+                startUnifiedAdmin,
+                0
+            );
+
+        },
+
+        {
+            once:true
+        }
+
     );
 
 }else{
 
-    initializeUnifiedAdminButtons();
+    setTimeout(
+        startUnifiedAdmin,
+        0
+    );
 
 }
 
 
 /* =========================================
-   REFRESH ALERTS
+   ALERT REFRESH
 ========================================= */
 
 setInterval(
+
     async function(){
 
         try{
 
-            await updateAdminAlerts();
+            /*
+               Do not refresh if Admin is
+               no longer authenticated.
+            */
+
+            if(
+                window.Admin &&
+                window.Admin.ready === true
+            ){
+
+                await updateAdminAlerts();
+
+            }
 
         }catch(error){
 
@@ -1609,20 +2062,30 @@ setInterval(
         }
 
     },
+
     4000
+
 );
 
 
 /* =========================================
-   REFRESH CRITICAL RISK
+   CRITICAL RISK REFRESH
 ========================================= */
 
 setInterval(
+
     async function(){
 
         try{
 
-            await checkCriticalRisk();
+            if(
+                window.Admin &&
+                window.Admin.ready === true
+            ){
+
+                await checkCriticalRisk();
+
+            }
 
         }catch(error){
 
@@ -1634,7 +2097,9 @@ setInterval(
         }
 
     },
+
     30000
+
 );
 
 
