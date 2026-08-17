@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN BOOTSTRAP ENGINE
-   Version 3.0
+   Version 2.0
    SUPABASE SESSION IS SOURCE OF TRUTH
 ========================================== */
 
