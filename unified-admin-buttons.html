@@ -469,7 +469,6 @@
 
 </div>
 
-
 <!-- ==================================================
      SUPABASE SDK
 ================================================== -->
@@ -480,43 +479,11 @@
 
 
 <!-- ==================================================
-     ECOSYSTEM SUPABASE CORE
-
-     SOURCE OF TRUTH FOR:
-     - Projects
-     - Treasury
-     - Liquidity
-     - Staking ecosystem
-     - Transactions ecosystem
-
-     DO NOT REPLACE THIS HERE.
-================================================== -->
-
-<script
-  src="js/supabase-core.js">
-</script>
-
-
-<!-- ==================================================
      DEDICATED ADMIN SUPABASE AUTH CORE
-
-     IMPORTANT:
-
-     This is NOT the ecosystem core.
-
-     It exposes:
-       getAlbukhrAdminSupabaseClient()
-
-     It does NOT overwrite:
-       getAlbukhrSupabaseClient()
-
-     Admin Auth:
-       persistSession: true
-       autoRefreshToken: true
 ================================================== -->
 
 <script
-  src="js/auth/supabase-auth.js">
+  src="js/supabase-admin-auth/admin-supabase-auth.js?v=2.1.0">
 </script>
 
 
@@ -525,7 +492,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-session.js">
+  src="js/supabase-admin-auth/admin-session.js?v=2.0.0">
 </script>
 
 
@@ -534,7 +501,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-auth.js">
+  src="js/supabase-admin-auth/admin-auth.js?v=2.0.0">
 </script>
 
 
@@ -543,7 +510,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-permissions.js">
+  src="js/supabase-admin-auth/admin-permissions.js?v=2.1.0">
 </script>
 
 
@@ -552,41 +519,17 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-bootstrap.js">
+  src="js/supabase-admin-auth/admin-bootstrap.js?v=2.2.0">
 </script>
 
 
 <!-- ==================================================
-     EXISTING ENGINES
-
-     IMPORTANT:
-     DO NOT RE-ARCHITECT THESE YET.
-
-     They remain untouched while we audit
-     their dependencies individually.
+     UNIFIED ADMIN CONTROL CENTER
 ================================================== -->
 
 <script
-  src="smart-liquidity-engine.js">
+  src="js/admin/unified-admin-buttons.js?v=3.0.0">
 </script>
-
-<script
-  src="js/staking.js">
-</script>
-
-<script
-  src="wallet-core.js">
-</script>
-
-
-<!-- ==================================================
-     UNIFIED ADMIN BUTTONS
-================================================== -->
-
-<script
-  src="js/admin/unified-admin-buttons.js">
-</script>
-
 
 </body>
 
