@@ -764,128 +764,546 @@
     }
 
     /* =========================================
-       ADD LIQUIDITY
-    ========================================= */
-    async function addLiquidityAction(){
-      if(!currentProject){
-        showDashboardAlert("Project missing", "Project not loaded yet.");
-        return;
-      }
+   ADD LIQUIDITY
+   -------------------------------------------------
+   UNIVERSAL DASHBOARD PAYMENT GATE
 
-      if(
-    typeof canManageAlbukhrProjectTreasury === "function" &&
-    !(await canManageAlbukhrProjectTreasury(currentProject))
-){
+   IMPORTANT:
+   - Dashboard does NOT directly modify treasury.
+   - Dashboard does NOT call safeAddProjectLiquidity()
+     directly anymore.
+   - Real Pi payment must be completed first.
+   - The Pi Treasury Payment Adapter becomes the
+     bridge between Pi Blockchain and Treasury Engine.
+
+   REQUIRED NEXT ENGINE:
+   js/pi-project-treasury-payment.js
+
+   Expected adapter function:
+   window.addProjectLiquidityWithPiPayment()
+========================================= */
+async function addLiquidityAction(){
+
+  if(!currentProject){
+
     showDashboardAlert(
+      "Project missing",
+      "Project has not been loaded yet."
+    );
+
+    return;
+
+  }
+
+
+  /* =========================================
+     TREASURY PERMISSION
+  ========================================= */
+
+  if(
+    typeof canManageAlbukhrProjectTreasury === "function"
+  ){
+
+    const allowed =
+      await canManageAlbukhrProjectTreasury(
+        currentProject
+      );
+
+    if(!allowed){
+
+      showDashboardAlert(
         "Access denied",
         "You do not have permission to manage this project's treasury."
-    );
-    return;
-      }
+      );
 
-      const amount = safeNumber(dashboardEls.addAmount.value, 0);
+      return;
 
-      if(amount <= 0){
-        showDashboardAlert("Invalid amount", "Enter a valid liquidity amount.");
-        return;
-      }
-
-      if(typeof safeAddProjectLiquidity !== "function"){
-        showDashboardAlert("Engine missing", "safeAddProjectLiquidity() is not available.");
-        return;
-      }
-
-      try{
-        const actorMeta = {
-          ...getCurrentAdminMeta(),
-          note: "Manual liquidity add from project dashboard",
-          meta:{ source:"project_dashboard_add_liquidity" }
-        };
-
-        const result = await safeAddProjectLiquidity(
-          currentProject.project_code,
-          amount,
-          actorMeta
-        );
-
-        if(result?.error){
-          throw new Error(result.error);
-        }
-
-        dashboardEls.addAmount.value = "";
-        showDashboardAlert("Success", "Liquidity added successfully.");
-        await renderDashboard();
-
-      }catch(err){
-        console.error("Add liquidity error:", err);
-        showDashboardAlert(
-          "Add Liquidity Failed",
-          err?.message || "Failed to add liquidity."
-        );
-      }
     }
 
-    /* =========================================
-       WITHDRAW LIQUIDITY
-    ========================================= */
-    async function withdrawLiquidityAction(){
-      if(!currentProject){
-        showDashboardAlert("Project missing", "Project not loaded yet.");
-        return;
-      }
+  }
 
-      if(
-    typeof canManageAlbukhrProjectTreasury === "function" &&
-    !(await canManageAlbukhrProjectTreasury(currentProject))
-){
+
+  /* =========================================
+     READ AMOUNT
+  ========================================= */
+
+  const amount =
+    safeNumber(
+      dashboardEls.addAmount.value,
+      0
+    );
+
+
+  if(amount <= 0){
+
     showDashboardAlert(
-        "Access denied",
-        "You do not have permission to withdraw treasury funds from this project."
+      "Invalid amount",
+      "Enter a valid Pi liquidity amount."
     );
+
     return;
-      }
 
-      const amount = safeNumber(dashboardEls.withdrawAmount.value, 0);
+  }
 
-      if(amount <= 0){
-        showDashboardAlert("Invalid amount", "Enter a valid withdraw amount.");
-        return;
-      }
 
-      if(typeof safeProjectInternalWithdraw !== "function"){
-        showDashboardAlert("Engine missing", "safeProjectInternalWithdraw() is not available.");
-        return;
-      }
+  /* =========================================
+     REAL PI PAYMENT ADAPTER REQUIRED
+  ========================================= */
 
-      try{
-        const actorMeta = {
-          ...getCurrentAdminMeta(),
-          note: "Manual internal withdraw from project dashboard",
-          meta:{ source:"project_dashboard_internal_withdraw" }
-        };
+  if(
+    typeof window.addProjectLiquidityWithPiPayment !==
+    "function"
+  ){
 
-        const result = await safeProjectInternalWithdraw(
-          currentProject.project_code,
-          amount,
-          actorMeta
-        );
+    console.error(
+      "[UNIVERSAL DASHBOARD] Pi Treasury Payment Adapter is not loaded."
+    );
 
-        if(result?.error){
-          throw new Error(result.error);
-        }
+    showDashboardAlert(
+      "Pi Payment Engine Missing",
+      "Real Pi payment processing is not available yet. No treasury balance was changed."
+    );
 
-        dashboardEls.withdrawAmount.value = "";
-        showDashboardAlert("Success", "Liquidity withdrawn successfully.");
-        await renderDashboard();
+    return;
 
-      }catch(err){
-        console.error("Withdraw liquidity error:", err);
-        showDashboardAlert(
-          "Withdraw Failed",
-          err?.message || "Failed to withdraw liquidity."
-        );
-      }
+  }
+
+
+  /* =========================================
+     BUTTON LOCK
+  ========================================= */
+
+  const button =
+    dashboardEls.addLiquidityBtn;
+
+  const originalText =
+    button?.textContent ||
+    "Add Liquidity";
+
+
+  if(button){
+
+    button.disabled = true;
+
+    button.textContent =
+      "Processing Pi Payment...";
+
+  }
+
+
+  try{
+
+    /* =======================================
+       ADMIN / PROJECT CONTEXT
+       ---------------------------------------
+       We deliberately do NOT call the
+       treasury engine directly here.
+    ======================================= */
+
+    const paymentContext = {
+
+      project_code:
+        currentProject.project_code,
+
+      project_name:
+        currentProject.project_name ||
+        currentProject.project_code,
+
+      project_type:
+        currentProject.project_type ||
+        "core",
+
+      amount,
+
+      source:
+        "universal_project_dashboard",
+
+      action:
+        "add_liquidity"
+
+    };
+
+
+    console.log(
+      "[UNIVERSAL DASHBOARD] Starting real Pi liquidity payment:",
+      paymentContext
+    );
+
+
+    /* =======================================
+       START REAL PI PAYMENT FLOW
+
+       The adapter will later handle:
+
+       Pi SDK
+          ↓
+       paymentId
+          ↓
+       server /approve
+          ↓
+       blockchain
+          ↓
+       txid
+          ↓
+       treasury settlement
+    ======================================= */
+
+    const result =
+      await window.addProjectLiquidityWithPiPayment(
+        paymentContext
+      );
+
+
+    /* =======================================
+       PAYMENT FAILURE
+    ======================================= */
+
+    if(
+      !result ||
+      result.success !== true
+    ){
+
+      throw new Error(
+        result?.error ||
+        "Pi liquidity payment failed."
+      );
+
     }
+
+
+    /* =======================================
+       SUCCESS
+    ======================================= */
+
+    dashboardEls.addAmount.value = "";
+
+
+    showDashboardAlert(
+      "Liquidity Added",
+      `Real Pi payment completed successfully.\n\n` +
+      `Project: ${
+        currentProject.project_name ||
+        currentProject.project_code
+      }\n` +
+      `Amount: ${amount} Pi\n` +
+      `TXID: ${result.txid || "Verified"}`
+    );
+
+
+    console.log(
+      "✅ [UNIVERSAL DASHBOARD] Pi liquidity payment completed:",
+      result
+    );
+
+
+    /* =======================================
+       REFRESH TREASURY DISPLAY
+    ======================================= */
+
+    await renderDashboard();
+
+
+  }catch(error){
+
+    console.error(
+      "[UNIVERSAL DASHBOARD] Add liquidity payment failed:",
+      error
+    );
+
+
+    showDashboardAlert(
+      "Add Liquidity Failed",
+      error?.message ||
+      "Real Pi payment could not be completed. No treasury balance was changed."
+    );
+
+
+  }finally{
+
+    if(button){
+
+      button.disabled = false;
+
+      button.textContent =
+        originalText;
+
+    }
+
+  }
+
+      }
+
+/* =========================================
+   WITHDRAW LIQUIDITY
+   -------------------------------------------------
+   UNIVERSAL DASHBOARD PAYMENT GATE
+
+   IMPORTANT:
+   - Dashboard does NOT directly call
+     safeProjectInternalWithdraw().
+   - Dashboard does NOT reduce treasury first.
+   - Smart Liquidity rules must pass first.
+   - Real Pi blockchain payment must be completed.
+   - Treasury settlement happens only after
+     verified blockchain payment.
+
+   REQUIRED NEXT ENGINE:
+   js/pi-project-treasury-payment.js
+
+   Expected adapter function:
+   window.withdrawProjectLiquidityWithPiPayment()
+========================================= */
+async function withdrawLiquidityAction(){
+
+  if(!currentProject){
+
+    showDashboardAlert(
+      "Project missing",
+      "Project has not been loaded yet."
+    );
+
+    return;
+
+  }
+
+
+  /* =========================================
+     TREASURY PERMISSION
+  ========================================= */
+
+  if(
+    typeof canManageAlbukhrProjectTreasury === "function"
+  ){
+
+    const allowed =
+      await canManageAlbukhrProjectTreasury(
+        currentProject
+      );
+
+    if(!allowed){
+
+      showDashboardAlert(
+        "Access denied",
+        "You do not have permission to withdraw funds from this project's treasury."
+      );
+
+      return;
+
+    }
+
+  }
+
+
+  /* =========================================
+     READ AMOUNT
+  ========================================= */
+
+  const amount =
+    safeNumber(
+      dashboardEls.withdrawAmount.value,
+      0
+    );
+
+
+  if(amount <= 0){
+
+    showDashboardAlert(
+      "Invalid amount",
+      "Enter a valid Pi withdrawal amount."
+    );
+
+    return;
+
+  }
+
+
+  /* =========================================
+     PI WITHDRAWAL ADAPTER REQUIRED
+  ========================================= */
+
+  if(
+    typeof window.withdrawProjectLiquidityWithPiPayment !==
+    "function"
+  ){
+
+    console.error(
+      "[UNIVERSAL DASHBOARD] Pi Treasury Withdrawal Adapter is not loaded."
+    );
+
+    showDashboardAlert(
+      "Pi Withdrawal Engine Missing",
+      "Real Pi withdrawal processing is not available yet. No treasury balance was changed."
+    );
+
+    return;
+
+  }
+
+
+  /* =========================================
+     BUTTON LOCK
+  ========================================= */
+
+  const button =
+    dashboardEls.withdrawLiquidityBtn;
+
+  const originalText =
+    button?.textContent ||
+    "Withdraw Liquidity";
+
+
+  if(button){
+
+    button.disabled = true;
+
+    button.textContent =
+      "Processing Withdrawal...";
+
+  }
+
+
+  try{
+
+    /* =======================================
+       WITHDRAW CONTEXT
+
+       The adapter will perform:
+
+       Permission
+          ↓
+       Smart Liquidity
+          ↓
+       Withdrawal request
+          ↓
+       Approval
+          ↓
+       Pi server
+          ↓
+       Real blockchain payment
+          ↓
+       TXID
+          ↓
+       Treasury settlement
+    ======================================= */
+
+    const withdrawalContext = {
+
+      project_code:
+        currentProject.project_code,
+
+      project_name:
+        currentProject.project_name ||
+        currentProject.project_code,
+
+      project_type:
+        currentProject.project_type ||
+        "core",
+
+      amount,
+
+      source:
+        "universal_project_dashboard",
+
+      action:
+        "withdraw_liquidity"
+
+    };
+
+
+    console.log(
+      "[UNIVERSAL DASHBOARD] Starting real Pi withdrawal:",
+      withdrawalContext
+    );
+
+
+    /* =======================================
+       START REAL PI WITHDRAWAL FLOW
+    ======================================= */
+
+    const result =
+      await window.withdrawProjectLiquidityWithPiPayment(
+        withdrawalContext
+      );
+
+
+    /* =======================================
+       WITHDRAWAL FAILURE
+    ======================================= */
+
+    if(
+      !result ||
+      result.success !== true
+    ){
+
+      throw new Error(
+        result?.error ||
+        "Pi withdrawal failed."
+      );
+
+    }
+
+
+    /* =======================================
+       SUCCESS
+    ======================================= */
+
+    dashboardEls.withdrawAmount.value = "";
+
+
+    showDashboardAlert(
+      "Withdrawal Completed",
+      `Real Pi withdrawal completed successfully.\n\n` +
+      `Project: ${
+        currentProject.project_name ||
+        currentProject.project_code
+      }\n` +
+      `Amount: ${amount} Pi\n` +
+      `TXID: ${result.txid || "Verified"}`
+    );
+
+
+    console.log(
+      "✅ [UNIVERSAL DASHBOARD] Pi withdrawal completed:",
+      result
+    );
+
+
+    /* =======================================
+       REFRESH TREASURY DISPLAY
+    ======================================= */
+
+    await renderDashboard();
+
+
+  }catch(error){
+
+    console.error(
+      "[UNIVERSAL DASHBOARD] Pi withdrawal failed:",
+      error
+    );
+
+
+    showDashboardAlert(
+      "Withdrawal Failed",
+      error?.message ||
+      "Real Pi withdrawal could not be completed. No treasury balance was changed."
+    );
+
+
+  }finally{
+
+    if(button){
+
+      button.disabled = false;
+
+      button.textContent =
+        originalText;
+
+    }
+
+  }
+
+}
 
     /* =========================================
        VALIDATE UPDATE IMAGE
