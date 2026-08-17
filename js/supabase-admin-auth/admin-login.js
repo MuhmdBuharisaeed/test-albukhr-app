@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN LOGIN CONTROLLER
-   Version 4.0
+   Version 2.0
 ========================================== */
 
 (function(window){
