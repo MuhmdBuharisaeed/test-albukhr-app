@@ -1,16 +1,13 @@
 /* ==========================================
    ALBUKHR ADMIN BOOTSTRAP ENGINE
-   Version 2.2
-   Supabase Session + Admin Profile
+   Version 3.0
+   SUPABASE SESSION IS SOURCE OF TRUTH
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-/* ==========================================
-   ADMIN STATE
-========================================== */
 
 const Admin = {
 
@@ -28,13 +25,13 @@ const Admin = {
 
 
 /* ==========================================
-   GET CLIENT
+   GET ADMIN CLIENT
 ========================================== */
 
-function getClient(){
+function getAdminClient(){
 
     if(
-        typeof window.getAlbukhrSupabaseClient !==
+        typeof window.getAlbukhrAdminSupabaseClient !==
         "function"
     ){
 
@@ -44,18 +41,7 @@ function getClient(){
 
     }
 
-    const client =
-        window.getAlbukhrSupabaseClient();
-
-    if(!client){
-
-        throw new Error(
-            "ALBUKHR Admin Supabase client unavailable."
-        );
-
-    }
-
-    return client;
+    return window.getAlbukhrAdminSupabaseClient();
 
 }
 
@@ -74,7 +60,7 @@ function redirectLogin(){
 
 
 /* ==========================================
-   INITIALIZE ADMIN
+   INITIALIZE
 ========================================== */
 
 async function initializeAdmin(){
@@ -82,41 +68,30 @@ async function initializeAdmin(){
     try{
 
         const supabase =
-            getClient();
+            getAdminClient();
 
 
-        /* =====================================
-           SESSION
-           
-           Supabase Auth is the source of truth.
-        ===================================== */
+        /* ==============================
+           SUPABASE SESSION
+        ============================== */
 
         const {
 
             data:{session},
+
             error
 
-        } = await supabase.auth.getSession();
+        } =
+            await supabase.auth.getSession();
 
 
-        if(error){
-
-            console.error(
-                "[BOOTSTRAP] Session error:",
-                error
-            );
-
-            redirectLogin();
-
-            return false;
-
-        }
-
-
-        if(!session){
+        if(
+            error ||
+            !session?.user?.id
+        ){
 
             console.warn(
-                "[BOOTSTRAP] No active Supabase session."
+                "[ADMIN BOOTSTRAP] No valid session."
             );
 
             redirectLogin();
@@ -124,48 +99,49 @@ async function initializeAdmin(){
             return false;
 
         }
-
-
-        const user =
-            session.user;
 
 
         Admin.session =
             session;
 
 
-        /* =====================================
+        /* ==============================
            ADMIN DATABASE RECORD
-        ===================================== */
+        ============================== */
 
         const {
 
             data:admin,
+
             error:adminError
 
-        } = await supabase
+        } =
+            await supabase
 
-            .from("admin_users")
+                .from("admin_users")
 
-            .select("*")
+                .select("*")
 
-            .eq(
-                "auth_user_id",
-                user.id
-            )
+                .eq(
+                    "auth_user_id",
+                    session.user.id
+                )
 
-            .eq(
-                "status",
-                "active"
-            )
+                .eq(
+                    "status",
+                    "active"
+                )
 
-            .single();
+                .maybeSingle();
 
 
-        if(adminError || !admin){
+        if(
+            adminError ||
+            !admin
+        ){
 
             console.warn(
-                "[BOOTSTRAP] Active admin profile not found.",
+                "[ADMIN BOOTSTRAP] Admin not found.",
                 adminError
             );
 
@@ -178,10 +154,6 @@ async function initializeAdmin(){
         }
 
 
-        /* =====================================
-           ADMIN STATE
-        ===================================== */
-
         Admin.user =
             admin;
 
@@ -189,51 +161,42 @@ async function initializeAdmin(){
             admin.role_code;
 
 
-        /* =====================================
+        /* ==============================
            PERMISSIONS
-        ===================================== */
+        ============================== */
 
-        try{
+        if(
+            typeof window.getRolePermissions ===
+            "function"
+        ){
 
-            if(
-                typeof getRolePermissions ===
-                "function"
-            ){
+            try{
 
                 Admin.permissions =
-                    await getRolePermissions(
+                    await window.getRolePermissions(
                         admin.role_code
                     );
 
-            }else{
+            }catch(error){
 
                 console.warn(
-                    "[BOOTSTRAP] Permission engine not loaded."
+                    "[ADMIN BOOTSTRAP] Permission load failed:",
+                    error
                 );
 
                 Admin.permissions = [];
 
             }
 
-        }catch(e){
-
-            console.warn(
-                "[BOOTSTRAP] Permission load failed.",
-                e
-            );
-
-            Admin.permissions = [];
-
         }
 
 
-        /* =====================================
+        /* ==============================
            READY
-        ===================================== */
+        ============================== */
 
         Admin.ready =
             true;
-
 
         window.Admin =
             Admin;
@@ -242,10 +205,15 @@ async function initializeAdmin(){
         document.dispatchEvent(
 
             new CustomEvent(
+
                 "admin-ready",
+
                 {
+
                     detail:Admin
+
                 }
+
             )
 
         );
@@ -265,10 +233,7 @@ async function initializeAdmin(){
                 admin.role_code,
 
             status:
-                admin.status,
-
-            auth_user_id:
-                admin.auth_user_id
+                admin.status
 
         });
 
@@ -301,6 +266,27 @@ window.Admin =
 
 window.initializeAdmin =
     initializeAdmin;
+
+
+/* ==========================================
+   START
+========================================== */
+
+if(
+    document.readyState ===
+    "loading"
+){
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializeAdmin
+    );
+
+}else{
+
+    initializeAdmin();
+
+}
 
 
 })(window);
