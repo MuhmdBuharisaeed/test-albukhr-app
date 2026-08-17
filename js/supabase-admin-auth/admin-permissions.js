@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN PERMISSIONS ENGINE
-   Version 2.1
+   Version 2.2
 
    LOCATION:
    js/supabase-admin-auth/admin-permissions.js
@@ -20,7 +20,15 @@
    - Does NOT use js/auth/supabase-auth.js
    - Does NOT use LocalStorage
    - Does NOT use sessionStorage
-   - Does NOT modify other ALBUKHR engines
+   - Does NOT modify staking
+   - Does NOT modify treasury
+   - Does NOT modify liquidity
+   - Does NOT modify transactions
+
+   SECURITY NOTE:
+   JavaScript permission checks control the Admin UI.
+   Actual database security MUST still be enforced
+   through Supabase RLS / database policies.
 ========================================== */
 
 (function(window){
@@ -126,7 +134,7 @@ function getAdminClient(){
 
 
 /* ==========================================
-   GET CURRENT ADMIN SAFELY
+   GET CURRENT ADMIN
 ========================================== */
 
 async function getPermissionAdmin(){
@@ -147,7 +155,38 @@ async function getPermissionAdmin(){
 
     try{
 
-        return await window.getCurrentAdmin();
+        const admin =
+            await window.getCurrentAdmin();
+
+
+        if(!admin){
+
+            return null;
+
+        }
+
+
+        /*
+           Only active Admin records
+           are accepted by the permission engine.
+        */
+
+        if(
+            String(
+                admin.status || ""
+            )
+            .trim()
+            .toLowerCase() !==
+            "active"
+        ){
+
+            return null;
+
+        }
+
+
+        return admin;
+
 
     }catch(error){
 
@@ -231,8 +270,8 @@ async function getRolePermissions(
 
 
         /*
-           Normalize and remove invalid/duplicate
-           permission values.
+           Normalize permissions and remove
+           duplicates / invalid values.
         */
 
         const permissions =
@@ -344,6 +383,13 @@ async function hasAnyRole(
     }
 
 
+    if(!roles.length){
+
+        return false;
+
+    }
+
+
     const currentRole =
         normalizeRole(
             admin.role_code
@@ -414,10 +460,10 @@ async function hasPermission(
     /* ======================================
        SUPER ADMIN
 
-       Super Admin has full access.
+       Super Admin has complete Admin
+       application permission.
 
-       This avoids requiring a "*" row in
-       admin_permissions for the master role.
+       No "*" database row is required.
     ====================================== */
 
     if(
@@ -447,9 +493,9 @@ async function hasPermission(
     }
 
 
-    /*
-       Explicit wildcard permission.
-    */
+    /* ======================================
+       WILDCARD
+    ====================================== */
 
     if(
         permissions.includes("*")
@@ -509,9 +555,9 @@ async function hasAnyPermission(
     }
 
 
-    /*
-       Super Admin has complete access.
-    */
+    /* ======================================
+       SUPER ADMIN
+    ====================================== */
 
     if(
         role ===
@@ -524,13 +570,19 @@ async function hasAnyPermission(
 
 
     const normalizedPermissions =
-        permissions
+        [
+            ...new Set(
 
-            .map(
-                normalizePermission
+                permissions
+
+                    .map(
+                        normalizePermission
+                    )
+
+                    .filter(Boolean)
+
             )
-
-            .filter(Boolean);
+        ];
 
 
     if(!normalizedPermissions.length){
@@ -544,6 +596,13 @@ async function hasAnyPermission(
         await getRolePermissions(
             role
         );
+
+
+    if(!currentPermissions.length){
+
+        return false;
+
+    }
 
 
     if(
@@ -607,9 +666,9 @@ async function hasAllPermissions(
     }
 
 
-    /*
-       Super Admin has complete access.
-    */
+    /* ======================================
+       SUPER ADMIN
+    ====================================== */
 
     if(
         role ===
@@ -624,11 +683,15 @@ async function hasAllPermissions(
     const requiredPermissions =
         [
             ...new Set(
+
                 permissions
+
                     .map(
                         normalizePermission
                     )
+
                     .filter(Boolean)
+
             )
         ];
 
@@ -644,6 +707,13 @@ async function hasAllPermissions(
         await getRolePermissions(
             role
         );
+
+
+    if(!currentPermissions.length){
+
+        return false;
+
+    }
 
 
     if(
@@ -748,6 +818,58 @@ async function getAdminPermissionRole(){
 
 
 /* ==========================================
+   GET CURRENT ADMIN PERMISSIONS
+========================================== */
+
+async function getCurrentAdminPermissions(){
+
+    const admin =
+        await getPermissionAdmin();
+
+
+    if(!admin){
+
+        return [];
+
+    }
+
+
+    const role =
+        normalizeRole(
+            admin.role_code
+        );
+
+
+    if(!role){
+
+        return [];
+
+    }
+
+
+    /*
+       Super Admin does not need database
+       permission rows.
+    */
+
+    if(
+        role ===
+        "super_admin"
+    ){
+
+        return ["*"];
+
+    }
+
+
+    return await getRolePermissions(
+        role
+    );
+
+}
+
+
+/* ==========================================
    EXPORT
 ========================================== */
 
@@ -801,6 +923,10 @@ window.canManageRisk =
 
 window.getAdminPermissionRole =
     getAdminPermissionRole;
+
+
+window.getCurrentAdminPermissions =
+    getCurrentAdminPermissions;
 
 
 /* ==========================================
