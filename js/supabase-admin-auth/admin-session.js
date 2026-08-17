@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 3.0
+   Version 2.0
    ISOLATED ADMIN AUTH
 
    SOURCE OF TRUTH:
