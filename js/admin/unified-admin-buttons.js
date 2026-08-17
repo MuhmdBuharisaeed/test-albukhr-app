@@ -1,6 +1,6 @@
 /* =========================================
    ALBUKHR UNIFIED ADMIN BUTTONS
-   Version 4.0 SAFE PATCH
+   Version 2.0 SAFE PATCH
 
    DEPENDS ON:
    1) supabase-core.js
