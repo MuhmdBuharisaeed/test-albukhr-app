@@ -1,19 +1,30 @@
 /* ==========================================
    ALBUKHR ADMIN LOGIN CONTROLLER
-   Version 2.1
+   Version 3.0
 
-   DEPENDS ON:
+   ARCHITECTURE:
    - admin-supabase-auth.js
    - admin-session.js
    - admin-auth.js
 
    PURPOSE:
    - Admin login UI controller
-   - Uses Supabase Admin Auth session
-   - Does NOT use ecosystem Supabase Core
-   - Does NOT use LocalStorage
-   - Does NOT create a second auth system
-   - Does NOT depend on sessionStorage login gates
+   - Uses isolated Admin Supabase Auth
+   - Supabase Auth is the authentication source
+     of truth
+   - Redirects ONLY after successful login
+   - No automatic login-page redirect
+   - No LocalStorage
+   - No sessionStorage
+   - No competing authentication flow
+   - Prevents LOGIN ↔ UNIFIED redirect loops
+
+   IMPORTANT:
+   This controller does NOT:
+   - create a Supabase client
+   - sign out automatically on page load
+   - redirect because an existing session exists
+   - use ecosystem Supabase Core
 ========================================== */
 
 (function(window){
@@ -33,33 +44,136 @@ const ADMIN_LOGIN_PAGE =
 
 
 /* ==========================================
+   INTERNAL STATE
+========================================== */
+
+let loginInProgress =
+    false;
+
+
+/* ==========================================
    SAFE REDIRECT
 ========================================== */
 
 function redirectToAdminCenter(){
 
-    window.location.replace(
-        ADMIN_CONTROL_CENTER
-    );
+    try{
+
+        window.location.replace(
+            ADMIN_CONTROL_CENTER
+        );
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN LOGIN] Redirect failed:",
+            error
+        );
+
+    }
 
 }
 
 
 /* ==========================================
-   CHECK ADMIN SESSION
+   GET ADMIN SESSION
 ========================================== */
+
+async function getExistingAdminSession(){
+
+    try{
+
+        /*
+           admin-session.js owns the session
+           lookup.
+
+           We only READ the session here.
+
+           We do NOT redirect.
+           We do NOT logout.
+        */
+
+        if(
+            typeof window.getCurrentSession !==
+            "function"
+        ){
+
+            console.warn(
+                "[ADMIN LOGIN] getCurrentSession() is not available."
+            );
+
+            return null;
+
+        }
+
+
+        const session =
+            await window.getCurrentSession();
+
+
+        if(
+            !session?.user?.id
+        ){
+
+            return null;
+
+        }
+
+
+        return session;
+
+
+    }catch(error){
+
+        console.warn(
+            "[ADMIN LOGIN] Existing session lookup failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* ==========================================
+   CHECK EXISTING ADMIN SESSION
+========================================== */
+
+/*
+   IMPORTANT:
+
+   This function is intentionally READ-ONLY.
+
+   It MUST NOT redirect to the Admin Control
+   Center.
+
+   The previous Version 2.1 redirected here,
+   which could create:
+
+       login → unified → login → unified
+
+   when Bootstrap temporarily failed.
+
+   It is retained as a compatibility/debug
+   helper only.
+*/
 
 async function checkExistingAdminSession(){
 
     try{
 
+        const session =
+            await getExistingAdminSession();
+
+
         if(
-            typeof window.getCurrentAdmin !==
-            "function"
+            !session
         ){
 
-            console.warn(
-                "[ADMIN LOGIN] getCurrentAdmin() not available yet."
+            console.log(
+                "[ADMIN LOGIN] No existing Admin session."
             );
 
             return false;
@@ -67,40 +181,29 @@ async function checkExistingAdminSession(){
         }
 
 
-        const admin =
-            await window.getCurrentAdmin();
+        console.log(
+            "ℹ️ Existing ALBUKHR Admin Supabase session detected."
+        );
 
 
-        if(!admin){
-
-            return false;
-
-        }
+        console.log(
+            "[ADMIN LOGIN] Auth User:",
+            session.user?.email ||
+            session.user?.id ||
+            "unknown"
+        );
 
 
         /*
-           Session exists AND admin_users contains
-           an active administrator record.
+           IMPORTANT:
+
+           We deliberately DO NOT call:
+
+               redirectToAdminCenter()
+
+           here.
         */
 
-        console.log(
-            "✅ Existing ALBUKHR Admin session detected."
-        );
-
-
-        console.log(
-            "[ADMIN LOGIN] Admin:",
-            admin.username
-        );
-
-
-        console.log(
-            "[ADMIN LOGIN] Role:",
-            admin.role_code
-        );
-
-
-        redirectToAdminCenter();
 
         return true;
 
@@ -120,42 +223,61 @@ async function checkExistingAdminSession(){
 
 
 /* ==========================================
-   DOM READY
+   LOGIN BUTTON STATE
 ========================================== */
 
-document.addEventListener(
-
-    "DOMContentLoaded",
-
-    async function(){
-
-        /*
-           Do not redirect blindly.
-
-           Only redirect when:
-           1. Supabase Admin session exists
-           2. admin_users record exists
-           3. status = active
-        */
-
-        await checkExistingAdminSession();
-
-    }
-
-);
-
-
-/* ==========================================
-   LOGIN
-========================================== */
-
-async function login(){
+function setLoginButtonState(
+    loading
+){
 
     const btn =
         document.querySelector(
             ".login-btn"
         );
 
+
+    if(!btn){
+
+        return;
+
+    }
+
+
+    if(loading){
+
+        btn.disabled =
+            true;
+
+        btn.setAttribute(
+            "aria-busy",
+            "true"
+        );
+
+        btn.textContent =
+            "Signing In...";
+
+    }else{
+
+        btn.disabled =
+            false;
+
+        btn.removeAttribute(
+            "aria-busy"
+        );
+
+        btn.textContent =
+            "Access Control Center";
+
+    }
+
+}
+
+
+/* ==========================================
+   GET INPUTS
+========================================== */
+
+function getLoginInputs(){
 
     const emailInput =
         document.getElementById(
@@ -169,9 +291,32 @@ async function login(){
         );
 
 
-    /* ======================================
-       ELEMENT VALIDATION
-    ====================================== */
+    return {
+
+        emailInput,
+
+        keyInput
+
+    };
+
+}
+
+
+/* ==========================================
+   VALIDATE LOGIN FORM
+========================================== */
+
+function validateLoginForm(){
+
+    const {
+
+        emailInput,
+
+        keyInput
+
+    } =
+        getLoginInputs();
+
 
     if(!emailInput){
 
@@ -180,10 +325,10 @@ async function login(){
         );
 
         alert(
-            "Login form error: email field is missing."
+            "Login form error: administrator email field is missing."
         );
 
-        return;
+        return null;
 
     }
 
@@ -198,14 +343,10 @@ async function login(){
             "Login form error: access key field is missing."
         );
 
-        return;
+        return null;
 
     }
 
-
-    /* ======================================
-       READ INPUT
-    ====================================== */
 
     const email =
         String(
@@ -215,16 +356,12 @@ async function login(){
         .toLowerCase();
 
 
-    const key =
+    const accessKey =
         String(
             keyInput.value || ""
         )
         .trim();
 
-
-    /* ======================================
-       VALIDATE EMAIL
-    ====================================== */
 
     if(!email){
 
@@ -234,16 +371,12 @@ async function login(){
 
         emailInput.focus();
 
-        return;
+        return null;
 
     }
 
 
-    /* ======================================
-       VALIDATE ACCESS KEY
-    ====================================== */
-
-    if(!key){
+    if(!accessKey){
 
         alert(
             "Access Key Required"
@@ -251,30 +384,68 @@ async function login(){
 
         keyInput.focus();
 
+        return null;
+
+    }
+
+
+    return {
+
+        email,
+
+        accessKey,
+
+        emailInput,
+
+        keyInput
+
+    };
+
+}
+
+
+/* ==========================================
+   LOGIN
+========================================== */
+
+async function login(){
+
+    /*
+       Prevent double-click / duplicate
+       Supabase sign-in requests.
+    */
+
+    if(loginInProgress){
+
         return;
 
     }
 
 
-    /* ======================================
-       LOCK BUTTON
-    ====================================== */
+    const form =
+        validateLoginForm();
 
-    if(btn){
 
-        btn.disabled =
-            true;
+    if(!form){
 
-        btn.textContent =
-            "Signing In...";
+        return;
 
     }
+
+
+    loginInProgress =
+        true;
+
+
+    setLoginButtonState(
+        true
+    );
 
 
     try{
 
         /* ==================================
-           VERIFY ADMIN AUTH ENGINE
+           VERIFY AUTH ENGINE
         ================================== */
 
         if(
@@ -293,18 +464,25 @@ async function login(){
            AUTHENTICATE
         ================================== */
 
+        console.log(
+            "[ADMIN LOGIN] Authenticating Admin..."
+        );
+
+
         const result =
             await window.adminLogin({
 
-                email,
+                email:
+                    form.email,
 
-                accessKey:key
+                accessKey:
+                    form.accessKey
 
             });
 
 
         /* ==================================
-           LOGIN FAILURE
+           AUTH FAILURE
         ================================== */
 
         if(
@@ -312,10 +490,17 @@ async function login(){
             result.success !== true
         ){
 
+            console.warn(
+                "[ADMIN LOGIN] Authentication failed:",
+                result?.error
+            );
+
+
             alert(
                 result?.error ||
-                "Login failed."
+                "Administrator authentication failed."
             );
+
 
             return;
 
@@ -323,7 +508,7 @@ async function login(){
 
 
         /* ==================================
-           VERIFY RETURNED ADMIN
+           VERIFY ADMIN PROFILE
         ================================== */
 
         if(
@@ -332,9 +517,16 @@ async function login(){
         ){
 
             console.error(
-                "[ADMIN LOGIN] Authentication succeeded but admin profile is missing."
+                "[ADMIN LOGIN] Auth succeeded but Admin profile is missing."
             );
 
+
+            /*
+               This is a genuine safety failure
+               because adminLogin() should only
+               return success after admin_users
+               verification.
+            */
 
             alert(
                 "Authentication succeeded, but administrator verification failed."
@@ -342,7 +534,9 @@ async function login(){
 
 
             /*
-               Safety cleanup.
+               Cleanup only here because the
+               authentication result itself is
+               inconsistent.
             */
 
             if(
@@ -357,13 +551,63 @@ async function login(){
                 }catch(error){
 
                     console.warn(
-                        "[ADMIN LOGIN] Cleanup failed:",
+                        "[ADMIN LOGIN] Safety cleanup failed:",
                         error
                     );
 
                 }
 
             }
+
+
+            return;
+
+        }
+
+
+        /* ==================================
+           VERIFY SESSION
+        ================================== */
+
+        if(
+            !result.session ||
+            !result.session.user?.id
+        ){
+
+            console.error(
+                "[ADMIN LOGIN] Admin authentication succeeded without a valid session."
+            );
+
+
+            alert(
+                "Administrator authentication did not return a valid session."
+            );
+
+
+            /*
+               Cleanup inconsistent auth state.
+            */
+
+            if(
+                typeof window.adminLogout ===
+                "function"
+            ){
+
+                try{
+
+                    await window.adminLogout();
+
+                }catch(error){
+
+                    console.warn(
+                        "[ADMIN LOGIN] Session cleanup failed:",
+                        error
+                    );
+
+                }
+
+            }
+
 
             return;
 
@@ -381,40 +625,40 @@ async function login(){
 
         console.log(
             "[ADMIN LOGIN] Username:",
-            result.admin.username
+            result.admin.username ||
+            ""
         );
 
 
         console.log(
             "[ADMIN LOGIN] Role:",
-            result.admin.role_code
+            result.admin.role_code ||
+            ""
         );
 
 
         console.log(
-            "[ADMIN LOGIN] Environment:",
-            result.environment ||
-            "unknown"
+            "[ADMIN LOGIN] Auth User:",
+            result.user?.email ||
+            result.user?.id ||
+            ""
         );
 
 
         /*
            IMPORTANT:
 
-           We intentionally DO NOT write:
+           No LocalStorage.
+           No sessionStorage.
+           No admin entry gate.
 
-           sessionStorage.setItem(
-               "albukhr_admin_entry",
-               "granted"
-           );
-
-           Supabase Admin Auth session is the
-           authentication source of truth.
+           Supabase Auth has already persisted
+           the Admin session.
         */
 
 
         /* ==================================
-           REDIRECT
+           FINAL REDIRECT
         ================================== */
 
         redirectToAdminCenter();
@@ -423,28 +667,34 @@ async function login(){
     }catch(error){
 
         console.error(
-            "[ADMIN LOGIN]",
+            "[ADMIN LOGIN] Login exception:",
             error
         );
 
 
         alert(
             error?.message ||
-            "Login failed."
+            "Administrator login failed."
         );
 
 
     }finally{
 
-        if(btn){
+        /*
+           If redirect is already happening,
+           this state change is harmless.
 
-            btn.disabled =
-                false;
+           If login failed, it unlocks the
+           button for another attempt.
+        */
 
-            btn.textContent =
-                "Access Control Center";
+        loginInProgress =
+            false;
 
-        }
+
+        setLoginButtonState(
+            false
+        );
 
     }
 
@@ -455,67 +705,133 @@ async function login(){
    ENTER KEY SUPPORT
 ========================================== */
 
-document.addEventListener(
+function initializeEnterKeySupport(){
 
-    "DOMContentLoaded",
+    const {
 
-    function(){
+        emailInput,
 
-        const emailInput =
-            document.getElementById(
-                "email"
-            );
+        keyInput
 
-
-        const keyInput =
-            document.getElementById(
-                "key"
-            );
+    } =
+        getLoginInputs();
 
 
-        if(!emailInput || !keyInput){
+    if(
+        !emailInput ||
+        !keyInput
+    ){
 
-            return;
+        console.warn(
+            "[ADMIN LOGIN] Enter-key fields not ready."
+        );
 
-        }
+        return;
+
+    }
 
 
-        /*
-           Allow Enter from either field.
-        */
+    const inputs = [
 
-        [emailInput, keyInput].forEach(
+        emailInput,
 
-            function(input){
+        keyInput
 
-                input.addEventListener(
+    ];
 
-                    "keydown",
 
-                    function(event){
+    inputs.forEach(
 
-                        if(
-                            event.key ===
-                            "Enter"
-                        ){
+        function(input){
 
-                            event.preventDefault();
+            /*
+               Prevent duplicate listeners if
+               initialization is called again.
+            */
 
-                            login();
+            if(
+                input.dataset.adminEnterBound ===
+                "true"
+            ){
 
-                        }
+                return;
+
+            }
+
+
+            input.dataset.adminEnterBound =
+                "true";
+
+
+            input.addEventListener(
+
+                "keydown",
+
+                function(event){
+
+                    if(
+                        event.key ===
+                        "Enter"
+                    ){
+
+                        event.preventDefault();
+
+
+                        login();
 
                     }
 
+                }
+
+            );
+
+        }
+
+    );
+
+}
+
+
+/* ==========================================
+   INITIALIZE LOGIN PAGE
+========================================== */
+
+function initializeAdminLogin(){
+
+    console.log(
+        "✅ ALBUKHR Admin Login Controller Ready"
+    );
+
+
+    /*
+       IMPORTANT:
+
+       We check for an existing session only
+       for diagnostic purposes.
+
+       We NEVER redirect automatically.
+
+       This is what breaks the redirect loop.
+    */
+
+    checkExistingAdminSession()
+        .catch(
+
+            error => {
+
+                console.warn(
+                    "[ADMIN LOGIN] Session diagnostic failed:",
+                    error
                 );
 
             }
 
         );
 
-    }
 
-);
+    initializeEnterKeySupport();
+
+}
 
 
 /* ==========================================
@@ -528,6 +844,38 @@ window.login =
 
 window.checkExistingAdminSession =
     checkExistingAdminSession;
+
+
+window.initializeAdminLogin =
+    initializeAdminLogin;
+
+
+/* ==========================================
+   DOM READY
+========================================== */
+
+if(
+    document.readyState ===
+    "loading"
+){
+
+    document.addEventListener(
+
+        "DOMContentLoaded",
+
+        initializeAdminLogin,
+
+        {
+            once:true
+        }
+
+    );
+
+}else{
+
+    initializeAdminLogin();
+
+}
 
 
 })(window);
