@@ -1,7 +1,7 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
    Version 4.0
-   ISOLATED ADMIN AUTH
+   ISOLATED ADMIN AUTH CLIENT
 ========================================== */
 
 (function(window){
@@ -12,7 +12,7 @@ const TABLE = "admin_users";
 
 
 /* ==========================================
-   GET ADMIN CLIENT
+   GET ADMIN AUTH CLIENT
 ========================================== */
 
 function getAdminClient(){
@@ -56,7 +56,7 @@ async function getCurrentSession(){
             getAdminClient();
 
         const {
-            data:{session},
+            data,
             error
         } =
             await supabase.auth.getSession();
@@ -72,7 +72,7 @@ async function getCurrentSession(){
 
         }
 
-        return session || null;
+        return data?.session || null;
 
     }catch(error){
 
@@ -137,12 +137,12 @@ async function getCurrentAdmin(){
                     "status",
                     "active"
                 )
-                .maybeSingle();
+                .single();
 
         if(error){
 
             console.error(
-                "[ADMIN SESSION] admin_users:",
+                "[ADMIN PROFILE]",
                 error
             );
 
@@ -155,7 +155,7 @@ async function getCurrentAdmin(){
     }catch(error){
 
         console.error(
-            "[ADMIN SESSION]",
+            "[ADMIN CURRENT]",
             error
         );
 
@@ -167,7 +167,7 @@ async function getCurrentAdmin(){
 
 
 /* ==========================================
-   ROLE
+   GET CURRENT ROLE
 ========================================== */
 
 async function getCurrentRole(){
@@ -183,7 +183,7 @@ async function getCurrentRole(){
 
 
 /* ==========================================
-   REFRESH SESSION
+   REFRESH ADMIN SESSION
 ========================================== */
 
 async function refreshAdminSession(){
@@ -202,7 +202,7 @@ async function refreshAdminSession(){
         if(error){
 
             console.error(
-                "[ADMIN SESSION] refresh:",
+                "[ADMIN REFRESH]",
                 error
             );
 
@@ -214,7 +214,10 @@ async function refreshAdminSession(){
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN REFRESH]",
+            error
+        );
 
         return false;
 
@@ -224,7 +227,7 @@ async function refreshAdminSession(){
 
 
 /* ==========================================
-   REQUIRE ADMIN
+   REQUIRE ADMIN SESSION
 ========================================== */
 
 async function requireAdminSession(){
@@ -250,6 +253,9 @@ async function requireAdminSession(){
 /* ==========================================
    EXPORT
 ========================================== */
+
+window.getAdminClient =
+    getAdminClient;
 
 window.getCurrentSession =
     getCurrentSession;
