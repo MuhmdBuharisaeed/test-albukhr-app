@@ -1,12 +1,28 @@
 /* ==========================================
    ALBUKHR ADMIN AUTH ENGINE
-   Version 2.0
+   Version 2.1
    ISOLATED ADMIN AUTH
+
+   LOCATION:
+   js/supabase-admin-auth/admin-auth.js
+
+   DEPENDS ON:
+   - admin-supabase-auth.js
+   - admin-session.js
+   - admin-logs.js (optional)
+
+   IMPORTANT:
+   - Uses ONLY Admin Supabase Auth Client
+   - Does NOT use ecosystem Supabase Core
+   - Does NOT use js/auth/supabase-auth.js
+   - Does NOT use js/supabase-core.js
+   - Does NOT modify staking/liquidity/treasury engines
 ========================================== */
 
 (function(window){
 
 "use strict";
+
 
 const TABLE = "admin_users";
 
@@ -28,7 +44,62 @@ function getAdminClient(){
 
     }
 
-    return window.getAlbukhrAdminSupabaseClient();
+
+    const client =
+        window.getAlbukhrAdminSupabaseClient();
+
+
+    if(!client){
+
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not initialized."
+        );
+
+    }
+
+
+    return client;
+
+}
+
+
+/* ==========================================
+   GET ADMIN ENVIRONMENT
+========================================== */
+
+function getAdminEnvironment(){
+
+    if(
+        typeof window.getAlbukhrAdminEnvironment ===
+        "function"
+    ){
+
+        const environment =
+            window.getAlbukhrAdminEnvironment();
+
+
+        if(
+            environment === "mainnet" ||
+            environment === "testnet"
+        ){
+
+            return environment;
+
+        }
+
+    }
+
+
+    /*
+       Do NOT silently invent an environment.
+
+       If the Admin Auth Core cannot determine
+       the environment, authentication is refused.
+    */
+
+    throw new Error(
+        "ALBUKHR Admin environment could not be determined."
+    );
 
 }
 
@@ -47,8 +118,86 @@ async function adminLogin({
 
     try{
 
+        /* ==============================
+           VALIDATE INPUT
+        ============================== */
+
+        const safeEmail =
+            String(email || "")
+                .trim()
+                .toLowerCase();
+
+
+        const safeAccessKey =
+            String(accessKey || "")
+                .trim();
+
+
+        if(!safeEmail){
+
+            return {
+
+                success:false,
+
+                error:
+                    "Administrator email is required."
+
+            };
+
+        }
+
+
+        if(!safeAccessKey){
+
+            return {
+
+                success:false,
+
+                error:
+                    "Access key is required."
+
+            };
+
+        }
+
+
+        /* ==============================
+           ADMIN ENVIRONMENT
+        ============================== */
+
+        const environment =
+            getAdminEnvironment();
+
+
+        console.log(
+            "[ADMIN AUTH] Environment:",
+            environment
+        );
+
+
+        /* ==============================
+           ADMIN SUPABASE CLIENT
+        ============================== */
+
         const supabase =
             getAdminClient();
+
+
+        /* ==============================
+           CLEAR STALE ADMIN SESSION
+        ============================== */
+
+        /*
+           We deliberately do NOT call
+           signOut() before every login.
+
+           The Admin Auth Core owns the
+           persistent session.
+
+           Supabase signInWithPassword()
+           will replace the authenticated
+           session when credentials are valid.
+        */
 
 
         /* ==============================
@@ -64,41 +213,81 @@ async function adminLogin({
         } =
             await supabase.auth.signInWithPassword({
 
-                email,
+                email:
+                    safeEmail,
 
-                password:accessKey
+                password:
+                    safeAccessKey
 
             });
 
 
         if(error){
 
+            console.error(
+                "[ADMIN AUTH] Supabase login failed:",
+                error
+            );
+
+
             return {
 
                 success:false,
 
                 error:
-                    error.message
+                    error.message ||
+                    "Invalid administrator credentials."
 
             };
 
         }
 
 
+        /* ==============================
+           AUTH USER
+        ============================== */
+
         const user =
             data?.user;
 
 
-        if(!user?.id){
+        const session =
+            data?.session;
 
-            await supabase.auth.signOut();
+
+        if(
+            !user?.id ||
+            !session
+        ){
+
+            /*
+               Authentication must result in
+               a valid user + session.
+
+               If not, immediately clear the
+               incomplete authentication state.
+            */
+
+            try{
+
+                await supabase.auth.signOut();
+
+            }catch(signOutError){
+
+                console.warn(
+                    "[ADMIN AUTH] Cleanup failed:",
+                    signOutError
+                );
+
+            }
+
 
             return {
 
                 success:false,
 
                 error:
-                    "Authentication succeeded but no user session was returned."
+                    "Authentication succeeded but no valid admin session was returned."
 
             };
 
@@ -138,11 +327,24 @@ async function adminLogin({
         if(adminError){
 
             console.error(
-                "[ADMIN AUTH] admin_users:",
+                "[ADMIN AUTH] Admin profile lookup failed:",
                 adminError
             );
 
-            await supabase.auth.signOut();
+
+            try{
+
+                await supabase.auth.signOut();
+
+            }catch(signOutError){
+
+                console.warn(
+                    "[ADMIN AUTH] Session cleanup failed:",
+                    signOutError
+                );
+
+            }
+
 
             return {
 
@@ -158,7 +360,19 @@ async function adminLogin({
 
         if(!admin){
 
-            await supabase.auth.signOut();
+            try{
+
+                await supabase.auth.signOut();
+
+            }catch(signOutError){
+
+                console.warn(
+                    "[ADMIN AUTH] Session cleanup failed:",
+                    signOutError
+                );
+
+            }
+
 
             return {
 
@@ -166,6 +380,51 @@ async function adminLogin({
 
                 error:
                     "Admin account not found or inactive."
+
+            };
+
+        }
+
+
+        /* ==============================
+           ROLE
+        ============================== */
+
+        const role =
+            String(
+                admin.role_code || ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        if(!role){
+
+            console.error(
+                "[ADMIN AUTH] Admin role missing."
+            );
+
+
+            try{
+
+                await supabase.auth.signOut();
+
+            }catch(signOutError){
+
+                console.warn(
+                    "[ADMIN AUTH] Session cleanup failed:",
+                    signOutError
+                );
+
+            }
+
+
+            return {
+
+                success:false,
+
+                error:
+                    "Administrator role is not configured."
 
             };
 
@@ -200,8 +459,15 @@ async function adminLogin({
 
         if(updateError){
 
+            /*
+               last_login is audit metadata.
+
+               It should NOT invalidate an
+               otherwise valid authentication.
+            */
+
             console.warn(
-                "[ADMIN AUTH] last_login failed:",
+                "[ADMIN AUTH] last_login update failed:",
                 updateError
             );
 
@@ -221,9 +487,11 @@ async function adminLogin({
 
                 await window.logAdminAction({
 
-                    action:"login",
+                    action:
+                        "login",
 
-                    target:"admin_auth",
+                    target:
+                        "admin_auth",
 
                     details:{
 
@@ -231,13 +499,21 @@ async function adminLogin({
                             admin.username,
 
                         role:
-                            admin.role_code
+                            role,
+
+                        environment:
+                            environment
 
                     }
 
                 });
 
             }catch(error){
+
+                /*
+                   Audit failure must not destroy
+                   a valid authenticated session.
+                */
 
                 console.warn(
                     "[ADMIN AUTH] Audit log failed:",
@@ -249,6 +525,10 @@ async function adminLogin({
         }
 
 
+        /* ==============================
+           SUCCESS
+        ============================== */
+
         return {
 
             success:true,
@@ -257,8 +537,12 @@ async function adminLogin({
 
             user,
 
-            session:
-                data.session || null
+            session,
+
+            environment,
+
+            network:
+                environment
 
         };
 
@@ -269,6 +553,7 @@ async function adminLogin({
             "[ADMIN AUTH]",
             error
         );
+
 
         return {
 
@@ -293,12 +578,42 @@ async function adminLogout(){
 
     try{
 
-        const admin =
+        const supabase =
+            getAdminClient();
+
+
+        /* ==============================
+           GET CURRENT ADMIN
+        ============================== */
+
+        let admin = null;
+
+
+        if(
             typeof window.getCurrentAdmin ===
             "function"
-                ? await window.getCurrentAdmin()
-                : null;
+        ){
 
+            try{
+
+                admin =
+                    await window.getCurrentAdmin();
+
+            }catch(error){
+
+                console.warn(
+                    "[ADMIN AUTH] Current admin lookup failed:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /* ==============================
+           AUDIT LOG
+        ============================== */
 
         if(
             admin &&
@@ -308,11 +623,17 @@ async function adminLogout(){
 
             try{
 
+                const environment =
+                    getAdminEnvironment();
+
+
                 await window.logAdminAction({
 
-                    action:"logout",
+                    action:
+                        "logout",
 
-                    target:"admin_auth",
+                    target:
+                        "admin_auth",
 
                     details:{
 
@@ -320,7 +641,10 @@ async function adminLogout(){
                             admin.username,
 
                         role:
-                            admin.role_code
+                            admin.role_code,
+
+                        environment:
+                            environment
 
                     }
 
@@ -329,7 +653,7 @@ async function adminLogout(){
             }catch(error){
 
                 console.warn(
-                    "[ADMIN AUTH] Logout log failed:",
+                    "[ADMIN AUTH] Logout audit failed:",
                     error
                 );
 
@@ -338,12 +662,51 @@ async function adminLogout(){
         }
 
 
-        const supabase =
-            getAdminClient();
+        /* ==============================
+           SIGN OUT
+        ============================== */
+
+        const {
+
+            error
+
+        } =
+            await supabase.auth.signOut();
 
 
-        await supabase.auth.signOut();
+        if(error){
 
+            console.error(
+                "[ADMIN AUTH] Supabase logout failed:",
+                error
+            );
+
+        }
+
+
+        /* ==============================
+           CLEAR ADMIN ENTRY MARKER
+        ============================== */
+
+        try{
+
+            sessionStorage.removeItem(
+                "albukhr_admin_entry"
+            );
+
+        }catch(error){
+
+            console.warn(
+                "[ADMIN AUTH] Session marker cleanup failed:",
+                error
+            );
+
+        }
+
+
+        /* ==============================
+           REDIRECT
+        ============================== */
 
         location.replace(
             "admin-login.html"
@@ -356,6 +719,22 @@ async function adminLogout(){
             "[ADMIN AUTH] Logout:",
             error
         );
+
+
+        /*
+           Even if cleanup fails,
+           do not leave the administrator
+           stranded inside the protected area.
+        */
+
+        try{
+
+            sessionStorage.removeItem(
+                "albukhr_admin_entry"
+            );
+
+        }catch(e){}
+
 
         location.replace(
             "admin-login.html"
@@ -373,8 +752,13 @@ async function adminLogout(){
 window.adminLogin =
     adminLogin;
 
+
 window.adminLogout =
     adminLogout;
+
+
+window.getAdminEnvironmentForAuth =
+    getAdminEnvironment;
 
 
 })(window);
