@@ -1,31 +1,29 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 2.1
-   ISOLATED ADMIN AUTH CLIENT
+   Version 3.0
+   ISOLATED ADMIN AUTH
 
-   LOCATION:
-   js/supabase-admin-auth/admin-session.js
+   SOURCE OF TRUTH:
+   - admin-supabase-auth.js
+   - Supabase Auth session
+   - admin_users
 
-   PURPOSE:
-   - Manage Admin Supabase Auth session
-   - Use ONLY Admin Supabase Auth Core
-   - Never use ecosystem Supabase Core
-   - Resolve Admin Mainnet/Testnet environment
-   - Load active admin profile
-   - Provide role information
-   - Protect Admin pages
+   IMPORTANT:
+   - Does NOT use ecosystem Supabase Core
+   - Does NOT use js/auth/supabase-auth.js
+   - Does NOT use LocalStorage
+   - Does NOT use sessionStorage
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-
 const TABLE = "admin_users";
 
 
 /* ==========================================
-   GET ADMIN AUTH CLIENT
+   GET ADMIN CLIENT
 ========================================== */
 
 function getAdminClient(){
@@ -41,98 +39,18 @@ function getAdminClient(){
 
     }
 
-
     const client =
         window.getAlbukhrAdminSupabaseClient();
-
 
     if(!client){
 
         throw new Error(
-            "ALBUKHR Admin Supabase Auth Core not initialized."
+            "ALBUKHR Admin Supabase client unavailable."
         );
 
     }
-
 
     return client;
-
-}
-
-
-/* ==========================================
-   GET ADMIN ENVIRONMENT
-========================================== */
-
-function getCurrentAdminEnvironment(){
-
-    if(
-        typeof window.getAlbukhrAdminEnvironment !==
-        "function"
-    ){
-
-        throw new Error(
-            "ALBUKHR Admin Environment Core not loaded."
-        );
-
-    }
-
-
-    const environment =
-        window.getAlbukhrAdminEnvironment();
-
-
-    if(
-        environment !== "mainnet" &&
-        environment !== "testnet"
-    ){
-
-        throw new Error(
-            "Invalid ALBUKHR Admin environment."
-        );
-
-    }
-
-
-    return environment;
-
-}
-
-
-/* ==========================================
-   GET ADMIN NETWORK
-========================================== */
-
-function getCurrentAdminNetwork(){
-
-    return getCurrentAdminEnvironment();
-
-}
-
-
-/* ==========================================
-   REQUIRE ADMIN NETWORK
-========================================== */
-
-function requireAdminNetwork(){
-
-    const network =
-        getCurrentAdminNetwork();
-
-
-    if(
-        network !== "mainnet" &&
-        network !== "testnet"
-    ){
-
-        throw new Error(
-            "ALBUKHR Admin network is invalid."
-        );
-
-    }
-
-
-    return network;
 
 }
 
@@ -145,16 +63,8 @@ async function getCurrentSession(){
 
     try{
 
-        /*
-           Validate Admin environment first.
-        */
-
-        requireAdminNetwork();
-
-
         const supabase =
             getAdminClient();
-
 
         const {
             data,
@@ -162,11 +72,10 @@ async function getCurrentSession(){
         } =
             await supabase.auth.getSession();
 
-
         if(error){
 
             console.error(
-                "[ADMIN SESSION]",
+                "[ADMIN SESSION] getSession:",
                 error
             );
 
@@ -174,13 +83,12 @@ async function getCurrentSession(){
 
         }
 
-
         return data?.session || null;
 
     }catch(error){
 
         console.error(
-            "[ADMIN SESSION]",
+            "[ADMIN SESSION] Fatal:",
             error
         );
 
@@ -192,14 +100,13 @@ async function getCurrentSession(){
 
 
 /* ==========================================
-   IS ADMIN LOGGED IN
+   IS LOGGED IN
 ========================================== */
 
 async function isAdminLoggedIn(){
 
     const session =
         await getCurrentSession();
-
 
     return !!(
         session?.user?.id
@@ -219,19 +126,23 @@ async function getCurrentAdmin(){
         const session =
             await getCurrentSession();
 
-
-        if(
-            !session?.user?.id
-        ){
+        if(!session?.user?.id){
 
             return null;
 
         }
 
-
         const supabase =
             getAdminClient();
 
+
+        /*
+           IMPORTANT:
+
+           Use maybeSingle() rather than single()
+           so "no admin record" does not create
+           a query exception.
+        */
 
         const {
             data,
@@ -253,15 +164,23 @@ async function getCurrentAdmin(){
                     "active"
                 )
 
-                .single();
+                .maybeSingle();
 
 
         if(error){
 
             console.error(
-                "[ADMIN PROFILE]",
+                "[ADMIN SESSION] Admin profile query failed:",
                 error
             );
+
+            /*
+               Do NOT sign out here.
+
+               A database/query problem must not
+               automatically destroy a valid
+               Supabase Auth session.
+            */
 
             return null;
 
@@ -277,11 +196,10 @@ async function getCurrentAdmin(){
 
         return data;
 
-
     }catch(error){
 
         console.error(
-            "[ADMIN CURRENT]",
+            "[ADMIN SESSION] Current admin failed:",
             error
         );
 
@@ -301,75 +219,31 @@ async function getCurrentRole(){
     const admin =
         await getCurrentAdmin();
 
-
-    return admin
-        ? admin.role_code
-        : null;
-
-}
-
-
-/* ==========================================
-   GET CURRENT ADMIN NETWORK
-========================================== */
-
-async function getCurrentAdminNetwork(){
-
-    /*
-       Admin identity remains tied to
-       Supabase Auth.
-
-       Network is resolved from the
-       current ALBUKHR deployment.
-    */
-
-    try{
-
-        return getCurrentAdminNetworkValue();
-
-    }catch(error){
-
-        console.error(
-            "[ADMIN NETWORK]",
-            error
-        );
+    if(!admin){
 
         return null;
 
     }
 
-}
-
-
-/*
-   Internal synchronous resolver.
-
-   Kept separate so async callers
-   and synchronous callers can both
-   use the network safely.
-*/
-
-function getCurrentAdminNetworkValue(){
-
-    return requireAdminNetwork();
+    return String(
+        admin.role_code || ""
+    )
+    .trim()
+    .toLowerCase() || null;
 
 }
 
 
 /* ==========================================
-   REFRESH ADMIN SESSION
+   REFRESH SESSION
 ========================================== */
 
 async function refreshAdminSession(){
 
     try{
 
-        requireAdminNetwork();
-
-
         const supabase =
             getAdminClient();
-
 
         const {
             data,
@@ -377,11 +251,10 @@ async function refreshAdminSession(){
         } =
             await supabase.auth.refreshSession();
 
-
         if(error){
 
             console.error(
-                "[ADMIN REFRESH]",
+                "[ADMIN SESSION] Refresh failed:",
                 error
             );
 
@@ -389,16 +262,14 @@ async function refreshAdminSession(){
 
         }
 
-
         return !!(
             data?.session?.user?.id
         );
 
-
     }catch(error){
 
         console.error(
-            "[ADMIN REFRESH]",
+            "[ADMIN SESSION] Refresh exception:",
             error
         );
 
@@ -415,15 +286,33 @@ async function refreshAdminSession(){
 
 async function requireAdminSession(){
 
+    const session =
+        await getCurrentSession();
+
+    if(!session?.user?.id){
+
+        window.location.replace(
+            "admin-login.html"
+        );
+
+        return null;
+
+    }
+
+
     const admin =
         await getCurrentAdmin();
 
 
     if(!admin){
 
-        location.replace(
-            "admin-login.html"
-        );
+        /*
+           Do NOT sign out here.
+
+           The caller can decide whether this is
+           an authorization problem or a database
+           availability problem.
+        */
 
         return null;
 
@@ -436,62 +325,38 @@ async function requireAdminSession(){
 
 
 /* ==========================================
-   REQUIRE ADMIN NETWORK
-========================================== */
-
-function requireCurrentAdminNetwork(){
-
-    return requireAdminNetwork();
-
-}
-
-
-/* ==========================================
    EXPORT
 ========================================== */
 
 window.getAdminClient =
     getAdminClient;
 
-
 window.getCurrentSession =
     getCurrentSession;
-
 
 window.getCurrentAdmin =
     getCurrentAdmin;
 
-
 window.getCurrentRole =
     getCurrentRole;
-
-
-window.getCurrentAdminEnvironment =
-    getCurrentAdminEnvironment;
-
-
-window.getCurrentAdminNetwork =
-    getCurrentAdminNetwork;
-
-
-window.requireAdminNetwork =
-    requireAdminNetwork;
-
-
-window.requireCurrentAdminNetwork =
-    requireCurrentAdminNetwork;
-
 
 window.refreshAdminSession =
     refreshAdminSession;
 
-
 window.isAdminLoggedIn =
     isAdminLoggedIn;
 
-
 window.requireAdminSession =
     requireAdminSession;
+
+
+/* ==========================================
+   READY
+========================================== */
+
+console.log(
+    "✅ ALBUKHR Admin Session Engine Ready"
+);
 
 
 })(window);
