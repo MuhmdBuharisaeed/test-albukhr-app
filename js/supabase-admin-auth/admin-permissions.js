@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN PERMISSIONS ENGINE
-   Version 3.1
+   Version 2.0
 ========================================== */
 
 (function(window){
