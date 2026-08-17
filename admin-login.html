@@ -94,36 +94,73 @@ All login activities are monitored.
 
 </div>
 
-
-<!-- ========================================
+<!-- =========================================
      SUPABASE SDK
 ========================================= -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
 
 
-<!-- ========================================
-     DEDICATED ADMIN AUTH CORE
+<!-- =========================================
+     ADMIN SUPABASE AUTH CORE
 
      IMPORTANT:
-     Do NOT load js/supabase-core.js here.
+     This is the dedicated Admin client.
+
+     DO NOT replace this with:
+     js/supabase-core.js
 ========================================= -->
 
-<script src="js/auth/admin-supabase-auth.js"></script>
+<script
+  src="js/auth/supabase-auth.js?v=1.0.1">
+</script>
 
 
-<!-- ========================================
-     ADMIN AUTH MODULES
+<!-- =========================================
+     ADMIN LOGS
 ========================================= -->
 
-<script src="js/supabase-admin-auth/admin-logs.js"></script>
+<script
+  src="js/supabase-admin-auth/admin-logs.js?v=1.0.1">
+</script>
 
-<script src="js/supabase-admin-auth/admin-session.js"></script>
 
-<script src="js/supabase-admin-auth/admin-auth.js"></script>
+<!-- =========================================
+     ADMIN SESSION
+========================================= -->
 
-<script src="js/supabase-admin-auth/admin-login.js"></script>
+<script
+  src="js/supabase-admin-auth/admin-session.js?v=4.0.1">
+</script>
 
+
+<!-- =========================================
+     ADMIN AUTH
+========================================= -->
+
+<script
+  src="js/supabase-admin-auth/admin-auth.js?v=4.0.1">
+</script>
+
+
+<!-- =========================================
+     ADMIN PERMISSIONS
+========================================= -->
+
+<script
+  src="js/supabase-admin-auth/admin-permissions.js?v=4.0.1">
+</script>
+
+
+<!-- =========================================
+     ADMIN LOGIN CONTROLLER
+========================================= -->
+
+<script
+  src="js/supabase-admin-auth/admin-login.js?v=4.0.1">
+</script>
 
 </body>
 
