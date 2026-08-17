@@ -1,39 +1,117 @@
 /* ==========================================
    ALBUKHR SUPABASE ADMIN LOG ENGINE
-   Version 2.0
+   Version 2.1
+
+   LOCATION:
+   js/supabase-admin-auth/admin-logs.js
+
+   PURPOSE:
+   - Admin authentication activity logs
+   - Login / logout audit trail
+   - Admin activity history
+   - Uses isolated Admin Supabase client
+
+   DEPENDS ON:
+   - admin-supabase-auth.js
+   - Supabase JS SDK
+
+   IMPORTANT:
+   - Does NOT use js/supabase-core.js
+   - Does NOT use js/auth/supabase-auth.js
+   - Does NOT use LocalStorage
+   - Does NOT use sessionStorage
+   - Does NOT modify staking engines
+   - Does NOT modify treasury engines
+   - Does NOT modify liquidity engines
+   - Does NOT modify transaction engines
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-const TABLE = "admin_activity_logs";
+
+const TABLE =
+    "admin_activity_logs";
+
 
 /* ==========================================
-   GET CLIENT
+   GET ADMIN CLIENT
 ========================================== */
 
-function getClient(){
+function getAdminClient(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(
+        typeof window.getAlbukhrAdminSupabaseClient !==
+        "function"
+    ){
 
-        const client =
-        window.getAlbukhrSupabaseClient();
-
-        if(client){
-            return client;
-        }
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not loaded."
+        );
 
     }
 
-    throw new Error(
-        "ALBUKHR Supabase Core not initialized."
-    );
+
+    const client =
+        window.getAlbukhrAdminSupabaseClient();
+
+
+    if(!client){
+
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not initialized."
+        );
+
+    }
+
+
+    return client;
 
 }
 
+
 /* ==========================================
-   WRITE LOG
+   GET CURRENT AUTH USER
+========================================== */
+
+async function getAuthenticatedAdminUser(){
+
+    const supabase =
+        getAdminClient();
+
+
+    const {
+
+        data,
+
+        error
+
+    } =
+        await supabase.auth.getUser();
+
+
+    if(error){
+
+        throw error;
+
+    }
+
+
+    if(!data?.user){
+
+        return null;
+
+    }
+
+
+    return data.user;
+
+}
+
+
+/* ==========================================
+   WRITE ADMIN LOG
 ========================================== */
 
 async function logAdminAction({
@@ -46,100 +124,86 @@ async function logAdminAction({
 
     ipAddress = null
 
-}){
+} = {}){
 
     try{
 
-        const supabase = getClient();
+        /* ----------------------------------
+           VALIDATE ACTION
+        ---------------------------------- */
 
-        /* CURRENT USER */
+        const safeAction =
+            String(
+                action ?? ""
+            )
+            .trim();
 
-        const {
 
-            data:{user},
+        if(!safeAction){
 
-            error:userError
+            return {
 
-        } = await supabase.auth.getUser();
+                success:false,
 
-        if(userError){
-
-            throw userError;
-
-        }
-
-        if(!user){
-
-            return{
-
-                error:"No authenticated admin."
+                error:
+                    "Admin log action is required."
 
             };
 
         }
 
-        /* INSERT */
 
-        const { error } = await supabase
+        /* ----------------------------------
+           ADMIN CLIENT
+        ---------------------------------- */
 
-        .from(TABLE)
+        const supabase =
+            getAdminClient();
 
-        .insert({
 
-            admin_id:user.id,
+        /* ----------------------------------
+           CURRENT AUTH USER
+        ---------------------------------- */
 
-            action,
+        const user =
+            await getAuthenticatedAdminUser();
 
-            target,
 
-            details,
+        if(!user?.id){
 
-            ip_address:ipAddress
+            return {
 
-        });
+                success:false,
 
-        if(error){
+                error:
+                    "No authenticated admin."
 
-            throw error;
+            };
 
         }
 
-        return{
 
-            success:true
+        /* ----------------------------------
+           NORMALIZE DETAILS
+        ---------------------------------- */
 
-        };
+        let safeDetails =
+            details;
 
-    }catch(error){
 
-        console.error(
+        if(
+            safeDetails === null ||
+            typeof safeDetails !== "object"
+        ){
 
-            "[ADMIN LOG]",
+            safeDetails = {};
 
-            error
+        }
 
-        );
 
-        return{
-
-            error:error.message
-
-        };
-
-    }
-
-}
-
-/* ==========================================
-   GET ALL LOGS
-========================================== */
-
-async function getAdminLogs(limit = 100){
-
-    try{
-
-        const supabase =
-        getClient();
+        /* ----------------------------------
+           INSERT LOG
+        ---------------------------------- */
 
         const {
 
@@ -147,25 +211,33 @@ async function getAdminLogs(limit = 100){
 
             error
 
-        } = await supabase
+        } =
+            await supabase
 
-        .from(TABLE)
+                .from(TABLE)
 
-        .select("*")
+                .insert({
 
-        .order(
+                    admin_id:
+                        user.id,
 
-            "created_at",
+                    action:
+                        safeAction,
 
-            {
+                    target:
+                        target,
 
-                ascending:false
+                    details:
+                        safeDetails,
 
-            }
+                    ip_address:
+                        ipAddress
 
-        )
+                })
 
-        .limit(limit);
+                .select("*")
+                .maybeSingle();
+
 
         if(error){
 
@@ -173,11 +245,108 @@ async function getAdminLogs(limit = 100){
 
         }
 
-        return data || [];
+
+        return {
+
+            success:true,
+
+            data:
+                data || null
+
+        };
+
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN LOG] Write failed:",
+            error
+        );
+
+
+        return {
+
+            success:false,
+
+            error:
+                error?.message ||
+                "Failed to write Admin activity log."
+
+        };
+
+    }
+
+}
+
+
+/* ==========================================
+   GET ALL ADMIN LOGS
+========================================== */
+
+async function getAdminLogs(
+    limit = 100
+){
+
+    try{
+
+        const supabase =
+            getAdminClient();
+
+
+        const safeLimit =
+            Math.min(
+                Math.max(
+                    Number(limit) || 100,
+                    1
+                ),
+                500
+            );
+
+
+        const {
+
+            data,
+
+            error
+
+        } =
+            await supabase
+
+                .from(TABLE)
+
+                .select("*")
+
+                .order(
+                    "created_at",
+                    {
+                        ascending:false
+                    }
+                )
+
+                .limit(
+                    safeLimit
+                );
+
+
+        if(error){
+
+            throw error;
+
+        }
+
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN LOG] Get all logs failed:",
+            error
+        );
+
 
         return [];
 
@@ -185,70 +354,71 @@ async function getAdminLogs(limit = 100){
 
 }
 
+
 /* ==========================================
-   GET MY LOGS
+   GET MY ADMIN LOGS
 ========================================== */
 
-async function getMyAdminLogs(limit = 50){
+async function getMyAdminLogs(
+    limit = 50
+){
 
     try{
 
         const supabase =
-        getClient();
+            getAdminClient();
 
-        const {
 
-            data:{user},
+        const user =
+            await getAuthenticatedAdminUser();
 
-            error:userError
 
-        } = await supabase.auth.getUser();
-
-        if(userError){
-
-            throw userError;
-
-        }
-
-        if(!user){
+        if(!user?.id){
 
             return [];
 
         }
 
+
+        const safeLimit =
+            Math.min(
+                Math.max(
+                    Number(limit) || 50,
+                    1
+                ),
+                500
+            );
+
+
         const {
 
             data,
 
             error
 
-        } = await supabase
+        } =
+            await supabase
 
-        .from(TABLE)
+                .from(TABLE)
 
-        .select("*")
+                .select("*")
 
-        .eq(
+                .eq(
+                    "admin_id",
+                    user.id
+                )
 
-            "admin_id",
+                .order(
+                    "created_at",
+                    {
+                        ascending:false
+                    }
+                )
 
-            user.id
+                .limit(
+                    safeLimit
+                );
 
-        )
-
-        .order(
-
-            "created_at",
-
-            {
-
-                ascending:false
-
-            }
-
-        )
-
-        .limit(limit);
 
         if(error){
 
@@ -256,11 +426,19 @@ async function getMyAdminLogs(limit = 50){
 
         }
 
-        return data || [];
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN LOG] Get my logs failed:",
+            error
+        );
+
 
         return [];
 
@@ -268,40 +446,75 @@ async function getMyAdminLogs(limit = 50){
 
 }
 
+
 /* ==========================================
-   CLEAR OLD LOGS
-   (OPTIONAL MAINTENANCE)
+   GET LOGS BY ADMIN
 ========================================== */
 
-async function clearOldLogs(days = 90){
+async function getAdminLogsByAdmin(
+    adminId,
+    limit = 100
+){
 
     try{
 
+        const safeAdminId =
+            String(
+                adminId ?? ""
+            )
+            .trim();
+
+
+        if(!safeAdminId){
+
+            return [];
+
+        }
+
+
         const supabase =
-        getClient();
+            getAdminClient();
 
-        const date =
-        new Date();
 
-        date.setDate(
+        const safeLimit =
+            Math.min(
+                Math.max(
+                    Number(limit) || 100,
+                    1
+                ),
+                500
+            );
 
-            date.getDate() - days
 
-        );
+        const {
 
-        const { error } = await supabase
+            data,
 
-        .from(TABLE)
+            error
 
-        .delete()
+        } =
+            await supabase
 
-        .lt(
+                .from(TABLE)
 
-            "created_at",
+                .select("*")
 
-            date.toISOString()
+                .eq(
+                    "admin_id",
+                    safeAdminId
+                )
 
-        );
+                .order(
+                    "created_at",
+                    {
+                        ascending:false
+                    }
+                )
+
+                .limit(
+                    safeLimit
+                );
+
 
         if(error){
 
@@ -309,40 +522,160 @@ async function clearOldLogs(days = 90){
 
         }
 
-        return{
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN LOG] Get admin logs failed:",
+            error
+        );
+
+
+        return [];
+
+    }
+
+}
+
+
+/* ==========================================
+   CLEAR OLD LOGS
+   OPTIONAL MAINTENANCE
+========================================== */
+
+async function clearOldLogs(
+    days = 90
+){
+
+    try{
+
+        const safeDays =
+            Number(days);
+
+
+        if(
+            !Number.isFinite(
+                safeDays
+            ) ||
+            safeDays <= 0
+        ){
+
+            return {
+
+                success:false,
+
+                error:
+                    "Invalid log retention period."
+
+            };
+
+        }
+
+
+        const supabase =
+            getAdminClient();
+
+
+        const date =
+            new Date();
+
+
+        date.setDate(
+            date.getDate() -
+            safeDays
+        );
+
+
+        const {
+
+            error
+
+        } =
+            await supabase
+
+                .from(TABLE)
+
+                .delete()
+
+                .lt(
+                    "created_at",
+                    date.toISOString()
+                );
+
+
+        if(error){
+
+            throw error;
+
+        }
+
+
+        return {
 
             success:true
 
         };
 
+
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN LOG] Clear old logs failed:",
+            error
+        );
 
-        return{
 
-            error:error.message
+        return {
+
+            success:false,
+
+            error:
+                error?.message ||
+                "Failed to clear old Admin logs."
 
         };
 
     }
 
 }
+
 
 /* ==========================================
    EXPORT
 ========================================== */
 
 window.logAdminAction =
-logAdminAction;
+    logAdminAction;
+
 
 window.getAdminLogs =
-getAdminLogs;
+    getAdminLogs;
+
 
 window.getMyAdminLogs =
-getMyAdminLogs;
+    getMyAdminLogs;
+
+
+window.getAdminLogsByAdmin =
+    getAdminLogsByAdmin;
+
 
 window.clearOldLogs =
-clearOldLogs;
+    clearOldLogs;
+
+
+/* ==========================================
+   READY
+========================================== */
+
+console.log(
+    "✅ ALBUKHR Admin Log Engine Ready"
+);
+
 
 })(window);
