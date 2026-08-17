@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN GUARD ENGINE
-   Version 4.0
+   Version 2.0
    ISOLATED ADMIN AUTH COMPATIBILITY
 ========================================== */
 
