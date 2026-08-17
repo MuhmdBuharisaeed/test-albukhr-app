@@ -1,11 +1,12 @@
 /* ==========================================
    ALBUKHR ADMIN LOGIN CONTROLLER
-   Version 3.0
+   Version 4.0
 ========================================== */
 
 (function(window){
 
 "use strict";
+
 
 /* ==========================================
    AUTO SESSION REDIRECT
@@ -13,30 +14,36 @@
 
 document.addEventListener(
 
-"DOMContentLoaded",
+    "DOMContentLoaded",
 
-async ()=>{
+    async function(){
 
-try{
+        try{
 
-const admin =
-await getCurrentAdmin();
+            const admin =
+                await getCurrentAdmin();
 
-if(admin){
+            if(admin){
 
-location.replace(
-"unified-admin-buttons.html"
+                location.replace(
+                    "unified-admin-buttons.html"
+                );
+
+            }
+
+        }catch(error){
+
+            console.warn(
+                "[ADMIN LOGIN] Session check:",
+                error
+            );
+
+        }
+
+    }
+
 );
 
-}
-
-}catch(error){
-
-console.error(error);
-
-}
-
-});
 
 /* ==========================================
    LOGIN
@@ -44,107 +51,130 @@ console.error(error);
 
 async function login(){
 
-const btn =
-document.querySelector(".login-btn");
+    const btn =
+        document.querySelector(
+            ".login-btn"
+        );
 
-const email =
-document
-.getElementById("email")
-.value
-.trim()
-.toLowerCase();
+    const emailInput =
+        document.getElementById(
+            "email"
+        );
 
-const key =
-document
-.getElementById("key")
-.value
-.trim();
+    const keyInput =
+        document.getElementById(
+            "key"
+        );
 
-if(!email){
 
-alert(
-"Administrator Email Required"
-);
+    const email =
+        emailInput.value
+            .trim()
+            .toLowerCase();
 
-return;
+    const key =
+        keyInput.value
+            .trim();
+
+
+    if(!email){
+
+        alert(
+            "Administrator Email Required"
+        );
+
+        emailInput.focus();
+
+        return;
+
+    }
+
+
+    if(!key){
+
+        alert(
+            "Access Key Required"
+        );
+
+        keyInput.focus();
+
+        return;
+
+    }
+
+
+    btn.disabled =
+        true;
+
+    btn.textContent =
+        "Signing In...";
+
+
+    try{
+
+        const result =
+            await adminLogin({
+
+                email,
+
+                accessKey:key
+
+            });
+
+
+        if(!result?.success){
+
+            alert(
+                result?.error ||
+                "Login failed."
+            );
+
+            return;
+
+        }
+
+
+        /*
+          IMPORTANT:
+          Supabase Auth has already persisted
+          the Admin session.
+
+          No sessionStorage gate.
+        */
+
+        location.replace(
+            "unified-admin-buttons.html"
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN LOGIN]",
+            error
+        );
+
+        alert(
+            error?.message ||
+            "Login failed."
+        );
+
+
+    }finally{
+
+        btn.disabled =
+            false;
+
+        btn.textContent =
+            "Access Control Center";
+
+    }
 
 }
 
-if(!key){
 
-alert(
-"Access Key Required"
-);
+window.login =
+    login;
 
-return;
-
-}
-
-btn.disabled = true;
-
-btn.textContent =
-"Signing In...";
-
-try{
-
-const result =
-await adminLogin({
-
-email,
-
-accessKey:key
-
-});
-
-if(result.error){
-
-alert(result.error);
-
-return;
-
-}
-
-/* Mark successful admin entry */
-
-sessionStorage.setItem(
-
-    "albukhr_admin_entry",
-
-    "granted"
-
-);
-
-location.replace(
-"unified-admin-buttons.html"
-);
-
-}catch(error){
-
-console.error(error);
-
-alert(
-
-error.message ||
-
-"Login failed."
-
-);
-
-}finally{
-
-btn.disabled = false;
-
-btn.textContent =
-"Access Control Center";
-
-}
-
-}
-
-/* ==========================================
-   EXPORT
-========================================== */
-
-window.login = login;
 
 })(window);
