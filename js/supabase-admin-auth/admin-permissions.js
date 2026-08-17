@@ -15,23 +15,21 @@ const TABLE = "admin_permissions";
 
 function getClient(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(
+        typeof window.getAlbukhrAdminSupabaseClient !==
+        "function"
+    ){
 
-        const client =
-        window.getAlbukhrSupabaseClient();
-
-        if(client){
-            return client;
-        }
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not loaded."
+        );
 
     }
 
-    throw new Error(
-        "ALBUKHR Supabase Core not initialized."
-    );
+    return window.getAlbukhrAdminSupabaseClient();
 
 }
-
+   
 /* ==========================================
    GET ROLE PERMISSIONS
 ========================================== */
