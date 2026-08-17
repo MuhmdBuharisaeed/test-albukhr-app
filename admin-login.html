@@ -34,35 +34,24 @@ alt="ALBUKHR Logo">
 <div class="login-card">
 
 <div class="brand">
-
 ALBUKHR • Admin Portal
-
 </div>
 
 <div class="subtitle">
-
 Secure administrator sign in
-
 </div>
 
 <div class="form-group">
 
 <label>
-
 Administrator Email
-
 </label>
 
 <input
-
 id="email"
-
 type="email"
-
 autocomplete="username"
-
 placeholder="Enter administrator email"
-
 >
 
 </div>
@@ -70,29 +59,20 @@ placeholder="Enter administrator email"
 <div class="form-group">
 
 <label>
-
 Access Key
-
 </label>
 
 <input
-
 id="key"
-
 type="password"
-
 autocomplete="current-password"
-
 placeholder="Enter secure access key"
-
 >
 
 </div>
 
 <button
-
 class="login-btn"
-
 onclick="login()">
 
 Access Control Center
@@ -110,13 +90,32 @@ All login activities are monitored.
 
 </div>
 
-<!-- SUPABASE -->
+<!-- =========================================
+     SUPABASE SDK
+========================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="js/auth/supabase-core.js"></script>
+<!-- =========================================
+     ADMIN AUTH SUPABASE CORE
+     
+     IMPORTANT:
+     This page intentionally does NOT load:
+     js/supabase-core.js
 
-<!-- ADMIN AUTH -->
+     Admin authentication uses:
+     js/auth/supabase-auth.js
+
+     because it has:
+       persistSession: true
+       autoRefreshToken: true
+========================================= -->
+
+<script src="js/auth/supabase-auth.js"></script>
+
+<!-- =========================================
+     ADMIN AUTH MODULES
+========================================= -->
 
 <script src="js/supabase-admin-auth/admin-logs.js"></script>
 
