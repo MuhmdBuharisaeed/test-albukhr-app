@@ -1,182 +1,593 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
 
 <title>ALBUKHR – Admin Control Center</title>
 
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/admin/unified-admin-buttons.css">
+
+<!-- =========================================
+     GLOBAL ALBUKHR STYLES
+========================================= -->
+
+<link
+  rel="stylesheet"
+  href="css/style.css"
+>
+
+<link
+  rel="stylesheet"
+  href="css/admin/unified-admin-buttons.css"
+>
+
+
+<!-- =========================================
+     OPTIONAL ADMIN ENVIRONMENT BADGE STYLE
+     
+     Existing CSS remains untouched.
+========================================= -->
+
+<style>
+
+#adminEnvironmentBadge{
+
+  display:inline-flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  margin-left:10px;
+
+  padding:4px 9px;
+
+  border-radius:999px;
+
+  font-size:11px;
+
+  font-weight:700;
+
+  letter-spacing:.5px;
+
+}
+
+#adminEnvironmentBadge[data-environment="mainnet"]{
+
+  background:#0f7a3d;
+
+  color:#fff;
+
+}
+
+#adminEnvironmentBadge[data-environment="testnet"]{
+
+  background:#555;
+
+  color:#fff;
+
+}
+
+</style>
 
 </head>
 
+
 <body>
 
-<!-- CRITICAL ALERT -->
-<div id="criticalAlert" class="critical-alert">
-  ⚠️ CRITICAL SYSTEM RISK DETECTED
+
+<!-- =========================================
+     CRITICAL ALERT
+========================================= -->
+
+<div
+  id="criticalAlert"
+  class="critical-alert"
+  style="display:none;"
+>
+
+⚠️ CRITICAL SYSTEM RISK DETECTED
+
 </div>
 
-<audio id="alertSound">
-  <source src="alert.mp3" type="audio/mpeg">
+
+<!-- =========================================
+     ALERT SOUND
+========================================= -->
+
+<audio
+  id="alertSound"
+  preload="auto"
+>
+
+<source
+  src="alert.mp3"
+  type="audio/mpeg"
+>
+
 </audio>
+
+
+<!-- =========================================
+     HEADER
+========================================= -->
 
 <header class="header">
 
-  <h2>ALBUKHR • Admin Center</h2>
+  <h2>
+    ALBUKHR • Admin Center
+  </h2>
 
-  <div class="role-badge" id="adminRoleBadge"></div>
+
+  <!-- CURRENT ADMIN ROLE -->
+
+  <div
+    class="role-badge"
+    id="adminRoleBadge"
+  ></div>
+
+
+  <!-- CURRENT ENVIRONMENT -->
+
+  <div
+    class="environment-badge"
+    id="adminEnvironmentBadge"
+    aria-label="Current environment"
+  ></div>
 
 </header>
 
+
+<!-- =========================================
+     MAIN CONTAINER
+========================================= -->
+
 <div class="container">
 
-<button class="admin-btn" onclick="go('Albukhr-core-projects-dashboard.html')">
-  🧩 Core Projects Dashboard
-  <span id="coreBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     CORE PROJECTS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('Albukhr-core-projects-dashboard.html')"
+>
+
+🧩 Core Projects Dashboard
+
+<span
+  id="coreBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-dashboard.html')">
-  🏢 Albukhr ecosystem Dashboard
-  <span id="ecosystemBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     ECOSYSTEM DASHBOARD
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('ALBUKHR-ecosystem-dashboard.html')"
+>
+
+🏢 Albukhr Ecosystem Dashboard
+
+<span
+  id="ecosystemBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-dapp-requests.html')">
-  📥 DApp Requests
-  <span id="dappBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     DAPP REQUESTS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-dapp-requests.html')"
+>
+
+📥 DApp Requests
+
+<span
+  id="dappBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-contributors.html')">
-  👥 Contributors Management
-  <span id="contributorsBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     CONTRIBUTORS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-contributors.html')"
+>
+
+👥 Contributors Management
+
+<span
+  id="contributorsBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-transactions.html')">
-  💳 Transactions Monitor
-  <span id="txBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     TRANSACTIONS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-transactions.html')"
+>
+
+💳 Transactions Monitor
+
+<span
+  id="txBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-risk-monitor.html')">
-  ⚠️ Risk Monitor
-  <span id="riskBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     RISK MONITOR
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-risk-monitor.html')"
+>
+
+⚠️ Risk Monitor
+
+<span
+  id="riskBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-internal-projects.html')">
-  🏢 Internal Admin Panel
-  <span id="internalBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     INTERNAL PROJECTS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-internal-projects.html')"
+>
+
+🏢 Internal Admin Panel
+
+<span
+  id="internalBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-external-panel.html')">
-  🌍 External Admin Panel
-  <span id="externalAdminBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     EXTERNAL ADMIN
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-external-panel.html')"
+>
+
+🌍 External Admin Panel
+
+<span
+  id="externalAdminBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-external-dashboard.html')">
-  📊 External Dashboard
-  <span id="externalDashBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     EXTERNAL DASHBOARD
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-external-dashboard.html')"
+>
+
+📊 External Dashboard
+
+<span
+  id="externalDashBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('external-project-view.html')">
-  🔍 External Project Reviews
-  <span id="externalReviewBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     EXTERNAL PROJECT REVIEWS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('external-project-view.html')"
+>
+
+🔍 External Project Reviews
+
+<span
+  id="externalReviewBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('escrow-admin.html')">
-  🔐 Escrow Admin
-  <span id="escrowBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     ESCROW
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('escrow-admin.html')"
+>
+
+🔐 Escrow Admin
+
+<span
+  id="escrowBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('super-admin-dashboard.html')">
-  👑 Super Admin Dashboard
-  <span id="superBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     SUPER ADMIN
+========================================= -->
+
+<button
+  id="superAdminBtn"
+  class="admin-btn"
+  onclick="go('super-admin-dashboard.html')"
+>
+
+👑 Super Admin Dashboard
+
+<span
+  id="superBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-permissions.html')">
-  👁 Admin Permissions
-  <span id="permissionsBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     ADMIN PERMISSIONS
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-permissions.html')"
+>
+
+👁 Admin Permissions
+
+<span
+  id="permissionsBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('admin-wallet.html')">
-  💼 Admin Wallet
-  <span id="walletBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     ADMIN WALLET
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('admin-wallet.html')"
+>
+
+💼 Admin Wallet
+
+<span
+  id="walletBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="admin-btn" onclick="go('ALBUKHR-ecosystem-control-center.html')">
-  🕹 Control Center
-  <span id="controlBadge" class="badge" style="display:none"></span>
+
+<!-- =========================================
+     ECOSYSTEM CONTROL CENTER
+========================================= -->
+
+<button
+  class="admin-btn"
+  onclick="go('ALBUKHR-ecosystem-control-center.html')"
+>
+
+🕹 Control Center
+
+<span
+  id="controlBadge"
+  class="badge"
+  style="display:none"
+></span>
+
 </button>
 
-<button class="logout-btn" onclick="adminLogout()">
-  🚪 Logout
+
+<!-- =========================================
+     LOGOUT
+========================================= -->
+
+<button
+  class="logout-btn"
+  type="button"
+  onclick="adminLogout()"
+>
+
+🚪 Logout
+
 </button>
+
 
 </div>
 
 
-<!-- =========================================
+<!-- ==================================================
      SUPABASE SDK
-========================================= -->
+================================================== -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
 
 
-<!-- =========================================
-     ADMIN AUTH SUPABASE CORE
-     
+<!-- ==================================================
+     ECOSYSTEM SUPABASE CORE
+
+     SOURCE OF TRUTH FOR:
+     - Projects
+     - Treasury
+     - Liquidity
+     - Staking ecosystem
+     - Transactions ecosystem
+
+     DO NOT REPLACE THIS HERE.
+================================================== -->
+
+<script
+  src="js/supabase-core.js">
+</script>
+
+
+<!-- ==================================================
+     DEDICATED ADMIN SUPABASE AUTH CORE
+
      IMPORTANT:
-     DO NOT LOAD js/supabase-core.js HERE.
 
-     Admin authentication uses:
-     js/auth/supabase-auth.js
+     This is NOT the ecosystem core.
 
-     This client has:
+     It exposes:
+       getAlbukhrAdminSupabaseClient()
+
+     It does NOT overwrite:
+       getAlbukhrSupabaseClient()
+
+     Admin Auth:
        persistSession: true
        autoRefreshToken: true
-========================================= -->
+================================================== -->
 
-<script src="js/auth/supabase-auth.js"></script>
-
-
-<!-- =========================================
-     ADMIN SESSION / AUTH
-========================================= -->
-
-<script src="js/supabase-admin-auth/admin-session.js"></script>
-
-<script src="js/supabase-admin-auth/admin-auth.js"></script>
-
-<script src="js/supabase-admin-auth/admin-permissions.js"></script>
+<script
+  src="js/auth/supabase-auth.js">
+</script>
 
 
-<!-- =========================================
+<!-- ==================================================
+     ADMIN SESSION
+================================================== -->
+
+<script
+  src="js/supabase-admin-auth/admin-session.js">
+</script>
+
+
+<!-- ==================================================
+     ADMIN AUTH
+================================================== -->
+
+<script
+  src="js/supabase-admin-auth/admin-auth.js">
+</script>
+
+
+<!-- ==================================================
+     ADMIN PERMISSIONS
+================================================== -->
+
+<script
+  src="js/supabase-admin-auth/admin-permissions.js">
+</script>
+
+
+<!-- ==================================================
      ADMIN BOOTSTRAP
-========================================= -->
+================================================== -->
 
-<script src="js/supabase-admin-auth/admin-bootstrap.js"></script>
+<script
+  src="js/supabase-admin-auth/admin-bootstrap.js">
+</script>
 
 
-<!-- =========================================
+<!-- ==================================================
      EXISTING ENGINES
-     
-     DO NOT RE-ARCHITECT THESE HERE YET.
-     We will audit their dependencies separately
-     before changing their Supabase foundation.
-========================================= -->
 
-<script src="smart-liquidity-engine.js"></script>
+     IMPORTANT:
+     DO NOT RE-ARCHITECT THESE YET.
 
-<script src="js/staking.js"></script>
+     They remain untouched while we audit
+     their dependencies individually.
+================================================== -->
 
-<script src="wallet-core.js"></script>
+<script
+  src="smart-liquidity-engine.js">
+</script>
+
+<script
+  src="js/staking.js">
+</script>
+
+<script
+  src="wallet-core.js">
+</script>
 
 
-<!-- =========================================
+<!-- ==================================================
      UNIFIED ADMIN BUTTONS
-========================================= -->
+================================================== -->
 
-<script src="js/admin/unified-admin-buttons.js"></script>
+<script
+  src="js/admin/unified-admin-buttons.js">
+</script>
+
 
 </body>
-    </html>
+
+  </html>
