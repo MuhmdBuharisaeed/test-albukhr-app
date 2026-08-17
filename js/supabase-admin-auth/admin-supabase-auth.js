@@ -1,6 +1,6 @@
 /* ==========================================
    ALBUKHR ADMIN SUPABASE AUTH CORE
-   Version 2.0
+   Version 2.1
    ISOLATED ADMIN AUTH CLIENT
 
    LOCATION:
@@ -12,6 +12,11 @@
    - Does NOT use js/auth/supabase-auth.js
    - Does NOT modify staking/liquidity/treasury engines
    - Persistent Admin Auth session
+   - Mainnet/Testnet environment awareness
+   - Dedicated Admin Auth storage namespace
+
+   IMPORTANT:
+   This client is ONLY for Admin Authentication.
 ========================================== */
 
 (function(window){
@@ -28,6 +33,14 @@ const ADMIN_SUPABASE_URL =
 
 const ADMIN_SUPABASE_KEY =
     "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
+
+
+/* ==========================================
+   CONSTANTS
+========================================== */
+
+const ADMIN_AUTH_STORAGE_KEY =
+    "albukhr_admin_auth_session";
 
 
 /* ==========================================
@@ -55,7 +68,20 @@ function hasAdminSupabaseSDK(){
 
 
 /* ==========================================
-   ENVIRONMENT
+   ENVIRONMENT RESOLUTION
+==========================================
+
+   Admin environment is resolved from the
+   current ALBUKHR deployment hostname.
+
+   test.albukhr.com
+        → testnet
+
+   app.albukhr.com
+        → mainnet
+
+   Unknown environments are REFUSED.
+
 ========================================== */
 
 function getAlbukhrAdminEnvironment(){
@@ -64,8 +90,13 @@ function getAlbukhrAdminEnvironment(){
         String(
             window.location.hostname || ""
         )
+        .trim()
         .toLowerCase();
 
+
+    /* ==============================
+       TESTNET
+    ============================== */
 
     if(
         hostname === "test.albukhr.com" ||
@@ -77,6 +108,10 @@ function getAlbukhrAdminEnvironment(){
     }
 
 
+    /* ==============================
+       MAINNET
+    ============================== */
+
     if(
         hostname === "app.albukhr.com" ||
         hostname.startsWith("app.")
@@ -87,11 +122,52 @@ function getAlbukhrAdminEnvironment(){
     }
 
 
-    /*
-       Local/dev fallback.
-    */
+    /* ==============================
+       UNKNOWN ENVIRONMENT
+    ============================== */
 
-    return "mainnet";
+    throw new Error(
+        "ALBUKHR Admin environment could not be determined. " +
+        "Admin authentication has been refused for this host."
+    );
+
+}
+
+
+/* ==========================================
+   ADMIN NETWORK
+========================================== */
+
+function getAlbukhrAdminNetwork(){
+
+    return getAlbukhrAdminEnvironment();
+
+}
+
+
+/* ==========================================
+   VALIDATE ADMIN ENVIRONMENT
+========================================== */
+
+function assertAlbukhrAdminEnvironment(){
+
+    const environment =
+        getAlbukhrAdminEnvironment();
+
+
+    if(
+        environment !== "mainnet" &&
+        environment !== "testnet"
+    ){
+
+        throw new Error(
+            "Invalid ALBUKHR Admin environment."
+        );
+
+    }
+
+
+    return true;
 
 }
 
@@ -102,6 +178,10 @@ function getAlbukhrAdminEnvironment(){
 
 function createAlbukhrAdminSupabaseClient(){
 
+    /* --------------------------------------
+       EXISTING CLIENT
+    -------------------------------------- */
+
     if(adminClient){
 
         return adminClient;
@@ -109,11 +189,19 @@ function createAlbukhrAdminSupabaseClient(){
     }
 
 
-    if(!hasAdminSupabaseSDK()){
+    /* --------------------------------------
+       ENVIRONMENT CHECK
+    -------------------------------------- */
+
+    try{
+
+        assertAlbukhrAdminEnvironment();
+
+    }catch(error){
 
         adminInitError =
-            "Supabase SDK not found. " +
-            "Load @supabase/supabase-js first.";
+            error?.message ||
+            "ALBUKHR Admin environment unavailable.";
 
         console.error(
             "[ADMIN AUTH CORE]",
@@ -124,6 +212,31 @@ function createAlbukhrAdminSupabaseClient(){
 
     }
 
+
+    /* --------------------------------------
+       SDK CHECK
+    -------------------------------------- */
+
+    if(!hasAdminSupabaseSDK()){
+
+        adminInitError =
+            "Supabase SDK not found. " +
+            "Load @supabase/supabase-js before " +
+            "admin-supabase-auth.js.";
+
+        console.error(
+            "[ADMIN AUTH CORE]",
+            adminInitError
+        );
+
+        return null;
+
+    }
+
+
+    /* --------------------------------------
+       CREATE CLIENT
+    -------------------------------------- */
 
     try{
 
@@ -139,8 +252,13 @@ function createAlbukhrAdminSupabaseClient(){
                     auth:{
 
                         /*
-                           Admin authentication requires
-                           persistent Supabase Auth session.
+                           Admin Auth requires a
+                           persistent session.
+
+                           This is intentional.
+
+                           It is NOT application
+                           LocalStorage state.
                         */
 
                         persistSession:true,
@@ -152,13 +270,12 @@ function createAlbukhrAdminSupabaseClient(){
                         /*
                            Dedicated storage namespace.
 
-                           This prevents the Admin Auth
-                           session from colliding with
+                           Prevents collision with
                            other Supabase clients.
                         */
 
                         storageKey:
-                            "albukhr_admin_auth_session"
+                            ADMIN_AUTH_STORAGE_KEY
 
                     }
 
@@ -186,9 +303,11 @@ function createAlbukhrAdminSupabaseClient(){
 
     }catch(error){
 
+        adminClient = null;
+
         adminInitError =
             error?.message ||
-            "Failed to create Admin Supabase client.";
+            "Failed to create ALBUKHR Admin Supabase client.";
 
         console.error(
             "[ADMIN AUTH CORE]",
@@ -214,6 +333,7 @@ function getAlbukhrAdminSupabaseClient(){
 
     }
 
+
     return createAlbukhrAdminSupabaseClient();
 
 }
@@ -232,8 +352,12 @@ function requireAlbukhrAdminSupabaseClient(){
     if(!client){
 
         throw new Error(
+
             adminInitError ||
-            "ALBUKHR Admin Supabase Auth Core not initialized."
+
+            "ALBUKHR Admin Supabase Auth Core " +
+            "not initialized."
+
         );
 
     }
@@ -245,25 +369,45 @@ function requireAlbukhrAdminSupabaseClient(){
 
 
 /* ==========================================
-   ADMIN NETWORK
-========================================== */
-
-function getAlbukhrAdminNetwork(){
-
-    return getAlbukhrAdminEnvironment();
-
-}
-
-
-/* ==========================================
-   HEALTH
+   ADMIN AUTH HEALTH
 ========================================== */
 
 function albukhrAdminSupabaseHealth(){
 
+    let environment = null;
+
+    let environmentError = null;
+
+
+    /* --------------------------------------
+       ENVIRONMENT
+    -------------------------------------- */
+
+    try{
+
+        environment =
+            getAlbukhrAdminEnvironment();
+
+    }catch(error){
+
+        environmentError =
+            error?.message ||
+            "Admin environment unavailable.";
+
+    }
+
+
+    /* --------------------------------------
+       CLIENT
+    -------------------------------------- */
+
     const client =
         getAlbukhrAdminSupabaseClient();
 
+
+    /* --------------------------------------
+       HEALTH RESULT
+    -------------------------------------- */
 
     return {
 
@@ -277,10 +421,13 @@ function albukhrAdminSupabaseHealth(){
             !!client,
 
         environment:
-            getAlbukhrAdminEnvironment(),
+            environment,
 
         network:
-            getAlbukhrAdminNetwork(),
+            environment,
+
+        environment_ready:
+            !!environment,
 
         url:
             ADMIN_SUPABASE_URL,
@@ -288,8 +435,17 @@ function albukhrAdminSupabaseHealth(){
         key_present:
             !!ADMIN_SUPABASE_KEY,
 
+        storage_key:
+            ADMIN_AUTH_STORAGE_KEY,
+
+        persistent_session:
+            true,
+
         init_error:
-            adminInitError || null
+            adminInitError || null,
+
+        environment_error:
+            environmentError
 
     };
 
@@ -297,7 +453,69 @@ function albukhrAdminSupabaseHealth(){
 
 
 /* ==========================================
-   EXPORT
+   ADMIN AUTH READY CHECK
+========================================== */
+
+function isAlbukhrAdminSupabaseReady(){
+
+    return !!(
+        getAlbukhrAdminSupabaseClient()
+    );
+
+}
+
+
+/* ==========================================
+   VERIFY ADMIN AUTH CORE
+========================================== */
+
+function verifyAlbukhrAdminAuthCore(){
+
+    const health =
+        albukhrAdminSupabaseHealth();
+
+
+    if(
+        !health.ready
+    ){
+
+        console.error(
+            "❌ ALBUKHR ADMIN AUTH CORE FAILED",
+            health
+        );
+
+        return false;
+
+    }
+
+
+    if(
+        !health.environment_ready
+    ){
+
+        console.error(
+            "❌ ALBUKHR ADMIN ENVIRONMENT FAILED",
+            health
+        );
+
+        return false;
+
+    }
+
+
+    console.log(
+        "✅ ALBUKHR ADMIN AUTH CORE VERIFIED",
+        health
+    );
+
+
+    return true;
+
+}
+
+
+/* ==========================================
+   EXPORT CONFIG
 ========================================== */
 
 window.ALBUKHR_ADMIN_SUPABASE_URL =
@@ -308,6 +526,10 @@ window.ALBUKHR_ADMIN_SUPABASE_KEY =
     ADMIN_SUPABASE_KEY;
 
 
+/* ==========================================
+   EXPORT ENVIRONMENT
+========================================== */
+
 window.getAlbukhrAdminEnvironment =
     getAlbukhrAdminEnvironment;
 
@@ -315,6 +537,14 @@ window.getAlbukhrAdminEnvironment =
 window.getAlbukhrAdminNetwork =
     getAlbukhrAdminNetwork;
 
+
+window.assertAlbukhrAdminEnvironment =
+    assertAlbukhrAdminEnvironment;
+
+
+/* ==========================================
+   EXPORT CLIENT
+========================================== */
 
 window.getAlbukhrAdminSupabaseClient =
     getAlbukhrAdminSupabaseClient;
@@ -325,17 +555,19 @@ window.requireAlbukhrAdminSupabaseClient =
 
 
 window.isAlbukhrAdminSupabaseReady =
-    function(){
+    isAlbukhrAdminSupabaseReady;
 
-        return !!(
-            getAlbukhrAdminSupabaseClient()
-        );
 
-    };
-
+/* ==========================================
+   EXPORT HEALTH
+========================================== */
 
 window.albukhrAdminSupabaseHealth =
     albukhrAdminSupabaseHealth;
+
+
+window.verifyAlbukhrAdminAuthCore =
+    verifyAlbukhrAdminAuthCore;
 
 
 /* ==========================================
@@ -351,32 +583,13 @@ createAlbukhrAdminSupabaseClient();
 
 try{
 
-    const health =
-        albukhrAdminSupabaseHealth();
-
-
-    if(
-        health.ready
-    ){
-
-        console.log(
-            "✅ ADMIN AUTH CORE VERIFIED",
-            health
-        );
-
-    }else{
-
-        console.error(
-            "❌ ADMIN AUTH CORE FAILED",
-            health
-        );
-
-    }
+    verifyAlbukhrAdminAuthCore();
 
 }catch(error){
 
     console.error(
-        "❌ ADMIN AUTH CORE VERIFICATION FAILED",
+        "❌ ALBUKHR ADMIN AUTH CORE " +
+        "VERIFICATION FAILED",
         error
     );
 
