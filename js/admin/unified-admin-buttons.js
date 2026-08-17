@@ -10,21 +10,36 @@
 
    PURPOSE:
    - Unified Admin Control Center
-   - Use Admin Bootstrap as source of truth
+   - Admin Bootstrap is the ONLY authentication
+     source of truth
    - Role detection
    - Permission-aware buttons
    - Admin alerts
    - Critical risk monitoring
    - MAINNET / TESTNET awareness
-   - No second Admin authentication flow
 
-   IMPORTANT:
-   This engine does NOT modify:
-   - staking engines
-   - treasury engines
-   - liquidity engines
-   - transaction engines
-   - ecosystem Supabase Core
+   IMPORTANT SECURITY RULE:
+
+   THIS ENGINE DOES NOT:
+   - create another Supabase client
+   - perform another Admin login
+   - sign out Admin
+   - redirect to login because of a
+     permission/database/runtime error
+   - use LocalStorage as authentication state
+   - use sessionStorage as authentication state
+
+   AUTHENTICATION AUTHORITY:
+       admin-bootstrap.js
+
+   AUTHORIZATION AUTHORITY:
+       admin-permissions.js
+
+   SESSION AUTHORITY:
+       admin-session.js
+
+   SUPABASE CLIENT AUTHORITY:
+       admin-supabase-auth.js
 ========================================= */
 
 (function(window){
@@ -51,11 +66,6 @@ const ADMIN_ROLES = [
 
 /* =========================================
    BUTTON PERMISSIONS
-
-   These are UI access rules.
-
-   Database permissions remain the
-   final authorization source.
 ========================================= */
 
 const BUTTON_PERMISSIONS = {
@@ -281,18 +291,15 @@ function safeNumber(
 
 /* =========================================
    ADMIN ENVIRONMENT
-=========================================
-
-   IMPORTANT:
-   Admin Auth Core is authoritative.
-
-   We do not create a second network
-   resolution system here.
 ========================================= */
 
 function getAdminEnvironment(){
 
     try{
+
+        /*
+           Admin Auth Core is authoritative.
+        */
 
         if(
             typeof window.getAlbukhrAdminEnvironment ===
@@ -317,7 +324,7 @@ function getAdminEnvironment(){
     }catch(error){
 
         console.warn(
-            "[UNIFIED ADMIN] Admin environment lookup failed:",
+            "[UNIFIED ADMIN] Environment lookup failed:",
             error
         );
 
@@ -325,7 +332,8 @@ function getAdminEnvironment(){
 
 
     /*
-       Fallback only.
+       Fallback only for UI display.
+       This fallback NEVER authenticates Admin.
     */
 
     const hostname =
@@ -360,6 +368,10 @@ function getAdminEnvironment(){
 }
 
 
+window.getAdminEnvironment =
+    getAdminEnvironment;
+
+
 /* =========================================
    CURRENT ENVIRONMENT
 ========================================= */
@@ -371,8 +383,8 @@ function getCurrentAdminEnvironment(){
 }
 
 
-window.getAdminEnvironment =
-    getAdminEnvironment;
+window.getCurrentAdminEnvironment =
+    getCurrentAdminEnvironment;
 
 
 /* =========================================
@@ -388,14 +400,22 @@ function getAdminNetwork(){
             "function"
         ){
 
-            return window.getAlbukhrAdminNetwork();
+            const network =
+                window.getAlbukhrAdminNetwork();
+
+
+            if(network){
+
+                return network;
+
+            }
 
         }
 
     }catch(error){
 
         console.warn(
-            "[UNIFIED ADMIN] Admin network lookup failed:",
+            "[UNIFIED ADMIN] Network lookup failed:",
             error
         );
 
@@ -427,11 +447,28 @@ window.ALBUKHR_ADMIN_NETWORK =
    GET BOOTSTRAPPED ADMIN
 ========================================= */
 
+/*
+   CRITICAL ARCHITECTURE:
+
+   This function MUST NOT call:
+
+       getCurrentAdmin()
+
+   as an authentication fallback.
+
+   Bootstrap is the source of truth.
+
+   If Bootstrap has failed because of a
+   database/network error, we return null
+   WITHOUT redirecting.
+
+   The caller must inspect Admin state.
+========================================= */
+
 async function getUnifiedAdmin(){
 
     /*
-       PRIMARY SOURCE:
-       Admin Bootstrap.
+       Bootstrap already completed.
     */
 
     if(
@@ -446,8 +483,8 @@ async function getUnifiedAdmin(){
 
 
     /*
-       If bootstrap has not completed yet,
-       wait for it.
+       Bootstrap is available but has not
+       completed yet.
     */
 
     if(
@@ -464,7 +501,7 @@ async function getUnifiedAdmin(){
             if(
                 ready &&
                 window.Admin &&
-                window.Admin.ready &&
+                window.Admin.ready === true &&
                 window.Admin.profile
             ){
 
@@ -475,7 +512,7 @@ async function getUnifiedAdmin(){
         }catch(error){
 
             console.warn(
-                "[UNIFIED ADMIN] Bootstrap failed:",
+                "[UNIFIED ADMIN] Bootstrap initialization failed:",
                 error
             );
 
@@ -485,29 +522,13 @@ async function getUnifiedAdmin(){
 
 
     /*
-       Final compatibility fallback.
+       IMPORTANT:
+
+       NO getCurrentAdmin() fallback here.
+
+       That old fallback was one of the
+       possible self-lockout paths.
     */
-
-    if(
-        typeof window.getCurrentAdmin ===
-        "function"
-    ){
-
-        try{
-
-            return await window.getCurrentAdmin();
-
-        }catch(error){
-
-            console.warn(
-                "[UNIFIED ADMIN] Session fallback failed:",
-                error
-            );
-
-        }
-
-    }
-
 
     return null;
 
@@ -528,13 +549,9 @@ function getUnifiedAdminRole(
 
     if(!admin){
 
-        /*
-           Try Bootstrap state.
-        */
-
         if(
             window.Admin &&
-            window.Admin.ready
+            window.Admin.ready === true
         ){
 
             return safeString(
@@ -597,9 +614,25 @@ window.isAllowedAdminRole =
    REQUIRE ROLE
 ========================================= */
 
+/*
+   Compatibility helper only.
+
+   IMPORTANT:
+
+   A missing Admin here is NOT converted
+   into an automatic login redirect.
+
+   Authentication remains owned by
+   admin-bootstrap.js / admin-guard.js.
+========================================= */
+
 async function requireRole(
     roles = []
 ){
+
+    /*
+       First use Bootstrap.
+    */
 
     const admin =
         await getUnifiedAdmin();
@@ -607,8 +640,8 @@ async function requireRole(
 
     if(!admin){
 
-        window.location.replace(
-            "admin-login.html"
+        console.warn(
+            "[UNIFIED ADMIN] Admin state is not ready."
         );
 
         return null;
@@ -617,7 +650,9 @@ async function requireRole(
 
 
     const role =
-        getUnifiedAdminRole(admin);
+        getUnifiedAdminRole(
+            admin
+        );
 
 
     const allowed =
@@ -644,26 +679,14 @@ async function requireRole(
         );
 
 
-        if(
-            typeof window.adminLogout ===
-            "function"
-        ){
+        /*
+           IMPORTANT:
 
-            try{
+           Do NOT call adminLogout() here.
 
-                await window.adminLogout();
-
-            }catch(error){
-
-                console.warn(
-                    "[UNIFIED ADMIN] Logout failed:",
-                    error
-                );
-
-            }
-
-        }
-
+           Role denial is authorization denial,
+           not necessarily an authentication failure.
+        */
 
         return null;
 
@@ -703,7 +726,7 @@ async function checkPermission(
 
 
     /*
-       Bootstrap state is preferred.
+       Bootstrap state is authoritative.
     */
 
     if(
@@ -743,18 +766,37 @@ async function checkPermission(
 
 
         const normalized =
-            permissions.map(
-                item =>
-                    typeof item === "string"
-                        ? item.trim().toLowerCase()
-                        : safeString(
+            permissions
+
+                .map(
+                    item => {
+
+                        if(
+                            typeof item ===
+                            "string"
+                        ){
+
+                            return item;
+
+                        }
+
+
+                        return safeString(
                             item?.permission,
                             ""
-                        )
-                        .trim()
-                        .toLowerCase()
-            )
-            .filter(Boolean);
+                        );
+
+                    }
+                )
+
+                .map(
+                    item =>
+                        item
+                            .trim()
+                            .toLowerCase()
+                )
+
+                .filter(Boolean);
 
 
         if(
@@ -767,43 +809,38 @@ async function checkPermission(
 
 
         if(
-            normalized.includes(required)
+            normalized.includes(
+                required
+            )
         ){
 
             return true;
 
         }
 
+
+        /*
+           Bootstrap is ready and the
+           permission is not present.
+
+           Return false.
+
+           Do not make another database
+           authentication flow.
+        */
+
+        return false;
+
     }
 
 
     /*
-       Database permission engine fallback.
+       Bootstrap is NOT ready.
+
+       Do NOT fall back to another Auth flow.
+
+       Deny UI access safely.
     */
-
-    if(
-        typeof window.hasPermission ===
-        "function"
-    ){
-
-        try{
-
-            return await window.hasPermission(
-                required
-            );
-
-        }catch(error){
-
-            console.warn(
-                "[UNIFIED ADMIN] Permission check failed:",
-                required,
-                error
-            );
-
-        }
-
-    }
-
 
     return false;
 
@@ -876,7 +913,7 @@ async function canUseButton(
     if(!permissions){
 
         /*
-           Deny unknown buttons.
+           Unknown button = deny.
         */
 
         return false;
@@ -885,22 +922,29 @@ async function canUseButton(
 
 
     /*
-       Super Admin button specifically
-       requires super_admin.
+       Super Admin only.
     */
 
     if(
         permissions.includes("*")
     ){
 
-        const admin =
-            await getUnifiedAdmin();
+        if(
+            window.Admin &&
+            window.Admin.ready === true
+        ){
+
+            return (
+                getUnifiedAdminRole(
+                    window.Admin.profile
+                ) ===
+                "super_admin"
+            );
+
+        }
 
 
-        return (
-            getUnifiedAdminRole(admin) ===
-            "super_admin"
-        );
+        return false;
 
     }
 
@@ -921,6 +965,29 @@ window.canUseButton =
 ========================================= */
 
 async function applyButtonPermissions(){
+
+    /*
+       If Admin Bootstrap is not ready,
+       fail closed.
+
+       We do not redirect.
+    */
+
+    if(
+        !(
+            window.Admin &&
+            window.Admin.ready === true
+        )
+    ){
+
+        console.warn(
+            "[UNIFIED ADMIN] Cannot apply button permissions before Admin Bootstrap is ready."
+        );
+
+        return false;
+
+    }
+
 
     for(
         const [
@@ -988,6 +1055,9 @@ async function applyButtonPermissions(){
         }
 
     }
+
+
+    return true;
 
 }
 
@@ -1064,8 +1134,7 @@ function renderEnvironmentBadge(){
 
 
     badge.innerText =
-        environment
-            .toUpperCase();
+        environment.toUpperCase();
 
 
     badge.dataset.environment =
@@ -1162,11 +1231,14 @@ async function updateTxBadge(){
         transactions.filter(
             tx =>
                 tx &&
-                tx.flag === "risk"
+                tx.flag ===
+                "risk"
         );
 
 
-    if(risky.length){
+    if(
+        risky.length
+    ){
 
         badge.style.display =
             "inline-block";
@@ -1182,6 +1254,10 @@ async function updateTxBadge(){
     }
 
 }
+
+
+window.updateTxBadge =
+    updateTxBadge;
 
 
 /* =========================================
@@ -1263,8 +1339,12 @@ async function updateWalletBadge(){
 }
 
 
+window.updateWalletBadge =
+    updateWalletBadge;
+
+
 /* =========================================
-   LEGACY STORAGE KEY
+   NETWORK STORAGE KEY
 ========================================= */
 
 function getNetworkStorageKey(
@@ -1280,6 +1360,10 @@ function getNetworkStorageKey(
     );
 
 }
+
+
+window.getNetworkStorageKey =
+    getNetworkStorageKey;
 
 
 /* =========================================
@@ -1344,11 +1428,13 @@ function updateExternalBadge(){
             project =>
                 project &&
                 project.status ===
-                    "pending"
+                "pending"
         );
 
 
-    if(pending.length){
+    if(
+        pending.length
+    ){
 
         badge.style.display =
             "inline-block";
@@ -1364,6 +1450,10 @@ function updateExternalBadge(){
     }
 
 }
+
+
+window.updateExternalBadge =
+    updateExternalBadge;
 
 
 /* =========================================
@@ -1431,7 +1521,9 @@ function updateDappBadge(){
         );
 
 
-    if(pending.length){
+    if(
+        pending.length
+    ){
 
         badge.style.display =
             "inline-block";
@@ -1447,6 +1539,10 @@ function updateDappBadge(){
     }
 
 }
+
+
+window.updateDappBadge =
+    updateDappBadge;
 
 
 /* =========================================
@@ -1483,11 +1579,22 @@ async function updateRiskBadgeSafe(){
 }
 
 
+window.updateRiskBadgeSafe =
+    updateRiskBadgeSafe;
+
+
 /* =========================================
    UNIFIED ALERT ENGINE
 ========================================= */
 
 async function updateAdminAlerts(){
+
+    /*
+       Alert engines do not control
+       authentication.
+
+       Any failure is swallowed safely.
+    */
 
     await Promise.allSettled([
 
@@ -1738,7 +1845,9 @@ async function initializeUnifiedAdminButtons(){
        Prevent duplicate initialization.
     */
 
-    if(unifiedInitialization){
+    if(
+        unifiedInitialization
+    ){
 
         return unifiedInitialization;
 
@@ -1748,49 +1857,81 @@ async function initializeUnifiedAdminButtons(){
     unifiedInitialization =
         (async function(){
 
-            /*
-               IMPORTANT:
-
-               Wait for Admin Bootstrap first.
-               This eliminates the previous race
-               between Bootstrap and Unified Admin.
-            */
+            /* ==============================
+               WAIT FOR ADMIN BOOTSTRAP
+            ============================== */
 
             if(
-                typeof window.initializeAdmin ===
+                typeof window.initializeAdmin !==
                 "function"
             ){
 
-                const ready =
-                    await window.initializeAdmin();
-
-
-                if(!ready){
-
-                    return false;
-
-                }
-
-            }
-
-
-            /* ==============================
-               GET BOOTSTRAPPED ADMIN
-            ============================== */
-
-            const admin =
-                await getUnifiedAdmin();
-
-
-            if(!admin){
-
-                window.location.replace(
-                    "admin-login.html"
+                console.error(
+                    "[UNIFIED ADMIN] Admin Bootstrap Engine is not loaded."
                 );
 
                 return false;
 
             }
+
+
+            const bootstrapReady =
+                await window.initializeAdmin();
+
+
+            /*
+               IMPORTANT:
+
+               If Bootstrap returns false,
+               DO NOT redirect.
+
+               Bootstrap may have failed because
+               of database/network/runtime errors.
+
+               Only Bootstrap itself controls
+               authentication redirects.
+            */
+
+            if(
+                !bootstrapReady
+            ){
+
+                console.warn(
+                    "[UNIFIED ADMIN] Admin Bootstrap is not ready."
+                );
+
+                return false;
+
+            }
+
+
+            /* ==============================
+               VERIFY FINAL BOOTSTRAP STATE
+            ============================== */
+
+            if(
+                !(
+                    window.Admin &&
+                    window.Admin.ready === true &&
+                    window.Admin.profile
+                )
+            ){
+
+                console.warn(
+                    "[UNIFIED ADMIN] Bootstrap returned success but Admin state is incomplete."
+                );
+
+                return false;
+
+            }
+
+
+            /* ==============================
+               GET ADMIN
+            ============================== */
+
+            const admin =
+                window.Admin.profile;
 
 
             /* ==============================
@@ -1809,30 +1950,23 @@ async function initializeUnifiedAdminButtons(){
                 )
             ){
 
-                alert(
-                    "You are not authorized to access the Admin Control Center."
+                /*
+                   This is authorization/UI
+                   restriction, NOT session
+                   invalidation.
+
+                   Do NOT logout automatically.
+                */
+
+                console.warn(
+                    "[UNIFIED ADMIN] Unsupported Admin role:",
+                    role
                 );
 
 
-                if(
-                    typeof window.adminLogout ===
-                    "function"
-                ){
-
-                    try{
-
-                        await window.adminLogout();
-
-                    }catch(error){
-
-                        console.warn(
-                            "[UNIFIED ADMIN] Logout failed:",
-                            error
-                        );
-
-                    }
-
-                }
+                alert(
+                    "You are not authorized to access the Admin Control Center."
+                );
 
 
                 return false;
@@ -1878,7 +2012,7 @@ async function initializeUnifiedAdminButtons(){
 
 
             /* ==============================
-               CURRENT ADMIN
+               CURRENT ADMIN STATE
             ============================== */
 
             window.ALBUKHR_CURRENT_ADMIN =
@@ -1896,6 +2030,10 @@ async function initializeUnifiedAdminButtons(){
             window.ALBUKHR_CURRENT_ADMIN_NETWORK =
                 getAdminNetwork();
 
+
+            /* ==============================
+               READY
+            ============================== */
 
             console.log(
                 "✅ ALBUKHR Unified Admin Buttons Ready"
@@ -1941,8 +2079,8 @@ async function initializeUnifiedAdminButtons(){
     }finally{
 
         /*
-           Allow retry after a failed
-           initialization.
+           Retry is allowed if Bootstrap is
+           not ready.
         */
 
         if(
@@ -1987,13 +2125,6 @@ function startUnifiedAdmin(){
 }
 
 
-/*
-   Bootstrap itself also starts on DOMContentLoaded.
-
-   We therefore wait one microtask after DOM
-   readiness before starting Unified Admin.
-*/
-
 if(
     document.readyState ===
     "loading"
@@ -2004,6 +2135,12 @@ if(
         "DOMContentLoaded",
 
         function(){
+
+            /*
+               Give Bootstrap its own
+               DOMContentLoaded initialization
+               cycle first.
+            */
 
             setTimeout(
                 startUnifiedAdmin,
@@ -2039,8 +2176,8 @@ setInterval(
         try{
 
             /*
-               Do not refresh if Admin is
-               no longer authenticated.
+               Only operate when Bootstrap
+               confirms Admin is ready.
             */
 
             if(
