@@ -4,7 +4,9 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
 
 <title>ALBUKHR Admin Access</title>
 
@@ -16,8 +18,6 @@
 
 <body>
 
-<!-- HEADER -->
-
 <header class="header">
 
 <img
@@ -27,7 +27,6 @@ alt="ALBUKHR Logo">
 
 </header>
 
-<!-- LOGIN -->
 
 <div class="login-wrap">
 
@@ -41,9 +40,10 @@ ALBUKHR • Admin Portal
 Secure administrator sign in
 </div>
 
+
 <div class="form-group">
 
-<label>
+<label for="email">
 Administrator Email
 </label>
 
@@ -56,9 +56,10 @@ placeholder="Enter administrator email"
 
 </div>
 
+
 <div class="form-group">
 
-<label>
+<label for="key">
 Access Key
 </label>
 
@@ -71,13 +72,16 @@ placeholder="Enter secure access key"
 
 </div>
 
+
 <button
+type="button"
 class="login-btn"
 onclick="login()">
 
 Access Control Center
 
 </button>
+
 
 <div class="note">
 
@@ -90,30 +94,25 @@ All login activities are monitored.
 
 </div>
 
-<!-- =========================================
+
+<!-- ========================================
      SUPABASE SDK
 ========================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- =========================================
-     ADMIN AUTH SUPABASE CORE
-     
+
+<!-- ========================================
+     DEDICATED ADMIN AUTH CORE
+
      IMPORTANT:
-     This page intentionally does NOT load:
-     js/supabase-core.js
-
-     Admin authentication uses:
-     js/auth/supabase-auth.js
-
-     because it has:
-       persistSession: true
-       autoRefreshToken: true
+     Do NOT load js/supabase-core.js here.
 ========================================= -->
 
-<script src="js/auth/supabase-auth.js"></script>
+<script src="js/auth/admin-supabase-auth.js"></script>
 
-<!-- =========================================
+
+<!-- ========================================
      ADMIN AUTH MODULES
 ========================================= -->
 
@@ -124,6 +123,7 @@ All login activities are monitored.
 <script src="js/supabase-admin-auth/admin-auth.js"></script>
 
 <script src="js/supabase-admin-auth/admin-login.js"></script>
+
 
 </body>
 
