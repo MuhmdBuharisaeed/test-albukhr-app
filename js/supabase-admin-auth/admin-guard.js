@@ -1,7 +1,30 @@
 /* ==========================================
    ALBUKHR ADMIN GUARD ENGINE
-   Version 2.0
+   Version 2.1
    ISOLATED ADMIN AUTH COMPATIBILITY
+
+   LOCATION:
+   js/supabase-admin-auth/admin-guard.js
+
+   DEPENDS ON:
+   - admin-supabase-auth.js
+   - admin-session.js
+   - admin-permissions.js (for permission guards)
+
+   PURPOSE:
+   - Protect Admin pages
+   - Verify active Admin session
+   - Verify Admin roles
+   - Verify Admin permissions
+   - Prevent unauthorized access
+
+   IMPORTANT:
+   - Does NOT use js/supabase-core.js
+   - Does NOT use js/auth/supabase-auth.js
+   - Does NOT use LocalStorage
+   - Does NOT use sessionStorage
+   - Does NOT modify other ALBUKHR engines
+   - Does NOT overwrite window.requireRole
 ========================================== */
 
 (function(window){
@@ -16,10 +39,14 @@
 function redirect(url){
 
     if(!url){
+
         return;
+
     }
 
-    window.location.replace(url);
+    window.location.replace(
+        url
+    );
 
 }
 
@@ -32,7 +59,9 @@ function accessDenied(
     message = "Access denied."
 ){
 
-    alert(message);
+    alert(
+        message
+    );
 
     redirect(
         "unified-admin-buttons.html"
@@ -50,8 +79,8 @@ async function getGuardAdmin(){
     try{
 
         /*
-          admin-session.js
-          must provide getCurrentAdmin()
+           admin-session.js is the
+           single source for current Admin.
         */
 
         if(
@@ -65,15 +94,18 @@ async function getGuardAdmin(){
 
         }
 
+
         const admin =
             await window.getCurrentAdmin();
 
+
         return admin || null;
+
 
     }catch(error){
 
         console.error(
-            "[ADMIN GUARD]",
+            "[ADMIN GUARD] Current admin lookup failed:",
             error
         );
 
@@ -93,6 +125,7 @@ async function requireAdmin(){
     const admin =
         await getGuardAdmin();
 
+
     if(!admin){
 
         redirect(
@@ -103,6 +136,7 @@ async function requireAdmin(){
 
     }
 
+
     return admin;
 
 }
@@ -112,13 +146,16 @@ async function requireAdmin(){
    NORMALIZE ROLE
 ========================================== */
 
-function normalizeRole(admin){
+function normalizeRole(
+    admin
+){
 
     if(!admin){
 
         return "";
 
     }
+
 
     return String(
         admin.role_code ??
@@ -142,14 +179,19 @@ async function requireGuardRole(
     const admin =
         await requireAdmin();
 
+
     if(!admin){
 
         return false;
 
     }
 
+
     const currentRole =
-        normalizeRole(admin);
+        normalizeRole(
+            admin
+        );
+
 
     const requiredRole =
         String(
@@ -158,8 +200,29 @@ async function requireGuardRole(
         .trim()
         .toLowerCase();
 
+
+    /*
+       Empty role must never pass.
+    */
+
+    if(!requiredRole){
+
+        console.error(
+            "[ADMIN GUARD] Required role is empty."
+        );
+
+        accessDenied(
+            "Invalid Admin role requirement."
+        );
+
+        return false;
+
+    }
+
+
     if(
-        currentRole !== requiredRole
+        currentRole !==
+        requiredRole
     ){
 
         accessDenied(
@@ -169,6 +232,7 @@ async function requireGuardRole(
         return false;
 
     }
+
 
     return true;
 
@@ -186,28 +250,88 @@ async function requireAnyRole(
     const admin =
         await requireAdmin();
 
+
     if(!admin){
 
         return false;
 
     }
 
+
     if(!Array.isArray(roles)){
 
-        roles = [roles];
+        roles = [
+            roles
+        ];
 
     }
 
+
+    /*
+       Empty role list must deny.
+    */
+
+    if(!roles.length){
+
+        console.error(
+            "[ADMIN GUARD] No allowed roles supplied."
+        );
+
+        accessDenied(
+            "No authorized Admin role was specified."
+        );
+
+        return false;
+
+    }
+
+
     const currentRole =
-        normalizeRole(admin);
+        normalizeRole(
+            admin
+        );
+
+
+    if(!currentRole){
+
+        accessDenied(
+            "Administrator role could not be verified."
+        );
+
+        return false;
+
+    }
+
 
     const allowedRoles =
-        roles.map(
-            role =>
-                String(role)
+        roles
+
+            .map(
+                role =>
+                    String(
+                        role ?? ""
+                    )
                     .trim()
                     .toLowerCase()
+            )
+
+            .filter(Boolean);
+
+
+    if(!allowedRoles.length){
+
+        console.error(
+            "[ADMIN GUARD] Allowed role list is empty."
         );
+
+        accessDenied(
+            "No authorized Admin role was specified."
+        );
+
+        return false;
+
+    }
+
 
     if(
         !allowedRoles.includes(
@@ -222,6 +346,7 @@ async function requireAnyRole(
         return false;
 
     }
+
 
     return true;
 
@@ -239,7 +364,31 @@ async function requirePermission(
     const admin =
         await requireAdmin();
 
+
     if(!admin){
+
+        return false;
+
+    }
+
+
+    const requiredPermission =
+        String(
+            permission ?? ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if(!requiredPermission){
+
+        console.error(
+            "[ADMIN GUARD] Permission requirement is empty."
+        );
+
+        accessDenied(
+            "Invalid Admin permission requirement."
+        );
 
         return false;
 
@@ -268,8 +417,9 @@ async function requirePermission(
 
         const allowed =
             await window.hasPermission(
-                permission
+                requiredPermission
             );
+
 
         if(!allowed){
 
@@ -281,7 +431,9 @@ async function requirePermission(
 
         }
 
+
         return true;
+
 
     }catch(error){
 
@@ -312,17 +464,38 @@ async function requirePermissions(
     const admin =
         await requireAdmin();
 
+
     if(!admin){
 
         return false;
 
     }
 
+
     if(!Array.isArray(permissions)){
 
         permissions = [
             permissions
         ];
+
+    }
+
+
+    /*
+       Empty permission list must deny.
+    */
+
+    if(!permissions.length){
+
+        console.error(
+            "[ADMIN GUARD] No permissions supplied."
+        );
+
+        accessDenied(
+            "No required Admin permissions were specified."
+        );
+
+        return false;
 
     }
 
@@ -350,12 +523,36 @@ async function requirePermissions(
         of permissions
     ){
 
+        const requiredPermission =
+            String(
+                permission ?? ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        if(!requiredPermission){
+
+            console.error(
+                "[ADMIN GUARD] Empty permission detected."
+            );
+
+            accessDenied(
+                "Invalid permission requirement."
+            );
+
+            return false;
+
+        }
+
+
         try{
 
             const allowed =
                 await window.hasPermission(
-                    permission
+                    requiredPermission
                 );
+
 
             if(!allowed){
 
@@ -367,11 +564,12 @@ async function requirePermissions(
 
             }
 
+
         }catch(error){
 
             console.error(
                 "[ADMIN GUARD] Permission failed:",
-                permission,
+                requiredPermission,
                 error
             );
 
@@ -385,57 +583,53 @@ async function requirePermissions(
 
     }
 
+
     return true;
 
 }
 
 
 /* ==========================================
-   REQUIRE SUPER ADMIN
+   REQUIRE ANY PERMISSION
 ========================================== */
 
-async function requireSuperAdmin(){
+async function requireAnyPermission(
+    permissions = []
+){
 
-    return await requireGuardRole(
-        "super_admin"
-    );
-
-}
-
-
-/* ==========================================
-   EXPORT
-========================================== */
-
-/*
-   IMPORTANT:
-
-   We deliberately DO NOT overwrite:
-
-       window.requireRole
-
-   because unified-admin-buttons.js
-   already owns that compatibility helper.
-*/
+    const admin =
+        await requireAdmin();
 
 
-window.requireAdmin =
-    requireAdmin;
+    if(!admin){
 
-window.requireGuardRole =
-    requireGuardRole;
+        return false;
 
-window.requireAnyRole =
-    requireAnyRole;
-
-window.requirePermission =
-    requirePermission;
-
-window.requirePermissions =
-    requirePermissions;
-
-window.requireSuperAdmin =
-    requireSuperAdmin;
+    }
 
 
-})(window);
+    if(!Array.isArray(permissions)){
+
+        permissions = [
+            permissions
+        ];
+
+    }
+
+
+    if(!permissions.length){
+
+        console.error(
+            "[ADMIN GUARD] No permissions supplied."
+        );
+
+        accessDenied(
+            "No authorized Admin permission was specified."
+        );
+
+        return false;
+
+    }
+
+
+   
