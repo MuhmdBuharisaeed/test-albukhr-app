@@ -1,6 +1,7 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 3.1
+   Version 4.0
+   ISOLATED ADMIN AUTH
 ========================================== */
 
 (function(window){
@@ -9,28 +10,39 @@
 
 const TABLE = "admin_users";
 
+
 /* ==========================================
-   GET CLIENT
+   GET ADMIN CLIENT
 ========================================== */
 
-function getClient(){
+function getAdminClient(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(
+        typeof window.getAlbukhrAdminSupabaseClient !==
+        "function"
+    ){
 
-        const client =
-        window.getAlbukhrSupabaseClient();
-
-        if(client){
-            return client;
-        }
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not loaded."
+        );
 
     }
 
-    throw new Error(
-        "ALBUKHR Supabase Core not initialized."
-    );
+    const client =
+        window.getAlbukhrAdminSupabaseClient();
+
+    if(!client){
+
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not initialized."
+        );
+
+    }
+
+    return client;
 
 }
+
 
 /* ==========================================
    GET CURRENT SESSION
@@ -40,34 +52,41 @@ async function getCurrentSession(){
 
     try{
 
-        const supabase = getClient();
+        const supabase =
+            getAdminClient();
 
         const {
-
             data:{session},
             error
-
-        } = await supabase.auth.getSession();
+        } =
+            await supabase.auth.getSession();
 
         if(error){
 
-            console.error(error);
+            console.error(
+                "[ADMIN SESSION]",
+                error
+            );
 
             return null;
 
         }
 
-        return session;
+        return session || null;
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN SESSION]",
+            error
+        );
 
         return null;
 
     }
 
 }
+
 
 /* ==========================================
    IS LOGGED IN
@@ -76,11 +95,12 @@ async function getCurrentSession(){
 async function isAdminLoggedIn(){
 
     const session =
-    await getCurrentSession();
+        await getCurrentSession();
 
     return !!session;
 
 }
+
 
 /* ==========================================
    GET CURRENT ADMIN
@@ -91,53 +111,53 @@ async function getCurrentAdmin(){
     try{
 
         const session =
-        await getCurrentSession();
+            await getCurrentSession();
 
-        if(!session){
+        if(!session?.user?.id){
 
             return null;
 
         }
 
         const supabase =
-        getClient();
+            getAdminClient();
 
         const {
-
             data,
             error
-
-        } = await supabase
-
-        .from(TABLE)
-
-        .select("*")
-
-        .eq(
-            "auth_user_id",
-            session.user.id
-        )
-
-        .eq(
-            "status",
-            "active"
-        )
-
-        .single();
+        } =
+            await supabase
+                .from(TABLE)
+                .select("*")
+                .eq(
+                    "auth_user_id",
+                    session.user.id
+                )
+                .eq(
+                    "status",
+                    "active"
+                )
+                .maybeSingle();
 
         if(error){
 
-            console.error(error);
+            console.error(
+                "[ADMIN SESSION] admin_users:",
+                error
+            );
 
             return null;
 
         }
 
-        return data;
+        return data || null;
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "[ADMIN SESSION]",
+            error
+        );
 
         return null;
 
@@ -145,20 +165,22 @@ async function getCurrentAdmin(){
 
 }
 
+
 /* ==========================================
-   GET ROLE
+   ROLE
 ========================================== */
 
 async function getCurrentRole(){
 
     const admin =
-    await getCurrentAdmin();
+        await getCurrentAdmin();
 
     return admin
-    ? admin.role_code
-    : null;
+        ? admin.role_code
+        : null;
 
 }
+
 
 /* ==========================================
    REFRESH SESSION
@@ -169,24 +191,26 @@ async function refreshAdminSession(){
     try{
 
         const supabase =
-        getClient();
+            getAdminClient();
 
         const {
-
             data,
             error
-
-        } = await supabase.auth.refreshSession();
+        } =
+            await supabase.auth.refreshSession();
 
         if(error){
 
-            console.error(error);
+            console.error(
+                "[ADMIN SESSION] refresh:",
+                error
+            );
 
             return false;
 
         }
 
-        return !!data.session;
+        return !!data?.session;
 
     }catch(error){
 
@@ -198,14 +222,15 @@ async function refreshAdminSession(){
 
 }
 
+
 /* ==========================================
-   REQUIRE LOGIN
+   REQUIRE ADMIN
 ========================================== */
 
 async function requireAdminSession(){
 
     const admin =
-    await getCurrentAdmin();
+        await getCurrentAdmin();
 
     if(!admin){
 
@@ -221,26 +246,28 @@ async function requireAdminSession(){
 
 }
 
+
 /* ==========================================
    EXPORT
 ========================================== */
 
 window.getCurrentSession =
-getCurrentSession;
+    getCurrentSession;
 
 window.getCurrentAdmin =
-getCurrentAdmin;
+    getCurrentAdmin;
 
 window.getCurrentRole =
-getCurrentRole;
+    getCurrentRole;
 
 window.refreshAdminSession =
-refreshAdminSession;
+    refreshAdminSession;
 
 window.isAdminLoggedIn =
-isAdminLoggedIn;
+    isAdminLoggedIn;
 
 window.requireAdminSession =
-requireAdminSession;
+    requireAdminSession;
+
 
 })(window);
