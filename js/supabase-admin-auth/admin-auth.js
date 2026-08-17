@@ -1,6 +1,7 @@
 /* ==========================================
-   ALBUKHR SUPABASE ADMIN AUTH ENGINE
-   Version 3.1
+   ALBUKHR ADMIN AUTH ENGINE
+   Version 4.0
+   ISOLATED ADMIN AUTH
 ========================================== */
 
 (function(window){
@@ -9,28 +10,28 @@
 
 const TABLE = "admin_users";
 
+
 /* ==========================================
-   GET CLIENT
+   GET ADMIN CLIENT
 ========================================== */
 
-function getClient(){
+function getAdminClient(){
 
-    if(typeof window.getAlbukhrSupabaseClient === "function"){
+    if(
+        typeof window.getAlbukhrAdminSupabaseClient !==
+        "function"
+    ){
 
-        const client =
-        window.getAlbukhrSupabaseClient();
-
-        if(client){
-            return client;
-        }
+        throw new Error(
+            "ALBUKHR Admin Supabase Auth Core not loaded."
+        );
 
     }
 
-    throw new Error(
-        "ALBUKHR Supabase Core not initialized."
-    );
+    return window.getAlbukhrAdminSupabaseClient();
 
 }
+
 
 /* ==========================================
    LOGIN
@@ -38,133 +39,251 @@ function getClient(){
 
 async function adminLogin({
 
-email,
+    email,
 
-accessKey
+    accessKey
 
 }){
 
-try{
+    try{
 
-const supabase = getClient();
+        const supabase =
+            getAdminClient();
 
-/* ---------- SIGN IN ---------- */
 
-const {
+        /* ==============================
+           SUPABASE AUTH
+        ============================== */
 
-data,
+        const {
 
-error
+            data,
 
-} = await supabase.auth.signInWithPassword({
+            error
 
-email,
+        } =
+            await supabase.auth.signInWithPassword({
 
-password:accessKey
+                email,
 
-});
+                password:accessKey
 
-if(error){
+            });
 
-return{
-error:error.message
-};
+
+        if(error){
+
+            return {
+
+                success:false,
+
+                error:
+                    error.message
+
+            };
+
+        }
+
+
+        const user =
+            data?.user;
+
+
+        if(!user?.id){
+
+            await supabase.auth.signOut();
+
+            return {
+
+                success:false,
+
+                error:
+                    "Authentication succeeded but no user session was returned."
+
+            };
+
+        }
+
+
+        /* ==============================
+           ADMIN PROFILE
+        ============================== */
+
+        const {
+
+            data:admin,
+
+            error:adminError
+
+        } =
+            await supabase
+
+                .from(TABLE)
+
+                .select("*")
+
+                .eq(
+                    "auth_user_id",
+                    user.id
+                )
+
+                .eq(
+                    "status",
+                    "active"
+                )
+
+                .maybeSingle();
+
+
+        if(adminError){
+
+            console.error(
+                "[ADMIN AUTH] admin_users:",
+                adminError
+            );
+
+            await supabase.auth.signOut();
+
+            return {
+
+                success:false,
+
+                error:
+                    "Unable to verify administrator profile."
+
+            };
+
+        }
+
+
+        if(!admin){
+
+            await supabase.auth.signOut();
+
+            return {
+
+                success:false,
+
+                error:
+                    "Admin account not found or inactive."
+
+            };
+
+        }
+
+
+        /* ==============================
+           LAST LOGIN
+        ============================== */
+
+        const {
+
+            error:updateError
+
+        } =
+            await supabase
+
+                .from(TABLE)
+
+                .update({
+
+                    last_login:
+                        new Date().toISOString()
+
+                })
+
+                .eq(
+                    "id",
+                    admin.id
+                );
+
+
+        if(updateError){
+
+            console.warn(
+                "[ADMIN AUTH] last_login failed:",
+                updateError
+            );
+
+        }
+
+
+        /* ==============================
+           AUDIT LOG
+        ============================== */
+
+        if(
+            typeof window.logAdminAction ===
+            "function"
+        ){
+
+            try{
+
+                await window.logAdminAction({
+
+                    action:"login",
+
+                    target:"admin_auth",
+
+                    details:{
+
+                        username:
+                            admin.username,
+
+                        role:
+                            admin.role_code
+
+                    }
+
+                });
+
+            }catch(error){
+
+                console.warn(
+                    "[ADMIN AUTH] Audit log failed:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        return {
+
+            success:true,
+
+            admin,
+
+            user,
+
+            session:
+                data.session || null
+
+        };
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN AUTH]",
+            error
+        );
+
+        return {
+
+            success:false,
+
+            error:
+                error?.message ||
+                "Login failed."
+
+        };
+
+    }
 
 }
 
-const user = data.user;
-
-/* ---------- ADMIN PROFILE ---------- */
-
-const {
-
-data:admin,
-
-error:adminError
-
-} = await supabase
-
-.from(TABLE)
-
-.select("*")
-
-.eq("auth_user_id",user.id)
-
-.eq("status","active")
-
-.single();
-
-if(adminError || !admin){
-
-await supabase.auth.signOut();
-
-return{
-
-error:"Admin account not found or inactive."
-
-};
-
-}
-
-/* ---------- UPDATE LAST LOGIN ---------- */
-
-await supabase
-
-.from(TABLE)
-
-.update({
-
-last_login:new Date().toISOString()
-
-})
-
-.eq("id",admin.id);
-
-/* ---------- LOG ---------- */
-
-if(typeof logAdminAction==="function"){
-
-await logAdminAction({
-
-action:"login",
-
-target:"admin_auth",
-
-details:{
-
-username:admin.username,
-
-role:admin.role_code
-
-}
-
-});
-
-}
-
-return{
-
-success:true,
-
-admin
-
-};
-
-}catch(error){
-
-console.error(error);
-
-return{
-
-error:error.message ||
-
-"Login failed."
-
-};
-
-}
-
-}
 
 /* ==========================================
    LOGOUT
@@ -172,66 +291,90 @@ error:error.message ||
 
 async function adminLogout(){
 
-try{
+    try{
 
-const admin =
+        const admin =
+            typeof window.getCurrentAdmin ===
+            "function"
+                ? await window.getCurrentAdmin()
+                : null;
 
-typeof getCurrentAdmin==="function"
 
-? await getCurrentAdmin()
+        if(
+            admin &&
+            typeof window.logAdminAction ===
+            "function"
+        ){
 
-: null;
+            try{
 
-if(admin && typeof logAdminAction==="function"){
+                await window.logAdminAction({
 
-await logAdminAction({
+                    action:"logout",
 
-action:"logout",
+                    target:"admin_auth",
 
-target:"admin_auth",
+                    details:{
 
-details:{
+                        username:
+                            admin.username,
 
-username:admin.username,
+                        role:
+                            admin.role_code
 
-role:admin.role_code
+                    }
+
+                });
+
+            }catch(error){
+
+                console.warn(
+                    "[ADMIN AUTH] Logout log failed:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        const supabase =
+            getAdminClient();
+
+
+        await supabase.auth.signOut();
+
+
+        location.replace(
+            "admin-login.html"
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN AUTH] Logout:",
+            error
+        );
+
+        location.replace(
+            "admin-login.html"
+        );
+
+    }
 
 }
 
-});
-
-}
-
-const supabase = getClient();
-
-   sessionStorage.removeItem(
-
-    "albukhr_admin_entry"
-
-);
-
-await supabase.auth.signOut();
-
-location.replace(
-
-"admin-login.html"
-
-);
-
-}catch(error){
-
-console.error(error);
-
-}
-
-}
 
 /* ==========================================
    EXPORT
 ========================================== */
 
-window.adminLogin = adminLogin;
+window.adminLogin =
+    adminLogin;
 
-window.adminLogout = adminLogout;
+window.adminLogout =
+    adminLogout;
+
 
 })(window);
