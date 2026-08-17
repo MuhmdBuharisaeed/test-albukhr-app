@@ -2,7 +2,7 @@
    ALBUKHR ADMIN BOOTSTRAP ENGINE
    Version 3.0
 
-   SUPABASE SESSION IS SOURCE OF TRUTH
+   SINGLE ADMIN AUTHORITY
 
    DEPENDS ON:
    - admin-supabase-auth.js
@@ -10,34 +10,20 @@
    - admin-permissions.js
 
    PURPOSE:
-   - Build unified Admin state
-   - Verify active admin profile
+   - Verify Supabase Admin session
+   - Verify active admin_users profile
    - Load permissions
+   - Build unified Admin state
    - Dispatch admin-ready
-   - Isolated Admin Supabase client
-   - Prevent accidental Admin lockout
 
    IMPORTANT:
-   - Does NOT use js/supabase-core.js
+   - Does NOT use ecosystem Supabase Core
    - Does NOT use js/auth/supabase-auth.js
-   - Does NOT create another Supabase client
    - Does NOT use LocalStorage
    - Does NOT use sessionStorage
-   - Does NOT sign out on database/query failure
-   - Does NOT sign out on permission failure
-
-   SECURITY RULE:
-
-   Only these conditions may terminate Admin Auth:
-
-   1. No valid Supabase Auth session
-   2. Authenticated user is confirmed NOT to be
-      an active admin
-   3. Active admin profile has no valid role
-
-   Database errors, permission errors,
-   network errors and runtime errors MUST NOT
-   automatically destroy a valid Auth session.
+   - Does NOT create another Supabase client
+   - Does NOT sign out on database/query errors
+   - Does NOT create redirect loops
 ========================================== */
 
 (function(window){
@@ -69,109 +55,43 @@ const Admin = {
 
     error:null,
 
-    errorCode:null
+    errorCode:null,
+
+    profileVerified:false
 
 };
 
 
 /* ==========================================
-   INTERNAL INITIALIZATION LOCK
+   INTERNAL STATE
 ========================================== */
 
-let initializationPromise = null;
+let bootstrapPromise =
+    null;
+
+let bootstrapStarted =
+    false;
 
 
 /* ==========================================
-   CONSTANTS
+   SAFE STRING
 ========================================== */
 
-const ADMIN_TABLE =
-    "admin_users";
-
-
-const VALID_ENVIRONMENTS = [
-    "mainnet",
-    "testnet"
-];
-
-
-/* ==========================================
-   RESET STATE
-========================================== */
-
-function resetAdminState(){
-
-    Admin.session = null;
-
-    Admin.user = null;
-
-    Admin.profile = null;
-
-    Admin.role = null;
-
-    Admin.permissions = [];
-
-    Admin.ready = false;
-
-    Admin.environment = null;
-
-    Admin.network = null;
-
-}
-
-
-/* ==========================================
-   SET ERROR
-========================================== */
-
-function setAdminError(
-    message,
-    code = "ADMIN_BOOTSTRAP_ERROR"
+function safeString(
+    value,
+    fallback = ""
 ){
 
-    Admin.error =
-        message ||
-        "Admin bootstrap failed.";
+    if(
+        value === null ||
+        value === undefined
+    ){
 
-    Admin.errorCode =
-        code;
-
-}
-
-
-/* ==========================================
-   CLEAR ERROR
-========================================== */
-
-function clearAdminError(){
-
-    Admin.error = null;
-
-    Admin.errorCode = null;
-
-}
-
-
-/* ==========================================
-   REDIRECT LOGIN
-========================================== */
-
-function redirectLogin(){
-
-    try{
-
-        window.location.replace(
-            "admin-login.html"
-        );
-
-    }catch(error){
-
-        console.error(
-            "[ADMIN BOOTSTRAP] Redirect failed:",
-            error
-        );
+        return fallback;
 
     }
+
+    return String(value);
 
 }
 
@@ -213,7 +133,7 @@ function getAdminClient(){
 
 
 /* ==========================================
-   GET ADMIN ENVIRONMENT
+   ENVIRONMENT
 ========================================== */
 
 function getAdminEnvironment(){
@@ -230,9 +150,8 @@ function getAdminEnvironment(){
 
 
             if(
-                VALID_ENVIRONMENTS.includes(
-                    environment
-                )
+                environment === "mainnet" ||
+                environment === "testnet"
             ){
 
                 return environment;
@@ -241,88 +160,156 @@ function getAdminEnvironment(){
 
         }
 
-
-        const hostname =
-            String(
-                window.location.hostname || ""
-            )
-            .toLowerCase();
-
-
-        if(
-            hostname === "test.albukhr.com" ||
-            hostname.startsWith("test.")
-        ){
-
-            return "testnet";
-
-        }
-
-
-        if(
-            hostname === "app.albukhr.com" ||
-            hostname.startsWith("app.")
-        ){
-
-            return "mainnet";
-
-        }
-
-
-        /*
-           Approved development fallback.
-        */
-
-        return "mainnet";
-
-
     }catch(error){
 
         console.warn(
-            "[ADMIN BOOTSTRAP] Environment detection failed:",
+            "[ADMIN BOOTSTRAP] Environment helper failed:",
             error
         );
+
+    }
+
+
+    const hostname =
+        safeString(
+            window.location.hostname
+        )
+        .toLowerCase();
+
+
+    if(
+        hostname === "test.albukhr.com" ||
+        hostname.startsWith("test.")
+    ){
+
+        return "testnet";
+
+    }
+
+
+    if(
+        hostname === "app.albukhr.com" ||
+        hostname.startsWith("app.")
+    ){
 
         return "mainnet";
 
     }
 
+
+    return "mainnet";
+
 }
 
 
 /* ==========================================
-   GET CURRENT SESSION
+   REDIRECT LOGIN
+========================================== */
+
+function redirectLogin(){
+
+    /*
+       IMPORTANT:
+
+       This function is used ONLY when
+       Supabase Auth has definitively confirmed
+       that there is no session.
+
+       It is NOT used for database errors.
+    */
+
+    if(
+        window.location.pathname
+            .endsWith(
+                "admin-login.html"
+            )
+    ){
+
+        return;
+
+    }
+
+
+    console.warn(
+        "[ADMIN BOOTSTRAP] Redirecting to Admin Login."
+    );
+
+
+    window.location.replace(
+        "admin-login.html"
+    );
+
+}
+
+
+/* ==========================================
+   RESET STATE
+========================================== */
+
+function resetAdminState(){
+
+    Admin.session =
+        null;
+
+    Admin.user =
+        null;
+
+    Admin.profile =
+        null;
+
+    Admin.role =
+        null;
+
+    Admin.permissions =
+        [];
+
+    Admin.ready =
+        false;
+
+    Admin.environment =
+        null;
+
+    Admin.network =
+        null;
+
+    Admin.profileVerified =
+        false;
+
+}
+
+
+/* ==========================================
+   GET SESSION
 ========================================== */
 
 async function getBootstrapSession(){
 
     try{
 
-        /*
-           Admin Session Engine is authoritative.
-        */
-
         if(
             typeof window.getCurrentSession ===
             "function"
         ){
 
-            return await window.getCurrentSession();
+            const session =
+                await window.getCurrentSession();
+
+
+            return session || null;
 
         }
 
-
-        /*
-           Safe fallback.
-        */
 
         const supabase =
             getAdminClient();
 
 
         const {
+
             data,
+
             error
+
         } =
             await supabase.auth.getSession();
 
@@ -330,9 +317,10 @@ async function getBootstrapSession(){
         if(error){
 
             console.error(
-                "[ADMIN BOOTSTRAP] Session query failed:",
+                "[ADMIN BOOTSTRAP] Auth session error:",
                 error
             );
+
 
             return null;
 
@@ -341,11 +329,10 @@ async function getBootstrapSession(){
 
         return data?.session || null;
 
-
     }catch(error){
 
         console.error(
-            "[ADMIN BOOTSTRAP] Session lookup failed:",
+            "[ADMIN BOOTSTRAP] Session exception:",
             error
         );
 
@@ -357,29 +344,37 @@ async function getBootstrapSession(){
 
 
 /* ==========================================
-   GET CURRENT ADMIN PROFILE
+   GET ADMIN PROFILE
 ========================================== */
-
-/*
-   IMPORTANT:
-
-   This function does NOT simply return null
-   for every failure.
-
-   It returns a structured result so Bootstrap
-   can distinguish:
-
-   - not_found
-   - database_error
-   - success
-*/
 
 async function getBootstrapAdmin(){
 
     try{
 
+        if(
+            typeof window.getCurrentAdmin ===
+            "function"
+        ){
+
+            /*
+               IMPORTANT:
+
+               We need to distinguish:
+
+               1. No profile
+               2. Database error
+
+               Therefore admin-session.js is not
+               sufficient by itself because its
+               getCurrentAdmin() returns null
+               for both conditions.
+            */
+
+        }
+
+
         const session =
-            await getBootstrapSession();
+            Admin.session;
 
 
         if(
@@ -388,76 +383,16 @@ async function getBootstrapAdmin(){
 
             return {
 
-                success:false,
-
-                status:"no_session",
-
                 admin:null,
 
-                error:null
+                error:null,
+
+                reason:"no-session"
 
             };
 
         }
 
-
-        /*
-           Prefer admin-session.js.
-        */
-
-        if(
-            typeof window.getCurrentAdmin ===
-            "function"
-        ){
-
-            try{
-
-                const admin =
-                    await window.getCurrentAdmin();
-
-
-                if(admin){
-
-                    return {
-
-                        success:true,
-
-                        status:"active",
-
-                        admin,
-
-                        error:null
-
-                    };
-
-                }
-
-
-                /*
-                   getCurrentAdmin() returns null
-                   for both no profile and errors.
-
-                   Therefore we verify directly below
-                   so that we can distinguish them.
-                */
-
-            }catch(error){
-
-                console.warn(
-                    "[ADMIN BOOTSTRAP] Session engine profile lookup failed:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        /*
-           Direct verification.
-
-           We intentionally use maybeSingle().
-        */
 
         const supabase =
             getAdminClient();
@@ -472,7 +407,7 @@ async function getBootstrapAdmin(){
         } =
             await supabase
 
-                .from(ADMIN_TABLE)
+                .from("admin_users")
 
                 .select("*")
 
@@ -485,27 +420,24 @@ async function getBootstrapAdmin(){
                     "status",
                     "active"
                 )
-
                 .maybeSingle();
 
 
         if(error){
 
             console.error(
-                "[ADMIN BOOTSTRAP] Admin profile query failed:",
+                "[ADMIN BOOTSTRAP] admin_users query failed:",
                 error
             );
 
 
             return {
 
-                success:false,
-
-                status:"database_error",
-
                 admin:null,
 
-                error
+                error:error,
+
+                reason:"database-error"
 
             };
 
@@ -516,13 +448,11 @@ async function getBootstrapAdmin(){
 
             return {
 
-                success:false,
-
-                status:"not_found",
-
                 admin:null,
 
-                error:null
+                error:null,
+
+                reason:"profile-not-found"
 
             };
 
@@ -531,13 +461,11 @@ async function getBootstrapAdmin(){
 
         return {
 
-            success:true,
-
-            status:"active",
-
             admin:data,
 
-            error:null
+            error:null,
+
+            reason:"verified"
 
         };
 
@@ -545,20 +473,18 @@ async function getBootstrapAdmin(){
     }catch(error){
 
         console.error(
-            "[ADMIN BOOTSTRAP] Admin profile lookup crashed:",
+            "[ADMIN BOOTSTRAP] Admin profile exception:",
             error
         );
 
 
         return {
 
-            success:false,
-
-            status:"runtime_error",
-
             admin:null,
 
-            error
+            error:error,
+
+            reason:"exception"
 
         };
 
@@ -571,19 +497,19 @@ async function getBootstrapAdmin(){
    LOAD PERMISSIONS
 ========================================== */
 
-async function loadAdminPermissions(
-    roleCode
+async function loadPermissions(
+    role
 ){
 
-    const role =
-        String(
-            roleCode || ""
+    const normalizedRole =
+        safeString(
+            role
         )
         .trim()
         .toLowerCase();
 
 
-    if(!role){
+    if(!normalizedRole){
 
         return [];
 
@@ -591,12 +517,12 @@ async function loadAdminPermissions(
 
 
     /*
-       Super Admin automatically receives
-       wildcard access.
+       Super Admin is unrestricted.
     */
 
     if(
-        role === "super_admin"
+        normalizedRole ===
+        "super_admin"
     ){
 
         return ["*"];
@@ -610,7 +536,7 @@ async function loadAdminPermissions(
     ){
 
         console.warn(
-            "[ADMIN BOOTSTRAP] Permission engine not loaded."
+            "[ADMIN BOOTSTRAP] Permission engine unavailable."
         );
 
         return [];
@@ -622,12 +548,14 @@ async function loadAdminPermissions(
 
         const permissions =
             await window.getRolePermissions(
-                role
+                normalizedRole
             );
 
 
         if(
-            !Array.isArray(permissions)
+            !Array.isArray(
+                permissions
+            )
         ){
 
             return [];
@@ -635,78 +563,55 @@ async function loadAdminPermissions(
         }
 
 
-        /*
-           admin-permissions.js Version 2.1
-           already returns strings.
-
-           This normalization also keeps
-           compatibility with older versions.
-        */
-
-        const normalized =
-            permissions
-
-                .map(
-                    permission => {
-
-                        if(
-                            typeof permission ===
-                            "string"
-                        ){
-
-                            return permission;
-
-                        }
-
-
-                        if(
-                            permission &&
-                            typeof permission.permission ===
-                            "string"
-                        ){
-
-                            return permission.permission;
-
-                        }
-
-
-                        return "";
-
-                    }
-                )
-
-                .map(
-                    permission =>
-                        String(
-                            permission
-                        )
-                        .trim()
-                        .toLowerCase()
-                )
-
-                .filter(Boolean);
-
-
         return [
             ...new Set(
-                normalized
+
+                permissions
+
+                    .map(
+                        item => {
+
+                            if(
+                                typeof item ===
+                                "string"
+                            ){
+
+                                return item;
+
+                            }
+
+                            return item?.permission;
+
+                        }
+                    )
+
+                    .map(
+                        item =>
+                            safeString(
+                                item
+                            )
+                            .trim()
+                            .toLowerCase()
+                    )
+
+                    .filter(Boolean)
+
             )
         ];
 
-
     }catch(error){
 
-        /*
-           CRITICAL:
-
-           Permission failure does NOT
-           invalidate Admin Auth.
-        */
-
         console.warn(
-            "[ADMIN BOOTSTRAP] Permission load failed:",
+            "[ADMIN BOOTSTRAP] Permission loading failed:",
             error
         );
+
+
+        /*
+           Permission failure does NOT
+           destroy the authenticated
+           Admin session.
+        */
 
         return [];
 
@@ -722,24 +627,45 @@ async function loadAdminPermissions(
 async function initializeAdmin(){
 
     /*
-       Prevent multiple simultaneous
-       initialization operations.
+       If already ready, do nothing.
     */
 
-    if(initializationPromise){
+    if(
+        Admin.ready === true
+    ){
 
-        return initializationPromise;
+        return true;
 
     }
 
 
-    initializationPromise =
+    /*
+       Prevent simultaneous duplicate
+       initialization.
+    */
+
+    if(
+        bootstrapPromise
+    ){
+
+        return bootstrapPromise;
+
+    }
+
+
+    bootstrapStarted =
+        true;
+
+
+    bootstrapPromise =
         (async function(){
 
-            clearAdminError();
-
-
             try{
+
+                console.log(
+                    "🔐 [ADMIN BOOTSTRAP] Starting..."
+                );
+
 
                 /* ==============================
                    ENVIRONMENT
@@ -766,28 +692,35 @@ async function initializeAdmin(){
 
 
                 /*
-                   NO SESSION
-
-                   This is the only normal case
-                   where redirect is immediate.
+                   THIS IS THE ONLY PLACE WHERE
+                   WE TREAT MISSING SESSION AS
+                   AN AUTHENTICATION FAILURE.
                 */
 
                 if(
                     !session?.user?.id
                 ){
 
+                    console.warn(
+                        "[ADMIN BOOTSTRAP] No Supabase Admin session."
+                    );
+
+
+                    Admin.error =
+                        "NO_ADMIN_SESSION";
+
+                    Admin.errorCode =
+                        "NO_ADMIN_SESSION";
+
+
                     resetAdminState();
 
 
-                    setAdminError(
-                        "No active Admin Supabase session.",
-                        "NO_SESSION"
-                    );
+                    Admin.error =
+                        "NO_ADMIN_SESSION";
 
-
-                    console.warn(
-                        "[ADMIN BOOTSTRAP] No active session."
-                    );
+                    Admin.errorCode =
+                        "NO_ADMIN_SESSION";
 
 
                     redirectLogin();
@@ -798,12 +731,23 @@ async function initializeAdmin(){
                 }
 
 
+                /* ==============================
+                   SESSION VERIFIED
+                ============================== */
+
                 Admin.session =
                     session;
 
 
                 Admin.user =
                     session.user;
+
+
+                console.log(
+                    "✅ [ADMIN BOOTSTRAP] Supabase session found:",
+                    session.user.email ||
+                    session.user.id
+                );
 
 
                 /* ==============================
@@ -819,27 +763,42 @@ async function initializeAdmin(){
                 ============================== */
 
                 if(
-                    profileResult.status ===
-                    "database_error"
+                    profileResult.reason ===
+                    "database-error" ||
+                    profileResult.reason ===
+                    "exception"
                 ){
 
-                    setAdminError(
-                        "Unable to verify Admin profile because the database query failed.",
-                        "ADMIN_PROFILE_QUERY_ERROR"
+                    /*
+                       CRITICAL:
+
+                       DO NOT SIGN OUT.
+
+                       DO NOT REDIRECT.
+
+                       A database failure is not
+                       proof that authentication
+                       failed.
+                    */
+
+                    Admin.error =
+                        profileResult.error?.message ||
+                        "ADMIN_PROFILE_QUERY_FAILED";
+
+                    Admin.errorCode =
+                        "ADMIN_PROFILE_QUERY_FAILED";
+
+
+                    console.error(
+                        "❌ [ADMIN BOOTSTRAP] Admin profile query failed."
                     );
 
 
                     console.error(
-                        "[ADMIN BOOTSTRAP] Admin profile query failed."
+                        "[ADMIN BOOTSTRAP] Error:",
+                        profileResult.error
                     );
 
-
-                    /*
-                       DO NOT SIGN OUT.
-                       DO NOT REDIRECT.
-
-                       Keep the valid Supabase session.
-                    */
 
                     return false;
 
@@ -847,62 +806,39 @@ async function initializeAdmin(){
 
 
                 /* ==============================
-                   RUNTIME ERROR
+                   PROFILE NOT FOUND
                 ============================== */
 
                 if(
-                    profileResult.status ===
-                    "runtime_error"
+                    profileResult.reason ===
+                    "profile-not-found"
                 ){
 
-                    setAdminError(
-                        "Admin profile verification encountered a runtime error.",
-                        "ADMIN_PROFILE_RUNTIME_ERROR"
-                    );
+                    /*
+                       This means:
+
+                       Supabase Auth user exists,
+                       but no active admin_users
+                       record was found.
+                    */
+
+                    Admin.error =
+                        "ADMIN_PROFILE_NOT_FOUND";
+
+                    Admin.errorCode =
+                        "ADMIN_PROFILE_NOT_FOUND";
 
 
                     console.error(
-                        "[ADMIN BOOTSTRAP] Profile verification runtime error."
+                        "❌ [ADMIN BOOTSTRAP] Authenticated user is not an active ALBUKHR administrator."
                     );
 
 
                     /*
-                       DO NOT SIGN OUT.
-                       DO NOT REDIRECT.
-                    */
-
-                    return false;
-
-                }
-
-
-                /* ==============================
-                   NO PROFILE
-                ============================== */
-
-                if(
-                    profileResult.status ===
-                    "not_found"
-                ){
-
-                    console.warn(
-                        "[ADMIN BOOTSTRAP] Authenticated user is not an active Admin."
-                    );
-
-
-                    setAdminError(
-                        "Authenticated user is not an active ALBUKHR administrator.",
-                        "ADMIN_NOT_FOUND"
-                    );
-
-
-                    /*
-                       This IS a genuine authorization
-                       failure.
-
-                       The Auth user exists, but there
-                       is no matching active admin_users
-                       record.
+                       NOW it is safe to terminate
+                       the session because the
+                       administrator authorization
+                       failed.
                     */
 
                     try{
@@ -913,11 +849,11 @@ async function initializeAdmin(){
 
                         await supabase.auth.signOut();
 
-                    }catch(signOutError){
+                    }catch(error){
 
                         console.warn(
-                            "[ADMIN BOOTSTRAP] Authorization cleanup failed:",
-                            signOutError
+                            "[ADMIN BOOTSTRAP] Sign-out failed:",
+                            error
                         );
 
                     }
@@ -926,10 +862,11 @@ async function initializeAdmin(){
                     resetAdminState();
 
 
-                    setAdminError(
-                        "Authenticated user is not an active ALBUKHR administrator.",
-                        "ADMIN_NOT_FOUND"
-                    );
+                    Admin.error =
+                        "ADMIN_PROFILE_NOT_FOUND";
+
+                    Admin.errorCode =
+                        "ADMIN_PROFILE_NOT_FOUND";
 
 
                     redirectLogin();
@@ -941,7 +878,7 @@ async function initializeAdmin(){
 
 
                 /* ==============================
-                   PROFILE SUCCESS
+                   PROFILE VERIFIED
                 ============================== */
 
                 const admin =
@@ -950,15 +887,17 @@ async function initializeAdmin(){
 
                 if(!admin){
 
-                    setAdminError(
-                        "Admin profile verification returned no profile.",
-                        "ADMIN_PROFILE_INVALID"
+                    console.error(
+                        "[ADMIN BOOTSTRAP] Unexpected empty Admin profile."
                     );
 
 
-                    /*
-                       Do not destroy the session here.
-                    */
+                    Admin.error =
+                        "ADMIN_PROFILE_INVALID";
+
+                    Admin.errorCode =
+                        "ADMIN_PROFILE_INVALID";
+
 
                     return false;
 
@@ -970,67 +909,41 @@ async function initializeAdmin(){
 
 
                 Admin.role =
-                    String(
-                        admin.role_code || ""
+                    safeString(
+                        admin.role_code
                     )
                     .trim()
                     .toLowerCase();
+
+
+                Admin.profileVerified =
+                    true;
 
 
                 /* ==============================
                    ROLE VALIDATION
                 ============================== */
 
-                if(!Admin.role){
-
-                    console.error(
-                        "[ADMIN BOOTSTRAP] Active Admin has no role_code."
-                    );
-
-
-                    setAdminError(
-                        "Active Admin profile has no valid role.",
-                        "ADMIN_ROLE_MISSING"
-                    );
-
+                if(
+                    !Admin.role
+                ){
 
                     /*
-                       This is an authorization
-                       configuration failure.
-
-                       We terminate because an Admin
-                       without a role cannot safely
-                       access the Control Center.
+                       Do NOT immediately logout
+                       here. This is a database
+                       integrity problem.
                     */
 
-                    try{
+                    Admin.error =
+                        "ADMIN_ROLE_MISSING";
 
-                        const supabase =
-                            getAdminClient();
-
-
-                        await supabase.auth.signOut();
-
-                    }catch(signOutError){
-
-                        console.warn(
-                            "[ADMIN BOOTSTRAP] Role cleanup failed:",
-                            signOutError
-                        );
-
-                    }
+                    Admin.errorCode =
+                        "ADMIN_ROLE_MISSING";
 
 
-                    resetAdminState();
-
-
-                    setAdminError(
-                        "Active Admin profile has no valid role.",
-                        "ADMIN_ROLE_MISSING"
+                    console.error(
+                        "❌ [ADMIN BOOTSTRAP] Active admin profile has no role_code."
                     );
-
-
-                    redirectLogin();
 
 
                     return false;
@@ -1043,17 +956,9 @@ async function initializeAdmin(){
                 ============================== */
 
                 Admin.permissions =
-                    await loadAdminPermissions(
+                    await loadPermissions(
                         Admin.role
                     );
-
-
-                /*
-                   Permission failure is NOT Auth
-                   failure.
-
-                   Admin remains authenticated.
-                */
 
 
                 /* ==============================
@@ -1064,15 +969,23 @@ async function initializeAdmin(){
                     true;
 
 
+                Admin.error =
+                    null;
+
+                Admin.errorCode =
+                    null;
+
+
+                /*
+                   Publish final Admin state.
+                */
+
                 window.Admin =
                     Admin;
 
 
-                clearAdminError();
-
-
                 /* ==============================
-                   ADMIN READY EVENT
+                   EVENT
                 ============================== */
 
                 document.dispatchEvent(
@@ -1082,7 +995,10 @@ async function initializeAdmin(){
                         "admin-ready",
 
                         {
-                            detail:Admin
+
+                            detail:
+                                Admin
+
                         }
 
                     )
@@ -1095,26 +1011,41 @@ async function initializeAdmin(){
                 ============================== */
 
                 console.log(
-                    "✅ ALBUKHR Admin Bootstrap Ready"
+                    "=========================================="
+                );
+
+                console.log(
+                    "✅ ALBUKHR ADMIN BOOTSTRAP READY"
+                );
+
+                console.log(
+                    "=========================================="
                 );
 
 
                 console.table({
 
                     email:
-                        admin.email || "",
+                        admin.email ||
+                        session.user.email ||
+                        "",
 
                     username:
-                        admin.username || "",
+                        admin.username ||
+                        "",
 
                     role:
                         Admin.role,
 
                     status:
-                        admin.status || "",
+                        admin.status ||
+                        "",
 
                     environment:
                         Admin.environment,
+
+                    network:
+                        Admin.network,
 
                     permissions:
                         Admin.permissions.length
@@ -1128,28 +1059,31 @@ async function initializeAdmin(){
             }catch(error){
 
                 console.error(
-                    "[ADMIN BOOTSTRAP] Unexpected error:",
+                    "❌ [ADMIN BOOTSTRAP] Fatal error:",
                     error
                 );
 
 
-                setAdminError(
-                    error?.message ||
-                    "Unexpected Admin bootstrap error.",
-                    "ADMIN_BOOTSTRAP_RUNTIME_ERROR"
-                );
-
-
                 /*
-                   CRITICAL CHANGE:
+                   IMPORTANT:
 
-                   Do NOT automatically sign out.
-                   Do NOT automatically redirect.
+                   Do NOT sign out here.
 
-                   A runtime exception is NOT proof
-                   that the Supabase Auth session is
-                   invalid.
+                   Do NOT automatically redirect
+                   because runtime/database errors
+                   are not authentication failures.
                 */
+
+                Admin.ready =
+                    false;
+
+                Admin.error =
+                    error?.message ||
+                    "ADMIN_BOOTSTRAP_FAILED";
+
+                Admin.errorCode =
+                    "ADMIN_BOOTSTRAP_FAILED";
+
 
                 return false;
 
@@ -1160,21 +1094,21 @@ async function initializeAdmin(){
 
     try{
 
-        return await initializationPromise;
+        return await bootstrapPromise;
 
     }finally{
 
         /*
-           Allow retry after a failed initialization.
+           Allow retry after failure.
 
-           Keep the promise when Admin is ready.
+           Keep promise if Admin became ready.
         */
 
         if(
             !Admin.ready
         ){
 
-            initializationPromise =
+            bootstrapPromise =
                 null;
 
         }
@@ -1196,7 +1130,7 @@ function getAdminState(){
 
 
 /* ==========================================
-   IS ADMIN READY
+   IS READY
 ========================================== */
 
 function isAdminReady(){
@@ -1209,29 +1143,35 @@ function isAdminReady(){
 
 
 /* ==========================================
-   GET ADMIN PROFILE
+   GET PROFILE
 ========================================== */
 
 function getAdminProfile(){
 
-    return Admin.profile || null;
+    return (
+        Admin.profile ||
+        null
+    );
 
 }
 
 
 /* ==========================================
-   GET ADMIN ROLE
+   GET ROLE
 ========================================== */
 
 function getAdminRole(){
 
-    return Admin.role || null;
+    return (
+        Admin.role ||
+        null
+    );
 
 }
 
 
 /* ==========================================
-   GET ADMIN PERMISSIONS
+   GET PERMISSIONS
 ========================================== */
 
 function getAdminPermissions(){
@@ -1253,22 +1193,19 @@ function getAdminPermissions(){
 
 function getAdminBootstrapError(){
 
-    if(
-        !Admin.error
-    ){
-
-        return null;
-
-    }
-
-
     return {
 
-        code:
-            Admin.errorCode || null,
+        error:
+            Admin.error,
 
-        message:
-            Admin.error
+        code:
+            Admin.errorCode,
+
+        ready:
+            Admin.ready,
+
+        profileVerified:
+            Admin.profileVerified
 
     };
 
@@ -1312,8 +1249,25 @@ window.getAdminBootstrapError =
 
 
 /* ==========================================
-   AUTO START
+   START
 ========================================== */
+
+function startAdminBootstrap(){
+
+    initializeAdmin()
+        .catch(
+            error => {
+
+                console.error(
+                    "[ADMIN BOOTSTRAP] Startup exception:",
+                    error
+                );
+
+            }
+        );
+
+}
+
 
 if(
     document.readyState ===
@@ -1324,11 +1278,7 @@ if(
 
         "DOMContentLoaded",
 
-        function(){
-
-            initializeAdmin();
-
-        },
+        startAdminBootstrap,
 
         {
             once:true
@@ -1338,18 +1288,18 @@ if(
 
 }else{
 
-    initializeAdmin();
+    /*
+       Small delay gives the Admin Auth Core
+       and Admin Session Engine time to finish
+       their synchronous initialization.
+    */
+
+    setTimeout(
+        startAdminBootstrap,
+        0
+    );
 
 }
-
-
-/* ==========================================
-   READY LOG
-========================================== */
-
-console.log(
-    "✅ ALBUKHR Admin Bootstrap Engine Loaded"
-);
 
 
 })(window);
