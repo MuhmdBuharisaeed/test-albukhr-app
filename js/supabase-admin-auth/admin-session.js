@@ -1,6 +1,7 @@
 /* ==========================================
    ALBUKHR ADMIN SESSION ENGINE
-   Version 2.0
+   Version 3.0
+
    ISOLATED ADMIN AUTH
 
    SOURCE OF TRUTH:
@@ -8,18 +9,45 @@
    - Supabase Auth session
    - admin_users
 
+   PURPOSE:
+   - Read Admin Auth session
+   - Read active admin_users profile
+   - Provide structured authentication state
+   - Prevent database/RLS errors from being
+     mistaken for invalid Admin accounts
+
    IMPORTANT:
    - Does NOT use ecosystem Supabase Core
    - Does NOT use js/auth/supabase-auth.js
    - Does NOT use LocalStorage
    - Does NOT use sessionStorage
+   - Does NOT signOut()
+   - Does NOT redirect automatically
+   - Does NOT create another Supabase client
+
+   AUTHORIZATION DECISIONS:
+   - admin-bootstrap.js
+   - admin-guard.js
 ========================================== */
 
 (function(window){
 
 "use strict";
 
-const TABLE = "admin_users";
+
+const TABLE =
+    "admin_users";
+
+
+/* ==========================================
+   INTERNAL STATE
+========================================== */
+
+let lastSessionError =
+    null;
+
+let lastAdminProfileError =
+    null;
 
 
 /* ==========================================
@@ -39,8 +67,10 @@ function getAdminClient(){
 
     }
 
+
     const client =
         window.getAlbukhrAdminSupabaseClient();
+
 
     if(!client){
 
@@ -50,7 +80,151 @@ function getAdminClient(){
 
     }
 
+
     return client;
+
+}
+
+
+/* ==========================================
+   GET CURRENT SESSION RESULT
+========================================== */
+
+/*
+   Returns a structured result.
+
+   status:
+       authenticated
+       unauthenticated
+       error
+*/
+
+async function getCurrentSessionResult(){
+
+    lastSessionError =
+        null;
+
+
+    try{
+
+        const supabase =
+            getAdminClient();
+
+
+        const {
+
+            data,
+
+            error
+
+        } =
+            await supabase.auth.getSession();
+
+
+        if(error){
+
+            lastSessionError =
+                error;
+
+
+            console.error(
+                "[ADMIN SESSION] getSession:",
+                error
+            );
+
+
+            return {
+
+                ok:false,
+
+                authenticated:false,
+
+                status:"error",
+
+                session:null,
+
+                user:null,
+
+                error
+
+            };
+
+        }
+
+
+        const session =
+            data?.session || null;
+
+
+        if(
+            !session?.user?.id
+        ){
+
+            return {
+
+                ok:true,
+
+                authenticated:false,
+
+                status:"unauthenticated",
+
+                session:null,
+
+                user:null,
+
+                error:null
+
+            };
+
+        }
+
+
+        return {
+
+            ok:true,
+
+            authenticated:true,
+
+            status:"authenticated",
+
+            session,
+
+            user:session.user,
+
+            error:null
+
+        };
+
+
+    }catch(error){
+
+        lastSessionError =
+            error;
+
+
+        console.error(
+            "[ADMIN SESSION] getSession exception:",
+            error
+        );
+
+
+        return {
+
+            ok:false,
+
+            authenticated:false,
+
+            status:"error",
+
+            session:null,
+
+            user:null,
+
+            error
+
+        };
+
+    }
 
 }
 
@@ -61,40 +235,20 @@ function getAdminClient(){
 
 async function getCurrentSession(){
 
-    try{
+    const result =
+        await getCurrentSessionResult();
 
-        const supabase =
-            getAdminClient();
 
-        const {
-            data,
-            error
-        } =
-            await supabase.auth.getSession();
-
-        if(error){
-
-            console.error(
-                "[ADMIN SESSION] getSession:",
-                error
-            );
-
-            return null;
-
-        }
-
-        return data?.session || null;
-
-    }catch(error){
-
-        console.error(
-            "[ADMIN SESSION] Fatal:",
-            error
-        );
+    if(
+        !result.ok
+    ){
 
         return null;
 
     }
+
+
+    return result.session || null;
 
 }
 
@@ -105,48 +259,167 @@ async function getCurrentSession(){
 
 async function isAdminLoggedIn(){
 
-    const session =
-        await getCurrentSession();
+    const result =
+        await getCurrentSessionResult();
 
-    return !!(
-        session?.user?.id
+
+    return (
+        result.ok === true &&
+        result.authenticated === true
     );
 
 }
 
 
 /* ==========================================
-   GET CURRENT ADMIN
+   GET CURRENT ADMIN RESULT
 ========================================== */
 
-async function getCurrentAdmin(){
+/*
+   IMPORTANT:
+
+   This is the new authoritative profile
+   inspection function.
+
+   It distinguishes:
+
+   1. unauthenticated
+   2. active admin
+   3. admin not found
+   4. database/query error
+   5. client/runtime error
+
+   This prevents Bootstrap from treating
+   a temporary Supabase/RLS/database error
+   as an invalid Admin account.
+*/
+
+async function getCurrentAdminResult(){
+
+    lastAdminProfileError =
+        null;
+
+
+    /* ======================================
+       SESSION
+    ====================================== */
+
+    const sessionResult =
+        await getCurrentSessionResult();
+
+
+    if(
+        !sessionResult.ok
+    ){
+
+        return {
+
+            ok:false,
+
+            authenticated:false,
+
+            status:"session_error",
+
+            session:null,
+
+            user:null,
+
+            admin:null,
+
+            error:
+                sessionResult.error || null
+
+        };
+
+    }
+
+
+    if(
+        !sessionResult.authenticated
+    ){
+
+        return {
+
+            ok:true,
+
+            authenticated:false,
+
+            status:"unauthenticated",
+
+            session:null,
+
+            user:null,
+
+            admin:null,
+
+            error:null
+
+        };
+
+    }
+
+
+    const session =
+        sessionResult.session;
+
+
+    const user =
+        sessionResult.user;
+
+
+    /* ======================================
+       ADMIN PROFILE QUERY
+    ====================================== */
+
+    let supabase;
+
 
     try{
 
-        const session =
-            await getCurrentSession();
-
-        if(!session?.user?.id){
-
-            return null;
-
-        }
-
-        const supabase =
+        supabase =
             getAdminClient();
 
+    }catch(error){
 
-        /*
-           IMPORTANT:
+        lastAdminProfileError =
+            error;
 
-           Use maybeSingle() rather than single()
-           so "no admin record" does not create
-           a query exception.
-        */
+
+        console.error(
+            "[ADMIN SESSION] Admin client unavailable:",
+            error
+        );
+
+
+        return {
+
+            ok:false,
+
+            authenticated:true,
+
+            status:"client_error",
+
+            session,
+
+            user,
+
+            admin:null,
+
+            error
+
+        };
+
+    }
+
+
+    try{
 
         const {
+
             data,
+
             error
+
         } =
             await supabase
 
@@ -156,7 +429,7 @@ async function getCurrentAdmin(){
 
                 .eq(
                     "auth_user_id",
-                    session.user.id
+                    user.id
                 )
 
                 .eq(
@@ -167,45 +440,181 @@ async function getCurrentAdmin(){
                 .maybeSingle();
 
 
+        /* ==============================
+           DATABASE / RLS ERROR
+        ============================== */
+
         if(error){
+
+            lastAdminProfileError =
+                error;
+
 
             console.error(
                 "[ADMIN SESSION] Admin profile query failed:",
                 error
             );
 
-            /*
-               Do NOT sign out here.
 
-               A database/query problem must not
-               automatically destroy a valid
-               Supabase Auth session.
+            /*
+               CRITICAL:
+
+               Do NOT convert this into
+               "not_found".
+
+               Do NOT sign out.
+
+               Do NOT redirect.
+
+               Let Bootstrap decide.
             */
 
-            return null;
+            return {
+
+                ok:false,
+
+                authenticated:true,
+
+                status:"query_error",
+
+                session,
+
+                user,
+
+                admin:null,
+
+                error
+
+            };
 
         }
 
+
+        /* ==============================
+           ADMIN NOT FOUND
+        ============================== */
 
         if(!data){
 
-            return null;
+            return {
+
+                ok:true,
+
+                authenticated:true,
+
+                status:"not_found",
+
+                session,
+
+                user,
+
+                admin:null,
+
+                error:null
+
+            };
 
         }
 
 
-        return data;
+        /* ==============================
+           ACTIVE ADMIN FOUND
+        ============================== */
+
+        return {
+
+            ok:true,
+
+            authenticated:true,
+
+            status:"active",
+
+            session,
+
+            user,
+
+            admin:data,
+
+            error:null
+
+        };
+
 
     }catch(error){
 
+        lastAdminProfileError =
+            error;
+
+
         console.error(
-            "[ADMIN SESSION] Current admin failed:",
+            "[ADMIN SESSION] Current admin query exception:",
             error
         );
+
+
+        return {
+
+            ok:false,
+
+            authenticated:true,
+
+            status:"query_error",
+
+            session,
+
+            user,
+
+            admin:null,
+
+            error
+
+        };
+
+    }
+
+}
+
+
+/* ==========================================
+   GET CURRENT ADMIN
+========================================== */
+
+/*
+   BACKWARD COMPATIBILITY
+
+   Existing engines expect:
+
+       admin object
+       OR null
+
+   Therefore we keep that API.
+
+   IMPORTANT:
+
+   Callers that need to distinguish
+   "not found" from "query error"
+   MUST use:
+
+       getCurrentAdminResult()
+*/
+
+async function getCurrentAdmin(){
+
+    const result =
+        await getCurrentAdminResult();
+
+
+    if(
+        result.status !==
+        "active"
+    ){
 
         return null;
 
     }
+
+
+    return result.admin || null;
 
 }
 
@@ -216,17 +625,23 @@ async function getCurrentAdmin(){
 
 async function getCurrentRole(){
 
-    const admin =
-        await getCurrentAdmin();
+    const result =
+        await getCurrentAdminResult();
 
-    if(!admin){
+
+    if(
+        result.status !==
+        "active" ||
+        !result.admin
+    ){
 
         return null;
 
     }
 
+
     return String(
-        admin.role_code || ""
+        result.admin.role_code || ""
     )
     .trim()
     .toLowerCase() || null;
@@ -240,38 +655,59 @@ async function getCurrentRole(){
 
 async function refreshAdminSession(){
 
+    lastSessionError =
+        null;
+
+
     try{
 
         const supabase =
             getAdminClient();
 
+
         const {
+
             data,
+
             error
+
         } =
             await supabase.auth.refreshSession();
 
+
         if(error){
+
+            lastSessionError =
+                error;
+
 
             console.error(
                 "[ADMIN SESSION] Refresh failed:",
                 error
             );
 
+
             return false;
 
         }
+
 
         return !!(
             data?.session?.user?.id
         );
 
+
     }catch(error){
+
+        lastSessionError =
+            error;
+
 
         console.error(
             "[ADMIN SESSION] Refresh exception:",
             error
         );
+
 
         return false;
 
@@ -284,42 +720,114 @@ async function refreshAdminSession(){
    REQUIRE ADMIN SESSION
 ========================================== */
 
+/*
+   IMPORTANT:
+
+   This helper does NOT sign out.
+
+   It returns:
+
+       admin object
+       OR null
+
+   The page/guard decides what to do.
+*/
+
 async function requireAdminSession(){
 
-    const session =
-        await getCurrentSession();
-
-    if(!session?.user?.id){
-
-        window.location.replace(
-            "admin-login.html"
-        );
-
-        return null;
-
-    }
+    const result =
+        await getCurrentAdminResult();
 
 
-    const admin =
-        await getCurrentAdmin();
-
-
-    if(!admin){
-
-        /*
-           Do NOT sign out here.
-
-           The caller can decide whether this is
-           an authorization problem or a database
-           availability problem.
-        */
+    if(
+        result.status !==
+        "active"
+    ){
 
         return null;
 
     }
 
 
-    return admin;
+    return result.admin || null;
+
+}
+
+
+/* ==========================================
+   GET LAST SESSION ERROR
+========================================== */
+
+function getLastSessionError(){
+
+    return lastSessionError || null;
+
+}
+
+
+/* ==========================================
+   GET LAST ADMIN PROFILE ERROR
+========================================== */
+
+function getLastAdminProfileError(){
+
+    return lastAdminProfileError || null;
+
+}
+
+
+/* ==========================================
+   IS ADMIN PROFILE AVAILABLE
+========================================== */
+
+async function hasActiveAdminProfile(){
+
+    const result =
+        await getCurrentAdminResult();
+
+
+    return (
+        result.status ===
+        "active"
+    );
+
+}
+
+
+/* ==========================================
+   GET ADMIN AUTH STATE
+========================================== */
+
+async function getAdminAuthState(){
+
+    const result =
+        await getCurrentAdminResult();
+
+
+    return {
+
+        ok:
+            result.ok,
+
+        authenticated:
+            result.authenticated,
+
+        status:
+            result.status,
+
+        session:
+            result.session || null,
+
+        user:
+            result.user || null,
+
+        admin:
+            result.admin || null,
+
+        error:
+            result.error || null
+
+    };
 
 }
 
@@ -331,23 +839,53 @@ async function requireAdminSession(){
 window.getAdminClient =
     getAdminClient;
 
+
+window.getCurrentSessionResult =
+    getCurrentSessionResult;
+
+
 window.getCurrentSession =
     getCurrentSession;
 
-window.getCurrentAdmin =
-    getCurrentAdmin;
-
-window.getCurrentRole =
-    getCurrentRole;
-
-window.refreshAdminSession =
-    refreshAdminSession;
 
 window.isAdminLoggedIn =
     isAdminLoggedIn;
 
+
+window.getCurrentAdminResult =
+    getCurrentAdminResult;
+
+
+window.getCurrentAdmin =
+    getCurrentAdmin;
+
+
+window.getCurrentRole =
+    getCurrentRole;
+
+
+window.refreshAdminSession =
+    refreshAdminSession;
+
+
 window.requireAdminSession =
     requireAdminSession;
+
+
+window.getLastSessionError =
+    getLastSessionError;
+
+
+window.getLastAdminProfileError =
+    getLastAdminProfileError;
+
+
+window.hasActiveAdminProfile =
+    hasActiveAdminProfile;
+
+
+window.getAdminAuthState =
+    getAdminAuthState;
 
 
 /* ==========================================
@@ -355,7 +893,7 @@ window.requireAdminSession =
 ========================================== */
 
 console.log(
-    "✅ ALBUKHR Admin Session Engine Ready"
+    "✅ ALBUKHR Admin Session Engine v3.0 Ready"
 );
 
 
