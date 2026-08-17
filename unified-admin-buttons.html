@@ -479,11 +479,20 @@
 
 
 <!-- ==================================================
+     ECOSYSTEM SUPABASE CORE
+================================================== -->
+
+<script
+  src="js/supabase-core.js">
+</script>
+
+
+<!-- ==================================================
      DEDICATED ADMIN SUPABASE AUTH CORE
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-supabase-auth.js?v=2.1.0">
+  src="js/supabase-admin-auth/admin-supabase-auth.js">
 </script>
 
 
@@ -492,7 +501,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-session.js?v=2.0.0">
+  src="js/supabase-admin-auth/admin-session.js">
 </script>
 
 
@@ -501,7 +510,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-auth.js?v=2.0.0">
+  src="js/supabase-admin-auth/admin-auth.js">
 </script>
 
 
@@ -510,7 +519,7 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-permissions.js?v=2.1.0">
+  src="js/supabase-admin-auth/admin-permissions.js">
 </script>
 
 
@@ -519,7 +528,21 @@
 ================================================== -->
 
 <script
-  src="js/supabase-admin-auth/admin-bootstrap.js?v=2.2.0">
+  src="js/supabase-admin-auth/admin-bootstrap.js">
+</script>
+
+
+<!-- ==================================================
+     SMART LIQUIDITY ENGINE
+     
+     Depends on ecosystem Supabase Core.
+     It is loaded AFTER Admin Bootstrap so it
+     cannot participate in Admin authentication
+     initialization.
+================================================== -->
+
+<script
+  src="smart-liquidity-engine.js">
 </script>
 
 
@@ -528,9 +551,8 @@
 ================================================== -->
 
 <script
-  src="js/admin/unified-admin-buttons.js?v=3.0.0">
+  src="js/admin/unified-admin-buttons.js">
 </script>
 
 </body>
-
-  </html>
+</html>
