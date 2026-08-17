@@ -1,13 +1,36 @@
 /* ==========================================
    ALBUKHR ADMIN BOOTSTRAP ENGINE
-   Version 2.0
+   Version 2.1
+
    SUPABASE SESSION IS SOURCE OF TRUTH
+
+   DEPENDS ON:
+   - admin-supabase-auth.js
+   - admin-session.js
+   - admin-permissions.js
+
+   PURPOSE:
+   - Build unified Admin state
+   - Verify active admin profile
+   - Load permissions
+   - Dispatch admin-ready
+   - No LocalStorage
+   - No sessionStorage login gate
+
+   IMPORTANT:
+   - Does NOT use js/supabase-core.js
+   - Does NOT use js/auth/supabase-auth.js
+   - Does NOT modify ecosystem engines
 ========================================== */
 
 (function(window){
 
 "use strict";
 
+
+/* ==========================================
+   ADMIN STATE
+========================================== */
 
 const Admin = {
 
@@ -19,31 +42,13 @@ const Admin = {
 
     permissions:[],
 
-    ready:false
+    ready:false,
+
+    environment:null,
+
+    network:null
 
 };
-
-
-/* ==========================================
-   GET ADMIN CLIENT
-========================================== */
-
-function getAdminClient(){
-
-    if(
-        typeof window.getAlbukhrAdminSupabaseClient !==
-        "function"
-    ){
-
-        throw new Error(
-            "ALBUKHR Admin Supabase Auth Core not loaded."
-        );
-
-    }
-
-    return window.getAlbukhrAdminSupabaseClient();
-
-}
 
 
 /* ==========================================
@@ -52,32 +57,164 @@ function getAdminClient(){
 
 function redirectLogin(){
 
-    location.replace(
-        "admin-login.html"
-    );
+    try{
+
+        location.replace(
+            "admin-login.html"
+        );
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN BOOTSTRAP] Redirect failed:",
+            error
+        );
+
+    }
 
 }
 
 
 /* ==========================================
-   INITIALIZE
+   GET ADMIN ENVIRONMENT
 ========================================== */
 
-async function initializeAdmin(){
+function getAdminEnvironment(){
 
     try{
 
+        if(
+            typeof window.getAlbukhrAdminEnvironment ===
+            "function"
+        ){
+
+            const environment =
+                window.getAlbukhrAdminEnvironment();
+
+
+            if(
+                environment === "mainnet" ||
+                environment === "testnet"
+            ){
+
+                return environment;
+
+            }
+
+        }
+
+
+        /*
+           Fallback to hostname only if the
+           Admin Auth Core helper is unavailable.
+        */
+
+        const hostname =
+            String(
+                window.location.hostname || ""
+            )
+            .toLowerCase();
+
+
+        if(
+            hostname === "test.albukhr.com" ||
+            hostname.startsWith("test.")
+        ){
+
+            return "testnet";
+
+        }
+
+
+        if(
+            hostname === "app.albukhr.com" ||
+            hostname.startsWith("app.")
+        ){
+
+            return "mainnet";
+
+        }
+
+
+        /*
+           Approved local/dev fallback.
+        */
+
+        return "mainnet";
+
+
+    }catch(error){
+
+        console.warn(
+            "[ADMIN BOOTSTRAP] Environment detection failed:",
+            error
+        );
+
+        return "mainnet";
+
+    }
+
+}
+
+
+/* ==========================================
+   GET CURRENT SESSION
+========================================== */
+
+async function getBootstrapSession(){
+
+    try{
+
+        /*
+           Use Admin Session Engine.
+
+           This prevents Bootstrap from creating
+           another session implementation.
+        */
+
+        if(
+            typeof window.getCurrentSession ===
+            "function"
+        ){
+
+            return await window.getCurrentSession();
+
+        }
+
+
+        /*
+           Fallback only if admin-session.js
+           has not exposed the helper.
+        */
+
+        if(
+            typeof window.getAlbukhrAdminSupabaseClient !==
+            "function"
+        ){
+
+            throw new Error(
+                "ALBUKHR Admin Auth Core not loaded."
+            );
+
+        }
+
+
         const supabase =
-            getAdminClient();
+            window.getAlbukhrAdminSupabaseClient();
 
 
-        /* ==============================
-           SUPABASE SESSION
-        ============================== */
+        if(!supabase){
+
+            throw new Error(
+                "ALBUKHR Admin Supabase client unavailable."
+            );
+
+        }
+
 
         const {
 
-            data:{session},
+            data,
 
             error
 
@@ -85,35 +222,99 @@ async function initializeAdmin(){
             await supabase.auth.getSession();
 
 
-        if(
-            error ||
-            !session?.user?.id
-        ){
+        if(error){
 
-            console.warn(
-                "[ADMIN BOOTSTRAP] No valid session."
-            );
-
-            redirectLogin();
-
-            return false;
+            throw error;
 
         }
 
 
-        Admin.session =
-            session;
+        return data?.session || null;
 
 
-        /* ==============================
-           ADMIN DATABASE RECORD
-        ============================== */
+    }catch(error){
+
+        console.error(
+            "[ADMIN BOOTSTRAP] Session lookup failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* ==========================================
+   GET CURRENT ADMIN
+========================================== */
+
+async function getBootstrapAdmin(){
+
+    try{
+
+        /*
+           Use Admin Session Engine as the
+           authoritative admin profile lookup.
+        */
+
+        if(
+            typeof window.getCurrentAdmin ===
+            "function"
+        ){
+
+            return await window.getCurrentAdmin();
+
+        }
+
+
+        /*
+           Fallback only if admin-session.js
+           is unavailable.
+        */
+
+        const session =
+            await getBootstrapSession();
+
+
+        if(!session?.user?.id){
+
+            return null;
+
+        }
+
+
+        if(
+            typeof window.getAlbukhrAdminSupabaseClient !==
+            "function"
+        ){
+
+            throw new Error(
+                "ALBUKHR Admin Auth Core not loaded."
+            );
+
+        }
+
+
+        const supabase =
+            window.getAlbukhrAdminSupabaseClient();
+
+
+        if(!supabase){
+
+            throw new Error(
+                "ALBUKHR Admin Supabase client unavailable."
+            );
+
+        }
+
 
         const {
 
-            data:admin,
+            data,
 
-            error:adminError
+            error
 
         } =
             await supabase
@@ -135,60 +336,302 @@ async function initializeAdmin(){
                 .maybeSingle();
 
 
+        if(error){
+
+            console.error(
+                "[ADMIN BOOTSTRAP] Admin profile lookup failed:",
+                error
+            );
+
+            return null;
+
+        }
+
+
+        return data || null;
+
+
+    }catch(error){
+
+        console.error(
+            "[ADMIN BOOTSTRAP] Admin lookup failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* ==========================================
+   LOAD PERMISSIONS
+========================================== */
+
+async function loadAdminPermissions(
+    roleCode
+){
+
+    if(!roleCode){
+
+        return [];
+
+    }
+
+
+    if(
+        typeof window.getRolePermissions !==
+        "function"
+    ){
+
+        console.warn(
+            "[ADMIN BOOTSTRAP] Permission engine not loaded."
+        );
+
+        return [];
+
+    }
+
+
+    try{
+
+        const permissions =
+            await window.getRolePermissions(
+                roleCode
+            );
+
+
+        if(!Array.isArray(permissions)){
+
+            return [];
+
+        }
+
+
+        return permissions;
+
+    }catch(error){
+
+        console.warn(
+            "[ADMIN BOOTSTRAP] Permission load failed:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* ==========================================
+   RESET ADMIN STATE
+========================================== */
+
+function resetAdminState(){
+
+    Admin.session =
+        null;
+
+    Admin.user =
+        null;
+
+    Admin.role =
+        null;
+
+    Admin.permissions =
+        [];
+
+    Admin.ready =
+        false;
+
+    Admin.environment =
+        null;
+
+    Admin.network =
+        null;
+
+}
+
+
+/* ==========================================
+   INITIALIZE ADMIN
+========================================== */
+
+async function initializeAdmin(){
+
+    /*
+       Prevent duplicate initialization.
+    */
+
+    if(Admin.ready){
+
+        return true;
+
+    }
+
+
+    try{
+
+        /* ==============================
+           ENVIRONMENT
+        ============================== */
+
+        const environment =
+            getAdminEnvironment();
+
+
+        Admin.environment =
+            environment;
+
+
+        Admin.network =
+            environment;
+
+
+        /* ==============================
+           SESSION
+        ============================== */
+
+        const session =
+            await getBootstrapSession();
+
+
         if(
-            adminError ||
-            !admin
+            !session?.user?.id
         ){
 
             console.warn(
-                "[ADMIN BOOTSTRAP] Admin not found.",
-                adminError
+                "[ADMIN BOOTSTRAP] No valid Admin Supabase session."
             );
 
-            await supabase.auth.signOut();
+
+            resetAdminState();
+
 
             redirectLogin();
+
 
             return false;
 
         }
 
 
+        Admin.session =
+            session;
+
+
+        Admin.user =
+            session.user;
+
+
+        /* ==============================
+           ADMIN DATABASE PROFILE
+        ============================== */
+
+        const admin =
+            await getBootstrapAdmin();
+
+
+        if(!admin){
+
+            console.warn(
+                "[ADMIN BOOTSTRAP] Active admin profile not found."
+            );
+
+
+            /*
+               The Supabase Auth user exists,
+               but it is not an active ALBUKHR
+               administrator.
+
+               Therefore authentication must
+               be terminated.
+            */
+
+            try{
+
+                if(
+                    typeof window.getAlbukhrAdminSupabaseClient ===
+                    "function"
+                ){
+
+                    const supabase =
+                        window.getAlbukhrAdminSupabaseClient();
+
+
+                    if(supabase){
+
+                        await supabase.auth.signOut();
+
+                    }
+
+                }
+
+            }catch(signOutError){
+
+                console.warn(
+                    "[ADMIN BOOTSTRAP] Sign-out cleanup failed:",
+                    signOutError
+                );
+
+            }
+
+
+            resetAdminState();
+
+
+            redirectLogin();
+
+
+            return false;
+
+        }
+
+
+        /* ==============================
+           ADMIN STATE
+        ============================== */
+
         Admin.user =
             admin;
 
+
         Admin.role =
-            admin.role_code;
+            String(
+                admin.role_code || ""
+            )
+            .trim()
+            .toLowerCase();
+
+
+        if(!Admin.role){
+
+            console.error(
+                "[ADMIN BOOTSTRAP] Admin role is missing."
+            );
+
+
+            resetAdminState();
+
+
+            redirectLogin();
+
+
+            return false;
+
+        }
 
 
         /* ==============================
            PERMISSIONS
         ============================== */
 
-        if(
-            typeof window.getRolePermissions ===
-            "function"
-        ){
-
-            try{
-
-                Admin.permissions =
-                    await window.getRolePermissions(
-                        admin.role_code
-                    );
-
-            }catch(error){
-
-                console.warn(
-                    "[ADMIN BOOTSTRAP] Permission load failed:",
-                    error
-                );
-
-                Admin.permissions = [];
-
-            }
-
-        }
+        Admin.permissions =
+            await loadAdminPermissions(
+                Admin.role
+            );
 
 
         /* ==============================
@@ -198,9 +641,18 @@ async function initializeAdmin(){
         Admin.ready =
             true;
 
+
+        /*
+           Export the final Admin state.
+        */
+
         window.Admin =
             Admin;
 
+
+        /* ==============================
+           ADMIN READY EVENT
+        ============================== */
 
         document.dispatchEvent(
 
@@ -219,6 +671,10 @@ async function initializeAdmin(){
         );
 
 
+        /* ==============================
+           DEBUG
+        ============================== */
+
         console.log(
             "✅ ALBUKHR Admin Bootstrap Ready"
         );
@@ -227,13 +683,22 @@ async function initializeAdmin(){
         console.table({
 
             email:
-                admin.email,
+                admin.email || "",
+
+            username:
+                admin.username || "",
 
             role:
-                admin.role_code,
+                Admin.role,
 
             status:
-                admin.status
+                admin.status || "",
+
+            environment:
+                Admin.environment,
+
+            permissions:
+                Admin.permissions.length
 
         });
 
@@ -248,11 +713,38 @@ async function initializeAdmin(){
             error
         );
 
+
+        resetAdminState();
+
+
         redirectLogin();
+
 
         return false;
 
     }
+
+}
+
+
+/* ==========================================
+   GET ADMIN STATE
+========================================== */
+
+function getAdminState(){
+
+    return Admin;
+
+}
+
+
+/* ==========================================
+   IS ADMIN READY
+========================================== */
+
+function isAdminReady(){
+
+    return Admin.ready === true;
 
 }
 
@@ -264,8 +756,17 @@ async function initializeAdmin(){
 window.Admin =
     Admin;
 
+
 window.initializeAdmin =
     initializeAdmin;
+
+
+window.getAdminState =
+    getAdminState;
+
+
+window.isAdminReady =
+    isAdminReady;
 
 
 /* ==========================================
@@ -278,8 +779,19 @@ if(
 ){
 
     document.addEventListener(
+
         "DOMContentLoaded",
-        initializeAdmin
+
+        function(){
+
+            initializeAdmin();
+
+        },
+
+        {
+            once:true
+        }
+
     );
 
 }else{
