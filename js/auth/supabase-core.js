@@ -1,245 +1,285 @@
-/* =========================================
-   ALBUKHR SUPABASE CORE
-   Dedicated Supabase bootstrap for
-   projects / treasury / liquidity ecosystem
-========================================= */
+/* ==========================================
+   ALBUKHR ADMIN SUPABASE AUTH CORE
+   Version 1.0
+   ISOLATED ADMIN CLIENT
 
-/*
-  MANUFA:
-  - Kada ya karya tsohon supabase.js
-  - Ya zama sabon foundation na:
-      1) projects-engine.js
-      2) project-treasury.js
-      3) smart-liquidity-engine.js
-      4) ecosystem dashboards
-      5) future contributors / internal / external projects
+   IMPORTANT:
+   - Does NOT overwrite js/supabase-core.js
+   - Does NOT overwrite getAlbukhrSupabaseClient()
+   - Dedicated only to Admin Authentication
+========================================== */
 
-  GLOBALS EXPOSED:
-  - window.ALBUKHR_SUPABASE_URL
-  - window.ALBUKHR_SUPABASE_KEY
-  - window.albukhrSupabase
-  - window.getAlbukhrSupabaseClient()
-  - window.isAlbukhrSupabaseReady()
-  - window.albukhrSupabaseHealth()
-*/
+(function(window){
 
-/* =========================================
+"use strict";
+
+
+/* ==========================================
    CONFIG
-========================================= */
-(function(){
+========================================== */
 
-  const ALBUKHR_SUPABASE_URL =
+const ADMIN_SUPABASE_URL =
     "https://qexmnghilahsvethlxem.supabase.co";
 
-  const ALBUKHR_SUPABASE_KEY =
+const ADMIN_SUPABASE_KEY =
     "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
 
-  /* =========================================
-     EXPOSE RAW CONFIG
-  ========================================= */
-  window.ALBUKHR_SUPABASE_URL =
-    ALBUKHR_SUPABASE_URL;
 
-  window.ALBUKHR_SUPABASE_KEY =
-    ALBUKHR_SUPABASE_KEY;
+/* ==========================================
+   INTERNAL STATE
+========================================== */
 
-  /* =========================================
-     INTERNAL CACHE
-  ========================================= */
-  let __albukhrSupabaseClient = null;
-  let __albukhrSupabaseInitError = null;
+let adminClient = null;
+let adminInitError = null;
 
-  /* =========================================
-     SAFE STRING
-  ========================================= */
-  function coreSafeString(value, fallback = ""){
-    if(value === null || value === undefined){
-      return fallback;
-    }
-    return String(value);
-  }
 
-  /* =========================================
-     CHECK SDK READY
-  ========================================= */
-  function hasSupabaseSDK(){
+/* ==========================================
+   SDK CHECK
+========================================== */
+
+function hasAdminSupabaseSDK(){
+
     return !!(
-      window.supabase &&
-      typeof window.supabase.createClient === "function"
+        window.supabase &&
+        typeof window.supabase.createClient === "function"
     );
-  }
 
-  /* =========================================
-     CREATE CLIENT
-  ========================================= */
-  function createAlbukhrSupabaseClient(){
+}
 
-    if(__albukhrSupabaseClient){
-      return __albukhrSupabaseClient;
+
+/* ==========================================
+   ENVIRONMENT
+========================================== */
+
+function getAlbukhrAdminEnvironment(){
+
+    const hostname =
+        String(
+            window.location.hostname || ""
+        ).toLowerCase();
+
+    if(
+        hostname === "test.albukhr.com" ||
+        hostname.startsWith("test.")
+    ){
+
+        return "testnet";
+
     }
 
-    if(!hasSupabaseSDK()){
-      __albukhrSupabaseInitError =
-        "Supabase SDK not found. Load @supabase/supabase-js first.";
-      console.error(__albukhrSupabaseInitError);
-      return null;
+    if(
+        hostname === "app.albukhr.com" ||
+        hostname.startsWith("app.")
+    ){
+
+        return "mainnet";
+
     }
 
-    try{
+    return "mainnet";
 
-      __albukhrSupabaseClient =
-        window.supabase.createClient(
-          ALBUKHR_SUPABASE_URL,
-          ALBUKHR_SUPABASE_KEY,
-          {
-            auth:{
+}
 
-    persistSession:true,
 
-    autoRefreshToken:true,
+/* ==========================================
+   CREATE ADMIN CLIENT
+========================================== */
 
-    detectSessionInUrl:false
+function createAlbukhrAdminSupabaseClient(){
 
-            }
-          }
+    if(adminClient){
+
+        return adminClient;
+
+    }
+
+
+    if(!hasAdminSupabaseSDK()){
+
+        adminInitError =
+            "Supabase SDK not found.";
+
+        console.error(
+            "[ADMIN AUTH CORE]",
+            adminInitError
         );
 
-      __albukhrSupabaseInitError = null;
+        return null;
 
-      return __albukhrSupabaseClient;
-
-    }catch(e){
-
-      __albukhrSupabaseInitError =
-        e?.message || "Failed to create ALBUKHR Supabase client";
-
-      console.error(
-        "ALBUKHR Supabase client creation failed:",
-        e
-      );
-
-      return null;
     }
 
-  }
-
-  /* =========================================
-     GET CLIENT
-  ========================================= */
-  function getAlbukhrSupabaseClient(){
-
-    if(__albukhrSupabaseClient){
-      return __albukhrSupabaseClient;
-    }
-
-    return createAlbukhrSupabaseClient();
-  }
-
-  /* =========================================
-     READY CHECK
-  ========================================= */
-  function isAlbukhrSupabaseReady(){
-
-    return !!getAlbukhrSupabaseClient();
-
-  }
-
-  /* =========================================
-     HEALTH SUMMARY
-  ========================================= */
-  function albukhrSupabaseHealth(){
-
-    const client = getAlbukhrSupabaseClient();
-
-    return {
-      ready: !!client,
-      has_sdk: hasSupabaseSDK(),
-      has_client: !!client,
-      url:
-        coreSafeString(ALBUKHR_SUPABASE_URL),
-      key_present:
-        !!coreSafeString(ALBUKHR_SUPABASE_KEY),
-      init_error:
-        __albukhrSupabaseInitError || null
-    };
-
-  }
-
-  /* =========================================
-     OPTIONAL CONNECTIVITY TEST
-     - admin/debug pages zasu iya kira idan suna so
-  ========================================= */
-  async function testAlbukhrSupabaseConnection(){
-
-    const client = getAlbukhrSupabaseClient();
-
-    if(!client){
-      return {
-        success:false,
-        error:
-          __albukhrSupabaseInitError ||
-          "Supabase client not available"
-      };
-    }
 
     try{
 
-      // lightweight ping against projects table
-      const { error } = await client
-        .from("projects")
-        .select("id", { count:"exact", head:true });
+        adminClient =
+            window.supabase.createClient(
+                ADMIN_SUPABASE_URL,
+                ADMIN_SUPABASE_KEY,
+                {
 
-      if(error){
-        return {
-          success:false,
-          error:error.message || "Supabase connection test failed"
-        };
-      }
+                    auth:{
 
-      return {
-        success:true
-      };
+                        persistSession:true,
 
-    }catch(e){
-      return {
-        success:false,
-        error:e?.message || "Supabase connection test crashed"
-      };
+                        autoRefreshToken:true,
+
+                        detectSessionInUrl:false,
+
+                        storageKey:
+                            "albukhr_admin_auth_session"
+
+                    }
+
+                }
+            );
+
+
+        adminInitError = null;
+
+
+        console.log(
+            "✅ ALBUKHR Admin Supabase Auth Core ready"
+        );
+
+
+        console.log(
+            "Admin Environment:",
+            getAlbukhrAdminEnvironment()
+        );
+
+
+        return adminClient;
+
+
+    }catch(error){
+
+        adminInitError =
+            error?.message ||
+            "Failed to create Admin Supabase client.";
+
+        console.error(
+            "[ADMIN AUTH CORE]",
+            error
+        );
+
+        return null;
+
     }
-  }
 
-  /* =========================================
-     EXPOSE GLOBALS
-  ========================================= */
-  window.albukhrSupabase =
-    getAlbukhrSupabaseClient();
+}
 
-  window.getAlbukhrSupabaseClient =
-    getAlbukhrSupabaseClient;
 
-  window.isAlbukhrSupabaseReady =
-    isAlbukhrSupabaseReady;
+/* ==========================================
+   GET ADMIN CLIENT
+========================================== */
 
-  window.albukhrSupabaseHealth =
-    albukhrSupabaseHealth;
+function getAlbukhrAdminSupabaseClient(){
 
-  window.testAlbukhrSupabaseConnection =
-    testAlbukhrSupabaseConnection;
+    if(adminClient){
 
-  /* =========================================
-     DEBUG LOG
-  ========================================= */
-  const health = albukhrSupabaseHealth();
+        return adminClient;
 
-  if(health.ready){
-    console.log(
-      "✅ ALBUKHR Supabase Core ready"
-    );
-  }else{
-    console.warn(
-      "⚠️ ALBUKHR Supabase Core not ready:",
-      health.init_error || "Unknown issue"
-    );
-  }
+    }
 
-})();
+    return createAlbukhrAdminSupabaseClient();
+
+}
+
+
+/* ==========================================
+   REQUIRE ADMIN CLIENT
+========================================== */
+
+function requireAlbukhrAdminSupabaseClient(){
+
+    const client =
+        getAlbukhrAdminSupabaseClient();
+
+    if(!client){
+
+        throw new Error(
+            adminInitError ||
+            "ALBUKHR Admin Supabase Auth Core not initialized."
+        );
+
+    }
+
+    return client;
+
+}
+
+
+/* ==========================================
+   HEALTH
+========================================== */
+
+function albukhrAdminSupabaseHealth(){
+
+    const client =
+        getAlbukhrAdminSupabaseClient();
+
+    return {
+
+        ready:!!client,
+
+        has_sdk:
+            hasAdminSupabaseSDK(),
+
+        has_client:
+            !!client,
+
+        environment:
+            getAlbukhrAdminEnvironment(),
+
+        url:
+            ADMIN_SUPABASE_URL,
+
+        key_present:
+            !!ADMIN_SUPABASE_KEY,
+
+        init_error:
+            adminInitError || null
+
+    };
+
+}
+
+
+/* ==========================================
+   EXPORT
+========================================== */
+
+window.ALBUKHR_ADMIN_SUPABASE_URL =
+    ADMIN_SUPABASE_URL;
+
+window.ALBUKHR_ADMIN_SUPABASE_KEY =
+    ADMIN_SUPABASE_KEY;
+
+window.getAlbukhrAdminEnvironment =
+    getAlbukhrAdminEnvironment;
+
+window.getAlbukhrAdminSupabaseClient =
+    getAlbukhrAdminSupabaseClient;
+
+window.requireAlbukhrAdminSupabaseClient =
+    requireAlbukhrAdminSupabaseClient;
+
+window.isAlbukhrAdminSupabaseReady =
+    function(){
+
+        return !!getAlbukhrAdminSupabaseClient();
+
+    };
+
+window.albukhrAdminSupabaseHealth =
+    albukhrAdminSupabaseHealth;
+
+
+/* ==========================================
+   INITIALIZE
+========================================== */
+
+createAlbukhrAdminSupabaseClient();
+
+
+})(window);
