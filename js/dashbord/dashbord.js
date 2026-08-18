@@ -558,20 +558,61 @@
       let canUploadUpdate = false;
 
       try{
-        if(typeof canManageAlbukhrProjectTreasury === "function"){
-          canManageTreasury = !!canManageAlbukhrProjectTreasury(project, user);
-        }
-      }catch(e){
-        console.warn("canManageAlbukhrProjectTreasury warning:", e);
-      }
 
-      try{
-        if(typeof canUploadAlbukhrProjectUpdate === "function"){
-          canUploadUpdate = !!canUploadAlbukhrProjectUpdate(project, user);
+  if(
+    typeof canManageAlbukhrProjectTreasury ===
+    "function"
+  ){
+
+    canManageTreasury =
+      !!(
+        await canManageAlbukhrProjectTreasury(
+          project,
+          user
+        )
+      );
+
+  }
+
+}catch(e){
+
+  console.warn(
+    "canManageAlbukhrProjectTreasury warning:",
+    e
+  );
+
+  canManageTreasury = false;
+
+}
+
+
+try{
+
+  if(
+    typeof canUploadAlbukhrProjectUpdate ===
+    "function"
+  ){
+
+    canUploadUpdate =
+      !!(
+        await canUploadAlbukhrProjectUpdate(
+          project,
+          user
+        )
+      );
+
+  }
+
+}catch(e){
+
+  console.warn(
+    "canUploadAlbukhrProjectUpdate warning:",
+    e
+  );
+
+  canUploadUpdate = false;
+
         }
-      }catch(e){
-        console.warn("canUploadAlbukhrProjectUpdate warning:", e);
-      }
 
       /* Project updates heading */
       if(typeof getAlbukhrProjectUpdateTitle === "function"){
@@ -1452,15 +1493,75 @@ alert("After uploadProjectUpdateToSupabase");
        BIND ACTIONS
     ========================================= */
     function bindDashboardActions(){
-      dashboardEls.addLiquidityBtn.addEventListener("click", addLiquidityAction);
-      dashboardEls.withdrawLiquidityBtn.addEventListener("click", withdrawLiquidityAction);
-      dashboardEls.uploadProjectUpdateBtn.addEventListener("click", uploadProjectUpdate);
 
-      dashboardEls.projectUpdateImage.addEventListener("change", function(){
-        const file = this.files && this.files[0] ? this.files[0] : null;
+  if(dashboardEls.addLiquidityBtn){
+
+    dashboardEls.addLiquidityBtn.addEventListener(
+      "click",
+      addLiquidityAction
+    );
+
+  }else{
+
+    console.error(
+      "[DASHBOARD] addLiquidityBtn not found."
+    );
+
+  }
+
+
+  if(dashboardEls.withdrawLiquidityBtn){
+
+    dashboardEls.withdrawLiquidityBtn.addEventListener(
+      "click",
+      withdrawLiquidityAction
+    );
+
+  }else{
+
+    console.error(
+      "[DASHBOARD] withdrawLiquidityBtn not found."
+    );
+
+  }
+
+
+  if(dashboardEls.uploadProjectUpdateBtn){
+
+    dashboardEls.uploadProjectUpdateBtn.addEventListener(
+      "click",
+      uploadProjectUpdate
+    );
+
+  }else{
+
+    console.error(
+      "[DASHBOARD] uploadProjectUpdateBtn not found."
+    );
+
+  }
+
+
+  if(dashboardEls.projectUpdateImage){
+
+    dashboardEls.projectUpdateImage.addEventListener(
+      "change",
+      function(){
+
+        const file =
+          this.files &&
+          this.files[0]
+            ? this.files[0]
+            : null;
+
         previewSelectedImage(file);
-      });
-    }
+
+      }
+    );
+
+  }
+
+        }
 
     /* =========================================
        START
