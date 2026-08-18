@@ -175,24 +175,39 @@
     }
 
     async function getResolverCurrentUser(){
-    try{
-        if(
-            typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
-            typeof ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser === "function"
-        ){
-            return await ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
-        }
-    }catch(e){
-        console.warn("Resolver getCurrentAlbukhrUser warning:", e);
+
+  try{
+
+    if(
+      typeof ALBUKHR_PROJECT_RESOLVER !== "undefined" &&
+      typeof ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser === "function"
+    ){
+
+      return await
+        ALBUKHR_PROJECT_RESOLVER.getCurrentAlbukhrUser();
+
     }
 
-    return {
-        email: localStorage.getItem("albukhr_current_email") || "",
-        userid: localStorage.getItem("albukhr_current_email") || "",
-        username: localStorage.getItem("albukhr_current_username") || "ALBUKHR Admin",
-        role: localStorage.getItem("albukhr_current_role") || "project_admin",
-        isAdmin: true
-    };
+  }catch(e){
+
+    console.error(
+      "[DASHBOARD] Resolver admin lookup failed:",
+      e
+    );
+
+  }
+
+  return {
+
+    email: "",
+    userid: "",
+    username: "",
+    role: "",
+    isAdmin: false,
+    admin: null
+
+  };
+
     }
 
     function resetImagePreview(){
