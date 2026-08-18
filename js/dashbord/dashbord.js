@@ -758,6 +758,49 @@ try{
           const permissionState =
     await applyDashboardSectionPermissions(project);
 
+          console.log(
+  "========== ALBUKHR DASHBOARD AUTH DEBUG =========="
+);
+
+console.log(
+  "Current Project:",
+  project
+);
+
+console.log(
+  "Permission State:",
+  permissionState
+);
+
+console.log(
+  "Admin User:",
+  permissionState.user
+);
+
+console.log(
+  "Role:",
+  permissionState.user?.role
+);
+
+console.log(
+  "Is Admin:",
+  permissionState.user?.isAdmin
+);
+
+console.log(
+  "Treasury:",
+  permissionState.canManageTreasury
+);
+
+console.log(
+  "Updates:",
+  permissionState.canUploadUpdate
+);
+
+console.log(
+  "=================================================="
+);
+
         const [treasuryStatus, roi, investors, history] = await Promise.all([
           getProjectTreasurySummary(project),
           getProjectROI(project.project_code, project),
