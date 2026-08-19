@@ -216,14 +216,6 @@ Cancel
 </div>
 </div>
   
-<!-- 1. PI SDK -->
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-<!-- 2. AUTH -->
-<script src="js/pi-auth.js"></script>
-
-<!-- 3. PAYMENT (NEW) -->
-<script src="js/pi-payment.js"></script>
 
 <!-- 4. INIT -->
 <script>
@@ -240,25 +232,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 
-<!-- 5. OTHER FILES -->
+<!-- Pi SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ALBUKHR network foundation -->
+<script src="js/environment-switcher.js"></script>
+<script src="js/supabase-core.js"></script>
+
+<!-- Auth -->
+<script src="js/pi-auth.js"></script>
+
+<!-- Payment -->
+<script src="js/pi-payment.js"></script>
+
+<!-- Other engines -->
 <script src="js/project-config.js"></script>
 <script src="js/unified-transactions.js"></script>
 <script src="js/albukhr-transaction-engine.js"></script>
 <script src="js/smart-liquidity-engine.js"></script>
 <script src="js/staking.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const supabase = window.supabase.createClient(
-  "https://qexmnghilahsvethlxem.supabase.co",
-  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
-);
-</script>
-
 <script src="js/withdraw.js"></script>
-<!-- Custom App Alert -->
+
+<!-- UI -->
 <script src="js/app-alert.js"></script>
+<script src="js/project.js"></script>
 
 <div id="appAlert" class="app-alert">
 
