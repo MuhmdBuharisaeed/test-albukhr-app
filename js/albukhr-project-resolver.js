@@ -1,266 +1,784 @@
-/* =========================================
-   ALBUKHR PROJECT RESOLVER v2 FINAL PATCHED
-   SAFE MIGRATION LAYER FOR SINGLE / UNIVERSAL DASHBOARD
-   ------------------------------------------------
+/* =========================================================
+   ALBUKHR PROJECT RESOLVER v4
+   NETWORK-AWARE • SUPABASE-FIRST • PROJECT-CODE-FIRST
+   ---------------------------------------------------------
    PURPOSE:
-   - Resolve ALBUKHR project from localStorage/projectRef
-   - Support project_code-first and old project_name fallback
-   - Identify project_type correctly: core/internal/external
-   - Provide dashboard access rules
-   - Provide treasury/update permission rules
-   - Work with old dashboard pages without breaking them
+   - Resolve ALBUKHR projects from the authoritative project engine
+   - Support project_code-first resolution
+   - Support legacy project_name / slug references
+   - Preserve core / internal / external classification
+   - Enforce Mainnet / Testnet isolation
+   - Provide dashboard / treasury / update permissions
+   - Maintain compatibility with existing dashboard APIs
+   - Remove LocalStorage as a persistent project source of truth
 
-   IMPORTANT PATCH:
-   - REMOVED dangerous name-based CORE fallback
-   - project_type is now trusted from real source first
-   - no more accidental "Barsh Agro => core" coercion
-========================================= */
+   ARCHITECTURE:
+   Supabase
+      ↓
+   projects-engine.js
+      ↓
+   ALBUKHR PROJECT RESOLVER
+      ↓
+   Dashboard / Treasury / Updates / Marketplace
 
-(function(){
+   DEPENDS ON:
+   - js/projects-engine.js
+   - Current ALBUKHR Supabase architecture
+
+   IMPORTANT:
+   - project_code is authoritative
+   - project_type must come from trusted project metadata
+   - network isolation is mandatory
+   - LocalStorage is NOT a source of truth
+========================================================= */
+
+(function(window){
+
   "use strict";
 
-  const RESOLVER_VERSION = "3.0.0";
+  /* =======================================================
+     VERSION
+  ======================================================= */
 
-  const ADMIN_ROLES = [
+  const RESOLVER_VERSION = "4.0.0";
+
+
+  /* =======================================================
+     NETWORK CONSTANTS
+  ======================================================= */
+
+  const NETWORKS = Object.freeze({
+    MAINNET: "mainnet",
+    TESTNET: "testnet"
+  });
+
+
+  /* =======================================================
+     ADMIN ROLES
+  ======================================================= */
+
+  const ADMIN_ROLES = Object.freeze([
     "super_admin",
     "ecosystem_admin",
     "finance_admin",
     "project_admin"
-  ];
+  ]);
 
-  /* =========================================
+
+  /* =======================================================
+     CACHE
+  ======================================================= */
+
+  const CACHE = {
+
+    loaded: false,
+
+    loading: false,
+
+    lastUpdate: 0,
+
+    network: "",
+
+    projects: []
+
+  };
+
+  const CACHE_TIME = 10000;
+
+
+  /* =======================================================
      SAFE HELPERS
-  ========================================= */
+  ======================================================= */
+
   function safeString(value, fallback = ""){
-    if(value === null || value === undefined) return fallback;
+
+    if(
+      value === null ||
+      value === undefined
+    ){
+      return fallback;
+    }
+
     return String(value);
+
   }
+
 
   function safeNumber(value, fallback = 0){
+
     const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
+
+    return Number.isFinite(n)
+      ? n
+      : fallback;
+
   }
+
 
   function lower(value){
-    return safeString(value).trim().toLowerCase();
+
+    return safeString(value)
+      .trim()
+      .toLowerCase();
+
   }
+
 
   function normalizeKey(value){
-    return lower(value).replace(/\s+/g, " ").trim();
+
+    return lower(value)
+      .replace(/\s+/g, " ")
+      .trim();
+
   }
 
+
   function slugifyProjectRef(value){
+
     return lower(value)
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_+|_+$/g, "");
+
   }
 
+
+  function normalizeNetwork(value){
+
+    const network = lower(value);
+
+    if(
+      network === NETWORKS.MAINNET ||
+      network === "main"
+    ){
+      return NETWORKS.MAINNET;
+    }
+
+    if(
+      network === NETWORKS.TESTNET ||
+      network === "test"
+    ){
+      return NETWORKS.TESTNET;
+    }
+
+    return "";
+
+  }
+
+
   function uniqueBy(arr, keyGetter){
+
     const map = new Map();
-    (Array.isArray(arr) ? arr : []).forEach(item => {
+
+    (
+      Array.isArray(arr)
+        ? arr
+        : []
+    ).forEach(item => {
+
       const key = keyGetter(item);
+
       if(!map.has(key)){
         map.set(key, item);
       }
+
     });
+
     return Array.from(map.values());
+
   }
 
-  /* =========================================
-     CURRENT USER / ADMIN HELPERS
-  ========================================= */
-  async function getCurrentAlbukhrEmail(){
 
-    const admin = await window.getCurrentAdmin();
+  /* =======================================================
+     CURRENT NETWORK
+     -------------------------------------------------------
+     Priority:
+     1. projects-engine network helper
+     2. ALBUKHR environment object
+     3. hostname
+     4. safe default = mainnet
+  ======================================================= */
 
-    if(!admin){
-        return "";
+  async function getCurrentAlbukhrNetwork(){
+
+    try{
+
+      if(
+        typeof getCurrentNetwork === "function"
+      ){
+
+        const network =
+          await getCurrentNetwork();
+
+        const normalized =
+          normalizeNetwork(network);
+
+        if(normalized){
+          return normalized;
+        }
+
+      }
+
+    }catch(error){
+
+      console.warn(
+        "getCurrentNetwork() failed:",
+        error
+      );
+
     }
 
-    return (
-        admin.email ||
-        admin.admin_email ||
-        ""
+
+    try{
+
+      if(
+        window.ALBUKHR_NETWORK
+      ){
+
+        const normalized =
+          normalizeNetwork(
+            typeof window.ALBUKHR_NETWORK === "object"
+              ? (
+                  window.ALBUKHR_NETWORK.network ||
+                  window.ALBUKHR_NETWORK.current ||
+                  window.ALBUKHR_NETWORK.name
+                )
+              : window.ALBUKHR_NETWORK
+          );
+
+        if(normalized){
+          return normalized;
+        }
+
+      }
+
+    }catch(error){
+
+      console.warn(
+        "ALBUKHR network state unavailable:",
+        error
+      );
+
+    }
+
+
+    try{
+
+      const hostname =
+        lower(window.location.hostname);
+
+      if(
+        hostname === "test.albukhr.com" ||
+        hostname.startsWith("test.")
+      ){
+
+        return NETWORKS.TESTNET;
+
+      }
+
+      return NETWORKS.MAINNET;
+
+    }catch(error){
+
+      return NETWORKS.MAINNET;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     NETWORK FILTER
+  ======================================================= */
+
+  function projectBelongsToNetwork(
+    project,
+    network
+  ){
+
+    if(!project){
+      return false;
+    }
+
+    const targetNetwork =
+      normalizeNetwork(network);
+
+    if(!targetNetwork){
+      return false;
+    }
+
+    const projectNetwork =
+      normalizeNetwork(
+        project.network ||
+        project.environment ||
+        project.project_network
+      );
+
+    /*
+      Projects without an explicit network must NOT be
+      silently assigned to another network.
+    */
+
+    if(!projectNetwork){
+      return false;
+    }
+
+    return projectNetwork === targetNetwork;
+
+  }
+
+
+  /* =======================================================
+     CURRENT USER / ADMIN
+  ======================================================= */
+
+  async function getCurrentAlbukhrAdminRaw(){
+
+    if(
+      typeof window.getCurrentAdmin !== "function"
+    ){
+      return null;
+    }
+
+    try{
+
+      return await window.getCurrentAdmin();
+
+    }catch(error){
+
+      console.warn(
+        "getCurrentAdmin() failed:",
+        error
+      );
+
+      return null;
+
+    }
+
+  }
+
+
+  async function getCurrentAlbukhrEmail(){
+
+    const admin =
+      await getCurrentAlbukhrAdminRaw();
+
+    if(!admin){
+      return "";
+    }
+
+    return safeString(
+      admin.email ||
+      admin.admin_email ||
+      ""
     ).trim();
 
   }
 
-  async function getCurrentAlbukhrAdminRaw(){
 
-    return await window.getCurrentAdmin();
+  async function getCurrentAlbukhrUser(){
 
-  }
-
-   async function getCurrentAlbukhrUser(){
-
-    const admin = await window.getCurrentAdmin();
+    const admin =
+      await getCurrentAlbukhrAdminRaw();
 
     if(!admin){
 
-        return {
+      return {
 
-            email:"",
-            userid:"",
-            username:"",
-            role:"",
-            isAdmin:false,
-            admin:null
+        email: "",
 
-        };
+        userid: "",
+
+        username: "",
+
+        role: "",
+
+        isAdmin: false,
+
+        admin: null
+
+      };
 
     }
 
-    return{
+    return {
 
-        email:admin.email,
-        userid:admin.auth_user_id,
-        username:admin.username,
-        role:admin.role_code,
-        isAdmin:true,
-        admin
+      email:
+        safeString(admin.email).trim(),
+
+      userid:
+        safeString(
+          admin.auth_user_id ||
+          admin.userid ||
+          admin.user_id
+        ).trim(),
+
+      username:
+        safeString(
+          admin.username
+        ).trim(),
+
+      role:
+        safeString(
+          admin.role_code ||
+          admin.role
+        ).trim(),
+
+      isAdmin: true,
+
+      admin
 
     };
 
-   }
-   
-  function hasAdminRole(user, roles = []){
-    if(!user || !user.isAdmin) return false;
-    const role = lower(user.role);
-    return roles.map(lower).includes(role);
   }
+
+
+  /* =======================================================
+     ROLE HELPERS
+  ======================================================= */
+
+  function hasAdminRole(
+    user,
+    roles = []
+  ){
+
+    if(
+      !user ||
+      !user.isAdmin
+    ){
+      return false;
+    }
+
+    const role =
+      lower(user.role);
+
+    return roles
+      .map(lower)
+      .includes(role);
+
+  }
+
 
   function isSuperAdmin(user){
-    return hasAdminRole(user, ["super_admin"]);
+
+    return hasAdminRole(
+      user,
+      ["super_admin"]
+    );
+
   }
+
 
   function isFinanceAdmin(user){
-    return hasAdminRole(user, ["finance_admin"]);
+
+    return hasAdminRole(
+      user,
+      ["finance_admin"]
+    );
+
   }
+
 
   function isEcosystemAdmin(user){
-    return hasAdminRole(user, ["ecosystem_admin"]);
+
+    return hasAdminRole(
+      user,
+      ["ecosystem_admin"]
+    );
+
   }
+
 
   function isProjectAdmin(user){
-    return hasAdminRole(user, ["project_admin"]);
+
+    return hasAdminRole(
+      user,
+      ["project_admin"]
+    );
+
   }
+
 
   function isAnyProjectAdmin(user){
-    return hasAdminRole(user, ADMIN_ROLES);
+
+    return hasAdminRole(
+      user,
+      ADMIN_ROLES
+    );
+
   }
 
-  /* =========================================
-     RAW SOURCE LOADERS
-  ========================================= */
-  async function loadProjectsFromEngine(){
-    const out = [];
 
-    try{
-      if(typeof getAllProjects === "function"){
-        const rows = await getAllProjects({
-          visibleOnly:false,
-          activeOnly:false
-        });
+  /* =======================================================
+     PROJECT ENGINE DEPENDENCY
+  ======================================================= */
 
-        if(Array.isArray(rows)){
-          out.push(...rows);
-        }
-      }
-    }catch(e){
-      console.warn("getAllProjects failed:", e);
-    }
+  function assertProjectEngine(){
 
-    return out;
-  }
+    if(
+      typeof getAllProjects !== "function"
+    ){
 
-  async function loadCoreProjectsFromEngine(){
-    const out = [];
-
-    try{
-      if(typeof getCoreProjects === "function"){
-        const rows = await getCoreProjects({
-          visibleOnly:false,
-          activeOnly:false
-        });
-
-        if(Array.isArray(rows)){
-          out.push(...rows);
-        }
-      }
-    }catch(e){
-      console.warn("getCoreProjects failed:", e);
-    }
-
-    return out;
-  }
-
-  async function loadMarketplaceProjectsFromEngine(){
-    const out = [];
-
-    try{
-      if(typeof getMarketplaceProjects === "function"){
-        const rows = await getMarketplaceProjects();
-        if(Array.isArray(rows)){
-          out.push(...rows);
-        }
-      }
-    }catch(e){
-      console.warn("getMarketplaceProjects failed:", e);
-    }
-
-    return out;
-  }
-
-  function loadInternalProjectsFromLocalStorage(){
-    try{
-      const rows = JSON.parse(
-        localStorage.getItem("albukhr_internal_projects") || "[]"
+      throw new Error(
+        "projects-engine.js must be loaded before project-resolver.js"
       );
 
-      return Array.isArray(rows) ? rows : [];
-    }catch(e){
-      console.warn("albukhr_internal_projects parse failed:", e);
-      return [];
     }
+
   }
 
-  function loadMarketplaceProjectsFromLocalStorage(){
+
+  /* =======================================================
+     LOAD PROJECTS FROM AUTHORITATIVE ENGINE
+  ======================================================= */
+
+  async function loadProjectsFromEngine(
+    network = null
+  ){
+
+    assertProjectEngine();
+
+    const targetNetwork =
+      normalizeNetwork(
+        network
+      ) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    let rows = [];
+
     try{
-      const rows = JSON.parse(
-        localStorage.getItem("albukhr_marketplace_projects") || "[]"
+
+      /*
+        Network-aware query.
+
+        Current projects-engine should use this value
+        when querying Supabase.
+      */
+
+      rows =
+        await getAllProjects({
+
+          visibleOnly: false,
+
+          activeOnly: false,
+
+          network: targetNetwork
+
+        });
+
+    }catch(error){
+
+      console.error(
+        "getAllProjects() failed:",
+        error
       );
 
-      return Array.isArray(rows) ? rows : [];
-    }catch(e){
-      console.warn("albukhr_marketplace_projects parse failed:", e);
+      return [];
+
+    }
+
+
+    if(!Array.isArray(rows)){
       return [];
     }
+
+
+    return rows.filter(project => {
+
+      return projectBelongsToNetwork(
+        project,
+        targetNetwork
+      );
+
+    });
+
   }
 
-  /* =========================================
-     TYPE NORMALIZER
-  ========================================= */
-  function normalizeProjectType(value){
-    const t = lower(value);
-    if(t === "core") return "core";
-    if(t === "internal") return "internal";
-    if(t === "external") return "external";
+
+  /* =======================================================
+     CORE PROJECTS
+     -------------------------------------------------------
+     Compatibility adapter.
+     No LocalStorage.
+  ======================================================= */
+
+  async function loadCoreProjectsFromEngine(
+    network = null
+  ){
+
+    const targetNetwork =
+      normalizeNetwork(network) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    try{
+
+      if(
+        typeof getCoreProjects !== "function"
+      ){
+        return [];
+      }
+
+      const rows =
+        await getCoreProjects({
+
+          visibleOnly: false,
+
+          activeOnly: false,
+
+          network: targetNetwork
+
+        });
+
+
+      if(!Array.isArray(rows)){
+        return [];
+      }
+
+
+      return rows.filter(project => {
+
+        return projectBelongsToNetwork(
+          {
+            ...project,
+            network:
+              project.network ||
+              targetNetwork
+          },
+          targetNetwork
+        );
+
+      });
+
+    }catch(error){
+
+      console.warn(
+        "getCoreProjects() failed:",
+        error
+      );
+
+      return [];
+
+    }
+
+  }
+
+
+  /* =======================================================
+     MARKETPLACE PROJECTS
+     -------------------------------------------------------
+     Compatibility adapter.
+  ======================================================= */
+
+  async function loadMarketplaceProjectsFromEngine(
+    network = null
+  ){
+
+    const targetNetwork =
+      normalizeNetwork(network) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    try{
+
+      if(
+        typeof getMarketplaceProjects !== "function"
+      ){
+        return [];
+      }
+
+      const rows =
+        await getMarketplaceProjects({
+
+          network: targetNetwork
+
+        });
+
+
+      if(!Array.isArray(rows)){
+        return [];
+      }
+
+
+      return rows.filter(project => {
+
+        return projectBelongsToNetwork(
+          {
+            ...project,
+            network:
+              project.network ||
+              targetNetwork
+          },
+          targetNetwork
+        );
+
+      });
+
+    }catch(error){
+
+      console.warn(
+        "getMarketplaceProjects() failed:",
+        error
+      );
+
+      return [];
+
+    }
+
+  }
+
+
+  /* =======================================================
+     PROJECT TYPE NORMALIZER
+  ======================================================= */
+
+  function normalizeProjectType(
+    value
+  ){
+
+    const type =
+      lower(value);
+
+    if(type === "core"){
+      return "core";
+    }
+
+    if(type === "internal"){
+      return "internal";
+    }
+
+    if(type === "external"){
+      return "external";
+    }
+
     return "";
+
   }
 
-  /* =========================================
+
+  /* =======================================================
      PROJECT NORMALIZATION
-  ========================================= */
-  function normalizeProject(raw = {}, source = "unknown"){
+     -------------------------------------------------------
+     IMPORTANT:
+     No name-based type inference.
+     No generic-project => internal coercion.
+  ======================================================= */
+
+  function normalizeProject(
+    raw = {},
+    source = "unknown",
+    network = ""
+  ){
+
     const projectCode =
       safeString(
         raw.project_code ||
         raw.code ||
         raw.projectCode ||
         raw.slug ||
-        raw.id ||
         ""
       ).trim();
+
 
     const projectName =
       safeString(
@@ -271,57 +789,66 @@
         projectCode
       ).trim();
 
-    let projectType = normalizeProjectType(
-      raw.project_type ||
-      raw.type ||
-      raw.projectType ||
-      ""
-    );
 
-    /* -----------------------------------------
-       TRUST EXPLICIT FLAGS FIRST
-    ----------------------------------------- */
+    const projectNetwork =
+      normalizeNetwork(
+        raw.network ||
+        raw.environment ||
+        raw.project_network ||
+        network
+      );
+
+
+    let projectType =
+      normalizeProjectType(
+        raw.project_type ||
+        raw.type ||
+        raw.projectType ||
+        ""
+      );
+
+
+    /*
+      Explicit flags remain supported.
+    */
+
     if(!projectType){
-      if(raw.is_core === true || raw.core === true){
+
+      if(raw.is_core === true){
         projectType = "core";
-      }else if(raw.internal === true){
-        projectType = "internal";
-      }else if(raw.external === true){
-        projectType = "external";
       }
-    }
 
-    /* -----------------------------------------
-       SAFE SOURCE-BASED FALLBACK ONLY
-       NO NAME-BASED CORE FALLBACK ANYMORE
-    ----------------------------------------- */
-    if(!projectType){
-      if(source === "core_engine"){
-        projectType = "core";
-      }else if(source === "marketplace_engine" || source === "marketplace_local"){
-        projectType = "external";
-      }else if(source === "internal_local"){
-        projectType = "internal";
-      }else{
-        /*
-          Default safe fallback:
-          if a project exists in generic projects engine
-          and type is missing, do NOT force core by name.
-          keep it internal unless explicitly marked otherwise.
-        */
+      else if(raw.is_internal === true){
         projectType = "internal";
       }
+
+      else if(raw.is_external === true){
+        projectType = "external";
+      }
+
     }
+
+
+    /*
+      IMPORTANT:
+
+      We do NOT infer project type from project name.
+
+      We do NOT automatically convert an unknown project
+      into core/internal/external.
+
+      Unknown remains unknown.
+    */
+
 
     const creatorUserid =
       safeString(
         raw.creator_userid ||
         raw.creatorUserId ||
-        raw.creator_email ||
-        raw.email ||
-        raw.creator ||
+        raw.creator_auth_user_id ||
         ""
       ).trim();
+
 
     const creatorUsername =
       safeString(
@@ -331,474 +858,1432 @@
         ""
       ).trim();
 
+
     const status =
-      lower(raw.status || raw.project_status || "active") || "active";
+      lower(
+        raw.status ||
+        raw.project_status ||
+        "active"
+      ) || "active";
+
 
     return {
-      id: raw.id ?? null,
-      project_code: projectCode || slugifyProjectRef(projectName),
-      project_name: projectName || projectCode || "Unnamed Project",
-      project_type: projectType,
-      description: safeString(raw.description || "Albukhr Project"),
-      icon: safeString(raw.icon || "📦"),
-      status,
-      reward_rate: safeNumber(raw.reward_rate, 0),
-      reserve_percent: safeNumber(raw.reserve_percent, 0.30),
-      min_liquidity: safeNumber(raw.min_liquidity, 100),
 
-      creator_userid: creatorUserid,
-      creator_username: creatorUsername,
+      id:
+        raw.id ?? null,
+
+      project_code:
+        projectCode ||
+        slugifyProjectRef(
+          projectName
+        ),
+
+      project_name:
+        projectName ||
+        projectCode ||
+        "Unnamed Project",
+
+      project_type:
+        projectType || "unknown",
+
+      network:
+        projectNetwork,
+
+      description:
+        safeString(
+          raw.description ||
+          "ALBUKHR Project"
+        ),
+
+      icon:
+        safeString(
+          raw.icon ||
+          "📦"
+        ),
+
+      status,
+
+      reward_rate:
+        safeNumber(
+          raw.reward_rate,
+          0
+        ),
+
+      reserve_percent:
+        safeNumber(
+          raw.reserve_percent,
+          0.30
+        ),
+
+      min_liquidity:
+        safeNumber(
+          raw.min_liquidity,
+          100
+        ),
+
+      creator_userid:
+        creatorUserid,
+
+      creator_username:
+        creatorUsername,
 
       source,
+
       raw,
 
-      is_core: projectType === "core",
-      is_internal: projectType === "internal",
-      is_external: projectType === "external"
+      is_core:
+        projectType === "core",
+
+      is_internal:
+        projectType === "internal",
+
+      is_external:
+        projectType === "external"
+
     };
+
   }
 
-  /* =========================================
+
+  /* =======================================================
      COLLECT ALL PROJECTS
-  ========================================= */
-  async function collectAlbukhrProjects(){
-    const all = [];
+  ======================================================= */
+
+  async function collectAlbukhrProjects(
+    options = {}
+  ){
+
+    const targetNetwork =
+      normalizeNetwork(
+        options.network
+      ) ||
+      await getCurrentAlbukhrNetwork();
+
 
     const [
       allProjects,
       coreProjects,
-      marketplaceEngineProjects
+      marketplaceProjects
     ] = await Promise.all([
-      loadProjectsFromEngine(),
-      loadCoreProjectsFromEngine(),
-      loadMarketplaceProjectsFromEngine()
+
+      loadProjectsFromEngine(
+        targetNetwork
+      ),
+
+      loadCoreProjectsFromEngine(
+        targetNetwork
+      ),
+
+      loadMarketplaceProjectsFromEngine(
+        targetNetwork
+      )
+
     ]);
 
-    allProjects.forEach(p => {
-      all.push(normalizeProject(p, "projects_engine"));
+
+    const all = [];
+
+
+    allProjects.forEach(project => {
+
+      all.push(
+        normalizeProject(
+          project,
+          "projects_engine",
+          targetNetwork
+        )
+      );
+
     });
 
-    coreProjects.forEach(p => {
-      all.push(normalizeProject(
-        { ...p, project_type: p.project_type || "core" },
-        "core_engine"
-      ));
+
+    coreProjects.forEach(project => {
+
+      all.push(
+        normalizeProject(
+          {
+            ...project,
+
+            project_type:
+              project.project_type ||
+              "core"
+
+          },
+
+          "core_engine",
+
+          targetNetwork
+
+        )
+      );
+
     });
 
-    marketplaceEngineProjects.forEach(p => {
-      all.push(normalizeProject(
-        { ...p, project_type: p.project_type || "external" },
-        "marketplace_engine"
-      ));
+
+    marketplaceProjects.forEach(project => {
+
+      all.push(
+        normalizeProject(
+          {
+            ...project,
+
+            project_type:
+              project.project_type ||
+              "external"
+
+          },
+
+          "marketplace_engine",
+
+          targetNetwork
+
+        )
+      );
+
     });
 
-    loadInternalProjectsFromLocalStorage().forEach(p => {
-      all.push(normalizeProject(
-        {
-          ...p,
-          project_name: p.project_name || p.projectName || p.name,
-          project_code: p.project_code || p.projectCode,
-          project_type: p.project_type || "internal"
-        },
-        "internal_local"
-      ));
-    });
 
-    loadMarketplaceProjectsFromLocalStorage().forEach(p => {
-      all.push(normalizeProject(
-        {
-          ...p,
-          project_name: p.project_name || p.projectName || p.name,
-          project_code: p.project_code || p.projectCode,
-          project_type: p.project_type || "external"
-        },
-        "marketplace_local"
-      ));
-    });
+    /*
+      Final network isolation.
+    */
+
+    const networkRows =
+      all.filter(project => {
+
+        return (
+          project.network ===
+          targetNetwork
+        );
+
+      });
+
+
+    /*
+      project_code is the canonical
+      deduplication identity.
+    */
 
     return uniqueBy(
-      all.filter(Boolean).filter(p => p.project_code || p.project_name),
-      p => `${normalizeKey(p.project_code)}::${normalizeKey(p.project_name)}`
+
+      networkRows
+        .filter(Boolean)
+        .filter(project =>
+          project.project_code
+        ),
+
+      project =>
+        normalizeKey(
+          project.project_code
+        )
+
     );
+
   }
 
-  /* =========================================
-     FINDERS
-  ========================================= */
-  function findProjectByCode(projects = [], projectCode = ""){
-    const key = normalizeKey(projectCode);
-    if(!key) return null;
 
-    return projects.find(p =>
-      normalizeKey(p.project_code) === key
+  /* =======================================================
+     CACHE LOAD
+  ======================================================= */
+
+  async function loadProjectCache(
+    force = false,
+    network = null
+  ){
+
+    const targetNetwork =
+      normalizeNetwork(network) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    const now =
+      Date.now();
+
+
+    if(
+
+      !force &&
+
+      CACHE.loaded &&
+
+      CACHE.network ===
+        targetNetwork &&
+
+      (
+        now -
+        CACHE.lastUpdate
+      ) < CACHE_TIME
+
+    ){
+
+      return CACHE.projects;
+
+    }
+
+
+    if(CACHE.loading){
+
+      return CACHE.projects;
+
+    }
+
+
+    CACHE.loading = true;
+
+
+    try{
+
+      const projects =
+        await collectAlbukhrProjects({
+
+          network:
+            targetNetwork
+
+        });
+
+
+      CACHE.projects =
+        Array.isArray(projects)
+          ? projects
+          : [];
+
+
+      CACHE.network =
+        targetNetwork;
+
+
+      CACHE.loaded =
+        true;
+
+
+      CACHE.lastUpdate =
+        Date.now();
+
+
+    }catch(error){
+
+      console.error(
+        "ALBUKHR Project Resolver cache load failed:",
+        error
+      );
+
+    }
+
+
+    CACHE.loading = false;
+
+
+    return CACHE.projects;
+
+  }
+
+
+  /* =======================================================
+     CACHE REFRESH
+  ======================================================= */
+
+  async function refreshAlbukhrProjects(){
+
+    CACHE.loaded = false;
+
+    CACHE.loading = false;
+
+    CACHE.lastUpdate = 0;
+
+    CACHE.network = "";
+
+    CACHE.projects = [];
+
+    return await loadProjectCache(
+      true
+    );
+
+  }
+
+
+  /* =======================================================
+     FIND BY CODE
+  ======================================================= */
+
+  function findProjectByCode(
+    projects = [],
+    projectCode = ""
+  ){
+
+    const key =
+      normalizeKey(
+        projectCode
+      );
+
+
+    if(!key){
+      return null;
+    }
+
+
+    return projects.find(
+      project =>
+        normalizeKey(
+          project.project_code
+        ) === key
     ) || null;
+
   }
 
-  function findProjectByName(projects = [], projectName = ""){
-    const key = normalizeKey(projectName);
-    if(!key) return null;
 
-    return projects.find(p =>
-      normalizeKey(p.project_name) === key
+  /* =======================================================
+     FIND BY NAME
+  ======================================================= */
+
+  function findProjectByName(
+    projects = [],
+    projectName = ""
+  ){
+
+    const key =
+      normalizeKey(
+        projectName
+      );
+
+
+    if(!key){
+      return null;
+    }
+
+
+    return projects.find(
+      project =>
+        normalizeKey(
+          project.project_name
+        ) === key
     ) || null;
+
   }
 
-  function findProjectByFlexibleRef(projects = [], projectRef = ""){
-    const ref = safeString(projectRef).trim();
-    if(!ref) return null;
 
-    const byCode = findProjectByCode(projects, ref);
-    if(byCode) return byCode;
+  /* =======================================================
+     FLEXIBLE REFERENCE
+     -------------------------------------------------------
+     Priority:
+     1. project_code
+     2. exact project_name
+     3. slug compatibility
+  ======================================================= */
 
-    const byName = findProjectByName(projects, ref);
-    if(byName) return byName;
+  function findProjectByFlexibleRef(
+    projects = [],
+    projectRef = ""
+  ){
 
-    const slugRef = slugifyProjectRef(ref);
-
-    return projects.find(p =>
-      slugifyProjectRef(p.project_code) === slugRef ||
-      slugifyProjectRef(p.project_name) === slugRef
-    ) || null;
-  }
-
-  /* =========================================
-     RESOLVE PROJECT
-  ========================================= */
-  async function resolveAlbukhrProject(projectRef){
-    const ref = safeString(projectRef).trim();
-    if(!ref) return null;
-
-    const projects = await collectAlbukhrProjects();
-    return findProjectByFlexibleRef(projects, ref);
-  }
-
-  async function resolveCurrentAlbukhrProject(){
     const ref =
-      safeString(localStorage.getItem("albukhr_current_project")).trim();
+      safeString(
+        projectRef
+      ).trim();
 
-    if(!ref) return null;
-
-    return await resolveAlbukhrProject(ref);
-  }
-
-  /* =========================================
-     PROJECT TYPE HELPERS
-  ========================================= */
-  function getAlbukhrProjectType(project){
-    if(!project) return "unknown";
-
-    if(project.is_core || lower(project.project_type) === "core"){
-      return "core";
-    }
-
-    if(project.is_external || lower(project.project_type) === "external"){
-      return "external";
-    }
-
-    if(project.is_internal || lower(project.project_type) === "internal"){
-      return "internal";
-    }
-
-    return "unknown";
-  }
-
-  function isCoreProject(project){
-    return getAlbukhrProjectType(project) === "core";
-  }
-
-  function isInternalProject(project){
-    return getAlbukhrProjectType(project) === "internal";
-  }
-
-  function isExternalProject(project){
-    return getAlbukhrProjectType(project) === "external";
-  }
-
-  /* =========================================
-     ACCESS RULES
-  ========================================= */
-  async function canAccessAlbukhrProjectDashboard(project, user = null){
-
-    if(!project) return false;
-
-    user = user || await getCurrentAlbukhrUser();
-
-    if(isAnyProjectAdmin(user)){
-        return true;
-    }
-
-    if(isCoreProject(project)){
-        return false;
-    }
-
-    const creatorId = lower(project.creator_userid);
-    const currentUserId = lower(user.userid || user.email);
-
-    if(
-        creatorId &&
-        creatorId === currentUserId
-    ){
-        return true;
-    }
-
-    return false;
-
-  }
-  /* =========================================
-     TREASURY RULES
-  ========================================= */
-  async function canManageAlbukhrProjectTreasury(project, user = null){
-
-    if(!project) return false;
-
-    user = user || await getCurrentAlbukhrUser();
-
-    if(
-        isSuperAdmin(user) ||
-        isFinanceAdmin(user) ||
-        isEcosystemAdmin(user)
-    ){
-        return true;
-    }
-
-    return false;
-
-  }
-
-  /* =========================================
-     UPDATE RULES
-  ========================================= */
-  async function canUploadAlbukhrProjectUpdate(project, user = null){
-
-    if(!project) return false;
-
-    user = user || await getCurrentAlbukhrUser();
-
-    if(isAnyProjectAdmin(user)){
-        return true;
-    }
-
-    const creatorId = lower(project.creator_userid);
-    const currentUserId = lower(user.userid || user.email);
-
-    if(
-        (isInternalProject(project) || isExternalProject(project)) &&
-        creatorId &&
-        creatorId === currentUserId
-    ){
-        return true;
-    }
-
-    return false;
-
-  }
-  /* =========================================
-     SAFE DASHBOARD GUARD
-  ========================================= */
-async function guardAlbukhrDashboardAccess({
-    projectRef = "",
-    requireProject = true
-} = {}){
-
-    const user = await getCurrentAlbukhrUser();
-
-    const ref =
-        safeString(
-            projectRef ||
-            localStorage.getItem("albukhr_current_project")
-        ).trim();
 
     if(!ref){
+      return null;
+    }
 
-        if(requireProject){
 
-            return{
-                ok:false,
-                reason:"missing_project",
-                project:null,
-                user
-            };
+    const byCode =
+      findProjectByCode(
+        projects,
+        ref
+      );
+
+
+    if(byCode){
+      return byCode;
+    }
+
+
+    const byName =
+      findProjectByName(
+        projects,
+        ref
+      );
+
+
+    if(byName){
+      return byName;
+    }
+
+
+    const slugRef =
+      slugifyProjectRef(
+        ref
+      );
+
+
+    if(!slugRef){
+      return null;
+    }
+
+
+    return projects.find(
+      project =>
+
+        slugifyProjectRef(
+          project.project_code
+        ) === slugRef
+
+        ||
+
+        slugifyProjectRef(
+          project.project_name
+        ) === slugRef
+
+    ) || null;
+
+  }
+
+
+  /* =======================================================
+     RESOLVE PROJECT
+  ======================================================= */
+
+  async function resolveAlbukhrProject(
+    projectRef,
+    options = {}
+  ){
+
+    const ref =
+      safeString(
+        projectRef
+      ).trim();
+
+
+    if(!ref){
+      return null;
+    }
+
+
+    const network =
+      normalizeNetwork(
+        options.network
+      ) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    const projects =
+      await loadProjectCache(
+        false,
+        network
+      );
+
+
+    return findProjectByFlexibleRef(
+      projects,
+      ref
+    );
+
+  }
+
+
+  /* =======================================================
+     LEGACY PROJECT REFERENCE
+     -------------------------------------------------------
+     Read-only compatibility.
+
+     We do NOT use LocalStorage as source of truth.
+     Existing dashboard pages may still pass their old
+     reference through this function while migrating.
+  ======================================================= */
+
+  function getLegacyProjectReference(){
+
+    try{
+
+      if(
+        window.ALBUKHR_CURRENT_PROJECT
+      ){
+
+        if(
+          typeof window.ALBUKHR_CURRENT_PROJECT ===
+            "object"
+        ){
+
+          return safeString(
+            window.ALBUKHR_CURRENT_PROJECT.project_code ||
+            window.ALBUKHR_CURRENT_PROJECT.code ||
+            window.ALBUKHR_CURRENT_PROJECT.project_name ||
+            ""
+          ).trim();
 
         }
 
-        return{
-            ok:true,
-            reason:null,
-            project:null,
-            user
-        };
+        return safeString(
+          window.ALBUKHR_CURRENT_PROJECT
+        ).trim();
+
+      }
+
+    }catch(error){}
+
+
+    /*
+      URL query is the preferred compatibility
+      mechanism for page-to-page project selection.
+    */
+
+    try{
+
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      return safeString(
+        params.get("project_code") ||
+        params.get("project") ||
+        params.get("projectRef") ||
+        ""
+      ).trim();
+
+    }catch(error){
+
+      return "";
 
     }
 
+  }
+
+
+  /* =======================================================
+     RESOLVE CURRENT PROJECT
+  ======================================================= */
+
+  async function resolveCurrentAlbukhrProject(
+    options = {}
+  ){
+
+    const ref =
+      safeString(
+        options.projectRef ||
+        getLegacyProjectReference()
+      ).trim();
+
+
+    if(!ref){
+      return null;
+    }
+
+
+    return await resolveAlbukhrProject(
+      ref,
+      options
+    );
+
+  }
+
+
+  /* =======================================================
+     PROJECT TYPE
+  ======================================================= */
+
+  function getAlbukhrProjectType(
+    project
+  ){
+
+    if(!project){
+      return "unknown";
+    }
+
+
+    const type =
+      normalizeProjectType(
+        project.project_type
+      );
+
+
+    return type || "unknown";
+
+  }
+
+
+  function isCoreProject(project){
+
+    return (
+      getAlbukhrProjectType(project) ===
+      "core"
+    );
+
+  }
+
+
+  function isInternalProject(project){
+
+    return (
+      getAlbukhrProjectType(project) ===
+      "internal"
+    );
+
+  }
+
+
+  function isExternalProject(project){
+
+    return (
+      getAlbukhrProjectType(project) ===
+      "external"
+    );
+
+  }
+
+
+  /* =======================================================
+     PROJECT OWNERSHIP
+  ======================================================= */
+
+  function isProjectOwner(
+    project,
+    user
+  ){
+
+    if(
+      !project ||
+      !user
+    ){
+      return false;
+    }
+
+
+    const creatorId =
+      lower(
+        project.creator_userid
+      );
+
+
+    const currentUserId =
+      lower(
+        user.userid
+      );
+
+
+    if(
+      creatorId &&
+      currentUserId &&
+      creatorId === currentUserId
+    ){
+      return true;
+    }
+
+
+    return false;
+
+  }
+
+
+  /* =======================================================
+     DASHBOARD ACCESS
+     -------------------------------------------------------
+     Rules:
+     - super/ecosystem/project admins: allowed
+     - core: admin-only
+     - internal/external: owner allowed
+     - unknown type: denied
+  ======================================================= */
+
+  async function canAccessAlbukhrProjectDashboard(
+    project,
+    user = null
+  ){
+
+    if(!project){
+      return false;
+    }
+
+
+    user =
+      user ||
+      await getCurrentAlbukhrUser();
+
+
+    if(
+      !project.network
+    ){
+      return false;
+    }
+
+
+    const currentNetwork =
+      await getCurrentAlbukhrNetwork();
+
+
+    if(
+      project.network !==
+      currentNetwork
+    ){
+      return false;
+    }
+
+
+    if(
+      isAnyProjectAdmin(user)
+    ){
+      return true;
+    }
+
+
+    if(
+      isCoreProject(project)
+    ){
+      return false;
+    }
+
+
+    if(
+      isInternalProject(project) ||
+      isExternalProject(project)
+    ){
+
+      return isProjectOwner(
+        project,
+        user
+      );
+
+    }
+
+
+    return false;
+
+  }
+
+
+  /* =======================================================
+     TREASURY PERMISSIONS
+  ======================================================= */
+
+  async function canManageAlbukhrProjectTreasury(
+    project,
+    user = null
+  ){
+
+    if(!project){
+      return false;
+    }
+
+
+    user =
+      user ||
+      await getCurrentAlbukhrUser();
+
+
+    const currentNetwork =
+      await getCurrentAlbukhrNetwork();
+
+
+    if(
+      project.network !==
+      currentNetwork
+    ){
+      return false;
+    }
+
+
+    return (
+      isSuperAdmin(user) ||
+      isFinanceAdmin(user) ||
+      isEcosystemAdmin(user)
+    );
+
+  }
+
+
+  /* =======================================================
+     PROJECT UPDATE PERMISSIONS
+  ======================================================= */
+
+  async function canUploadAlbukhrProjectUpdate(
+    project,
+    user = null
+  ){
+
+    if(!project){
+      return false;
+    }
+
+
+    user =
+      user ||
+      await getCurrentAlbukhrUser();
+
+
+    const currentNetwork =
+      await getCurrentAlbukhrNetwork();
+
+
+    if(
+      project.network !==
+      currentNetwork
+    ){
+      return false;
+    }
+
+
+    if(
+      isAnyProjectAdmin(user)
+    ){
+      return true;
+    }
+
+
+    if(
+      isInternalProject(project) ||
+      isExternalProject(project)
+    ){
+
+      return isProjectOwner(
+        project,
+        user
+      );
+
+    }
+
+
+    return false;
+
+  }
+
+
+  /* =======================================================
+     DASHBOARD GUARD
+  ======================================================= */
+
+  async function guardAlbukhrDashboardAccess({
+
+    projectRef = "",
+
+    requireProject = true,
+
+    network = null
+
+  } = {}){
+
+    const user =
+      await getCurrentAlbukhrUser();
+
+
+    const targetNetwork =
+      normalizeNetwork(network) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    const ref =
+      safeString(
+        projectRef
+      ).trim();
+
+
+    if(!ref){
+
+      if(requireProject){
+
+        return {
+
+          ok: false,
+
+          reason:
+            "missing_project",
+
+          project: null,
+
+          user,
+
+          network:
+            targetNetwork
+
+        };
+
+      }
+
+
+      return {
+
+        ok: true,
+
+        reason: null,
+
+        project: null,
+
+        user,
+
+        network:
+          targetNetwork
+
+      };
+
+    }
+
+
     const project =
-    await resolveAlbukhrProject(ref);
+      await resolveAlbukhrProject(
+        ref,
+        {
+          network:
+            targetNetwork
+        }
+      );
+
 
     if(!project){
 
-        return{
-            ok:false,
-            reason:"project_not_found",
-            project:null,
-            user
-        };
+      return {
+
+        ok: false,
+
+        reason:
+          "project_not_found",
+
+        project: null,
+
+        user,
+
+        network:
+          targetNetwork
+
+      };
 
     }
+
 
     if(
-        !(await canAccessAlbukhrProjectDashboard(
-            project,
-            user
-        ))
+      project.network !==
+      targetNetwork
     ){
 
-        return{
-            ok:false,
-            reason:"access_denied",
-            project,
-            user
-        };
+      return {
+
+        ok: false,
+
+        reason:
+          "network_mismatch",
+
+        project,
+
+        user,
+
+        network:
+          targetNetwork
+
+      };
 
     }
 
-    return{
 
-        ok:true,
-        reason:null,
+    const allowed =
+      await canAccessAlbukhrProjectDashboard(
         project,
         user
+      );
+
+
+    if(!allowed){
+
+      return {
+
+        ok: false,
+
+        reason:
+          "access_denied",
+
+        project,
+
+        user,
+
+        network:
+          targetNetwork
+
+      };
+
+    }
+
+
+    return {
+
+      ok: true,
+
+      reason: null,
+
+      project,
+
+      user,
+
+      network:
+        targetNetwork
 
     };
 
-       }
+  }
 
-  /* =========================================
+
+  /* =======================================================
      UI HELPERS
-  ========================================= */
-  function getAlbukhrDashboardTitle(project){
-    const type = getAlbukhrProjectType(project);
+  ======================================================= */
 
-    if(type === "core") return "ALBUKHR Core Project Dashboard";
-    if(type === "internal") return "ALBUKHR Internal Project Dashboard";
-    if(type === "external") return "ALBUKHR External Project Dashboard";
+  function getAlbukhrDashboardTitle(
+    project
+  ){
+
+    const type =
+      getAlbukhrProjectType(
+        project
+      );
+
+
+    if(type === "core"){
+      return "ALBUKHR Core Project Dashboard";
+    }
+
+
+    if(type === "internal"){
+      return "ALBUKHR Internal Project Dashboard";
+    }
+
+
+    if(type === "external"){
+      return "ALBUKHR External Project Dashboard";
+    }
+
 
     return "ALBUKHR Project Dashboard";
+
   }
 
-  function getAlbukhrProjectUpdateTitle(project){
-    const type = getAlbukhrProjectType(project);
 
-    if(type === "core") return "📸 Core Project Updates";
-    if(type === "internal") return "📸 Internal Project Updates";
-    if(type === "external") return "📸 External Project Updates";
+  function getAlbukhrProjectUpdateTitle(
+    project
+  ){
+
+    const type =
+      getAlbukhrProjectType(
+        project
+      );
+
+
+    if(type === "core"){
+      return "📸 Core Project Updates";
+    }
+
+
+    if(type === "internal"){
+      return "📸 Internal Project Updates";
+    }
+
+
+    if(type === "external"){
+      return "📸 External Project Updates";
+    }
+
 
     return "📸 Project Updates";
+
   }
 
-  function getAlbukhrProjectTypeLabel(project){
-    const type = getAlbukhrProjectType(project);
 
-    if(type === "core") return "Core Project";
-    if(type === "internal") return "Internal Project";
-    if(type === "external") return "External Project";
+  function getAlbukhrProjectTypeLabel(
+    project
+  ){
 
-    return "Project";
-  }
+    const type =
+      getAlbukhrProjectType(
+        project
+      );
 
-  /* =========================================
-     LEGACY STORAGE NORMALIZERS
-  ========================================= */
-  async function normalizeAlbukhrCurrentProjectStorage(){
-    const raw =
-      safeString(localStorage.getItem("albukhr_current_project")).trim();
 
-    if(!raw) return null;
-
-    const project = await resolveAlbukhrProject(raw);
-    if(!project) return null;
-
-    if(project.project_code){
-      localStorage.setItem("albukhr_current_project", project.project_code);
+    if(type === "core"){
+      return "Core Project";
     }
 
-    return project;
-  }
 
-  async function normalizeAlbukhrUpdateProjectStorage(){
-    const raw =
-      safeString(localStorage.getItem("albukhr_update_project")).trim();
-
-    if(!raw) return null;
-
-    const project = await resolveAlbukhrProject(raw);
-    if(!project) return null;
-
-    if(project.project_code){
-      localStorage.setItem("albukhr_update_project", project.project_code);
+    if(type === "internal"){
+      return "Internal Project";
     }
 
-    return project;
+
+    if(type === "external"){
+      return "External Project";
+    }
+
+
+    return "Unknown Project Type";
+
   }
 
-  /* =========================================
-     PUBLIC EXPORTS
-  ========================================= */
+
+  /* =======================================================
+     PROJECT LIST API
+  ======================================================= */
+
+  async function getResolvedAlbukhrProjects(
+    options = {}
+  ){
+
+    const network =
+      normalizeNetwork(
+        options.network
+      ) ||
+      await getCurrentAlbukhrNetwork();
+
+
+    return await loadProjectCache(
+      !!options.forceRefresh,
+      network
+    );
+
+  }
+
+
+  /* =======================================================
+     PROJECT CACHE STATUS
+  ======================================================= */
+
+  function getAlbukhrProjectResolverStatus(){
+
+    return {
+
+      version:
+        RESOLVER_VERSION,
+
+      loaded:
+        CACHE.loaded,
+
+      loading:
+        CACHE.loading,
+
+      network:
+        CACHE.network,
+
+      project_count:
+        CACHE.projects.length,
+
+      last_update:
+        CACHE.lastUpdate
+
+    };
+
+  }
+
+
+  /* =======================================================
+     NETWORK CHANGE HANDLER
+     -------------------------------------------------------
+     Allows environment-switching logic to invalidate
+     project cache without changing the Dock Navigation.
+  ======================================================= */
+
+  function handleAlbukhrNetworkChanged(
+    network
+  ){
+
+    const normalized =
+      normalizeNetwork(
+        network
+      );
+
+
+    if(
+      !normalized ||
+      CACHE.network === normalized
+    ){
+      return;
+    }
+
+
+    CACHE.loaded = false;
+
+    CACHE.lastUpdate = 0;
+
+    CACHE.network = "";
+
+    CACHE.projects = [];
+
+  }
+
+
+  /* =======================================================
+     PUBLIC NAMESPACE
+  ======================================================= */
+
   window.ALBUKHR_PROJECT_RESOLVER = {
-    version: RESOLVER_VERSION,
+
+    version:
+      RESOLVER_VERSION,
+
+    NETWORKS,
+
     ADMIN_ROLES,
 
     safeString,
+
     safeNumber,
+
     lower,
+
     normalizeKey,
+
     slugifyProjectRef,
 
+    normalizeNetwork,
+
+    getCurrentAlbukhrNetwork,
+
     getCurrentAlbukhrEmail,
+
     getCurrentAlbukhrAdminRaw,
+
     getCurrentAlbukhrUser,
 
     isSuperAdmin,
+
     isFinanceAdmin,
+
     isEcosystemAdmin,
+
     isProjectAdmin,
+
     isAnyProjectAdmin,
 
+    normalizeProjectType,
+
     normalizeProject,
+
+    loadProjectsFromEngine,
+
+    loadCoreProjectsFromEngine,
+
+    loadMarketplaceProjectsFromEngine,
+
     collectAlbukhrProjects,
 
+    getResolvedAlbukhrProjects,
+
     findProjectByCode,
+
     findProjectByName,
+
     findProjectByFlexibleRef,
 
     resolveAlbukhrProject,
+
     resolveCurrentAlbukhrProject,
 
     getAlbukhrProjectType,
+
     isCoreProject,
+
     isInternalProject,
+
     isExternalProject,
 
+    isProjectOwner,
+
     canAccessAlbukhrProjectDashboard,
+
     canManageAlbukhrProjectTreasury,
+
     canUploadAlbukhrProjectUpdate,
 
     guardAlbukhrDashboardAccess,
 
     getAlbukhrDashboardTitle,
+
     getAlbukhrProjectUpdateTitle,
+
     getAlbukhrProjectTypeLabel,
 
-    normalizeAlbukhrCurrentProjectStorage,
-    normalizeAlbukhrUpdateProjectStorage
+    refreshAlbukhrProjects,
+
+    getAlbukhrProjectResolverStatus,
+
+    handleAlbukhrNetworkChanged
+
   };
 
-  window.resolveAlbukhrProject = resolveAlbukhrProject;
-  window.resolveCurrentAlbukhrProject = resolveCurrentAlbukhrProject;
-  window.getAlbukhrProjectType = getAlbukhrProjectType;
-  window.canAccessAlbukhrProjectDashboard = canAccessAlbukhrProjectDashboard;
-  window.canManageAlbukhrProjectTreasury = canManageAlbukhrProjectTreasury;
-  window.canUploadAlbukhrProjectUpdate = canUploadAlbukhrProjectUpdate;
-  window.guardAlbukhrDashboardAccess = guardAlbukhrDashboardAccess;
-  window.normalizeAlbukhrCurrentProjectStorage = normalizeAlbukhrCurrentProjectStorage;
-  window.normalizeAlbukhrUpdateProjectStorage = normalizeAlbukhrUpdateProjectStorage;
+
+  /* =======================================================
+     GLOBAL COMPATIBILITY EXPORTS
+  ======================================================= */
+
+  window.resolveAlbukhrProject =
+    resolveAlbukhrProject;
+
+
+  window.resolveCurrentAlbukhrProject =
+    resolveCurrentAlbukhrProject;
+
+
+  window.getAlbukhrProjectType =
+    getAlbukhrProjectType;
+
+
+  window.canAccessAlbukhrProjectDashboard =
+    canAccessAlbukhrProjectDashboard;
+
+
+  window.canManageAlbukhrProjectTreasury =
+    canManageAlbukhrProjectTreasury;
+
+
+  window.canUploadAlbukhrProjectUpdate =
+    canUploadAlbukhrProjectUpdate;
+
+
+  window.guardAlbukhrDashboardAccess =
+    guardAlbukhrDashboardAccess;
+
+
+  window.getResolvedAlbukhrProjects =
+    getResolvedAlbukhrProjects;
+
+
+  window.refreshAlbukhrProjects =
+    refreshAlbukhrProjects;
+
+
+  window.getCurrentAlbukhrNetwork =
+    getCurrentAlbukhrNetwork;
+
+
+  window.getAlbukhrProjectResolverStatus =
+    getAlbukhrProjectResolverStatus;
+
+
+  window.handleAlbukhrNetworkChanged =
+    handleAlbukhrNetworkChanged;
+
+
+  /* =======================================================
+     OPTIONAL NETWORK EVENT INTEGRATION
+  ======================================================= */
+
+  window.addEventListener(
+    "albukhr:network-changed",
+    event => {
+
+      try{
+
+        const network =
+          event?.detail?.network ||
+          event?.detail ||
+          "";
+
+        handleAlbukhrNetworkChanged(
+          network
+        );
+
+      }catch(error){
+
+        console.warn(
+          "ALBUKHR network change handling failed:",
+          error
+        );
+
+      }
+
+    }
+  );
+
 
 })();
