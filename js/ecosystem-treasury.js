@@ -1130,4 +1130,4 @@ async function getEcosystemTreasurySummary(){
     last_activity_at: treasury.last_activity_at
   };
 
-                                         }
+  }
