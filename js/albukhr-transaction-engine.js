@@ -1,1326 +1,1915 @@
 /* =========================================================
    ALBUKHR UNIFIED TRANSACTION ENGINE v3
+   MAINNET-READY / TESTNET-SAFE
    ---------------------------------------------------------
-   SUPABASE-FIRST / NETWORK-AWARE / USER-SAFE
-   ---------------------------------------------------------
-   SOURCE OF TRUTH:
-      Supabase
-
-   DEPENDS ON:
-      1) js/supabase-core.js
-      2) ALBUKHR authentication/session engine
-      3) Supabase public.transactions table
-
    ARCHITECTURE:
-      - No LocalStorage persistence
-      - No LocalStorage user identity
-      - No cross-user transaction access
-      - No cross-network transaction access
-      - project_code first
-      - Mainnet/Testnet isolated by `network`
+   - Supabase = SINGLE SOURCE OF TRUTH
+   - NO localStorage transaction storage
+   - Supabase Auth = current user source
+   - Mainnet/Testnet isolation
+   - project_code compatible
+   - Safe transaction recording
+   - Safe transaction querying
+   - Safe status updates
+   - Duplicate txid protection
+   - User-scoped reads
+   - Admin/global reads
+   ---------------------------------------------------------
+   REQUIRED:
+   - js/supabase-core.js
+   - shared environment/network engine
+   - Supabase `transactions` table
 ========================================================= */
 
 (function(window){
 
-"use strict";
+  "use strict";
 
-/* =========================================================
-   CONFIG
-========================================================= */
+  /* =======================================================
+     CONFIGURATION
+  ======================================================= */
 
-const ENGINE_NAME = "ALBUKHR Unified Transaction Engine";
+  const TRANSACTION_ENGINE_VERSION = "3.0.0";
 
-const ENGINE_VERSION = "3.0.0";
+  const TABLE_NAME = "transactions";
 
-const TABLE_NAME = "transactions";
+  /*
+    IMPORTANT:
+    The database currently contains successful records
+    using status = "paid".
 
-const NETWORKS = Object.freeze({
-    MAINNET: "mainnet",
-    TESTNET: "testnet"
-});
+    Therefore "paid" is the canonical successful status
+    used by this engine.
+  */
+  const STATUS = Object.freeze({
 
-/* =========================================================
-   INTERNAL CACHE
-   ---------------------------------------------------------
-   Cache is NOT the source of truth.
-   It is only a runtime optimization.
-========================================================= */
+    PENDING: "pending",
 
-const CACHE = {
-    transactions: [],
-    loaded: false,
-    loading: false,
-    network: null,
-    userId: null,
-    lastLoadedAt: 0
-};
+    PAID: "paid",
 
-const CACHE_TTL = 10000;
+    FAILED: "failed"
 
-/* =========================================================
-   SAFE HELPERS
-========================================================= */
+  });
 
-function safeString(value, fallback = ""){
+  const TRANSACTION_TYPES = Object.freeze({
+
+    CAPITAL: "capital",
+
+    REWARD: "reward",
+
+    STAKE: "stake",
+
+    WITHDRAW: "withdraw",
+
+    FEE: "fee",
+
+    REFUND: "refund"
+
+  });
+
+
+  /* =======================================================
+     SAFE HELPERS
+  ======================================================= */
+
+  function safeString(value, fallback = ""){
+
     if(value === null || value === undefined){
-        return fallback;
+
+      return fallback;
+
     }
 
-    return String(value);
-}
+    return String(value).trim();
 
-function safeNumber(value, fallback = 0){
+  }
 
-    const n = Number(value);
 
-    return Number.isFinite(n)
-        ? n
-        : fallback;
-}
+  function safeNumber(value, fallback = 0){
 
-function normalizeString(value){
-    return safeString(value)
-        .trim()
-        .toLowerCase();
-}
+    const number = Number(value);
 
-function roundAmount(value, decimals = 7){
+    return Number.isFinite(number)
+      ? number
+      : fallback;
 
-    const amount = safeNumber(value, 0);
+  }
 
-    const factor = Math.pow(10, decimals);
 
-    return Math.round(amount * factor) / factor;
-}
+  function normalizeNetwork(value){
 
-function isValidAmount(value){
+    const network =
+      safeString(value).toLowerCase();
 
-    const amount = Number(value);
+    if(
+      network === "mainnet" ||
+      network === "testnet"
+    ){
 
-    return Number.isFinite(amount) && amount > 0;
+      return network;
 
-}
+    }
 
-/* =========================================================
-   SUPABASE CLIENT
-========================================================= */
+    return "";
 
-function getAlbukhrSupabase(){
+  }
+
+
+  function normalizeType(value){
+
+    const type =
+      safeString(value).toLowerCase();
+
+    if(
+      Object.values(TRANSACTION_TYPES)
+        .includes(type)
+    ){
+
+      return type;
+
+    }
+
+    return type || "";
+
+  }
+
+
+  function normalizeStatus(value){
+
+    const status =
+      safeString(value).toLowerCase();
+
+    if(
+      status === STATUS.PENDING ||
+      status === STATUS.PAID ||
+      status === STATUS.FAILED
+    ){
+
+      return status;
+
+    }
+
+    return "";
+
+  }
+
+
+  /* =======================================================
+     SUPABASE CLIENT
+  ======================================================= */
+
+  function getSupabaseClient(){
 
     /*
-      Primary architecture:
-      js/supabase-core.js should expose one of these.
-
-      We intentionally do NOT create another Supabase client
-      inside this engine.
+      Preferred ALBUKHR shared client.
     */
-
-    if(typeof window.getSupabaseClient === "function"){
-
-        const client = window.getSupabaseClient();
-
-        if(client){
-            return client;
-        }
-
-    }
 
     if(window.supabaseClient){
-        return window.supabaseClient;
+
+      return window.supabaseClient;
+
     }
 
-    if(window.ALBUKHR_SUPABASE){
-        return window.ALBUKHR_SUPABASE;
+
+    if(window.supabaseCore?.client){
+
+      return window.supabaseCore.client;
+
     }
 
-    if(window.supabase && typeof window.supabase.from === "function"){
-        return window.supabase;
+
+    if(window.SUPABASE_CLIENT){
+
+      return window.SUPABASE_CLIENT;
+
     }
 
-    throw new Error(
-        "ALBUKHR Unified Transaction Engine: Supabase client is not available. Load js/supabase-core.js first."
-    );
-
-}
-
-/* =========================================================
-   NETWORK RESOLUTION
-========================================================= */
-
-function getAlbukhrNetwork(){
 
     /*
-      First preference:
-      shared ALBUKHR environment/network engine.
+      Some existing ALBUKHR pages may expose the client
+      directly as `supabase`.
     */
 
-    if(typeof window.getCurrentNetwork === "function"){
+    if(
+      window.supabase &&
+      typeof window.supabase.from === "function"
+    ){
 
-        const network = normalizeString(
+      return window.supabase;
+
+    }
+
+
+    throw new Error(
+      "ALBUKHR Supabase client is not initialized. " +
+      "Load js/supabase-core.js first."
+    );
+
+  }
+
+
+  /* =======================================================
+     NETWORK RESOLUTION
+     -------------------------------------------------------
+     Mainnet/Testnet MUST NEVER MIX.
+  ======================================================= */
+
+  function getCurrentNetwork(){
+
+    /*
+      Preferred shared environment engine.
+    */
+
+    try{
+
+      if(
+        typeof window.getCurrentNetwork === "function"
+      ){
+
+        const network =
+          normalizeNetwork(
             window.getCurrentNetwork()
-        );
+          );
 
-        if(
-            network === NETWORKS.MAINNET ||
-            network === NETWORKS.TESTNET
-        ){
-            return network;
+        if(network){
+
+          return network;
+
         }
+
+      }
+
+    }catch(error){
+
+      console.warn(
+        "getCurrentNetwork() failed:",
+        error
+      );
 
     }
 
-    if(typeof window.getCurrentEnvironment === "function"){
-
-        const environment = normalizeString(
-            window.getCurrentEnvironment()
-        );
-
-        if(environment === "mainnet"){
-            return NETWORKS.MAINNET;
-        }
-
-        if(environment === "testnet"){
-            return NETWORKS.TESTNET;
-        }
-
-    }
 
     /*
-      Safe URL-based determination.
-      This is only environment detection, NOT storage.
+      Alternative shared environment APIs.
     */
 
-    const hostname =
-        normalizeString(window.location?.hostname);
+    try{
 
-    if(
-        hostname === "test.albukhr.com" ||
-        hostname.startsWith("test.")
-    ){
-        return NETWORKS.TESTNET;
+      if(
+        typeof window.getEnvironment === "function"
+      ){
+
+        const environment =
+          window.getEnvironment();
+
+        const network =
+          normalizeNetwork(
+            typeof environment === "string"
+              ? environment
+              : environment?.network
+          );
+
+        if(network){
+
+          return network;
+
+        }
+
+      }
+
+    }catch(error){
+
+      console.warn(
+        "getEnvironment() failed:",
+        error
+      );
+
     }
 
-    if(
-        hostname === "app.albukhr.com" ||
-        hostname.startsWith("app.")
-    ){
-        return NETWORKS.MAINNET;
-    }
 
     /*
-      Development environment defaults to testnet.
-      This prevents accidental writes to mainnet.
+      URL fallback.
+
+      Mainnet:
+      app.albukhr.com
+
+      Testnet:
+      test.albukhr.com
     */
 
-    if(
-        hostname === "dev.albukhr.com" ||
-        hostname.startsWith("dev.") ||
-        hostname === "localhost" ||
-        hostname === "127.0.0.1"
-    ){
-        return NETWORKS.TESTNET;
+    try{
+
+      const host =
+        safeString(
+          window.location?.hostname
+        ).toLowerCase();
+
+
+      if(
+        host === "test.albukhr.com" ||
+        host.startsWith("test.")
+      ){
+
+        return "testnet";
+
+      }
+
+
+      if(
+        host === "app.albukhr.com" ||
+        host.startsWith("app.")
+      ){
+
+        return "mainnet";
+
+      }
+
+    }catch(error){
+
+      console.warn(
+        "Network URL detection failed:",
+        error
+      );
+
     }
 
+
     /*
-      FAIL CLOSED.
-      Unknown environment must never silently become mainnet.
+      NEVER silently default a transaction to testnet
+      or mainnet.
+
+      This prevents accidental cross-network writes.
     */
 
     throw new Error(
-        "ALBUKHR network could not be determined safely."
+      "Unable to determine ALBUKHR network. " +
+      "Transaction blocked for safety."
     );
 
-}
+  }
 
-/* =========================================================
-   ASSERT NETWORK
-========================================================= */
 
-function assertValidNetwork(network){
+  /* =======================================================
+     CURRENT AUTH USER
+     -------------------------------------------------------
+     Supabase Auth is the source of truth.
+     NO pi_user localStorage.
+  ======================================================= */
 
-    const value =
-        normalizeString(network);
+  async function getCurrentAuthUser(){
 
-    if(
-        value !== NETWORKS.MAINNET &&
-        value !== NETWORKS.TESTNET
-    ){
-
-        throw new Error(
-            `Invalid ALBUKHR network: ${network}`
-        );
-
-    }
-
-    return value;
-
-}
-
-/* =========================================================
-   CURRENT AUTHENTICATED USER
-========================================================= */
-
-async function getCurrentAuthenticatedUser(){
-
-    const supabase =
-        getAlbukhrSupabase();
-
-    if(
-        !supabase.auth ||
-        typeof supabase.auth.getUser !== "function"
-    ){
-
-        throw new Error(
-            "Supabase Auth is not available."
-        );
-
-    }
+    const client =
+      getSupabaseClient();
 
     const {
-        data,
-        error
-    } = await supabase.auth.getUser();
+      data,
+      error
+    } =
+      await client.auth.getUser();
+
 
     if(error){
-        throw error;
+
+      console.error(
+        "Supabase auth getUser failed:",
+        error
+      );
+
+      return null;
+
     }
+
 
     return data?.user || null;
 
-}
+  }
 
-/* =========================================================
-   CURRENT USER ID
-========================================================= */
 
-async function getCurrentUserId(){
+  /* =======================================================
+     CURRENT USER CONTEXT
+  ======================================================= */
+
+  async function getCurrentUser(){
 
     const user =
-        await getCurrentAuthenticatedUser();
+      await getCurrentAuthUser();
+
 
     if(!user){
-        return null;
+
+      return null;
+
     }
 
-    return user.id || null;
 
-}
+    const metadata =
+      user.user_metadata || {};
 
-/* =========================================================
-   TRANSACTION NORMALIZER
-========================================================= */
-
-function normalizeTransaction(row = {}){
 
     return {
 
-        id:
-            row.id ?? null,
+      uid: user.id,
 
-        payment_id:
-            row.payment_id || null,
+      userid: user.id,
 
-        user_id:
-            row.user_id ||
-            row.userid ||
-            null,
+      email:
+        user.email || "",
 
-        userid:
-            row.user_id ||
-            row.userid ||
-            null,
+      username:
+        metadata.username ||
+        metadata.user_name ||
+        "",
 
-        project_code:
-            row.project_code ||
-            row.project ||
-            null,
+      wallet:
+        metadata.wallet ||
+        metadata.pi_wallet ||
+        metadata.wallet_address ||
+        "",
 
-        project:
-            row.project_code ||
-            row.project ||
-            null,
-
-        type:
-            row.transaction_type ||
-            row.type ||
-            null,
-
-        transaction_type:
-            row.transaction_type ||
-            row.type ||
-            null,
-
-        amount:
-            roundAmount(row.amount),
-
-        asset:
-            row.asset || "PI",
-
-        from_wallet:
-            row.from_wallet || null,
-
-        to_wallet:
-            row.to_wallet || null,
-
-        status:
-            row.status || "successful",
-
-        meta:
-            row.meta || {},
-
-        network:
-            row.network || null,
-
-        created_at:
-            row.created_at || null,
-
-        inserted_at:
-            row.inserted_at || null
+      authUser: user
 
     };
 
-}
+  }
 
-/* =========================================================
-   CACHE RESET
-========================================================= */
 
-function clearTransactionCache(){
+  /* =======================================================
+     USER REQUIREMENT
+  ======================================================= */
 
-    CACHE.transactions = [];
+  async function requireCurrentUser(){
 
-    CACHE.loaded = false;
+    const user =
+      await getCurrentUser();
 
-    CACHE.loading = false;
 
-    CACHE.network = null;
+    if(!user){
 
-    CACHE.userId = null;
+      return {
 
-    CACHE.lastLoadedAt = 0;
+        ok: false,
 
-}
+        error:
+          "User is not authenticated"
 
-/* =========================================================
-   LOAD USER TRANSACTIONS
-   ---------------------------------------------------------
-   Supabase is the source of truth.
-========================================================= */
-
-async function getTransactions(options = {}){
-
-    const {
-
-        forceRefresh = false,
-
-        limit = null,
-
-        transactionType = null,
-
-        projectCode = null,
-
-        status = null,
-
-        from = null,
-
-        to = null
-
-    } = options;
-
-    const network =
-        assertValidNetwork(
-            getAlbukhrNetwork()
-        );
-
-    const userId =
-        await getCurrentUserId();
-
-    if(!userId){
-
-        clearTransactionCache();
-
-        return [];
+      };
 
     }
 
-    const now = Date.now();
 
-    const cacheValid =
+    return {
 
-        CACHE.loaded &&
+      ok: true,
 
-        CACHE.network === network &&
+      user
 
-        CACHE.userId === userId &&
+    };
 
-        (now - CACHE.lastLoadedAt) < CACHE_TTL;
+  }
 
-    /*
-      Cache can only be used when there are no
-      additional query filters.
-    */
 
-    const hasFilters =
-        transactionType ||
-        projectCode ||
-        status ||
-        from ||
-        to ||
-        limit;
+  /* =======================================================
+     TRANSACTION NORMALIZER
+  ======================================================= */
 
-    if(
-        !forceRefresh &&
-        cacheValid &&
-        !hasFilters
-    ){
+  function normalizeTransaction(row = {}){
 
-        return [...CACHE.transactions];
+    return {
 
-    }
+      id:
+        row.id ?? null,
 
-    if(CACHE.loading && !hasFilters){
+      userid:
+        safeString(row.userid),
 
-        return [...CACHE.transactions];
+      project:
+        safeString(
+          row.project
+        ),
 
-    }
+      amount:
+        safeNumber(
+          row.amount,
+          0
+        ),
 
-    if(!hasFilters){
+      fee:
+        safeNumber(
+          row.fee,
+          0
+        ),
 
-        CACHE.loading = true;
+      wallet:
+        safeString(
+          row.wallet
+        ),
 
-    }
+      type:
+        normalizeType(
+          row.type
+        ),
 
-    try{
+      status:
+        normalizeStatus(
+          row.status
+        ) || safeString(row.status),
 
-        const supabase =
-            getAlbukhrSupabase();
+      txid:
+        safeString(
+          row.txid
+        ),
 
-        /*
-          USER + NETWORK FILTER ARE ALWAYS APPLIED.
-        */
+      created_at:
+        row.created_at || null,
 
-        let query =
-            supabase
-                .from(TABLE_NAME)
-                .select("*")
-                .eq("user_id", userId)
-                .eq("network", network)
-                .order("created_at", {
-                    ascending:false
-                });
+      processed_at:
+        row.processed_at || null,
 
-        if(transactionType){
+      network:
+        normalizeNetwork(
+          row.network
+        )
 
-            query =
-                query.eq(
-                    "transaction_type",
-                    transactionType
-                );
+    };
 
-        }
+  }
 
-        if(projectCode){
 
-            query =
-                query.eq(
-                    "project_code",
-                    projectCode
-                );
+  /* =======================================================
+     VALIDATE TRANSACTION INPUT
+  ======================================================= */
 
-        }
-
-        if(status){
-
-            query =
-                query.eq(
-                    "status",
-                    status
-                );
-
-        }
-
-        if(from){
-
-            query =
-                query.gte(
-                    "created_at",
-                    from
-                );
-
-        }
-
-        if(to){
-
-            query =
-                query.lte(
-                    "created_at",
-                    to
-                );
-
-        }
-
-        if(limit){
-
-            query =
-                query.limit(
-                    Math.max(
-                        1,
-                        Number(limit)
-                    )
-                );
-
-        }
-
-        const {
-            data,
-            error
-        } = await query;
-
-        if(error){
-            throw error;
-        }
-
-        const rows =
-            Array.isArray(data)
-                ? data.map(normalizeTransaction)
-                : [];
-
-        if(!hasFilters){
-
-            CACHE.transactions = rows;
-
-            CACHE.loaded = true;
-
-            CACHE.network = network;
-
-            CACHE.userId = userId;
-
-            CACHE.lastLoadedAt = Date.now();
-
-        }
-
-        return rows;
-
-    }finally{
-
-        if(!hasFilters){
-
-            CACHE.loading = false;
-
-        }
-
-    }
-
-}
-
-/* =========================================================
-   RECORD TRANSACTION
-========================================================= */
-
-async function recordTx({
+  function validateTransactionInput({
 
     type,
 
-    transaction_type = null,
-
-    project = null,
-
-    project_code = null,
+    project,
 
     amount,
 
-    meta = {},
+    fee = 0,
 
-    payment_id = null,
+    wallet = "",
 
-    from_wallet = null,
+    txid = "",
 
-    to_wallet = null,
+    status = STATUS.PAID,
 
-    asset = "PI",
+    network = ""
 
-    status = "successful",
+  } = {}){
 
-    created_at = null
 
-} = {}){
+    if(!normalizeType(type)){
 
-    const user =
-        await getCurrentAuthenticatedUser();
+      return {
 
-    if(!user){
+        valid:false,
 
-        return {
-            error:"User not logged in"
-        };
+        error:
+          "Transaction type is required"
 
-    }
-
-    const network =
-        assertValidNetwork(
-            getAlbukhrNetwork()
-        );
-
-    const finalType =
-        transaction_type ||
-        type ||
-        "";
-
-    if(!finalType){
-
-        return {
-            error:"Transaction type is required"
-        };
+      };
 
     }
 
-    if(!isValidAmount(amount)){
 
-        return {
-            error:"Invalid transaction amount"
-        };
+    if(
+      !safeString(project)
+    ){
+
+      return {
+
+        valid:false,
+
+        error:
+          "Project is required"
+
+      };
 
     }
 
-    const finalProjectCode =
-        safeString(
-            project_code ||
-            project ||
-            ""
-        ).trim() || null;
 
-    const supabase =
-        getAlbukhrSupabase();
+    const normalizedAmount =
+      safeNumber(amount, 0);
 
-    const transaction = {
 
-        user_id:user.id,
+    if(normalizedAmount <= 0){
 
-        network,
+      return {
 
-        payment_id:
-            payment_id || null,
+        valid:false,
 
-        project_code:
-            finalProjectCode,
+        error:
+          "Transaction amount must be greater than zero"
 
-        from_wallet:
-            from_wallet || null,
+      };
 
-        to_wallet:
-            to_wallet || null,
+    }
+
+
+    const normalizedFee =
+      safeNumber(fee, 0);
+
+
+    if(normalizedFee < 0){
+
+      return {
+
+        valid:false,
+
+        error:
+          "Transaction fee cannot be negative"
+
+      };
+
+    }
+
+
+    const normalizedStatus =
+      normalizeStatus(status);
+
+
+    if(!normalizedStatus){
+
+      return {
+
+        valid:false,
+
+        error:
+          "Invalid transaction status"
+
+      };
+
+    }
+
+
+    const normalizedNetwork =
+      normalizeNetwork(network);
+
+
+    if(!normalizedNetwork){
+
+      return {
+
+        valid:false,
+
+        error:
+          "Invalid transaction network"
+
+      };
+
+    }
+
+
+    return {
+
+      valid:true,
+
+      values:{
+
+        type:
+          normalizeType(type),
+
+        project:
+          safeString(project),
 
         amount:
-            roundAmount(amount),
+          normalizedAmount,
 
-        asset:
-            safeString(asset, "PI"),
+        fee:
+          normalizedFee,
 
-        transaction_type:
-            finalType,
+        wallet:
+          safeString(wallet),
+
+        txid:
+          safeString(txid),
 
         status:
-            safeString(
-                status,
-                "successful"
-            ),
+          normalizedStatus,
 
-        meta:
-            meta && typeof meta === "object"
-                ? meta
-                : {},
+        network:
+          normalizedNetwork
 
-        created_at:
-            created_at || new Date().toISOString()
+      }
 
     };
 
-    const {
-        data,
-        error
-    } = await supabase
+  }
+
+
+  /* =======================================================
+     GET USER TRANSACTIONS
+     -------------------------------------------------------
+     User sees ONLY:
+       userid = current authenticated user
+       network = current network
+  ======================================================= */
+
+  async function getTransactions({
+
+    limit = 100,
+
+    offset = 0,
+
+    type = "",
+
+    project = "",
+
+    status = "",
+
+    newestFirst = true
+
+  } = {}){
+
+
+    const auth =
+      await requireCurrentUser();
+
+
+    if(!auth.ok){
+
+      return [];
+
+    }
+
+
+    const client =
+      getSupabaseClient();
+
+    const network =
+      getCurrentNetwork();
+
+
+    let query =
+      client
         .from(TABLE_NAME)
-        .insert(transaction)
+        .select("*")
+        .eq("userid", auth.user.uid)
+        .eq("network", network);
+
+
+    if(type){
+
+      query =
+        query.eq(
+          "type",
+          normalizeType(type)
+        );
+
+    }
+
+
+    if(project){
+
+      query =
+        query.eq(
+          "project",
+          safeString(project)
+        );
+
+    }
+
+
+    if(status){
+
+      query =
+        query.eq(
+          "status",
+          normalizeStatus(status)
+        );
+
+    }
+
+
+    query =
+      query
+        .order(
+          "created_at",
+          {
+            ascending: !newestFirst
+          }
+        )
+        .range(
+          Math.max(0, offset),
+          Math.max(
+            0,
+            offset + Math.max(1, limit) - 1
+          )
+        );
+
+
+    const {
+      data,
+      error
+    } =
+      await query;
+
+
+    if(error){
+
+      console.error(
+        "getTransactions failed:",
+        error
+      );
+
+      return [];
+
+    }
+
+
+    return Array.isArray(data)
+      ? data.map(normalizeTransaction)
+      : [];
+
+  }
+
+
+  /* =======================================================
+     GET TRANSACTION BY ID
+  ======================================================= */
+
+  async function getTransactionById(id){
+
+    const auth =
+      await requireCurrentUser();
+
+
+    if(!auth.ok){
+
+      return {
+
+        error:
+          auth.error
+
+      };
+
+    }
+
+
+    const transactionId =
+      safeString(id);
+
+
+    if(!transactionId){
+
+      return {
+
+        error:
+          "Transaction ID is required"
+
+      };
+
+    }
+
+
+    const client =
+      getSupabaseClient();
+
+    const network =
+      getCurrentNetwork();
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(TABLE_NAME)
+        .select("*")
+        .eq("id", transactionId)
+        .eq("userid", auth.user.uid)
+        .eq("network", network)
+        .maybeSingle();
+
+
+    if(error){
+
+      console.error(
+        "getTransactionById failed:",
+        error
+      );
+
+      return {
+
+        error:
+          error.message ||
+          "Failed to load transaction"
+
+      };
+
+    }
+
+
+    return data
+      ? normalizeTransaction(data)
+      : null;
+
+  }
+
+
+  /* =======================================================
+     FIND BY TXID
+     -------------------------------------------------------
+     Important for Pi payment verification.
+  ======================================================= */
+
+  async function getTransactionByTxid(txid){
+
+    const transactionId =
+      safeString(txid);
+
+
+    if(!transactionId){
+
+      return null;
+
+    }
+
+
+    const auth =
+      await requireCurrentUser();
+
+
+    if(!auth.ok){
+
+      return null;
+
+    }
+
+
+    const client =
+      getSupabaseClient();
+
+    const network =
+      getCurrentNetwork();
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(TABLE_NAME)
+        .select("*")
+        .eq("txid", transactionId)
+        .eq("network", network)
+        .maybeSingle();
+
+
+    if(error){
+
+      console.error(
+        "getTransactionByTxid failed:",
+        error
+      );
+
+      return null;
+
+    }
+
+
+    return data
+      ? normalizeTransaction(data)
+      : null;
+
+  }
+
+
+  /* =======================================================
+     CHECK DUPLICATE TXID
+  ======================================================= */
+
+  async function transactionExistsByTxid(txid){
+
+    const transaction =
+      await getTransactionByTxid(txid);
+
+    return !!transaction;
+
+  }
+
+
+  /* =======================================================
+     RECORD TRANSACTION
+     -------------------------------------------------------
+     Supabase INSERT
+  ======================================================= */
+
+  async function recordTx({
+
+    type,
+
+    project,
+
+    amount,
+
+    fee = 0,
+
+    wallet = "",
+
+    txid = "",
+
+    status = STATUS.PAID,
+
+    meta = {}
+
+  } = {}){
+
+
+    const auth =
+      await requireCurrentUser();
+
+
+    if(!auth.ok){
+
+      return {
+
+        error:
+          auth.error
+
+      };
+
+    }
+
+
+    const network =
+      getCurrentNetwork();
+
+
+    /*
+      Prevent duplicate blockchain/payment records.
+    */
+
+    if(txid){
+
+      const exists =
+        await transactionExistsByTxid(txid);
+
+
+      if(exists){
+
+        return {
+
+          error:
+            "Transaction already exists",
+
+          duplicate:true
+
+        };
+
+      }
+
+    }
+
+
+    const validation =
+      validateTransactionInput({
+
+        type,
+
+        project,
+
+        amount,
+
+        fee,
+
+        wallet,
+
+        txid,
+
+        status,
+
+        network
+
+      });
+
+
+    if(!validation.valid){
+
+      return {
+
+        error:
+          validation.error
+
+      };
+
+    }
+
+
+    const values =
+      validation.values;
+
+
+    /*
+      IMPORTANT:
+      The current transactions table has NO `meta`
+      column.
+
+      Therefore meta is NOT inserted into transactions.
+
+      If future architecture requires transaction metadata,
+      create a dedicated transaction_metadata table instead
+      of violating the canonical transactions schema.
+    */
+
+
+    const payload = {
+
+      userid:
+        auth.user.uid,
+
+      project:
+        values.project,
+
+      amount:
+        values.amount,
+
+      fee:
+        values.fee,
+
+      wallet:
+        values.wallet ||
+        auth.user.wallet ||
+        "",
+
+      type:
+        values.type,
+
+      status:
+        values.status,
+
+      txid:
+        values.txid || null,
+
+      network:
+        network
+
+    };
+
+
+    const client =
+      getSupabaseClient();
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(TABLE_NAME)
+        .insert(payload)
         .select("*")
         .single();
 
+
     if(error){
 
-        console.error(
-            "ALBUKHR transaction insert failed:",
-            error
-        );
+      console.error(
+        "recordTx failed:",
+        error
+      );
 
-        return {
-            error:error.message || "Transaction recording failed"
-        };
+
+      return {
+
+        error:
+          error.message ||
+          "Failed to record transaction",
+
+        code:
+          error.code || null,
+
+        details:
+          error.details || null,
+
+        hint:
+          error.hint || null
+
+      };
 
     }
 
-    clearTransactionCache();
 
     return normalizeTransaction(data);
 
-}
+  }
 
-/* =========================================================
-   GET TRANSACTIONS BY PROJECT
-========================================================= */
 
-async function getTxByProject(
-    projectCode,
-    options = {}
-){
+  /* =======================================================
+     RECORD PENDING TRANSACTION
+  ======================================================= */
 
-    if(!projectCode){
-        return [];
-    }
+  async function recordPendingTx({
 
-    return await getTransactions({
+    type,
 
-        ...options,
+    project,
 
-        projectCode:
-            safeString(projectCode).trim(),
+    amount,
 
-        forceRefresh:
-            options.forceRefresh ?? true
+    fee = 0,
+
+    wallet = "",
+
+    txid = ""
+
+  } = {}){
+
+
+    return await recordTx({
+
+      type,
+
+      project,
+
+      amount,
+
+      fee,
+
+      wallet,
+
+      txid,
+
+      status:
+        STATUS.PENDING
 
     });
 
-}
+  }
 
-/* =========================================================
-   GET TRANSACTIONS BY TYPE
-========================================================= */
 
-async function getTxByType(
+  /* =======================================================
+     MARK TRANSACTION PAID
+  ======================================================= */
+
+  async function markTransactionPaid(id){
+
+    return await updateTransactionStatus(
+      id,
+      STATUS.PAID
+    );
+
+  }
+
+
+  /* =======================================================
+     MARK TRANSACTION FAILED
+  ======================================================= */
+
+  async function markTransactionFailed(id){
+
+    return await updateTransactionStatus(
+      id,
+      STATUS.FAILED
+    );
+
+  }
+
+
+  /* =======================================================
+     UPDATE TRANSACTION STATUS
+  ======================================================= */
+
+  async function updateTransactionStatus(
+    id,
+    status
+  ){
+
+    const auth =
+      await requireCurrentUser();
+
+
+    if(!auth.ok){
+
+      return {
+
+        error:
+          auth.error
+
+      };
+
+    }
+
+
+    const transactionId =
+      safeString(id);
+
+
+    if(!transactionId){
+
+      return {
+
+        error:
+          "Transaction ID is required"
+
+      };
+
+    }
+
+
+    const normalizedStatus =
+      normalizeStatus(status);
+
+
+    if(!normalizedStatus){
+
+      return {
+
+        error:
+          "Invalid transaction status"
+
+      };
+
+    }
+
+
+    const network =
+      getCurrentNetwork();
+
+    const client =
+      getSupabaseClient();
+
+
+    const {
+      data,
+      error
+    } =
+      await client
+        .from(TABLE_NAME)
+        .update({
+
+          status:
+            normalizedStatus,
+
+          processed_at:
+            normalizedStatus === STATUS.PAID
+              ? new Date().toISOString()
+              : null
+
+        })
+        .eq(
+          "id",
+          transactionId
+        )
+        .eq(
+          "userid",
+          auth.user.uid
+        )
+        .eq(
+          "network",
+          network
+        )
+        .select("*")
+        .single();
+
+
+    if(error){
+
+      console.error(
+        "updateTransactionStatus failed:",
+        error
+      );
+
+      return {
+
+        error:
+          error.message ||
+          "Failed to update transaction"
+
+      };
+
+    }
+
+
+    return normalizeTransaction(data);
+
+  }
+
+
+  /* =======================================================
+     GET TRANSACTIONS BY PROJECT
+  ======================================================= */
+
+  async function getTxByProject(
+    project,
+    options = {}
+  ){
+
+    return await getTransactions({
+
+      ...options,
+
+      project
+
+    });
+
+  }
+
+
+  /* =======================================================
+     GET TRANSACTIONS BY TYPE
+  ======================================================= */
+
+  async function getTxByType(
     type,
     options = {}
-){
-
-    if(!type){
-        return [];
-    }
+  ){
 
     return await getTransactions({
 
-        ...options,
+      ...options,
 
-        transactionType:
-            safeString(type).trim(),
-
-        forceRefresh:
-            options.forceRefresh ?? true
+      type
 
     });
 
-}
+  }
 
-/* =========================================================
-   RECENT TRANSACTIONS
-========================================================= */
 
-async function getRecentTx(
-    limit = 20,
+  /* =======================================================
+     GET TRANSACTIONS BY STATUS
+  ======================================================= */
+
+  async function getTxByStatus(
+    status,
     options = {}
-){
+  ){
 
-    const rows =
-        await getTransactions({
+    return await getTransactions({
 
-            ...options,
+      ...options,
 
-            limit:
-
-                Math.max(
-                    1,
-                    Number(limit) || 20
-                ),
-
-            forceRefresh:
-                options.forceRefresh ?? true
-
-        });
-
-    return rows
-        .slice()
-        .sort(
-            (a,b) =>
-                new Date(b.created_at || 0)
-                -
-                new Date(a.created_at || 0)
-        );
-
-}
-
-/* =========================================================
-   GET TRANSACTION BY ID
-========================================================= */
-
-async function getTransactionById(id){
-
-    if(!id){
-        return null;
-    }
-
-    const userId =
-        await getCurrentUserId();
-
-    if(!userId){
-        return null;
-    }
-
-    const network =
-        assertValidNetwork(
-            getAlbukhrNetwork()
-        );
-
-    const supabase =
-        getAlbukhrSupabase();
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from(TABLE_NAME)
-        .select("*")
-        .eq("id", id)
-        .eq("user_id", userId)
-        .eq("network", network)
-        .maybeSingle();
-
-    if(error){
-
-        console.error(
-            "getTransactionById failed:",
-            error
-        );
-
-        return null;
-
-    }
-
-    return data
-        ? normalizeTransaction(data)
-        : null;
-
-}
-
-/* =========================================================
-   GET TRANSACTION BY PAYMENT ID
-========================================================= */
-
-async function getTransactionByPaymentId(
-    paymentId
-){
-
-    if(!paymentId){
-        return null;
-    }
-
-    const userId =
-        await getCurrentUserId();
-
-    if(!userId){
-        return null;
-    }
-
-    const network =
-        assertValidNetwork(
-            getAlbukhrNetwork()
-        );
-
-    const supabase =
-        getAlbukhrSupabase();
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from(TABLE_NAME)
-        .select("*")
-        .eq("payment_id", paymentId)
-        .eq("user_id", userId)
-        .eq("network", network)
-        .maybeSingle();
-
-    if(error){
-
-        console.error(
-            "getTransactionByPaymentId failed:",
-            error
-        );
-
-        return null;
-
-    }
-
-    return data
-        ? normalizeTransaction(data)
-        : null;
-
-}
-
-/* =========================================================
-   TRANSACTION TOTALS
-========================================================= */
-
-async function getTransactionTotals(options = {}){
-
-    const rows =
-        await getTransactions(options);
-
-    const totals = {
-
-        count:0,
-
-        amount:0,
-
-        stake:0,
-
-        reward:0,
-
-        withdraw:0,
-
-        capital:0
-
-    };
-
-    rows.forEach(tx => {
-
-        const amount =
-            safeNumber(tx.amount, 0);
-
-        totals.count += 1;
-
-        totals.amount += amount;
-
-        const type =
-            normalizeString(
-                tx.transaction_type ||
-                tx.type
-            );
-
-        if(type === "stake"){
-            totals.stake += amount;
-        }
-
-        if(type === "reward"){
-            totals.reward += amount;
-        }
-
-        if(
-            type === "withdraw" ||
-            type === "withdrawal"
-        ){
-            totals.withdraw += amount;
-        }
-
-        if(type === "capital"){
-            totals.capital += amount;
-        }
+      status
 
     });
 
-    totals.amount =
-        roundAmount(totals.amount);
+  }
 
-    totals.stake =
-        roundAmount(totals.stake);
 
-    totals.reward =
-        roundAmount(totals.reward);
+  /* =======================================================
+     RECENT TRANSACTIONS
+  ======================================================= */
 
-    totals.withdraw =
-        roundAmount(totals.withdraw);
+  async function getRecentTx(
+    limit = 20
+  ){
 
-    totals.capital =
-        roundAmount(totals.capital);
+    return await getTransactions({
 
-    return totals;
+      limit,
 
-}
+      newestFirst:true
 
-/* =========================================================
-   PROJECT TRANSACTION SUMMARY
-========================================================= */
+    });
 
-async function getProjectTransactionSummary(
-    projectCode
-){
+  }
 
-    if(!projectCode){
 
-        return {
-            project_code:null,
-            count:0,
-            total:0,
-            stake:0,
-            reward:0,
-            withdraw:0,
-            capital:0
-        };
+  /* =======================================================
+     USER TRANSACTION TOTALS
+  ======================================================= */
 
-    }
+  async function getUserTransactionTotals(){
 
-    const totals =
-        await getTransactionTotals({
-            projectCode,
-            forceRefresh:true
-        });
+    const transactions =
+      await getTransactions({
+
+        limit:1000
+
+      });
+
+
+    let totalCapital = 0;
+
+    let totalRewards = 0;
+
+    let totalWithdrawals = 0;
+
+    let totalFees = 0;
+
+
+    transactions.forEach(tx=>{
+
+      const amount =
+        safeNumber(
+          tx.amount,
+          0
+        );
+
+
+      const fee =
+        safeNumber(
+          tx.fee,
+          0
+        );
+
+
+      totalFees += fee;
+
+
+      if(
+        tx.status !== STATUS.PAID
+      ){
+
+        return;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.CAPITAL ||
+        tx.type === TRANSACTION_TYPES.STAKE
+      ){
+
+        totalCapital += amount;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.REWARD
+      ){
+
+        totalRewards += amount;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.WITHDRAW
+      ){
+
+        totalWithdrawals += amount;
+
+      }
+
+    });
+
 
     return {
 
-        project_code:
-            projectCode,
+      network:
+        getCurrentNetwork(),
 
-        count:
-            totals.count,
+      totalTransactions:
+        transactions.length,
 
-        total:
-            totals.amount,
+      totalCapital:
+        totalCapital,
 
-        stake:
-            totals.stake,
+      totalRewards:
+        totalRewards,
 
-        reward:
-            totals.reward,
+      totalWithdrawals:
+        totalWithdrawals,
 
-        withdraw:
-            totals.withdraw,
-
-        capital:
-            totals.capital
+      totalFees:
+        totalFees
 
     };
 
-}
+  }
 
-/* =========================================================
-   REFRESH
-========================================================= */
 
-async function refreshTransactions(){
+  /* =======================================================
+     PROJECT TRANSACTION TOTALS
+  ======================================================= */
 
-    clearTransactionCache();
+  async function getProjectTransactionTotals(
+    project
+  ){
 
-    return await getTransactions({
-        forceRefresh:true
+    const transactions =
+      await getTxByProject(
+        project,
+        {
+          limit:1000
+        }
+      );
+
+
+    let capital = 0;
+
+    let rewards = 0;
+
+    let withdrawals = 0;
+
+    let fees = 0;
+
+
+    transactions.forEach(tx=>{
+
+      const amount =
+        safeNumber(
+          tx.amount,
+          0
+        );
+
+
+      const fee =
+        safeNumber(
+          tx.fee,
+          0
+        );
+
+
+      fees += fee;
+
+
+      if(
+        tx.status !== STATUS.PAID
+      ){
+
+        return;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.CAPITAL ||
+        tx.type === TRANSACTION_TYPES.STAKE
+      ){
+
+        capital += amount;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.REWARD
+      ){
+
+        rewards += amount;
+
+      }
+
+
+      if(
+        tx.type === TRANSACTION_TYPES.WITHDRAW
+      ){
+
+        withdrawals += amount;
+
+      }
+
     });
 
-}
 
-/* =========================================================
-   CURRENT NETWORK INFO
-========================================================= */
+    return {
 
-function getTransactionEngineNetwork(){
+      network:
+        getCurrentNetwork(),
 
-    return assertValidNetwork(
-        getAlbukhrNetwork()
-    );
+      project:
+        safeString(project),
 
-}
+      totalTransactions:
+        transactions.length,
 
-/* =========================================================
-   ENGINE STATUS
-========================================================= */
+      capital,
 
-async function getTransactionEngineStatus(){
+      rewards,
+
+      withdrawals,
+
+      fees
+
+    };
+
+  }
+
+
+  /* =======================================================
+     TRANSACTION ENGINE HEALTH
+  ======================================================= */
+
+  async function getTransactionEngineStatus(){
+
+    let network = "";
 
     let user = null;
 
-    try{
-
-        user =
-            await getCurrentAuthenticatedUser();
-
-    }catch(e){
-
-        return {
-
-            ready:false,
-
-            version:ENGINE_VERSION,
-
-            engine:ENGINE_NAME,
-
-            network:null,
-
-            authenticated:false,
-
-            error:e.message
-
-        };
-
-    }
-
-    let network = null;
-
-    try{
-
-        network =
-            getTransactionEngineNetwork();
-
-    }catch(e){
-
-        return {
-
-            ready:false,
-
-            version:ENGINE_VERSION,
-
-            engine:ENGINE_NAME,
-
-            network:null,
-
-            authenticated:!!user,
-
-            error:e.message
-
-        };
-
-    }
-
     let supabaseReady = false;
 
+
     try{
 
-        supabaseReady =
-            !!getAlbukhrSupabase();
+      network =
+        getCurrentNetwork();
 
-    }catch{
+    }catch(error){
 
-        supabaseReady = false;
+      network = "";
 
     }
+
+
+    try{
+
+      getSupabaseClient();
+
+      supabaseReady = true;
+
+    }catch(error){
+
+      supabaseReady = false;
+
+    }
+
+
+    try{
+
+      user =
+        await getCurrentUser();
+
+    }catch(error){
+
+      user = null;
+
+    }
+
 
     return {
 
-        ready:
-            !!user &&
-            supabaseReady &&
-            !!network,
+      engine:
+        "ALBUKHR Unified Transaction Engine",
 
-        version:
-            ENGINE_VERSION,
+      version:
+        TRANSACTION_ENGINE_VERSION,
 
-        engine:
-            ENGINE_NAME,
+      table:
+        TABLE_NAME,
 
-        network,
+      supabase:
+        supabaseReady,
 
-        authenticated:
-            !!user,
+      authenticated:
+        !!user,
 
-        user_id:
-            user?.id || null,
+      userid:
+        user?.uid || null,
 
-        supabase:
-            supabaseReady
+      network:
+        network || null,
+
+      localStorageTransactions:
+        false,
+
+      networkIsolation:
+        true
 
     };
 
-}
+  }
 
-/* =========================================================
-   PUBLIC API
-========================================================= */
 
-window.ALBUKHR_TRANSACTION_ENGINE = {
+  /* =======================================================
+     PUBLIC API
+  ======================================================= */
+
+  const API = {
 
     version:
-        ENGINE_VERSION,
+      TRANSACTION_ENGINE_VERSION,
 
-    engine:
-        ENGINE_NAME,
+    TABLE_NAME,
 
-    table:
-        TABLE_NAME,
+    STATUS,
 
-    NETWORKS,
+    TRANSACTION_TYPES,
+
 
     safeString,
 
     safeNumber,
 
-    roundAmount,
+    normalizeNetwork,
 
-    getAlbukhrSupabase,
+    normalizeType,
 
-    getAlbukhrNetwork,
+    normalizeStatus,
 
-    getCurrentAuthenticatedUser,
 
-    getCurrentUserId,
+    getSupabaseClient,
 
-    clearTransactionCache,
+    getCurrentNetwork,
+
+    getCurrentAuthUser,
+
+    getCurrentUser,
+
+    requireCurrentUser,
+
+
+    normalizeTransaction,
+
+    validateTransactionInput,
+
 
     getTransactions,
 
+    getTransactionById,
+
+    getTransactionByTxid,
+
+    transactionExistsByTxid,
+
+
     recordTx,
+
+    recordPendingTx,
+
+
+    markTransactionPaid,
+
+    markTransactionFailed,
+
+    updateTransactionStatus,
+
 
     getTxByProject,
 
     getTxByType,
 
+    getTxByStatus,
+
     getRecentTx,
 
-    getTransactionById,
 
-    getTransactionByPaymentId,
+    getUserTransactionTotals,
 
-    getTransactionTotals,
+    getProjectTransactionTotals,
 
-    getProjectTransactionSummary,
-
-    refreshTransactions,
-
-    getTransactionEngineNetwork,
 
     getTransactionEngineStatus
 
-};
+  };
 
-/* =========================================================
-   LEGACY / GLOBAL COMPATIBILITY EXPORTS
-========================================================= */
 
-window.getTransactions =
+  /* =======================================================
+     GLOBAL NAMESPACE
+  ======================================================= */
+
+  window.ALBUKHR_TRANSACTION_ENGINE =
+    API;
+
+
+  /* =======================================================
+     LEGACY / DIRECT GLOBAL COMPATIBILITY
+     -------------------------------------------------------
+     Existing pages can continue calling these functions
+     while migrating to the new namespace.
+  ======================================================= */
+
+  window.getTransactions =
     getTransactions;
 
-window.recordTx =
+  window.recordTx =
     recordTx;
 
-window.getTxByProject =
+  window.recordPendingTx =
+    recordPendingTx;
+
+  window.getTxByProject =
     getTxByProject;
 
-window.getTxByType =
+  window.getTxByType =
     getTxByType;
 
-window.getRecentTx =
+  window.getTxByStatus =
+    getTxByStatus;
+
+  window.getRecentTx =
     getRecentTx;
 
-window.getTransactionById =
+  window.getTransactionById =
     getTransactionById;
 
-window.getTransactionByPaymentId =
-    getTransactionByPaymentId;
+  window.getTransactionByTxid =
+    getTransactionByTxid;
 
-window.getTransactionTotals =
-    getTransactionTotals;
+  window.transactionExistsByTxid =
+    transactionExistsByTxid;
 
-window.getProjectTransactionSummary =
-    getProjectTransactionSummary;
+  window.updateTransactionStatus =
+    updateTransactionStatus;
 
-window.refreshTransactions =
-    refreshTransactions;
+  window.markTransactionPaid =
+    markTransactionPaid;
 
-window.getTransactionEngineNetwork =
-    getTransactionEngineNetwork;
+  window.markTransactionFailed =
+    markTransactionFailed;
 
-window.getTransactionEngineStatus =
+  window.getUserTransactionTotals =
+    getUserTransactionTotals;
+
+  window.getProjectTransactionTotals =
+    getProjectTransactionTotals;
+
+  window.getTransactionEngineStatus =
     getTransactionEngineStatus;
+
 
 })(window);
