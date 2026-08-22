@@ -1,72 +1,65 @@
-/* =========================================
-   ALBUKHR PROJECT PAGE CONTROLLER
-   Architecture: js/pages/project/project.js
-   Version: 3.0
-   NETWORK-AWARE
-   =========================================
+/* =========================================================
+   ALBUKHR — PROJECT PAGE CONTROLLER
+   =========================================================
+   Architecture:
+   - Project registry: Supabase / Projects Engine
+   - Project media: logo_url / image_url / logo_path
+   - Network: environment-switcher.js
+   - Auth: pi-auth.js
+   - Staking: staking.js
+   - Withdrawals: withdraw.js
+   - Transactions: unified-transactions.js
+   - Alerts: app-alert.js
 
-   RESPONSIBILITY:
-   - Project page UI/controller only
-   - User stake/reward display
-   - Network-aware transaction history
-   - Reward withdrawal requests
-   - Capital withdrawal requests
-
-   DEPENDS ON:
-   - js/core/environment-switcher.js
-   - js/core/supabase-core.js
-   - js/auth/pi-auth.js
-   - js/features/project-config.js
-   - js/features/staking.js
-   - js/features/withdraw.js
-   - js/features/unified-transactions.js
-   - js/ui/app-alert.js
-
-   ARCHITECTURE RULES:
+   IMPORTANT:
+   - No hard-coded project config
+   - No emoji project icons
    - No LocalStorage persistence
+   - No direct Supabase client creation
    - No direct REST API
-   - No duplicate Supabase client
-   - Network must always come from ALBUKHR Network Core
-   - Supabase client must always come from ALBUKHR Supabase Core
-   - Page controller must not create its own auth/database engines
-========================================= */
+   - Mainnet/Testnet isolation is enforced through the network core
+========================================================= */
 
 "use strict";
 
-/* =========================================
-   PROJECT CONFIG
-========================================= */
+/* =========================================================
+   QUERY / PROJECT ID
+========================================================= */
 
 const params = new URLSearchParams(window.location.search);
 
-const PROJECT_NAME =
-  params.get("project") || "Azman";
+const PROJECT_CODE =
+  (params.get("project") || "Azman").trim();
 
-const CONFIG =
-  getProjectConfig(PROJECT_NAME);
-
-/* =========================================
-   DOM REFERENCES
-========================================= */
+/* =========================================================
+   DOM
+========================================================= */
 
 const txTitle = document.getElementById("txTitle");
 const projectHistory = document.getElementById("projectHistory");
+
 const projectTitle = document.getElementById("projectTitle");
 const projectDescription = document.getElementById("projectDescription");
+const projectImage = document.getElementById("projectImage");
+
 const infoTitle = document.getElementById("infoTitle");
 const infoText = document.getElementById("infoText");
+
 const stakeTitle = document.getElementById("stakeTitle");
 const amountInput = document.getElementById("amountInput");
 const minHint = document.getElementById("minHint");
 const durationSelect = document.getElementById("durationSelect");
+
 const stakeModal = document.getElementById("stakeModal");
 const successModal = document.getElementById("successModal");
 const successText = document.getElementById("successText");
 const infoModal = document.getElementById("infoModal");
+
 const withdrawModal = document.getElementById("withdrawModal");
 const withdrawAmount = document.getElementById("withdrawAmount");
 const availableBalance = document.getElementById("availableBalance");
 const walletAddress = document.getElementById("walletAddress");
+
 const capitalModal = document.getElementById("capitalModal");
 const capitalWithdrawAmount =
   document.getElementById("capitalWithdrawAmount");
@@ -74,32 +67,26 @@ const capitalAvailable =
   document.getElementById("capitalAvailable");
 const capitalWallet =
   document.getElementById("capitalWallet");
+
 const aStake = document.getElementById("aStake");
 const aReward = document.getElementById("aReward");
 const stakeStatus = document.getElementById("stakeStatus");
 
-/* =========================================
-   DEPENDENCY GUARDS
-========================================= */
+/* =========================================================
+   CORE ACCESS
+========================================================= */
 
 function getProjectNetwork() {
   if (typeof window.requireAlbukhrNetwork !== "function") {
-    throw new Error(
-      "ALBUKHR Network Core is not available."
-    );
+    throw new Error("ALBUKHR Network Core is not available.");
   }
 
   return window.requireAlbukhrNetwork();
 }
 
 function getProjectDB() {
-  if (
-    typeof window.requireAlbukhrSupabaseClient !==
-    "function"
-  ) {
-    throw new Error(
-      "ALBUKHR Supabase Core is not available."
-    );
+  if (typeof window.requireAlbukhrSupabaseClient !== "function") {
+    throw new Error("ALBUKHR Supabase Core is not available.");
   }
 
   return window.requireAlbukhrSupabaseClient();
@@ -107,9 +94,7 @@ function getProjectDB() {
 
 async function getCurrentPiUser() {
   if (typeof window.ensurePiAuth !== "function") {
-    throw new Error(
-      "Pi authentication engine is not available."
-    );
+    throw new Error("Pi authentication engine is not available.");
   }
 
   const user = await window.ensurePiAuth();
@@ -123,48 +108,296 @@ async function getCurrentPiUser() {
   return user;
 }
 
-/* =========================================
-   UI INITIALIZATION
-========================================= */
+/* =========================================================
+   PROJECT REGISTRY
+   =========================================================
+   Project data comes from Supabase through the canonical
+   Projects Engine when available. No local project config.
+========================================================= */
 
-function initializeProjectUI() {
+let CURRENT_PROJECT = null;
+
+function normalizeProjectRecord(project) {
+  if (!project || typeof project !== "object") {
+    return null;
+  }
+
+  return {
+    ...project,
+
+    code: String(
+      project.code ||
+      project.project_code ||
+      project.slug ||
+      project.name ||
+      ""
+    ).trim(),
+
+    title:
+      project.title ||
+      project.project_name ||
+      project.name ||
+      PROJECT_CODE,
+
+    description:
+      project.description ||
+      project.desc ||
+      "",
+
+    info:
+      project.info ||
+      project.about ||
+      project.details ||
+      project.description ||
+      "",
+
+    durations:
+      Array.isArray(project.durations)
+        ? project.durations
+            .map(Number)
+            .filter(Number.isFinite)
+        : [],
+
+    logo_url:
+      project.logo_url ||
+      project.image_url ||
+      project.logo ||
+      project.image ||
+      "",
+
+    logo_path:
+      project.logo_path ||
+      "",
+
+    logo_mime_type:
+      project.logo_mime_type ||
+      project.image_mime_type ||
+      "",
+
+    logo_present:
+      project.logo_present === true ||
+      Boolean(
+        project.logo_url ||
+        project.image_url ||
+        project.logo ||
+        project.image ||
+        project.logo_path
+      )
+  };
+}
+
+async function getCurrentProject() {
+  const network = getProjectNetwork();
+
+  /*
+    Prefer the canonical Projects Engine.
+  */
+  const resolverNames = [
+    "getProjectByCode",
+    "getProject",
+    "getProjectByName",
+    "getProjectBySlug"
+  ];
+
+  for (const name of resolverNames) {
+    if (typeof window[name] === "function") {
+      try {
+        const result = await window[name](PROJECT_CODE, network);
+
+        const candidate =
+          result?.data ||
+          result?.project ||
+          result;
+
+        const normalized =
+          normalizeProjectRecord(candidate);
+
+        if (normalized) {
+          return normalized;
+        }
+      } catch (error) {
+        console.warn(
+          `PROJECT RESOLVER ${name} FAILED:`,
+          error
+        );
+      }
+    }
+  }
+
+  /*
+    Direct Supabase read is only a registry read.
+    It still uses the shared Supabase client and
+    current network. No duplicate client is created.
+  */
+  const db = getProjectDB();
+
+  const columns = [
+    "*"
+  ].join(",");
+
+  const attempts = [
+    ["code", PROJECT_CODE],
+    ["project_code", PROJECT_CODE],
+    ["slug", PROJECT_CODE],
+    ["name", PROJECT_CODE],
+    ["title", PROJECT_CODE]
+  ];
+
+  let lastError = null;
+
+  for (const [column, value] of attempts) {
+    try {
+      const result = await db
+        .from("projects")
+        .select(columns)
+        .eq("network", network)
+        .eq(column, value)
+        .limit(1);
+
+      if (result.error) {
+        lastError = result.error;
+        continue;
+      }
+
+      if (Array.isArray(result.data) && result.data.length) {
+        return normalizeProjectRecord(result.data[0]);
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(
+    lastError?.message ||
+    `Project "${PROJECT_CODE}" was not found on ${network}.`
+  );
+}
+
+/* =========================================================
+   PROJECT MEDIA
+   ========================================================= */
+
+function resolveProjectImage(project) {
+  if (!project) {
+    return "";
+  }
+
+  return String(
+    project.logo_url ||
+    project.image_url ||
+    project.logo ||
+    project.image ||
+    ""
+  ).trim();
+}
+
+function renderProjectMedia(project) {
+  if (!projectImage) {
+    return;
+  }
+
+  const src = resolveProjectImage(project);
+
+  if (!src) {
+    projectImage.removeAttribute("src");
+    projectImage.style.display = "none";
+    return;
+  }
+
+  projectImage.src = src;
+  projectImage.alt =
+    `${project.title || PROJECT_CODE} project image`;
+
+  projectImage.style.display = "";
+}
+
+function clearProjectMedia() {
+  if (!projectImage) {
+    return;
+  }
+
+  projectImage.removeAttribute("src");
+  projectImage.style.display = "none";
+}
+
+/* =========================================================
+   PROJECT UI
+========================================================= */
+
+function renderProject(project) {
+  const title =
+    project.title || PROJECT_CODE;
+
+  const description =
+    project.description || "";
+
+  const info =
+    project.info || description;
+
+  const durations =
+    Array.isArray(project.durations)
+      ? project.durations
+      : [];
+
   if (txTitle) {
     txTitle.innerText =
-      `${CONFIG.title} Transactions`;
+      `${title} Transactions`;
   }
 
   document.title =
-    `${CONFIG.title} • ALBUKHR`;
+    `${title} • ALBUKHR`;
 
   if (projectTitle) {
     projectTitle.innerText =
-      `${CONFIG.icon} ${CONFIG.title}`;
+      title;
   }
 
   if (projectDescription) {
     projectDescription.innerText =
-      CONFIG.desc;
+      description;
   }
 
   if (infoTitle) {
     infoTitle.innerText =
-      `About ${CONFIG.title}`;
+      `About ${title}`;
   }
 
   if (infoText) {
     infoText.innerText =
-      CONFIG.info;
+      info;
   }
 
   if (stakeTitle) {
     stakeTitle.innerText =
-      `Stake in ${CONFIG.title}`;
+      `Stake in ${title}`;
   }
+
+  if (minHint) {
+    minHint.innerText =
+      `Minimum stake: ${getMinStake(PROJECT_CODE)} Pi`;
+  }
+
+  if (durationSelect) {
+    durationSelect.innerHTML = "";
+
+    durations.forEach((duration) => {
+      const option =
+        document.createElement("option");
+
+      option.value = String(duration);
+      option.innerText =
+        `${duration} Days`;
+
+      durationSelect.appendChild(option);
+    });
+  }
+
+  renderProjectMedia(project);
 }
 
-/* =========================================
+/* =========================================================
    MODALS
-========================================= */
+========================================================= */
 
 function openModal() {
   if (amountInput) {
@@ -173,19 +406,26 @@ function openModal() {
 
   if (minHint) {
     minHint.innerText =
-      `Minimum stake: ${getMinStake(PROJECT_NAME)} Pi`;
+      `Minimum stake: ${getMinStake(PROJECT_CODE)} Pi`;
   }
 
-  if (durationSelect) {
+  if (durationSelect && CURRENT_PROJECT) {
     durationSelect.innerHTML = "";
 
-    CONFIG.durations.forEach((duration) => {
-      const opt = document.createElement("option");
+    const durations =
+      Array.isArray(CURRENT_PROJECT.durations)
+        ? CURRENT_PROJECT.durations
+        : [];
 
-      opt.value = duration;
-      opt.innerText = `${duration} Days`;
+    durations.forEach((duration) => {
+      const option =
+        document.createElement("option");
 
-      durationSelect.appendChild(opt);
+      option.value = String(duration);
+      option.innerText =
+        `${duration} Days`;
+
+      durationSelect.appendChild(option);
     });
   }
 
@@ -218,14 +458,14 @@ function closeInfo() {
   }
 }
 
-/* =========================================
+/* =========================================================
    REWARD WITHDRAW MODAL
-========================================= */
+========================================================= */
 
 async function openWithdrawModal() {
   try {
     const data =
-      await getProjectTotals(PROJECT_NAME);
+      await getProjectTotals(PROJECT_CODE);
 
     let total = 0;
 
@@ -238,11 +478,11 @@ async function openWithdrawModal() {
           return;
         }
 
-        const remaining =
+        total += Math.max(
+          0,
           (Number(stake.reward) || 0) -
-          (Number(stake.withdrawnReward) || 0);
-
-        total += Math.max(0, remaining);
+          (Number(stake.withdrawnReward) || 0)
+        );
       });
     }
 
@@ -265,10 +505,7 @@ async function openWithdrawModal() {
       withdrawModal.style.display = "flex";
     }
   } catch (error) {
-    console.error(
-      "OPEN WITHDRAW ERROR:",
-      error
-    );
+    console.error("OPEN WITHDRAW ERROR:", error);
 
     showAlert(
       "Unable to Open Withdrawal",
@@ -284,18 +521,16 @@ function closeWithdraw() {
   }
 }
 
-/* =========================================
+/* =========================================================
    STAKE
-========================================= */
+========================================================= */
 
-let __stakeLock = false;
+let stakeLock = false;
 
 async function confirmStake() {
-  if (__stakeLock) {
+  if (stakeLock) {
     return;
   }
-
-  __stakeLock = true;
 
   const amount =
     Number(amountInput?.value);
@@ -304,7 +539,7 @@ async function confirmStake() {
     Number(durationSelect?.value);
 
   const min =
-    getMinStake(PROJECT_NAME);
+    getMinStake(PROJECT_CODE);
 
   if (
     !Number.isFinite(amount) ||
@@ -315,26 +550,37 @@ async function confirmStake() {
       `The minimum stake for this project is ${min} Pi.`
     );
 
-    __stakeLock = false;
     return;
   }
+
+  try {
+    await getCurrentPiUser();
+  } catch (error) {
+    showAlert(
+      "Login Failed",
+      error?.message ||
+      "Unable to verify your Pi account."
+    );
+
+    return;
+  }
+
+  stakeLock = true;
 
   const btn =
     document.querySelector(
       "#stakeModal .primary"
     );
 
+  if (btn) {
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+  }
+
   try {
-    await getCurrentPiUser();
-
-    if (btn) {
-      btn.innerText = "Processing...";
-      btn.disabled = true;
-    }
-
     const result =
       await addStake({
-        project: PROJECT_NAME,
+        project: PROJECT_CODE,
         amount,
         duration
       });
@@ -349,7 +595,10 @@ async function confirmStake() {
 
     if (successText) {
       successText.innerText =
-        `You staked ${amount} Pi in ${CONFIG.title}`;
+        `You staked ${amount} Pi in ${
+          CURRENT_PROJECT?.title ||
+          PROJECT_CODE
+        }`;
     }
 
     closeModal();
@@ -360,10 +609,7 @@ async function confirmStake() {
 
     await load();
   } catch (error) {
-    console.error(
-      "STAKE ERROR:",
-      error
-    );
+    console.error("STAKE ERROR:", error);
 
     showAlert(
       "Stake Failed",
@@ -371,35 +617,74 @@ async function confirmStake() {
       "Unable to process your stake."
     );
   } finally {
+    stakeLock = false;
+
     if (btn) {
       btn.innerText = "Confirm";
       btn.disabled = false;
     }
-
-    __stakeLock = false;
   }
 }
 
-/* =========================================
+/* =========================================================
+   PAID CAPITAL
+========================================================= */
+
+async function getPaidCapitalAmount() {
+  const user = await getCurrentPiUser();
+  const network = getProjectNetwork();
+  const db = getProjectDB();
+
+  const result = await db
+    .from("withdraw_requests")
+    .select("amount,status,network")
+    .eq("userid", user.uid)
+    .eq("project", PROJECT_CODE)
+    .eq("type", "capital")
+    .eq("status", "paid")
+    .eq("network", network);
+
+  if (result.error) {
+    throw new Error(
+      result.error.message ||
+      "Unable to verify paid capital withdrawals."
+    );
+  }
+
+  return (
+    Array.isArray(result.data)
+      ? result.data.reduce(
+          (sum, item) =>
+            sum +
+            Math.abs(Number(item.amount) || 0),
+          0
+        )
+      : 0
+  );
+}
+
+/* =========================================================
    LOAD PROJECT
-========================================= */
+========================================================= */
 
 async function load() {
-  console.log(
-    "ALBUKHR PROJECT LOADING:",
-    PROJECT_NAME
-  );
-
   try {
     const network =
       getProjectNetwork();
 
-    console.log(
-      `ALBUKHR PROJECT NETWORK: ${network.toUpperCase()}`
-    );
+    CURRENT_PROJECT =
+      await getCurrentProject();
+
+    if (!CURRENT_PROJECT) {
+      throw new Error(
+        `Project "${PROJECT_CODE}" is unavailable on ${network}.`
+      );
+    }
+
+    renderProject(CURRENT_PROJECT);
 
     const data =
-      await getProjectTotals(PROJECT_NAME);
+      await getProjectTotals(PROJECT_CODE);
 
     if (!data) {
       throw new Error(
@@ -408,86 +693,38 @@ async function load() {
     }
 
     let totalStake = 0;
+    let reward = 0;
 
     if (Array.isArray(data.stakes)) {
       data.stakes.forEach((stake) => {
-        const amount =
-          Number(stake.amount) || 0;
-
         if (
           !stake.type ||
           stake.type === "stake"
         ) {
-          totalStake += amount;
+          totalStake +=
+            Number(stake.amount) || 0;
         }
+
+        reward += Math.max(
+          0,
+          (Number(stake.reward) || 0) -
+          (Number(stake.withdrawnReward) || 0)
+        );
       });
     }
 
-    /*
-      Capital withdrawals are subtracted only
-      when their status is PAID and they belong
-      to the current user/project/network.
-    */
-
     try {
-      const user =
-        await getCurrentPiUser();
-
-      const db =
-        getProjectDB();
-
-      const paidCapital =
-        await db
-          .from("withdraw_requests")
-          .select("amount,status,network")
-          .eq("userid", user.uid)
-          .eq("project", PROJECT_NAME)
-          .eq("type", "capital")
-          .eq("status", "paid")
-          .eq("network", network);
-
-      if (paidCapital.error) {
-        console.error(
-          "PAID CAPITAL QUERY ERROR:",
-          paidCapital.error
-        );
-      } else if (
-        Array.isArray(paidCapital.data)
-      ) {
-        paidCapital.data.forEach(
-          (withdrawal) => {
-            totalStake -= Math.abs(
-              Number(withdrawal.amount) || 0
-            );
-          }
-        );
-      }
+      totalStake -=
+        await getPaidCapitalAmount();
     } catch (error) {
       console.warn(
-        "PAID CAPITAL CHECK SKIPPED:",
+        "PAID CAPITAL CHECK FAILED:",
         error
       );
     }
 
     totalStake =
       Math.max(0, totalStake);
-
-    let reward = 0;
-
-    if (Array.isArray(data.stakes)) {
-      data.stakes.forEach((stake) => {
-        const totalReward =
-          Number(stake.reward) || 0;
-
-        const withdrawnReward =
-          Number(stake.withdrawnReward) || 0;
-
-        reward += Math.max(
-          0,
-          totalReward - withdrawnReward
-        );
-      });
-    }
 
     if (aStake) {
       aStake.innerText =
@@ -508,6 +745,8 @@ async function load() {
       error
     );
 
+    clearProjectMedia();
+
     showAlert(
       "Load Failed",
       error?.message ||
@@ -516,9 +755,9 @@ async function load() {
   }
 }
 
-/* =========================================
+/* =========================================================
    MANUAL REFRESH
-========================================= */
+========================================================= */
 
 window.manualRefresh = async function () {
   const btn =
@@ -544,17 +783,16 @@ window.manualRefresh = async function () {
   }
 };
 
-/* =========================================
-   HELPERS
-========================================= */
+/* =========================================================
+   WALLET
+========================================================= */
 
 function shortWallet(address) {
   if (!address) {
     return "";
   }
 
-  const value =
-    String(address);
+  const value = String(address);
 
   if (value.length <= 12) {
     return value;
@@ -567,34 +805,9 @@ function shortWallet(address) {
   );
 }
 
-function calculateWithdrawal(amount) {
-  const numericAmount =
-    Number(amount);
-
-  if (
-    !Number.isFinite(numericAmount) ||
-    numericAmount <= 0
-  ) {
-    throw new Error(
-      "Invalid withdrawal amount."
-    );
-  }
-
-  const fee =
-    numericAmount * 0.01;
-
-  return {
-    amount: numericAmount,
-    fee,
-    totalDeduction:
-      numericAmount + fee,
-    receive: numericAmount
-  };
-}
-
-/* =========================================
-   NETWORK-AWARE WITHDRAWALS
-========================================= */
+/* =========================================================
+   WITHDRAWAL HISTORY
+========================================================= */
 
 async function getProjectWithdrawals() {
   const user =
@@ -609,21 +822,23 @@ async function getProjectWithdrawals() {
   const result =
     await db
       .from("withdraw_requests")
-      .select([
-        "id",
-        "userid",
-        "project",
-        "amount",
-        "fee",
-        "receive",
-        "wallet",
-        "type",
-        "status",
-        "txid",
-        "created_at",
-        "processed_at",
-        "network"
-      ].join(","))
+      .select(
+        [
+          "id",
+          "userid",
+          "project",
+          "amount",
+          "fee",
+          "receive",
+          "wallet",
+          "type",
+          "status",
+          "txid",
+          "created_at",
+          "processed_at",
+          "network"
+        ].join(",")
+      )
       .eq("userid", user.uid)
       .eq("network", network);
 
@@ -639,9 +854,9 @@ async function getProjectWithdrawals() {
     : [];
 }
 
-/* =========================================
+/* =========================================================
    HISTORY
-========================================= */
+========================================================= */
 
 async function renderHistory() {
   if (!projectHistory) {
@@ -662,25 +877,22 @@ async function renderHistory() {
     );
   }
 
+  const projectKey =
+    PROJECT_CODE.trim().toLowerCase();
+
   const txs =
-    (Array.isArray(stakes) ? stakes : [])
-      .filter(
-        (tx) =>
-          tx.project === PROJECT_NAME
-      )
-      .sort(
-        (a, b) =>
-          new Date(
-            b.created_at ||
-            b.timestamp ||
-            0
-          ) -
-          new Date(
-            a.created_at ||
-            a.timestamp ||
-            0
-          )
-      );
+    (Array.isArray(stakes)
+      ? stakes
+      : []
+    )
+      .filter((tx) => {
+        return (
+          String(tx.project || "")
+            .trim()
+            .toLowerCase() ===
+          projectKey
+        );
+      });
 
   let withdraws = [];
 
@@ -691,28 +903,11 @@ async function renderHistory() {
     withdraws =
       requests
         .filter((withdrawal) => {
-          const a =
-            String(
-              withdrawal.project || ""
-            )
-              .trim()
-              .toLowerCase();
-
-          const b =
-            String(PROJECT_NAME || "")
-              .trim()
-              .toLowerCase();
-
-          const c =
-            String(CONFIG.title || "")
-              .trim()
-              .toLowerCase();
-
           return (
-            a === b ||
-            a === c ||
-            c.includes(a) ||
-            a.includes(c)
+            String(withdrawal.project || "")
+              .trim()
+              .toLowerCase() ===
+            projectKey
           );
         })
         .map((withdrawal) => ({
@@ -742,8 +937,8 @@ async function renderHistory() {
   }
 
   const allTx =
-    [...txs, ...withdraws].sort(
-      (a, b) => {
+    [...txs, ...withdraws]
+      .sort((a, b) => {
         const timeA =
           new Date(
             a.created_at ||
@@ -759,8 +954,7 @@ async function renderHistory() {
           ).getTime();
 
         return timeB - timeA;
-      }
-    );
+      });
 
   if (!allTx.length) {
     projectHistory.innerHTML = `
@@ -769,8 +963,6 @@ async function renderHistory() {
         padding:20px;
         color:#777
       ">
-        ${CONFIG.icon}
-        <br><br>
         No transactions yet
       </div>
     `;
@@ -784,30 +976,20 @@ async function renderHistory() {
         tx.type || "stake"
       ).toLowerCase();
 
-    let icon =
-      CONFIG.icon;
-
-    let label =
-      "Stake";
-
-    let sign =
-      "+";
-
-    let color =
-      "success-status";
+    let label = "Stake";
+    let sign = "+";
+    let color = "success-status";
 
     if (
       txType === "withdraw" ||
       txType === "reward"
     ) {
-      icon = "💸";
       label = "Reward Withdrawal";
       sign = "-";
       color = "withdraw-status";
     }
 
     if (txType === "capital") {
-      icon = "🏦";
       label = "Capital Withdrawal";
       sign = "-";
       color = "withdraw-status";
@@ -826,21 +1008,21 @@ async function renderHistory() {
         tx.status === "pending"
           ? "🟡 Pending"
           : tx.status === "paid"
-            ? "✅ Successful"
-            : tx.status === "rejected"
-              ? "🔴 Failed"
-              : "✅ Successful";
+          ? "✅ Successful"
+          : tx.status === "rejected"
+          ? "🔴 Failed"
+          : "✅ Successful";
     } else {
       statusText =
         tx.status === "pending"
           ? "🟡 Pending"
           : tx.status === "approved"
-            ? "🔵 Approved"
-            : tx.status === "paid"
-              ? "🟢 Paid"
-              : tx.status === "rejected"
-                ? "🔴 Rejected"
-                : "";
+          ? "🔵 Approved"
+          : tx.status === "paid"
+          ? "🟢 Paid"
+          : tx.status === "rejected"
+          ? "🔴 Rejected"
+          : "";
     }
 
     const wallet =
@@ -848,10 +1030,6 @@ async function renderHistory() {
       tx.wallet;
 
     div.innerHTML = `
-      <div class="project-icon">
-        ${icon}
-      </div>
-
       <div class="project-body">
         <div class="project-title">
           ${label}
@@ -912,18 +1090,48 @@ async function renderHistory() {
   });
 }
 
-/* =========================================
-   REWARD WITHDRAWAL
-========================================= */
+/* =========================================================
+   WITHDRAWAL MODEL
+========================================================= */
 
-let __withdrawLock = false;
+function calculateWithdrawal(amount) {
+  const numericAmount =
+    Number(amount);
+
+  if (
+    !Number.isFinite(numericAmount) ||
+    numericAmount <= 0
+  ) {
+    throw new Error(
+      "Invalid withdrawal amount."
+    );
+  }
+
+  const fee =
+    numericAmount * 0.01;
+
+  return {
+    amount: numericAmount,
+    fee,
+    totalDeduction:
+      numericAmount + fee,
+    receive:
+      numericAmount
+  };
+}
+
+/* =========================================================
+   REWARD WITHDRAWAL
+========================================================= */
+
+let withdrawLock = false;
 
 async function confirmWithdraw() {
-  if (__withdrawLock) {
+  if (withdrawLock) {
     return;
   }
 
-  __withdrawLock = true;
+  withdrawLock = true;
 
   try {
     const amount =
@@ -942,6 +1150,7 @@ async function confirmWithdraw() {
         "Minimum Withdrawal",
         "The minimum withdrawal amount is 0.01 Pi."
       );
+
       return;
     }
 
@@ -950,12 +1159,13 @@ async function confirmWithdraw() {
         "Wallet Address Required",
         "Please enter your Pi wallet address."
       );
+
       return;
     }
 
     const data =
       await getProjectTotals(
-        PROJECT_NAME
+        PROJECT_CODE
       );
 
     let availableReward = 0;
@@ -969,18 +1179,12 @@ async function confirmWithdraw() {
           return;
         }
 
-        const total =
-          Number(stake.reward) || 0;
-
-        const withdrawn =
-          Number(
-            stake.withdrawnReward
-          ) || 0;
-
-        availableReward += Math.max(
-          0,
-          total - withdrawn
-        );
+        availableReward +=
+          Math.max(
+            0,
+            (Number(stake.reward) || 0) -
+            (Number(stake.withdrawnReward) || 0)
+          );
       });
     }
 
@@ -997,13 +1201,15 @@ async function confirmWithdraw() {
 
 Required (including fee): ${withdrawal.totalDeduction.toFixed(2)} Pi`
       );
+
       return;
     }
 
     const request =
       await createWithdrawRequest({
-        project: PROJECT_NAME,
-        amount: withdrawal.amount,
+        project: PROJECT_CODE,
+        amount:
+          withdrawal.amount,
         wallet,
         type: "reward"
       });
@@ -1015,6 +1221,7 @@ Required (including fee): ${withdrawal.totalDeduction.toFixed(2)} Pi`
           ? request.error
           : "Unable to submit your withdrawal request."
       );
+
       return;
     }
 
@@ -1052,9 +1259,13 @@ Wallet Receive: ${withdrawal.receive.toFixed(2)} Pi`
       "Unable to submit your withdrawal request."
     );
   } finally {
-    __withdrawLock = false;
+    withdrawLock = false;
   }
 }
+
+/* =========================================================
+   REWARD PREVIEW
+========================================================= */
 
 function updateRewardWithdrawalPreview() {
   if (!withdrawAmount) {
@@ -1062,9 +1273,7 @@ function updateRewardWithdrawalPreview() {
   }
 
   const amount =
-    Number(
-      withdrawAmount.value
-    ) || 0;
+    Number(withdrawAmount.value) || 0;
 
   const fee =
     amount * 0.01;
@@ -1103,9 +1312,9 @@ function updateRewardWithdrawalPreview() {
   }
 }
 
-/* =========================================
-   CAPITAL WITHDRAWAL MODAL
-========================================= */
+/* =========================================================
+   CAPITAL MODAL
+========================================================= */
 
 function openCapitalModal() {
   updateCapitalAvailable();
@@ -1131,14 +1340,14 @@ function closeCapitalModal() {
   }
 }
 
-/* =========================================
-   CAPITAL AVAILABLE
-========================================= */
+/* =========================================================
+   CAPITAL BALANCE
+========================================================= */
 
-async function getAvailableCapital() {
+async function calculateAvailableCapital() {
   const data =
     await getProjectTotals(
-      PROJECT_NAME
+      PROJECT_CODE
     );
 
   let total = 0;
@@ -1149,9 +1358,7 @@ async function getAvailableCapital() {
   if (Array.isArray(data?.stakes)) {
     data.stakes.forEach((stake) => {
       const unlockTime =
-        Number(
-          stake.unlockTime
-        ) || 0;
+        Number(stake.unlockTime) || 0;
 
       if (now >= unlockTime) {
         total += Math.max(
@@ -1164,37 +1371,8 @@ async function getAvailableCapital() {
   }
 
   try {
-    const user =
-      await getCurrentPiUser();
-
-    const network =
-      getProjectNetwork();
-
-    const db =
-      getProjectDB();
-
-    const result =
-      await db
-        .from("withdraw_requests")
-        .select("amount,status,network")
-        .eq("userid", user.uid)
-        .eq("project", PROJECT_NAME)
-        .eq("type", "capital")
-        .eq("status", "paid")
-        .eq("network", network);
-
-    if (
-      !result.error &&
-      Array.isArray(result.data)
-    ) {
-      result.data.forEach(
-        (withdrawal) => {
-          total -= Math.abs(
-            Number(withdrawal.amount) || 0
-          );
-        }
-      );
-    }
+    total -=
+      await getPaidCapitalAmount();
   } catch (error) {
     console.warn(
       "CAPITAL PAID QUERY ERROR:",
@@ -1212,7 +1390,7 @@ async function updateCapitalAvailable() {
 
   try {
     const total =
-      await getAvailableCapital();
+      await calculateAvailableCapital();
 
     capitalAvailable.innerText =
       `Available: ${total.toFixed(2)} Pi`;
@@ -1226,6 +1404,10 @@ async function updateCapitalAvailable() {
       "Available: 0.00 Pi";
   }
 }
+
+/* =========================================================
+   CAPITAL PREVIEW
+========================================================= */
 
 function updateCapitalWithdrawalPreview() {
   if (!capitalWithdrawAmount) {
@@ -1274,18 +1456,18 @@ function updateCapitalWithdrawalPreview() {
   }
 }
 
-/* =========================================
+/* =========================================================
    CAPITAL WITHDRAWAL
-========================================= */
+========================================================= */
 
-let __capitalLock = false;
+let capitalLock = false;
 
 async function confirmCapitalWithdraw() {
-  if (__capitalLock) {
+  if (capitalLock) {
     return;
   }
 
-  __capitalLock = true;
+  capitalLock = true;
 
   try {
     const amount =
@@ -1306,6 +1488,7 @@ async function confirmCapitalWithdraw() {
         "Minimum Withdrawal",
         "The minimum capital withdrawal amount is 0.01 Pi."
       );
+
       return;
     }
 
@@ -1314,11 +1497,12 @@ async function confirmCapitalWithdraw() {
         "Wallet Address Required",
         "Please enter your Pi wallet address to continue with the capital withdrawal."
       );
+
       return;
     }
 
     const availableCapital =
-      await getAvailableCapital();
+      await calculateAvailableCapital();
 
     const withdrawal =
       calculateWithdrawal(amount);
@@ -1333,13 +1517,15 @@ async function confirmCapitalWithdraw() {
 
 Required (including fee): ${withdrawal.totalDeduction.toFixed(2)} Pi`
       );
+
       return;
     }
 
     const request =
       await createWithdrawRequest({
-        project: PROJECT_NAME,
-        amount: withdrawal.amount,
+        project: PROJECT_CODE,
+        amount:
+          withdrawal.amount,
         wallet,
         type: "capital"
       });
@@ -1351,6 +1537,7 @@ Required (including fee): ${withdrawal.totalDeduction.toFixed(2)} Pi`
           ? request.error
           : "Unable to submit your capital withdrawal request."
       );
+
       return;
     }
 
@@ -1388,13 +1575,13 @@ Wallet Receive: ${withdrawal.receive.toFixed(2)} Pi`
       "Unable to submit your capital withdrawal request."
     );
   } finally {
-    __capitalLock = false;
+    capitalLock = false;
   }
 }
 
-/* =========================================
+/* =========================================================
    STAKE STATUS
-========================================= */
+========================================================= */
 
 async function updateStakeStatus() {
   if (!stakeStatus) {
@@ -1415,7 +1602,7 @@ async function updateStakeStatus() {
       await db
         .from("stakes")
         .select("*")
-        .eq("project", PROJECT_NAME)
+        .eq("project", PROJECT_CODE)
         .eq("userid", user.uid)
         .eq("network", network);
 
@@ -1424,6 +1611,7 @@ async function updateStakeStatus() {
         "STAKE STATUS ERROR:",
         result.error
       );
+
       return;
     }
 
@@ -1446,9 +1634,7 @@ async function updateStakeStatus() {
         );
 
       const unlockTime =
-        Number(
-          stake.unlockTime
-        ) || 0;
+        Number(stake.unlockTime) || 0;
 
       if (now >= unlockTime) {
         unlocked += amount;
@@ -1457,23 +1643,22 @@ async function updateStakeStatus() {
       }
     });
 
-    let text = "";
+    const parts = [];
 
     if (locked > 0) {
-      text +=
-        `Locked: ${locked.toFixed(2)} Pi`;
+      parts.push(
+        `Locked: ${locked.toFixed(2)} Pi`
+      );
     }
 
     if (unlocked > 0) {
-      if (text) {
-        text += " • ";
-      }
-
-      text +=
-        `Unlocked: ${unlocked.toFixed(2)} Pi`;
+      parts.push(
+        `Unlocked: ${unlocked.toFixed(2)} Pi`
+      );
     }
 
-    stakeStatus.innerText = text;
+    stakeStatus.innerText =
+      parts.join(" • ");
   } catch (error) {
     console.error(
       "UPDATE STAKE STATUS ERROR:",
@@ -1482,9 +1667,9 @@ async function updateStakeStatus() {
   }
 }
 
-/* =========================================
+/* =========================================================
    INPUT EVENTS
-========================================= */
+========================================================= */
 
 if (withdrawAmount) {
   withdrawAmount.addEventListener(
@@ -1500,15 +1685,13 @@ if (capitalWithdrawAmount) {
   );
 }
 
-/* =========================================
+/* =========================================================
    DOM READY
-========================================= */
+========================================================= */
 
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
-    initializeProjectUI();
-
     try {
       await getCurrentPiUser();
       await load();
@@ -1527,9 +1710,9 @@ document.addEventListener(
   }
 );
 
-/* =========================================
+/* =========================================================
    AUTO UPDATE
-========================================= */
+========================================================= */
 
 setInterval(
   () => updateStakeStatus(),
