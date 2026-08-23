@@ -1,109 +1,89 @@
-/* =========================================
-   ALBUKHR ADMIN ALERT ENGINE
-========================================= */
+/* ==========================================
+   ALBUKHR ADMIN ALERTS v2
 
-const LOW_BALANCE_LIMIT = 100;
+   PURPOSE:
+   - Critical dashboard alerts
+   - UI-only alert rendering
+   - No persistence
+========================================== */
 
-const CRITICAL_BALANCE_LIMIT = 20;
+(function(window){
 
-/* =========================================
-   CHECK LIQUIDITY
-========================================= */
+  "use strict";
 
-async function checkLiquidity(){
+  function getElements(){
 
-try{
+    const config =
+      window.AdminDashboardConfig;
 
-const balance =
-Number(await getWalletBalance()) || 0;
+    return {
+      banner:
+        document.getElementById(
+          config?.ALERTS?.BANNER ||
+          "criticalAlert"
+        ),
 
-const warning =
-document.getElementById(
-"liquidityWarning"
-);
+      sound:
+        document.getElementById(
+          config?.ALERTS?.SOUND ||
+          "alertSound"
+        )
+    };
+  }
 
-const status =
-document.getElementById(
-"liquidityStatus"
-);
+  function setCriticalAlert(
+    message,
+    {
+      visible = true,
+      playSound = false
+    } = {}
+  ){
 
-if(!warning) return;
+    const {
+      banner,
+      sound
+    } = getElements();
 
-let color = "";
+    if(!banner) return;
 
-let message = "";
+    banner.textContent =
+      String(message || "");
 
-let badge = "";
+    banner.classList.toggle(
+      "hidden",
+      !visible
+    );
 
-if(balance <= CRITICAL_BALANCE_LIMIT){
+    if(
+      visible &&
+      playSound &&
+      sound
+    ){
+      try{
+        sound.currentTime = 0;
+        const promise = sound.play();
+        if(promise?.catch){
+          promise.catch(() => {});
+        }
+      }catch(e){
+        console.warn(
+          "Admin alert sound unavailable:",
+          e
+        );
+      }
+    }
+  }
 
-color = "#c0392b";
+  function clearCriticalAlert(){
+    setCriticalAlert("", {
+      visible: false,
+      playSound: false
+    });
+  }
 
-message =
-"🚨 Critical Liquidity Level";
+  window.AlbukhrAdminAlerts = Object.freeze({
+    setCriticalAlert,
+    clearCriticalAlert
+  });
 
-badge =
-"🔴 CRITICAL";
-
-}else if(balance <= LOW_BALANCE_LIMIT){
-
-color = "#f39c12";
-
-message =
-"⚠️ Low Liquidity Level";
-
-badge =
-"🟠 LOW";
-
-}else{
-
-warning.style.display = "none";
-
-if(status){
-
-status.innerHTML =
-"🟢 SAFE";
-
-status.style.color =
-"#18a558";
-
-}
-
-return;
-
-}
-
-/* Warning Banner */
-
-warning.style.display =
-"block";
-
-warning.style.background =
-color;
-
-warning.innerHTML =
-message;
-
-/* Treasury Status */
-
-if(status){
-
-status.innerHTML = badge;
-
-status.style.color = color;
-
-}
-
-}catch(error){
-
-console.error(
-
-"Liquidity Check Error:",
-
-error
-
-);
-
-}
-
-}
+})(window);
