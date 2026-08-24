@@ -1,32 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALBUKHR Login</title>
 
-<!-- PI SDK -->
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <meta charset="UTF-8">
 
-<link rel="stylesheet" href="css/login.css">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>ALBUKHR Login</title>
+
+
+  <!-- =========================================
+       PI SDK
+       Must load before pi-auth-core.js
+  ========================================== -->
+
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+
+  <!-- =========================================
+       LOGIN PAGE STYLE
+  ========================================== -->
+
+  <link
+    rel="stylesheet"
+    href="css/login.css"
+  >
 
 </head>
 
+
 <body>
 
-<div class="header">ALBUKHR INVESTMENT LIMITED</div>
 
-<div class="card">
+  <!-- =========================================
+       ALBUKHR HEADER
+  ========================================== -->
 
-  <h2>Login with Pi</h2>
+  <div class="header">
+    ALBUKHR INVESTMENT LIMITED
+  </div>
 
-  <div id="status" class="status">Initializing...</div>
 
-  <button onclick="login()">Login with Pi</button>
+  <!-- =========================================
+       LOGIN CARD
+  ========================================== -->
 
-</div>
+  <div class="card">
 
-<script src="js/login.js"></script>
+    <h2>
+      Login with Pi
+    </h2>
+
+
+    <!--
+      Status is controlled by js/login.js.
+      aria-live allows authentication
+      messages to be announced accessibly.
+    -->
+
+    <div
+      id="status"
+      class="status"
+      aria-live="polite"
+    >
+      Initializing...
+    </div>
+
+
+    <!--
+      Existing login() compatibility is
+      intentionally preserved.
+
+      The actual authentication logic must
+      come from:
+        js/core/pi-auth-core.js
+
+      login.js remains the page controller.
+    -->
+
+    <button
+      id="piLoginButton"
+      type="button"
+      onclick="login()"
+    >
+      Login with Pi
+    </button>
+
+  </div>
+
+
+  <!-- =========================================
+       ALBUKHR FOUNDATION ENGINES
+       =========================================
+
+       Load order:
+
+       1. environment-switcher.js
+          ↓
+       2. pi-auth-core.js
+          ↓
+       3. login.js
+
+       Login does NOT need:
+       - pi-payment.js
+       - pi-project-treasury-payment.js
+       - supabase-core.js
+
+       unless the actual login controller
+       later proves that it depends on them.
+  ========================================== -->
+
+
+  <!--
+    MAINNET / TESTNET
+    Shared network source of truth.
+  -->
+
+  <script src="js/core/environment-switcher.js"></script>
+
+
+  <!--
+    SHARED PI AUTHENTICATION
+    Handles:
+    - Pi SDK initialization
+    - Pi authentication
+    - authenticated user state
+    - network-aware Pi initialization
+    - auth guard
+    - no LocalStorage auth persistence
+  -->
+
+  <script src="js/core/pi-auth-core.js"></script>
+
+
+  <!--
+    LOGIN PAGE CONTROLLER
+    UI-specific login behavior belongs here.
+  -->
+
+  <script src="js/login.js"></script>
+
 
 </body>
+
 </html>
