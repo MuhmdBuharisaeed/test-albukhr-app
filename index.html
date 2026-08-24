@@ -14,182 +14,100 @@
 
 <style>
 .header-right{
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
-/* USER BOX */
 .user-box{
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;   /* 👈 KEY FIX */
-  justify-content: center;
-  max-width: 80px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  max-width:80px;
 }
 
-/* USERNAME */
 #piUser{
-  font-size: 10px;
-  margin-top: 2px;
-  color: #fff;
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  text-align: right;   /* 👈 KEY FIX */
+  font-size:10px;
+  margin-top:2px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:right;
 }
-
-/* =========================================
-   ALBUKHR – ENVIRONMENT SWITCHER
-   SIDE DRAWER HEADER
-========================================= */
 
 .environment-switcher{
   display:flex;
   align-items:center;
   justify-content:center;
   gap:5px;
-
   min-width:68px;
   height:28px;
-
   padding:4px 8px;
-
   border:1px solid rgba(255,255,255,0.35);
   border-radius:20px;
-
   background:rgba(255,255,255,0.10);
-
   color:#fff;
-
   font-size:9px;
   font-weight:800;
   letter-spacing:.5px;
-
   cursor:pointer;
   user-select:none;
-
   appearance:none;
   -webkit-appearance:none;
-
-  transition:
-    background .2s ease,
-    transform .2s ease,
-    border-color .2s ease;
+  transition:background .2s ease,transform .2s ease,border-color .2s ease;
 }
 
-.environment-switcher:hover{
-  background:rgba(255,255,255,0.18);
-}
-
-.environment-switcher:active{
-  transform:scale(.95);
-}
-
-
-/* =========================================
-   ENVIRONMENT DOT
-========================================= */
+.environment-switcher:hover{background:rgba(255,255,255,0.18);}
+.environment-switcher:active{transform:scale(.95);}
 
 .environment-dot{
   width:7px;
   height:7px;
-
   flex:0 0 7px;
-
   border-radius:50%;
-
   background:#f0ad00;
-
-  box-shadow:
-    0 0 0 2px rgba(240,173,0,.15);
+  box-shadow:0 0 0 2px rgba(240,173,0,.15);
 }
 
+#environmentLabel{line-height:1;white-space:nowrap;}
 
-/* =========================================
-   ENVIRONMENT LABEL
-========================================= */
-
-#environmentLabel{
-  line-height:1;
-  white-space:nowrap;
-}
-
-
-/* =========================================
-   MAINNET
-========================================= */
-
-.environment-switcher.mainnet{
-  border-color:rgba(25,179,107,.55);
-}
-
-.environment-switcher.mainnet
-.environment-dot{
+.environment-switcher.mainnet{border-color:rgba(25,179,107,.55);}
+.environment-switcher.mainnet .environment-dot{
   background:#19b36b;
-
-  box-shadow:
-    0 0 0 2px rgba(25,179,107,.16);
+  box-shadow:0 0 0 2px rgba(25,179,107,.16);
 }
 
-
-/* =========================================
-   TESTNET
-========================================= */
-
-.environment-switcher.testnet{
-  border-color:rgba(240,173,0,.55);
-}
-
-.environment-switcher.testnet
-.environment-dot{
+.environment-switcher.testnet{border-color:rgba(240,173,0,.55);}
+.environment-switcher.testnet .environment-dot{
   background:#f0ad00;
-
-  box-shadow:
-    0 0 0 2px rgba(240,173,0,.16);
-  }
+  box-shadow:0 0 0 2px rgba(240,173,0,.16);
+}
 </style>
-
 </head>
 
 <body data-page="home">
 
-<script>
-(function(){
-  const user = JSON.parse(localStorage.getItem("pi_user"));
-  if(!user || !user.uid){
-    window.location.replace("login.html");
-  }
-})();
-</script>
-
-  <header class="header">
-
+<header class="header">
   <div class="header-left">
-  <span class="brand">ALBUKHR</span>
+    <span class="brand">ALBUKHR</span>
   </div>
 
   <div class="header-right">
+    <div class="header-btn user-box" id="userBox">
+      <div class="user-icon">👤</div>
+      <div id="piUser"></div>
+    </div>
 
-  <div class="header-btn user-box" id="userBox">
-  <div class="user-icon">👤</div>
-  <div id="piUser"></div>
+    <div class="header-btn notification-btn" onclick="openNotifications()">
+      🔔
+      <span id="notifBadge" class="notification-badge"></span>
+    </div>
+
+    <div class="header-btn menu-icon">☰</div>
   </div>
-  
-  <div class="header-btn notification-btn" onclick="openNotifications()">
-    🔔
-    <span id="notifBadge" class="notification-badge"></span>
-  </div>
-
-  <div class="header-btn menu-icon">
-    ☰
-  </div>
-
- </div>
-
-  </header>
+</header>
 
 <div class="welcome-bar">
   <div id="welcomeScroll" class="welcome-track">
@@ -213,58 +131,32 @@
   <div class="popular-scroll" id="popularProjects"></div>
 </div>
 
-<!-- ===== ASSETS ===== -->
 <section class="section">
   <div class="assets-header">
     <div style="display:flex;align-items:center;gap:8px;">
       <h3 style="margin:0;">Assets</h3>
       <span id="toggleAssets" style="cursor:pointer;font-size:16px;"></span>
     </div>
-    
-<button
-class="explore-btn"
-onclick="location.href='explore-projects.html'">
 
-<i class="fa-solid fa-compass"></i>
-
-<span>Explore Projects</span>
-
-</button>
-    
+    <button class="explore-btn" onclick="location.href='explore-projects.html'">
+      <i class="fa-solid fa-compass"></i>
+      <span>Explore Projects</span>
+    </button>
   </div>
 
   <div id="assetsContainer"></div>
 </section>
 
-<!-- ===============================
-ALBUKHR AI FLOATING BUTTON
-================================ -->
-
-<div 
-class="albukhr-ai-btn"
-id="albukhrAI"
-onclick="openAlbukhrAI()"
->
-
-<img 
-src="images/ALBUKHR_Logo_Optimized_1024x1024.png"
-class="albukhr-ai-logo"
-/>
-
+<div class="albukhr-ai-btn" id="albukhrAI" onclick="openAlbukhrAI()">
+  <img src="images/ALBUKHR_Logo_Optimized_1024x1024.png" class="albukhr-ai-logo">
 </div>
 
-<div 
-id="aiDevNote"
-class="ai-dev-note"
->
-Albukhr AI is under development
+<div id="aiDevNote" class="ai-dev-note">
+  Albukhr AI is under development
 </div>
-
-<!-- ===== ALBUKHR DOCK NAV ===== -->
 
 <div class="dock-nav">
 
-  <!-- HOME -->
   <a href="index.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
       <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
@@ -272,8 +164,6 @@ Albukhr AI is under development
     <span>Home</span>
   </a>
 
-
-  <!-- INVESTORS -->
   <a href="investor-dashboard.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
       <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
@@ -284,31 +174,18 @@ Albukhr AI is under development
     <span>Investors</span>
   </a>
 
-
-  <!-- TRANSPARENCY HUB -->
   <a href="transparency.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
-      
-      <!-- Document -->
       <path d="M6 3h8l4 4v14H6z"/>
-      
-      <!-- Fold -->
       <path d="M14 3v4h4"/>
-      
-      <!-- Lines -->
       <path d="M8 11h8"/>
       <path d="M8 14h8"/>
-      
-      <!-- Eye -->
       <ellipse cx="12" cy="18" rx="4" ry="2"/>
       <circle cx="12" cy="18" r="0.8"/>
-      
     </svg>
     <span>Transparency</span>
   </a>
 
-
-  <!-- SERVICES -->
   <a href="services.html" class="dock-item">
     <svg viewBox="0 0 24 24" class="dock-icon">
       <circle cx="12" cy="12" r="3"/>
@@ -317,460 +194,244 @@ Albukhr AI is under development
     <span>Services</span>
   </a>
 
-         </div>
+</div>
+
+<!-- =========================================================
+     SHARED ALBUKHR FOUNDATION
+     Order is intentional:
+     1. Environment
+     2. Supabase Core
+     3. Pi Auth Core
+========================================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/core/environment-switcher.js"></script>
+<script src="js/core/supabase-core.js"></script>
+<script src="js/core/pi-auth-core.js"></script>
+
+<!-- =========================================================
+     PAGE DATA / DOMAIN ENGINES
+========================================================= -->
+
+<script src="js/features/project-config.js"></script>
+<script src="js/features/staking.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<!-- SIDE DRAWER -->
+<div id="sideDrawer" class="side-drawer">
+
+  <div class="drawer-header">
+    <h3>Settings</h3>
+
+    <button
+      type="button"
+      id="environmentSwitcher"
+      class="environment-switcher"
+      aria-label="Switch environment">
+
+      <span id="environmentDot" class="environment-dot"></span>
+      <span id="environmentLabel"></span>
+    </button>
+
+    <button
+      type="button"
+      class="close-drawer"
+      onclick="closeDrawer()"
+      aria-label="Close settings">
+
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 6L18 18"></path>
+        <path d="M18 6L6 18"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="drawer-body">
+    <a href="user-profile.html">Profile</a>
+    <a href="preferences.html">Preferences</a>
+    <a href="security.html">Security</a>
+    <a href="help.html">Help</a>
+  </div>
+
+  <hr style="margin:12px 0">
+
+  <div class="drawer-extra">
+
+    <div class="drawer-title">
+      <svg class="drawer-section-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v18"></path>
+        <path d="M5 6h14"></path>
+        <path d="M7 6l-3 7h6L7 6z"></path>
+        <path d="M17 6l-3 7h6l-3-7z"></path>
+        <path d="M3 18h8"></path>
+        <path d="M13 18h8"></path>
+      </svg>
+      <span>Legal &amp; Policies</span>
+    </div>
+
+    <div class="drawer-policy">
+
+      <a href="privacy-policy.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+            <path d="M9 8h6"></path>
+            <path d="M9 12h6"></path>
+            <path d="M8 16l2 2 5-5"></path>
+          </svg>
+        </div>
+        <span>Privacy Policy</span>
+      </a>
+
+      <a href="terms-of-service.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h8l4 4v14H6z"></path>
+            <path d="M14 3v4h4"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
+            <path d="M9 18h4"></path>
+          </svg>
+        </div>
+        <span>Terms of Service</span>
+      </a>
+
+      <a href="whitepaper.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path>
+            <path d="M19 4h-6c-2 0-3 1-3 3v13c0-2-1-3 3-3h6z"></path>
+            <path d="M8 8h3"></path>
+            <path d="M8 11h3"></path>
+          </svg>
+        </div>
+        <span>Whitepaper</span>
+      </a>
+
+    </div>
+
+    <div class="drawer-note">
+      All users must comply with ALBUKHR governance rules.
+    </div>
+
+    <div class="drawer-title">
+      <svg class="drawer-section-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M3 12h18"></path>
+        <path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path>
+        <path d="M12 3c-2.5 2.5-3.5 5.5-3.5 9s1 6.5 3.5 9"></path>
+      </svg>
+      <span>Media &amp; Channels</span>
+    </div>
+
+    <div class="drawer-social">
+
+      <a class="social-item" href="https://t.me/albukhrtelegramchannel" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (2).jpeg" alt="Telegram"></div>
+        <span>Telegram</span>
+      </a>
+
+      <a class="social-item" href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images.png" alt="WhatsApp"></div>
+        <span>WhatsApp</span>
+      </a>
+
+      <a class="social-item" href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (1) (1).jpeg" alt="Facebook"></div>
+        <span>Facebook</span>
+      </a>
+
+      <a class="social-item" href="https://www.youtube.com/@Albukhrinvestmentlimited" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images.jpeg" alt="YouTube"></div>
+        <span>YouTube</span>
+      </a>
+
+      <a class="social-item" href="#" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (1).png" alt="X"></div>
+        <span>X</span>
+      </a>
+
+    </div>
+
+    <div class="drawer-note">
+      Official public channels of ALBUKHR ecosystem
+    </div>
+
+  </div>
+</div>
+
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
 
 <script>
-const supabase = window.supabase.createClient(
-  "https://ribpntyqdleytsyktdfb.supabase.co",
-  "sb_publishable_6pRDCPwk97eCz2Fpu1cadg__XIQlZX2"
-);
-</script>
-  
+"use strict";
 
-  
-<script>
+/* =========================================================
+   HOME PAGE CONTROLLER
+   - No page-level auth persistence.
+   - User comes from shared Pi Auth Core.
+   - Data comes from the existing staking engine.
+   - UI-only preferences may remain in browser storage.
+========================================================= */
 
 let lastScroll = 0;
-let threshold = 10;
-
+const threshold = 10;
 const dock = document.querySelector(".dock-nav");
 
-if(dock){
-  window.addEventListener("scroll",()=>{
-    let current = window.pageYOffset;
+if (dock) {
+  window.addEventListener("scroll", () => {
+    const current = window.pageYOffset;
 
-    if(Math.abs(current-lastScroll)<=threshold) return;
+    if (Math.abs(current - lastScroll) <= threshold) return;
 
-    if(current > lastScroll){
+    if (current > lastScroll) {
       dock.classList.add("hide");
-    }else{
+    } else {
       dock.classList.remove("hide");
     }
 
     lastScroll = current;
-  });
+  }, { passive:true });
 }
 
-window.addEventListener("scroll",()=>{
+/* =========================================================
+   DOCK ACTIVE STATE
+========================================================= */
+const currentPage =
+  location.pathname.split("/").pop() || "index.html";
 
-const current =
-window.pageYOffset;
-
-if(Math.abs(current-lastScroll)<=threshold)
-return;
-
-if(current > lastScroll){
-
-/* scroll down */
-dock.classList.add("hide");
-
-}else{
-
-/* scroll up */
-dock.classList.remove("hide");
-
-}
-
-lastScroll = current;
-
-});
-
-</script>
-
-<script>
-const current = location.pathname.split("/").pop() || "index.html";
-
-document.querySelectorAll(".dock-item").forEach(link=>{
-  if(link.getAttribute("href") === current){
+document.querySelectorAll(".dock-item").forEach(link => {
+  if (link.getAttribute("href") === currentPage) {
     link.classList.add("active");
   }
 });
-</script>
-   
-<!-- SIDE DRAWER -->
-<div id="sideDrawer" class="side-drawer">
 
-  
-<!-- DRAWER HEADER -->
-<div class="drawer-header">
+/* =========================================================
+   HOME DATA
+========================================================= */
+async function loadHome() {
 
-  <h3>Settings</h3>
+  try {
 
-  <!-- ENVIRONMENT SWITCHER -->
-  <button
-    type="button"
-    id="environmentSwitcher"
-    class="environment-switcher"
-    aria-label="Switch environment">
-
-    <span
-      id="environmentDot"
-      class="environment-dot">
-    </span>
-
-    <span
-  id="environmentLabel">
-    </span>
-
-  </button>
-
-  <!-- CLOSE DRAWER -->
-  <button
-    type="button"
-    class="close-drawer"
-    onclick="closeDrawer()"
-    aria-label="Close settings">
-
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true">
-
-      <path d="M6 6L18 18"></path>
-      <path d="M18 6L6 18"></path>
-
-    </svg>
-
-  </button>
-
-</div>
-
-  <!-- ORIGINAL LINKS (UNCHANGED) -->
-  <div class="drawer-body">
-
-    <a href="user-profile.html">
-      Profile
-    </a>
-
-    <a href="preferences.html">
-      Preferences
-    </a>
-
-    <a href="security.html">
-      Security
-    </a>
-
-    <a href="help.html">
-      Help
-    </a>
-
-  </div>
-
-
-  <hr style="margin:12px 0">
-
-
-  <!-- ===============================
-       EXTENDED DRAWER CONTENT
-  ================================ -->
-
-  <div class="drawer-extra">
-
-
-    <!-- ===============================
-         LEGAL & POLICIES
-    ================================ -->
-
-    <div class="drawer-title">
-
-      <svg
-        class="drawer-section-icon"
-        viewBox="0 0 24 24"
-        aria-hidden="true">
-
-        <path d="M12 3v18"></path>
-
-        <path d="M5 6h14"></path>
-
-        <path d="M7 6l-3 7h6L7 6z"></path>
-
-        <path d="M17 6l-3 7h6l-3-7z"></path>
-
-        <path d="M3 18h8"></path>
-
-        <path d="M13 18h8"></path>
-
-      </svg>
-
-      <span>Legal &amp; Policies</span>
-
-    </div>
-
-
-    <div class="drawer-policy">
-
-
-      <!-- PRIVACY POLICY -->
-      <a href="privacy-policy.html">
-
-        <div class="policy-icon">
-
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true">
-
-            <rect
-              x="5"
-              y="3"
-              width="14"
-              height="18"
-              rx="2">
-            </rect>
-
-            <path d="M9 8h6"></path>
-
-            <path d="M9 12h6"></path>
-
-            <path d="M8 16l2 2 5-5"></path>
-
-          </svg>
-
-        </div>
-
-        <span>Privacy Policy</span>
-
-      </a>
-
-
-      <!-- TERMS OF SERVICE -->
-      <a href="terms-of-service.html">
-
-        <div class="policy-icon">
-
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true">
-
-            <path d="M6 3h8l4 4v14H6z"></path>
-
-            <path d="M14 3v4h4"></path>
-
-            <path d="M9 11h6"></path>
-
-            <path d="M9 15h6"></path>
-
-            <path d="M9 18h4"></path>
-
-          </svg>
-
-        </div>
-
-        <span>Terms of Service</span>
-
-      </a>
-
-
-      <!-- WHITEPAPER -->
-      <a href="whitepaper.html">
-
-        <div class="policy-icon">
-
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true">
-
-            <path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path>
-
-            <path d="M19 4h-6c-2 0-3 1-3 3v13c0-2 1-3 3-3h6z"></path>
-
-            <path d="M8 8h3"></path>
-
-            <path d="M8 11h3"></path>
-
-          </svg>
-
-        </div>
-
-        <span>Whitepaper</span>
-
-      </a>
-
-    </div>
-
-
-    <!-- GOVERNANCE NOTE -->
-
-    <div class="drawer-note">
-
-      All users must comply with ALBUKHR governance rules.
-
-    </div>
-
-
-    <!-- ===============================
-         MEDIA / CHANNELS
-    ================================ -->
-
-    <div class="drawer-title">
-
-      <svg
-        class="drawer-section-icon"
-        viewBox="0 0 24 24"
-        aria-hidden="true">
-
-        <circle
-          cx="12"
-          cy="12"
-          r="9">
-        </circle>
-
-        <path d="M3 12h18"></path>
-
-        <path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path>
-
-        <path d="M12 3c-2.5 2.5-3.5 5.5-3.5 9s1 6.5 3.5 9"></path>
-
-      </svg>
-
-      <span>Media &amp; Channels</span>
-
-    </div>
-
-
-    <div class="drawer-social">
-
-
-      <!-- TELEGRAM -->
-      <a
-        class="social-item"
-        href="https://t.me/albukhrtelegramchannel"
-        target="_blank"
-        rel="noopener">
-
-        <div class="social-icon">
-          <img
-            src="images/images (2).jpeg"
-            alt="Telegram">
-        </div>
-
-        <span>Telegram</span>
-
-      </a>
-
-
-      <!-- WHATSAPP -->
-      <a
-        class="social-item"
-        href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C"
-        target="_blank"
-        rel="noopener">
-
-        <div class="social-icon">
-          <img
-            src="images/images.png"
-            alt="WhatsApp">
-        </div>
-
-        <span>WhatsApp</span>
-
-      </a>
-
-
-      <!-- FACEBOOK -->
-      <a
-        class="social-item"
-        href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz"
-        target="_blank"
-        rel="noopener">
-
-        <div class="social-icon">
-          <img
-            src="images/images (1) (1).jpeg"
-            alt="Facebook">
-        </div>
-
-        <span>Facebook</span>
-
-      </a>
-
-
-      <!-- YOUTUBE -->
-      <a
-        class="social-item"
-        href="https://www.youtube.com/@Albukhrinvestmentlimited"
-        target="_blank"
-        rel="noopener">
-
-        <div class="social-icon">
-          <img
-            src="images/images.jpeg"
-            alt="YouTube">
-        </div>
-
-        <span>YouTube</span>
-
-      </a>
-
-
-      <!-- X -->
-      <a
-        class="social-item"
-        href="#"
-        target="_blank"
-        rel="noopener">
-
-        <div class="social-icon">
-          <img
-            src="images/images (1).png"
-            alt="X">
-        </div>
-
-        <span>X</span>
-
-      </a>
-
-    </div>
-
-
-    <!-- MEDIA NOTE -->
-
-    <div class="drawer-note">
-
-      Official public channels of ALBUKHR ecosystem
-
-    </div>
-
-
-  </div>
-
-</div>
-
-
-<!-- DRAWER OVERLAY -->
-
-<div
-  id="drawerOverlay"
-  class="drawer-overlay"
-  onclick="closeDrawer()">
-</div>
-
-<script src="js/project-config.js"></script>   
-<script src="js/staking.js"></script>
-
-<script>
-
-async function loadHome(){
-
-  try{
-
-    // ===== DEPENDENCY CHECK =====
-    if(typeof getAllStakesMerged !== "function"){
-      console.warn("getAllStakesMerged missing");
-      return;
+    if (typeof getAllStakesMerged !== "function") {
+      throw new Error("ALBUKHR Staking Engine is not available.");
     }
 
-    let stakes = await getAllStakesMerged();
+    const stakesRaw = await getAllStakesMerged();
+    const globalStakesRaw =
+      typeof getGlobalStakes === "function"
+        ? await getGlobalStakes()
+        : [];
+
+    const stakes =
+      Array.isArray(stakesRaw) ? stakesRaw : [];
 
     const globalStakes =
-await getGlobalStakes();
+      Array.isArray(globalStakesRaw)
+        ? globalStakesRaw
+        : [];
 
-/* ✅ FALLBACK FOR NEW USERS */
-if(!Array.isArray(stakes)){
-    stakes = [];
-  }
-
-    // ===== MAPS =====
     const userMap = {};
     const globalMap = {};
     const popularMap = {};
@@ -779,584 +440,679 @@ if(!Array.isArray(stakes)){
     let totalStake = 0;
     let totalReward = 0;
 
-    // ===== MAIN LOOP =====
-stakes.forEach(s=>{
+    stakes.forEach(s => {
 
-  if(!s) return;
-  if(!s.project) return;
+      if (!s || !s.project) return;
 
-  const type = s.type || "stake";
-  const amount = Number(s.amount) || 0;
+      const type = s.type || "stake";
+      const amount = Number(s.amount) || 0;
 
-  // =========================
-  // STAKE
-  // =========================
-  if(type === "stake"){
+      if (type === "stake") {
 
-    totalStake += amount;
+        totalStake += amount;
 
-    userMap[s.project] =
-      (userMap[s.project] || 0)
-      + amount;
+        userMap[s.project] =
+          (userMap[s.project] || 0) + amount;
 
-    if(!globalMap[s.project]){
-      globalMap[s.project] = {
-        total:0,
-        investors:0
-      };
-    }
+        if (!globalMap[s.project]) {
+          globalMap[s.project] = {
+            total: 0,
+            investors: 0
+          };
+        }
 
-    globalMap[s.project].total += amount;
+        globalMap[s.project].total += amount;
 
-    const total =
-      Number(s.reward) || 0;
+        const reward = Number(s.reward) || 0;
+        const withdrawn = Number(s.withdrawnReward) || 0;
 
-    const withdrawn =
-      Number(s.withdrawnReward) || 0;
+        totalReward +=
+          Math.max(0, reward - withdrawn);
+      }
 
-    totalReward +=
-      Math.max(0, total - withdrawn);
+      if (type === "capital") {
 
-  }
+        totalStake -= Math.abs(amount);
 
-  // =========================
-  // CAPITAL WITHDRAW
-  // =========================
-  if(type === "capital"){
+        userMap[s.project] =
+          (userMap[s.project] || 0) - Math.abs(amount);
 
-    totalStake -= Math.abs(amount);
+        if (globalMap[s.project]) {
+          globalMap[s.project].total -= Math.abs(amount);
+        }
+      }
 
-    userMap[s.project] =
-      (userMap[s.project] || 0)
-      - Math.abs(amount);
-
-    if(globalMap[s.project]){
-      globalMap[s.project].total -=
-        Math.abs(amount);
-    }
-
-  }
-
-  // =========================
-  // INVESTOR COUNT
-  // =========================
-  countMap[s.project] =
-    (countMap[s.project] || 0) + 1;
-
-});
-
-/* =========================
-   GLOBAL POPULAR PROJECTS
-========================= */
-
-globalStakes.forEach(s=>{
-
-  if(!s) return;
-
-  if(s.type !== "stake") return;
-
-  if(!s.project) return;
-
-  if(!popularMap[s.project]){
-
-    popularMap[s.project] = {
-      total: 0,
-      investors: 0
-    };
-
-  }
-
-  popularMap[s.project].total +=
-    Number(s.amount) || 0;
-
-});
-
-    // ===== ASSIGN COUNTS =====
-    Object.keys(globalMap).forEach(project=>{
-
-      globalMap[project].investors =
-        countMap[project] || 0;
-
+      countMap[s.project] =
+        (countMap[s.project] || 0) + 1;
     });
 
-    // ===== SAFE DOM UPDATE =====
-    const stakeEl =
-      document.getElementById("homeStake");
+    globalStakes.forEach(s => {
 
-    const rewardEl =
-      document.getElementById("homeReward");
+      if (!s || s.type !== "stake" || !s.project) return;
 
-    if(stakeEl){
+      if (!popularMap[s.project]) {
+        popularMap[s.project] = {
+          total: 0,
+          investors: 0
+        };
+      }
 
+      popularMap[s.project].total +=
+        Number(s.amount) || 0;
+    });
+
+    Object.keys(globalMap).forEach(project => {
+      globalMap[project].investors =
+        countMap[project] || 0;
+    });
+
+    const stakeEl = document.getElementById("homeStake");
+    const rewardEl = document.getElementById("homeReward");
+
+    if (stakeEl) {
       stakeEl.innerText =
-        totalStake.toFixed(2)+" Pi";
-
+        Math.max(0, totalStake).toFixed(2) + " Pi";
     }
 
-    if(rewardEl){
-
+    if (rewardEl) {
       rewardEl.innerText =
-        totalReward.toFixed(2)+" Pi";
-
+        Math.max(0, totalReward).toFixed(2) + " Pi";
     }
 
-    // ===== RENDER =====
-    if(typeof renderPopular === "function"){
+    if (typeof renderPopular === "function") {
       renderPopular(popularMap);
     }
 
-    if(typeof renderAssets === "function"){
+    if (typeof renderAssets === "function") {
       renderAssets(userMap, globalMap);
     }
 
-  }catch(err){
+    applyVisibility();
 
-    console.error(
-      "loadHome error:",
-      err
-    );
+  } catch (error) {
+
+    console.error("ALBUKHR Home Load Error:", error);
 
   }
-
 }
 
-function renderPopular(globalMap){
+/* =========================================================
+   PROJECT METADATA RESOLUTION
+   Preserve existing page appearance while allowing the
+   canonical project engine to become the source when ready.
+========================================================= */
+function getHomeProjectConfig(project) {
 
-if(typeof PROJECT_CONFIG === "undefined"){
-  console.warn("PROJECT_CONFIG missing");
-  return;
+  if (typeof PROJECT_CONFIG !== "undefined" &&
+      PROJECT_CONFIG[project]) {
+    return PROJECT_CONFIG[project];
+  }
+
+  if (typeof getProjectMeta === "function") {
+    try {
+      const meta = getProjectMeta(project);
+      if (meta) {
+        return {
+          title: meta.title || meta.project_name || project,
+          icon: meta.icon || "📊",
+          desc: meta.description || "",
+          info: meta.info || ""
+        };
+      }
+    } catch (_) {}
+  }
+
+  return null;
 }
 
-  const container = document.getElementById("popularProjects");
+function getHomeProjectList() {
+
+  if (typeof PROJECT_CONFIG !== "undefined") {
+    return Object.keys(PROJECT_CONFIG);
+  }
+
+  if (typeof getCoreProjects === "function") {
+    return getCoreProjects()
+      .then(rows =>
+        rows
+          .map(row => row.project_code || row.code || row.name)
+          .filter(Boolean)
+      );
+  }
+
+  return [];
+}
+
+/* =========================================================
+   POPULAR PROJECTS
+========================================================= */
+async function renderPopular(globalMap) {
+
+  const container =
+    document.getElementById("popularProjects");
+
+  if (!container) return;
+
   container.innerHTML = "";
 
-  let entries = Object.entries(globalMap);
+  let entries =
+    Object.entries(globalMap || {});
 
-/* ✅ idan babu staking data */
-if(entries.length === 0){
+  if (entries.length === 0) {
 
-  entries = Object.keys(PROJECT_CONFIG).map(p=>[
-    p,
-    { total: 0, investors: 0 }
-  ]);
+    const projects =
+      await Promise.resolve(getHomeProjectList());
 
-}
+    entries = projects.map(project => [
+      project,
+      { total:0, investors:0 }
+    ]);
+  }
 
-const sorted = entries
-  .sort((a,b)=>b[1].total - a[1].total)
-  .slice(0,10);
+  const sorted =
+    entries
+      .sort((a,b) => b[1].total - a[1].total)
+      .slice(0,10);
 
-  sorted.forEach(([project,data],index)=>{
+  sorted.forEach(([project,data],index) => {
 
-    const config = PROJECT_CONFIG[project];
-
-    if(!config) return;
+    const config = getHomeProjectConfig(project);
+    if (!config) return;
 
     const div = document.createElement("div");
-    div.className="popular-card";
-
-    div.setAttribute("data-rank","#"+(index+1));
+    div.className = "popular-card";
+    div.setAttribute("data-rank", "#" + (index + 1));
 
     div.onclick = () =>
-      location.href = `project.html?project=${project}`;
+      location.href =
+        "project.html?project=" +
+        encodeURIComponent(project);
 
     div.innerHTML = `
-      <div class="popular-icon">${config.icon}</div>
-      <div class="popular-name">${config.title}</div>
-      <div class="popular-amount">${data.total.toFixed(2)} Pi</div>
+      <div class="popular-icon">${config.icon || "📊"}</div>
+      <div class="popular-name">${config.title || project}</div>
+      <div class="popular-amount">
+        ${(Number(data.total) || 0).toFixed(2)} Pi
+      </div>
     `;
 
     container.appendChild(div);
-
   });
-
 }
 
-function renderAssets(userMap, globalMap){
+/* =========================================================
+   ASSETS
+========================================================= */
+async function renderAssets(userMap, globalMap) {
 
-if(typeof PROJECT_CONFIG === "undefined"){
-  console.warn("PROJECT_CONFIG missing");
-  return;
-}
+  const container =
+    document.getElementById("assetsContainer");
 
-  const container = document.getElementById("assetsContainer");
+  if (!container) return;
+
   container.innerHTML = "";
 
-  const merged = Object.keys(PROJECT_CONFIG).map(project => ({
+  const projectNames =
+    await Promise.resolve(getHomeProjectList());
 
-    name: project,
-    config: PROJECT_CONFIG[project],
+  const merged =
+    projectNames.map(project => {
 
-    globalTotal: Number(globalMap[project]?.total) || 0,
-userAmount: Math.max(
-  0,
-  Number(userMap[project]) || 0
-)
-  }));
+      const config =
+        getHomeProjectConfig(project);
 
-  /* SORT LOGIC */
-  merged.sort((a,b)=>{
+      return {
+        name: project,
+        config,
+        globalTotal:
+          Number(globalMap?.[project]?.total) || 0,
+        userAmount:
+          Math.max(0, Number(userMap?.[project]) || 0)
+      };
 
-    if(a.userAmount > 0 && b.userAmount === 0) return -1;
-    if(a.userAmount === 0 && b.userAmount > 0) return 1;
+    })
+    .filter(item => item.config);
 
-    if(a.userAmount !== b.userAmount)
+  merged.sort((a,b) => {
+
+    if (a.userAmount > 0 && b.userAmount === 0) return -1;
+    if (a.userAmount === 0 && b.userAmount > 0) return 1;
+
+    if (a.userAmount !== b.userAmount) {
       return b.userAmount - a.userAmount;
+    }
 
     return b.globalTotal - a.globalTotal;
-
   });
 
   merged.forEach(item => {
-
-    if(!item.config) return;
 
     const div = document.createElement("div");
     div.className = "asset-item";
 
     div.onclick = () =>
-      location.href = `project.html?project=${item.name}`;
+      location.href =
+        "project.html?project=" +
+        encodeURIComponent(item.name);
 
     div.innerHTML = `
 
 <div class="asset-icon">
-    ${item.config.icon}
+  ${item.config.icon || "📊"}
 </div>
 
 <div class="asset-left">
 
-    <div class="asset-header">
+  <div class="asset-header">
 
-        <div class="asset-info">
+    <div class="asset-info">
 
-            <div class="asset-name">
-                ${item.config.title}
-            </div>
+      <div class="asset-name">
+        ${item.config.title || item.name}
+      </div>
 
-            <div class="asset-stake">
-                ${
-                    item.userAmount > 0
-                    ? item.userAmount.toFixed(2) + " Pi Staked"
-                    : "Not Staked"
-                }
-            </div>
-
-        </div>
-
-        <div class="asset-mini-chart">
-
-            <svg
-                viewBox="0 0 120 36"
-                preserveAspectRatio="none">
-
-                <polyline
-                    fill="none"
-                    stroke="${
-                        item.userAmount > 0
-                        ? "#19b36b"
-                        : "#b8b8b8"
-                    }"
-                    stroke-width="2.2"
-                    points="
-0,28
-15,26
-30,24
-45,22
-60,18
-75,20
-90,14
-105,12
-120,8
-"/>
-
-            </svg>
-
-        </div>
-
-    </div>
-
-    <div class="asset-status">
-
+      <div class="asset-stake">
         ${
-            item.userAmount > 0
-            ? "🟢 Active"
-            : "⚪ Inactive"
+          item.userAmount > 0
+            ? item.userAmount.toFixed(2) + " Pi Staked"
+            : "Not Staked"
         }
+      </div>
 
     </div>
+
+    <div class="asset-mini-chart">
+      <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+        <polyline
+          fill="none"
+          stroke="${
+            item.userAmount > 0
+              ? "#19b36b"
+              : "#b8b8b8"
+          }"
+          stroke-width="2.2"
+          points="
+            0,28
+            15,26
+            30,24
+            45,22
+            60,18
+            75,20
+            90,14
+            105,12
+            120,8
+          "/>
+      </svg>
+    </div>
+
+  </div>
+
+  <div class="asset-status">
+    ${
+      item.userAmount > 0
+        ? "🟢 Active"
+        : "⚪ Inactive"
+    }
+  </div>
 
 </div>
-
 `;
 
     container.appendChild(div);
-
   });
 
-   }
-
-/* ASSETS VISIBILITY */
-const VISIBILITY_KEY="albukhr_assets_visibility";
-function isAssetsHidden(){return localStorage.getItem(VISIBILITY_KEY)==="hidden";}
-function setAssetsHidden(hidden){localStorage.setItem(VISIBILITY_KEY,hidden?"hidden":"visible");}
-function applyVisibility(){
-  const hidden=isAssetsHidden();
-  document.getElementById("homeStake")?.classList.toggle("hidden-amount",hidden);
-  document.getElementById("homeReward")?.classList.toggle("hidden-amount",hidden);
-  document.querySelectorAll(".asset-stake").forEach(el=>el.classList.toggle("hidden-amount",hidden));
-}
-document.addEventListener("DOMContentLoaded",()=>{
   applyVisibility();
-});
+}
 
-/* SIDE DRAWER */
-function openDrawer(){
-  document.getElementById("sideDrawer").classList.add("open");
-  document.getElementById("drawerOverlay").classList.add("show");
+/* =========================================================
+   UI-ONLY ASSET VISIBILITY
+   This is presentation preference, not authentication/data.
+========================================================= */
+const VISIBILITY_KEY = "albukhr_assets_visibility";
+
+function isAssetsHidden() {
+  try {
+    return localStorage.getItem(VISIBILITY_KEY) === "hidden";
+  } catch (_) {
+    return false;
+  }
 }
-function closeDrawer(){
-  document.getElementById("sideDrawer").classList.remove("open");
-  document.getElementById("drawerOverlay").classList.remove("show");
+
+function setAssetsHidden(hidden) {
+  try {
+    localStorage.setItem(
+      VISIBILITY_KEY,
+      hidden ? "hidden" : "visible"
+    );
+  } catch (_) {}
 }
-document.addEventListener("DOMContentLoaded", ()=>{
-  const menu = document.querySelector(".menu-icon");
-  if(menu){
+
+function applyVisibility() {
+
+  const hidden = isAssetsHidden();
+
+  document
+    .getElementById("homeStake")
+    ?.classList
+    .toggle("hidden-amount", hidden);
+
+  document
+    .getElementById("homeReward")
+    ?.classList
+    .toggle("hidden-amount", hidden);
+
+  document
+    .querySelectorAll(".asset-stake")
+    .forEach(el =>
+      el.classList.toggle("hidden-amount", hidden)
+    );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  applyVisibility,
+  { once:true }
+);
+
+/* =========================================================
+   SIDE DRAWER
+========================================================= */
+function openDrawer() {
+
+  document
+    .getElementById("sideDrawer")
+    ?.classList
+    .add("open");
+
+  document
+    .getElementById("drawerOverlay")
+    ?.classList
+    .add("show");
+}
+
+function closeDrawer() {
+
+  document
+    .getElementById("sideDrawer")
+    ?.classList
+    .remove("open");
+
+  document
+    .getElementById("drawerOverlay")
+    ?.classList
+    .remove("show");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const menu =
+    document.querySelector(".menu-icon");
+
+  if (menu) {
     menu.addEventListener("click", openDrawer);
   }
-});
-</script>
-
-<script src="js/notifications.js"></script>
-<script src="js/project-treasury.js"></script>
-<script src="js/smart-liquidity-engine.js"></script>
-
-<script>
-
-/* ===============================
-   ALBUKHR AI ACCESS CONTROL
-================================ */
-
-function openAlbukhrAI(){
-
-/* ADMIN BYPASS */
-
-const admin =
-localStorage.getItem("albukhr_ai_dev");
-
-if(admin === "true"){
-
-window.location.href =
-"albukhr-ai.html";
-
-return;
-
-}
-
-/* SHOW UNDER DEVELOPMENT */
-
-const note =
-document.getElementById("aiDevNote");
-
-note.classList.add("show");
-
-setTimeout(()=>{
-
-note.classList.remove("show");
-
-},2500);
-
-}
-
-</script>
-
-<script>
-
-const ai =
-document.getElementById("albukhrAI");
-
-let isDragging = false;
-let offsetX, offsetY;
-
-/* LOAD SAVED POSITION */
-
-const saved =
-JSON.parse(
-localStorage.getItem("albukhr_ai_position")
-);
-
-if(saved){
-
-ai.style.left = saved.left;
-ai.style.top = saved.top;
-
-ai.style.right = "auto";
-ai.style.bottom = "auto";
-
-}
-
-/* START DRAG */
-
-ai.addEventListener("touchstart",startDrag);
-ai.addEventListener("mousedown",startDrag);
-
-function startDrag(e){
-
-isDragging = true;
-
-const rect =
-ai.getBoundingClientRect();
-
-offsetX =
-(e.touches ? e.touches[0].clientX : e.clientX)
-- rect.left;
-
-offsetY =
-(e.touches ? e.touches[0].clientY : e.clientY)
-- rect.top;
-
-}
-
-/* DRAG */
-
-document.addEventListener("touchmove",drag);
-document.addEventListener("mousemove",drag);
-
-function drag(e){
-
-if(!isDragging) return;
-
-const x =
-(e.touches ? e.touches[0].clientX : e.clientX)
-- offsetX;
-
-const y =
-(e.touches ? e.touches[0].clientY : e.clientY)
-- offsetY;
-
-ai.style.left = x + "px";
-ai.style.top = y + "px";
-
-ai.style.right = "auto";
-ai.style.bottom = "auto";
-
-}
-
-/* STOP DRAG */
-
-document.addEventListener("touchend",stopDrag);
-document.addEventListener("mouseup",stopDrag);
-
-function stopDrag(){
-
-if(!isDragging) return;
-
-isDragging = false;
-
-/* SNAP TO EDGE */
-
-const rect =
-ai.getBoundingClientRect();
-
-const screenWidth =
-window.innerWidth;
-
-let snapX;
-
-if(rect.left < screenWidth/2){
-
-snapX = 10;
-
-}else{
-
-snapX = screenWidth - rect.width - 10;
-
-}
-
-ai.style.left = snapX + "px";
-
-/* SAVE POSITION */
-
-localStorage.setItem(
-"albukhr_ai_position",
-JSON.stringify({
-
-left: ai.style.left,
-top: ai.style.top
-
-})
-
-);
-
-/* AUTO MINIMIZE */
-
-setTimeout(()=>{
-
-ai.classList.add("minimized");
-
-},2000);
-
-}
-
-/* EXPAND ON TOUCH */
-
-ai.addEventListener("click",()=>{
-
-ai.classList.remove("minimized");
 
 });
 
-function showUser(user){
+/* =========================================================
+   ALBUKHR AI ACCESS
+========================================================= */
+function openAlbukhrAI() {
 
-  const header = document.querySelector(".header-right");
+  let admin = false;
 
-  let box = document.getElementById("userBox");
+  try {
+    admin =
+      sessionStorage.getItem("albukhr_ai_dev") === "true";
+  } catch (_) {}
 
-  if(!box){
-    box = document.createElement("div");
-    box.id = "userBox";
-    box.className = "user-box";
-    header.prepend(box);
+  if (admin) {
+    window.location.href = "albukhr-ai.html";
+    return;
   }
 
-  box.innerHTML = `
-    <div>👤</div>
-    <div id="piUser">${user.username}</div>
-  `;
+  const note =
+    document.getElementById("aiDevNote");
+
+  if (!note) return;
+
+  note.classList.add("show");
+
+  setTimeout(() => {
+    note.classList.remove("show");
+  }, 2500);
 }
 
-function loadUser(){
+/* =========================================================
+   AI FLOATING BUTTON
+   UI-only position state is preserved.
+========================================================= */
+const ai =
+  document.getElementById("albukhrAI");
 
-  const user = JSON.parse(
-    localStorage.getItem("pi_user")
-  );
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+try {
+
+  const saved =
+    JSON.parse(
+      localStorage.getItem("albukhr_ai_position")
+    );
+
+  if (saved && ai) {
+
+    ai.style.left = saved.left;
+    ai.style.top = saved.top;
+    ai.style.right = "auto";
+    ai.style.bottom = "auto";
+  }
+
+} catch (_) {}
+
+if (ai) {
+
+  ai.addEventListener("touchstart", startDrag, { passive:true });
+  ai.addEventListener("mousedown", startDrag);
+
+  ai.addEventListener("click", () => {
+    ai.classList.remove("minimized");
+  });
+}
+
+function startDrag(event) {
+
+  if (!ai) return;
+
+  isDragging = true;
+
+  const rect =
+    ai.getBoundingClientRect();
+
+  const point =
+    event.touches
+      ? event.touches[0]
+      : event;
+
+  offsetX =
+    point.clientX - rect.left;
+
+  offsetY =
+    point.clientY - rect.top;
+}
+
+document.addEventListener(
+  "touchmove",
+  drag,
+  { passive:false }
+);
+
+document.addEventListener(
+  "mousemove",
+  drag
+);
+
+function drag(event) {
+
+  if (!isDragging || !ai) return;
+
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+
+  const point =
+    event.touches
+      ? event.touches[0]
+      : event;
+
+  const x =
+    point.clientX - offsetX;
+
+  const y =
+    point.clientY - offsetY;
+
+  ai.style.left = x + "px";
+  ai.style.top = y + "px";
+  ai.style.right = "auto";
+  ai.style.bottom = "auto";
+}
+
+document.addEventListener(
+  "touchend",
+  stopDrag
+);
+
+document.addEventListener(
+  "mouseup",
+  stopDrag
+);
+
+function stopDrag() {
+
+  if (!isDragging || !ai) return;
+
+  isDragging = false;
+
+  const rect =
+    ai.getBoundingClientRect();
+
+  const screenWidth =
+    window.innerWidth;
+
+  const snapX =
+    rect.left < screenWidth / 2
+      ? 10
+      : screenWidth - rect.width - 10;
+
+  ai.style.left =
+    snapX + "px";
+
+  try {
+
+    localStorage.setItem(
+      "albukhr_ai_position",
+      JSON.stringify({
+        left: ai.style.left,
+        top: ai.style.top
+      })
+    );
+
+  } catch (_) {}
+
+  setTimeout(() => {
+    ai.classList.add("minimized");
+  }, 2000);
+}
+
+/* =========================================================
+   USER FOUNDATION AUTH
+   IMPORTANT:
+   No pi_user localStorage.
+   Shared Pi Auth Core is the only auth source.
+========================================================= */
+async function loadUser() {
 
   const el =
     document.getElementById("piUser");
 
-  if(!el || !user) return;
+  if (!el) return null;
 
-  el.innerText = user.username;
+  try {
 
+    if (typeof window.ensurePiAuth !== "function") {
+      throw new Error(
+        "ALBUKHR Pi Auth Core is not available."
+      );
+    }
+
+    const user =
+      await window.ensurePiAuth();
+
+    if (!user?.uid) {
+      window.location.replace("login.html");
+      return null;
+    }
+
+    el.innerText =
+      user.username || "";
+
+    return user;
+
+  } catch (error) {
+
+    console.error(
+      "ALBUKHR user authentication failed:",
+      error
+    );
+
+    window.location.replace("login.html");
+    return null;
+  }
 }
 
-document.addEventListener("DOMContentLoaded", ()=>{
+/* =========================================================
+   PAGE BOOTSTRAP
+========================================================= */
+async function bootstrapHome() {
 
-  // 🔐 CHECK LOGIN
-  const user = JSON.parse(localStorage.getItem("pi_user"));
+  try {
 
-  if(!user || !user.uid){
-    window.location.href = "login.html";
-    return;
+    const user =
+      await loadUser();
+
+    if (!user?.uid) return;
+
+    await loadHome();
+
+    console.log(
+      "🚀 ALBUKHR HOME LOAD",
+      {
+        network:
+          typeof getAlbukhrNetwork === "function"
+            ? getAlbukhrNetwork()
+            : null,
+        userid:
+          user.uid
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "ALBUKHR HOME BOOTSTRAP ERROR:",
+      error
+    );
   }
+}
 
-  // 🚀 LOAD DATA
-  loadUser();   // 👈 NEW
-  loadHome();
-console.log("🚀 HOME LOAD");
-});
+document.addEventListener(
+  "DOMContentLoaded",
+  bootstrapHome,
+  { once:true }
+);
 </script>
 
-<script src="js/environment-switcher.js"></script>
 
 </body>
-      </html>
+</html>
