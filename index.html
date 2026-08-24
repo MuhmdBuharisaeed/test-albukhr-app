@@ -97,7 +97,7 @@
 <script src="js/features/project-registry.js"></script>
 <script src="js/features/project-config.js"></script>
 <script src="js/staking/staking-engine.js"></script>
-<script src="js/transactions/transaction-engine.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/project-treasury.js"></script>
 <script src="js/engines/smart-liquidity-engine.js"></script>
 
@@ -268,20 +268,46 @@ function applyVisibility(){
 }
 
 async function loadHome(){
+  /*
+    IMPORTANT ARCHITECTURE RULE:
+    The public project registry is independent from staking/auth.
+    Projects must render even when the staking engine is unavailable.
+  */
   await loadHomeProjects();
 
-  if(typeof getAllStakesMerged!=="function")throw new Error("ALBUKHR Staking Engine is not available.");
-  const stakesRaw=await getAllStakesMerged();
-  const globalStakesRaw=typeof getGlobalStakes==="function"?await getGlobalStakes():[];
-  const stakes=Array.isArray(stakesRaw)?stakesRaw:[];
-  const globalStakes=Array.isArray(globalStakesRaw)?globalStakesRaw:[];
+  const stakes = [];
+  const globalStakes = [];
+  let totalStake = 0;
+  let totalReward = 0;
+  const userMap = {};
+  const globalMap = {};
+  const popularMap = {};
+  const countMap = {};
 
-  const userMap={},globalMap={},popularMap={},countMap={};
-  let totalStake=0,totalReward=0;
+  /* Staking is supplementary. Never block project rendering. */
+  try{
+    if(typeof getAllStakesMerged === "function"){
+      const raw = await getAllStakesMerged();
+      if(Array.isArray(raw)) stakes.push(...raw);
+    }
+  }catch(error){
+    console.warn("ALBUKHR: staking data unavailable; projects will still render.", error);
+  }
+
+  try{
+    if(typeof getGlobalStakes === "function"){
+      const raw = await getGlobalStakes();
+      if(Array.isArray(raw)) globalStakes.push(...raw);
+    }
+  }catch(error){
+    console.warn("ALBUKHR: global staking data unavailable; projects will still render.", error);
+  }
 
   stakes.forEach(s=>{
-    if(!s||!s.project)return;
-    const type=s.type||"stake",amount=Number(s.amount)||0;
+    if(!s || !s.project)return;
+    const type=s.type||"stake";
+    const amount=Number(s.amount)||0;
+
     if(type==="stake"){
       totalStake+=amount;
       userMap[s.project]=(userMap[s.project]||0)+amount;
@@ -289,24 +315,37 @@ async function loadHome(){
       globalMap[s.project].total+=amount;
       totalReward+=Math.max(0,(Number(s.reward)||0)-(Number(s.withdrawnReward)||0));
     }
+
     if(type==="capital"){
       totalStake-=Math.abs(amount);
       userMap[s.project]=(userMap[s.project]||0)-Math.abs(amount);
       if(globalMap[s.project])globalMap[s.project].total-=Math.abs(amount);
     }
+
     countMap[s.project]=(countMap[s.project]||0)+1;
   });
 
   globalStakes.forEach(s=>{
-    if(!s||s.type!=="stake"||!s.project)return;
+    if(!s || s.type!=="stake" || !s.project)return;
     popularMap[s.project]??={total:0,investors:0};
     popularMap[s.project].total+=Number(s.amount)||0;
   });
 
-  Object.keys(globalMap).forEach(project=>globalMap[project].investors=countMap[project]||0);
+  /* If global stake data is unavailable, use user/global merged totals. */
+  Object.keys(globalMap).forEach(project=>{
+    popularMap[project]??={total:0,investors:0};
+    if(!(Number(popularMap[project].total)>0)){
+      popularMap[project].total=Number(globalMap[project].total)||0;
+    }
+    popularMap[project].investors=countMap[project]||0;
+  });
 
-  document.getElementById("homeStake").innerText=Math.max(0,totalStake).toFixed(2)+" Pi";
-  document.getElementById("homeReward").innerText=Math.max(0,totalReward).toFixed(2)+" Pi";
+  const stakeEl=document.getElementById("homeStake");
+  const rewardEl=document.getElementById("homeReward");
+  if(stakeEl)stakeEl.innerText=Math.max(0,totalStake).toFixed(2)+" Pi";
+  if(rewardEl)rewardEl.innerText=Math.max(0,totalReward).toFixed(2)+" Pi";
+
+  /* These are the canonical registry render operations. */
   await renderPopular(popularMap);
   await renderAssets(userMap,globalMap);
   applyVisibility();
