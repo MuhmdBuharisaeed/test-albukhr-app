@@ -1,380 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f7a3d">
+<title>ALBUKHR Projects</title>
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/albukhr-ui.css">
+<link rel="stylesheet" href="css/global-header.css">
+<link rel="stylesheet" href="css/global-buttons.css">
+<link rel="stylesheet" href="css/asset-chart-box.css">
+<link rel="stylesheet" href="css/side-drower.css">
+
+<style>
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.user-box{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  max-width:80px;
+}
+
+#piUser{
+  font-size:10px;
+  margin-top:2px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:right;
+}
+
+.environment-switcher{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:68px;
+  height:28px;
+  padding:4px 8px;
+  border:1px solid rgba(255,255,255,0.35);
+  border-radius:20px;
+  background:rgba(255,255,255,0.10);
+  color:#fff;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.5px;
+  cursor:pointer;
+  user-select:none;
+  appearance:none;
+  -webkit-appearance:none;
+  transition:background .2s ease,transform .2s ease,border-color .2s ease;
+}
+
+.environment-switcher:hover{background:rgba(255,255,255,0.18);}
+.environment-switcher:active{transform:scale(.95);}
+
+.environment-dot{
+  width:7px;
+  height:7px;
+  flex:0 0 7px;
+  border-radius:50%;
+  background:#f0ad00;
+  box-shadow:0 0 0 2px rgba(240,173,0,.15);
+}
+
+#environmentLabel{line-height:1;white-space:nowrap;}
+
+.environment-switcher.mainnet{border-color:rgba(25,179,107,.55);}
+.environment-switcher.mainnet .environment-dot{
+  background:#19b36b;
+  box-shadow:0 0 0 2px rgba(25,179,107,.16);
+}
+
+.environment-switcher.testnet{border-color:rgba(240,173,0,.55);}
+.environment-switcher.testnet .environment-dot{
+  background:#f0ad00;
+  box-shadow:0 0 0 2px rgba(240,173,0,.16);
+}
+
+/*
+ * Prevent accidental page interaction while the page is doing its
+ * first authentication check. This is intentionally invisible.
+ */
+html.albukhr-auth-checking body{
+  cursor:default;
+}
+</style>
+</head>
+
+<body data-page="home">
+
+<header class="header">
+  <div class="header-left">
+    <span class="brand">ALBUKHR</span>
+  </div>
+
+  <div class="header-right">
+    <div class="header-btn user-box" id="userBox">
+      <div class="user-icon" aria-hidden="true">👤</div>
+      <div id="piUser"></div>
+    </div>
+
+    <button
+      type="button"
+      class="header-btn notification-btn"
+      onclick="openNotifications()"
+      aria-label="Open notifications"
+    >
+      🔔
+      <span id="notifBadge" class="notification-badge"></span>
+    </button>
+
+    <button
+      type="button"
+      class="header-btn menu-icon"
+      aria-label="Open settings"
+      onclick="openDrawer()"
+    >☰</button>
+  </div>
+</header>
+
+<div class="welcome-bar">
+  <div id="welcomeScroll" class="welcome-track">
+    Welcome to Albukhr Investment Limited — Building sustainable industries &amp; empowering communities through investment.
+  </div>
+</div>
+
+<section class="stats">
+  <div class="stat-card">
+    <span>Total Staking</span>
+    <strong id="homeStake">0.00 Pi</strong>
+  </div>
+  <div class="stat-card">
+    <span>Total Rewards</span>
+    <strong id="homeReward">0.00 Pi</strong>
+  </div>
+</section>
+
+<div class="popular-section">
+  <div class="popular-title">📊 Popular Projects</div>
+  <div class="popular-scroll" id="popularProjects"></div>
+</div>
+
+<section class="section">
+  <div class="assets-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <h3 style="margin:0;">Assets</h3>
+      <span id="toggleAssets" style="cursor:pointer;font-size:16px;"></span>
+    </div>
+
+    <button
+      type="button"
+      class="explore-btn"
+      onclick="location.href='explore-projects.html'"
+    >
+      <i class="fa-solid fa-compass"></i>
+      <span>Explore Projects</span>
+    </button>
+  </div>
+
+  <div id="assetsContainer"></div>
+</section>
+
+<div
+  class="albukhr-ai-btn"
+  id="albukhrAI"
+  onclick="openAlbukhrAI()"
+  role="button"
+  tabindex="0"
+  aria-label="Open ALBUKHR AI"
+>
+  <img
+    src="images/ALBUKHR_Logo_Optimized_1024x1024.png"
+    class="albukhr-ai-logo"
+    alt="ALBUKHR AI"
+  >
+</div>
+
+<div id="aiDevNote" class="ai-dev-note">
+  Albukhr AI is under development
+</div>
+
+<!-- =========================================================
+     DOCK NAVIGATION
+     IMPORTANT:
+     Existing Dock Navigation is preserved exactly.
+========================================================= -->
+<div class="dock-nav">
+
+  <a href="index.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
+    </svg>
+    <span>Home</span>
+  </a>
+
+  <a href="investor-dashboard.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
+    </svg>
+    <span>Investors</span>
+  </a>
+
+  <a href="transparency.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M6 3h8l4 4v14H6z"/>
+      <path d="M14 3v4h4"/>
+      <path d="M8 11h8"/>
+      <path d="M8 14h8"/>
+      <ellipse cx="12" cy="18" rx="4" ry="2"/>
+      <circle cx="12" cy="18" r="0.8"/>
+    </svg>
+    <span>Transparency</span>
+  </a>
+
+  <a href="services.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
+    </svg>
+    <span>Services</span>
+  </a>
+
+</div>
+
+<!-- =========================================================
+     SIDE DRAWER
+     Environment switcher remains ONLY here.
+========================================================= -->
+<div id="sideDrawer" class="side-drawer">
+
+  <div class="drawer-header">
+    <h3>Settings</h3>
+
+    <button
+      type="button"
+      id="environmentSwitcher"
+      class="environment-switcher"
+      aria-label="Switch environment"
+    >
+      <span id="environmentDot" class="environment-dot"></span>
+      <span id="environmentLabel"></span>
+    </button>
+
+    <button
+      type="button"
+      class="close-drawer"
+      onclick="closeDrawer()"
+      aria-label="Close settings"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 6L18 18"></path>
+        <path d="M18 6L6 18"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="drawer-body">
+    <a href="user-profile.html">Profile</a>
+    <a href="preferences.html">Preferences</a>
+    <a href="security.html">Security</a>
+    <a href="help.html">Help</a>
+  </div>
+
+  <hr style="margin:12px 0">
+
+  <div class="drawer-extra">
+
+    <div class="drawer-title">
+      <svg class="drawer-section-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v18"></path>
+        <path d="M5 6h14"></path>
+        <path d="M7 6l-3 7h6L7 6z"></path>
+        <path d="M17 6l-3 7h6l-3-7z"></path>
+        <path d="M3 18h8"></path>
+        <path d="M13 18h8"></path>
+      </svg>
+      <span>Legal &amp; Policies</span>
+    </div>
+
+    <div class="drawer-policy">
+
+      <a href="privacy-policy.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="3" width="14" height="18" rx="2"></rect>
+            <path d="M9 8h6"></path>
+            <path d="M9 12h6"></path>
+            <path d="M8 16l2 2 5-5"></path>
+          </svg>
+        </div>
+        <span>Privacy Policy</span>
+      </a>
+
+      <a href="terms-of-service.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h8l4 4v14H6z"></path>
+            <path d="M14 3v4h4"></path>
+            <path d="M9 11h6"></path>
+            <path d="M9 15h6"></path>
+            <path d="M9 18h4"></path>
+          </svg>
+        </div>
+        <span>Terms of Service</span>
+      </a>
+
+      <a href="whitepaper.html">
+        <div class="policy-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path>
+            <path d="M19 4h-6c-2 0-3 1-3 3v13c0-2-1-3-3-3h6z"></path>
+            <path d="M8 8h3"></path>
+            <path d="M8 11h3"></path>
+          </svg>
+        </div>
+        <span>Whitepaper</span>
+      </a>
+
+    </div>
+
+    <div class="drawer-note">
+      All users must comply with ALBUKHR governance rules.
+    </div>
+
+    <div class="drawer-title">
+      <svg class="drawer-section-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M3 12h18"></path>
+        <path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path>
+        <path d="M12 3c-2.5 2.5-3.5 5.5-3.5 9s1 6.5 3.5 9"></path>
+      </svg>
+      <span>Media &amp; Channels</span>
+    </div>
+
+    <div class="drawer-social">
+
+      <a class="social-item" href="https://t.me/albukhrtelegramchannel" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (2).jpeg" alt="Telegram"></div>
+        <span>Telegram</span>
+      </a>
+
+      <a class="social-item" href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images.png" alt="WhatsApp"></div>
+        <span>WhatsApp</span>
+      </a>
+
+      <a class="social-item" href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (1) (1).jpeg" alt="Facebook"></div>
+        <span>Facebook</span>
+      </a>
+
+      <a class="social-item" href="https://www.youtube.com/@Albukhrinvestmentlimited" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images.jpeg" alt="YouTube"></div>
+        <span>YouTube</span>
+      </a>
+
+      <a class="social-item" href="#" target="_blank" rel="noopener">
+        <div class="social-icon"><img src="images/images (1).png" alt="X"></div>
+        <span>X</span>
+      </a>
+
+    </div>
+
+    <div class="drawer-note">
+      Official public channels of ALBUKHR ecosystem
+    </div>
+
+  </div>
+</div>
+
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- =========================================================
+     SHARED ALBUKHR FOUNDATION
+     1. Pi SDK
+     2. Supabase SDK
+     3. Environment
+     4. Supabase Core
+     5. Pi Auth Core
+========================================================= -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/core/environment-switcher.js"></script>
+<script src="js/core/supabase-core.js"></script>
+<script src="js/core/pi-auth-core.js"></script>
+
+<!-- =========================================================
+     PAGE DATA / DOMAIN ENGINES
+========================================================= -->
+<script src="js/features/project-config.js"></script>
+<script src="js/features/staking.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/project-treasury.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+
+<script>
+"use strict";
+
 /* =========================================================
-   ALBUKHR SUPABASE CORE v4
-   js/core/supabase-core.js
-
-   USER FOUNDATION
-   environment-switcher.js
-          ↓
-   supabase-core.js
-          ↓
-   domain engines
-          ↓
-   page controllers
-
-   RULES
-   - One shared lazy Supabase client.
-   - Environment-switcher is authoritative for network.
-   - No LocalStorage/sessionStorage persistence.
-   - Network-aware read/write helpers.
-   - Domain engines do not carry Supabase credentials.
-   - No second eager client is created.
+   ALBUKHR HOME CONTROLLER
+   ---------------------------------------------------------
+   This page is intentionally dependent on the shared
+   authentication foundation. It does not create another
+   Pi authentication implementation and does not persist
+   authentication in LocalStorage/sessionStorage.
 ========================================================= */
 
-(function () {
-  "use strict";
+document.documentElement.classList.add("albukhr-auth-checking");
 
-  const ALBUKHR_SUPABASE_URL =
-    "https://qexmnghilahsvethlxem.supabase.co";
+let lastScroll = 0;
+const threshold = 10;
 
-  const ALBUKHR_SUPABASE_KEY =
-    "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2";
+/* =========================================================
+   DOCK AUTO-HIDE
+========================================================= */
+const dock = document.querySelector(".dock-nav");
 
-  let client = null;
-  let initError = null;
+if (dock) {
+  window.addEventListener("scroll", () => {
+    const current = window.pageYOffset;
 
-  function safeString(value, fallback = "") {
-    return value === null || value === undefined
-      ? fallback
-      : String(value);
-  }
+    if (Math.abs(current - lastScroll) <= threshold) return;
 
-  function resolveNetwork() {
-    if (typeof window.getAlbukhrNetwork !== "function") {
-      throw new Error(
-        "ALBUKHR environment-switcher.js must load before supabase-core.js."
-      );
+    if (current > lastScroll) {
+      dock.classList.add("hide");
+    } else {
+      dock.classList.remove("hide");
     }
 
-    const network = window.getAlbukhrNetwork();
+    lastScroll = current;
+  }, { passive: true });
+}
 
-    if (network !== "mainnet" && network !== "testnet") {
-      throw new Error(
-        "Unknown ALBUKHR network. Network-sensitive operation refused."
-      );
+/* =========================================================
+   DOCK ACTIVE STATE
+   Dock structure itself is unchanged.
+========================================================= */
+const currentPage =
+  location.pathname.split("/").pop() || "index.html";
+
+document.querySelectorAll(".dock-item").forEach(link => {
+  if (link.getAttribute("href") === currentPage) {
+    link.classList.add("active");
+  }
+});
+
+/* =========================================================
+   HOME DATA
+========================================================= */
+async function loadHome() {
+  try {
+    if (typeof getAllStakesMerged !== "function") {
+      throw new Error("ALBUKHR Staking Engine is not available.");
     }
 
-    return network;
-  }
+    const stakesRaw = await getAllStakesMerged();
 
-  function hasSupabaseSDK() {
-    return Boolean(
-      window.supabase &&
-      typeof window.supabase.createClient === "function"
-    );
-  }
+    const globalStakesRaw =
+      typeof getGlobalStakes === "function"
+        ? await getGlobalStakes()
+        : [];
 
-  function createClient() {
-    if (client) return client;
+    const stakes =
+      Array.isArray(stakesRaw) ? stakesRaw : [];
 
-    if (!hasSupabaseSDK()) {
-      initError =
-        "Supabase SDK not found. Load @supabase/supabase-js before supabase-core.js.";
-      return null;
-    }
+    const globalStakes =
+      Array.isArray(globalStakesRaw)
+        ? globalStakesRaw
+        : [];
 
-    try {
-      client = window.supabase.createClient(
-        ALBUKHR_SUPABASE_URL,
-        ALBUKHR_SUPABASE_KEY,
-        {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false
-          }
+    const userMap = {};
+    const globalMap = {};
+    const popularMap = {};
+    const countMap = {};
+
+    let totalStake = 0;
+    let totalReward = 0;
+
+    stakes.forEach(s => {
+      if (!s || !s.project) return;
+
+      const type = s.type || "stake";
+      const amount = Number(s.amount) || 0;
+
+      if (type === "stake") {
+        totalStake += amount;
+
+        userMap[s.project] =
+          (userMap[s.project] || 0) + amount;
+
+        if (!globalMap[s.project]) {
+          globalMap[s.project] = {
+            total: 0,
+            investors: 0
+          };
         }
-      );
 
-      initError = null;
-      return client;
-    } catch (error) {
-      initError =
-        error?.message ||
-        "Failed to create ALBUKHR Supabase client.";
+        globalMap[s.project].total += amount;
 
-      console.error(
-        "ALBUKHR Supabase client creation failed:",
-        error
-      );
+        const reward = Number(s.reward) || 0;
+        const withdrawn = Number(s.withdrawnReward) || 0;
 
-      return null;
-    }
-  }
+        totalReward +=
+          Math.max(0, reward - withdrawn);
+      }
 
-  function getAlbukhrSupabaseClient() {
-    return client || createClient();
-  }
+      if (type === "capital") {
+        totalStake -= Math.abs(amount);
 
-  function requireAlbukhrSupabaseClient() {
-    const instance = getAlbukhrSupabaseClient();
+        userMap[s.project] =
+          (userMap[s.project] || 0) - Math.abs(amount);
 
-    if (!instance) {
-      throw new Error(
-        initError ||
-        "ALBUKHR Supabase client is unavailable."
-      );
-    }
+        if (globalMap[s.project]) {
+          globalMap[s.project].total -= Math.abs(amount);
+        }
+      }
 
-    return instance;
-  }
+      countMap[s.project] =
+        (countMap[s.project] || 0) + 1;
+    });
 
-  function applyAlbukhrNetworkFilter(query) {
-    if (!query || typeof query.eq !== "function") {
-      throw new Error("A valid Supabase query is required.");
-    }
+    globalStakes.forEach(s => {
+      if (!s || s.type !== "stake" || !s.project) return;
 
-    return query.eq("network", resolveNetwork());
-  }
-
-  function withAlbukhrNetwork(payload = {}) {
-    return {
-      ...payload,
-      network: resolveNetwork()
-    };
-  }
-
-  function assertAlbukhrNetworkValue(network) {
-    const current = resolveNetwork();
-
-    if (network !== "mainnet" && network !== "testnet") {
-      throw new Error("Invalid ALBUKHR network value.");
-    }
-
-    if (network !== current) {
-      throw new Error(
-        `Network mismatch: current environment is ${current}, requested ${network}.`
-      );
-    }
-
-    return true;
-  }
-
-  function albukhrFrom(table) {
-    const tableName = safeString(table).trim();
-
-    if (!tableName) {
-      throw new Error("Supabase table name is required.");
-    }
-
-    return requireAlbukhrSupabaseClient().from(tableName);
-  }
-
-  function albukhrSelect(table, columns = "*") {
-    return applyAlbukhrNetworkFilter(
-      albukhrFrom(table).select(columns)
-    );
-  }
-
-  function albukhrInsert(table, payload, options = {}) {
-    const rows = Array.isArray(payload)
-      ? payload
-      : [payload];
-
-    const safeRows = rows.map((row) =>
-      withAlbukhrNetwork(row || {})
-    );
-
-    return albukhrFrom(table).insert(
-      safeRows,
-      options
-    );
-  }
-
-  function albukhrUpdate(table, values, filterBuilder) {
-    if (typeof filterBuilder !== "function") {
-      throw new Error(
-        "albukhrUpdate() requires a filterBuilder callback."
-      );
-    }
-
-    let query =
-      albukhrFrom(table).update(values);
-
-    query = filterBuilder(query);
-
-    return applyAlbukhrNetworkFilter(query);
-  }
-
-  function albukhrDelete(table, filterBuilder) {
-    if (typeof filterBuilder !== "function") {
-      throw new Error(
-        "albukhrDelete() requires a filterBuilder callback."
-      );
-    }
-
-    let query =
-      albukhrFrom(table).delete();
-
-    query = filterBuilder(query);
-
-    return applyAlbukhrNetworkFilter(query);
-  }
-
-  function albukhrSupabaseHealth() {
-    let network = null;
-    let networkError = null;
-
-    try {
-      network = resolveNetwork();
-    } catch (error) {
-      networkError =
-        error?.message || "Network unavailable";
-    }
-
-    const instance =
-      getAlbukhrSupabaseClient();
-
-    return {
-      ready: Boolean(instance),
-      has_sdk: hasSupabaseSDK(),
-      has_client: Boolean(instance),
-      network,
-      network_ready: Boolean(network),
-      url: safeString(ALBUKHR_SUPABASE_URL),
-      key_present: Boolean(
-        safeString(ALBUKHR_SUPABASE_KEY)
-      ),
-      init_error: initError || null,
-      network_error: networkError
-    };
-  }
-
-  async function testAlbukhrSupabaseConnection() {
-    let network;
-
-    try {
-      network = resolveNetwork();
-    } catch (error) {
-      return {
-        success: false,
-        network: null,
-        error:
-          error?.message ||
-          "Network unavailable"
-      };
-    }
-
-    const instance =
-      getAlbukhrSupabaseClient();
-
-    if (!instance) {
-      return {
-        success: false,
-        network,
-        error:
-          initError ||
-          "Supabase client unavailable"
-      };
-    }
-
-    try {
-      /*
-       * "projects" is the foundation smoke-test table currently used
-       * by ALBUKHR. If the final schema uses another guaranteed table,
-       * this helper can be changed centrally without touching pages.
-       */
-      const result =
-        await applyAlbukhrNetworkFilter(
-          instance
-            .from("projects")
-            .select("id", {
-              count: "exact",
-              head: true
-            })
-        );
-
-      if (result.error) {
-        return {
-          success: false,
-          network,
-          error:
-            result.error.message ||
-            "Connection test failed"
+      if (!popularMap[s.project]) {
+        popularMap[s.project] = {
+          total: 0,
+          investors: 0
         };
       }
 
-      return {
-        success: true,
-        network,
-        count: result.count ?? null
-      };
-    } catch (error) {
-      return {
-        success: false,
-        network,
-        error:
-          error?.message ||
-          "Connection test crashed"
-      };
+      popularMap[s.project].total +=
+        Number(s.amount) || 0;
+    });
+
+    Object.keys(globalMap).forEach(project => {
+      globalMap[project].investors =
+        countMap[project] || 0;
+    });
+
+    const stakeEl = document.getElementById("homeStake");
+    const rewardEl = document.getElementById("homeReward");
+
+    if (stakeEl) {
+      stakeEl.innerText =
+        Math.max(0, totalStake).toFixed(2) + " Pi";
     }
+
+    if (rewardEl) {
+      rewardEl.innerText =
+        Math.max(0, totalReward).toFixed(2) + " Pi";
+    }
+
+    if (typeof renderPopular === "function") {
+      await renderPopular(popularMap);
+    }
+
+    if (typeof renderAssets === "function") {
+      await renderAssets(userMap, globalMap);
+    }
+
+    applyVisibility();
+  } catch (error) {
+    console.error("ALBUKHR Home Load Error:", error);
+  }
+}
+
+/* =========================================================
+   PROJECT METADATA
+========================================================= */
+function getHomeProjectConfig(project) {
+  if (
+    typeof PROJECT_CONFIG !== "undefined" &&
+    PROJECT_CONFIG[project]
+  ) {
+    return PROJECT_CONFIG[project];
   }
 
-  window.getAlbukhrSupabaseClient =
-    getAlbukhrSupabaseClient;
+  if (typeof getProjectMeta === "function") {
+    try {
+      const meta = getProjectMeta(project);
 
-  window.requireAlbukhrSupabaseClient =
-    requireAlbukhrSupabaseClient;
+      if (meta) {
+        return {
+          title: meta.title || meta.project_name || project,
+          icon: meta.icon || "📊",
+          desc: meta.description || "",
+          info: meta.info || ""
+        };
+      }
+    } catch (_) {}
+  }
 
-  window.isAlbukhrSupabaseReady =
-    () => Boolean(getAlbukhrSupabaseClient());
+  return null;
+}
 
-  /*
-   * IMPORTANT:
-   * Do not redefine getAlbukhrNetwork here. The environment switcher
-   * remains the single authoritative network resolver.
-   */
-  window.applyAlbukhrNetworkFilter =
-    applyAlbukhrNetworkFilter;
+function getHomeProjectList() {
+  if (typeof PROJECT_CONFIG !== "undefined") {
+    return Object.keys(PROJECT_CONFIG);
+  }
 
-  window.withAlbukhrNetwork =
-    withAlbukhrNetwork;
+  if (typeof getCoreProjects === "function") {
+    return getCoreProjects()
+      .then(rows =>
+        rows
+          .map(row => row.project_code || row.code || row.name)
+          .filter(Boolean)
+      );
+  }
 
-  window.assertAlbukhrNetworkValue =
-    assertAlbukhrNetworkValue;
+  return [];
+}
 
-  window.albukhrFrom =
-    albukhrFrom;
+/* =========================================================
+   POPULAR PROJECTS
+========================================================= */
+async function renderPopular(globalMap) {
+  const container =
+    document.getElementById("popularProjects");
 
-  window.albukhrSelect =
-    albukhrSelect;
+  if (!container) return;
 
-  window.albukhrInsert =
-    albukhrInsert;
+  container.innerHTML = "";
 
-  window.albukhrUpdate =
-    albukhrUpdate;
+  let entries =
+    Object.entries(globalMap || {});
 
-  window.albukhrDelete =
-    albukhrDelete;
+  if (entries.length === 0) {
+    const projects =
+      await Promise.resolve(getHomeProjectList());
 
-  window.albukhrSupabaseHealth =
-    albukhrSupabaseHealth;
+    entries = projects.map(project => [
+      project,
+      { total: 0, investors: 0 }
+    ]);
+  }
 
-  window.testAlbukhrSupabaseConnection =
-    testAlbukhrSupabaseConnection;
+  const sorted =
+    entries
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10);
 
-  /*
-   * Compatibility accessor — this is still the same shared client.
-   */
+  sorted.forEach(([project, data], index) => {
+    const config = getHomeProjectConfig(project);
+
+    if (!config) return;
+
+    const div = document.createElement("div");
+    div.className = "popular-card";
+    div.setAttribute("data-rank", "#" + (index + 1));
+
+    div.onclick = () =>
+      location.href =
+        "project.html?project=" +
+        encodeURIComponent(project);
+
+    div.innerHTML = `
+      <div class="popular-icon">${config.icon || "📊"}</div>
+      <div class="popular-name">${config.title || project}</div>
+      <div class="popular-amount">
+        ${(Number(data.total) || 0).toFixed(2)} Pi
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+/* =========================================================
+   ASSETS
+========================================================= */
+async function renderAssets(userMap, globalMap) {
+  const container =
+    document.getElementById("assetsContainer");
+
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const projectNames =
+    await Promise.resolve(getHomeProjectList());
+
+  const merged =
+    projectNames
+      .map(project => {
+        const config =
+          getHomeProjectConfig(project);
+
+        return {
+          name: project,
+          config,
+          globalTotal:
+            Number(globalMap?.[project]?.total) || 0,
+          userAmount:
+            Math.max(
+              0,
+              Number(userMap?.[project]) || 0
+            )
+        };
+      })
+      .filter(item => item.config);
+
+  merged.sort((a, b) => {
+    if (a.userAmount > 0 && b.userAmount === 0) return -1;
+    if (a.userAmount === 0 && b.userAmount > 0) return 1;
+
+    if (a.userAmount !== b.userAmount) {
+      return b.userAmount - a.userAmount;
+    }
+
+    return b.globalTotal - a.globalTotal;
+  });
+
+  merged.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "asset-item";
+
+    div.onclick = () =>
+      location.href =
+        "project.html?project=" +
+        encodeURIComponent(item.name);
+
+    div.innerHTML = `
+      <div class="asset-icon">
+        ${item.config.icon || "📊"}
+      </div>
+
+      <div class="asset-left">
+
+        <div class="asset-header">
+
+          <div class="asset-info">
+
+            <div class="asset-name">
+              ${item.config.title || item.name}
+            </div>
+
+            <div class="asset-stake">
+              ${
+                item.userAmount > 0
+                  ? item.userAmount.toFixed(2) + " Pi Staked"
+                  : "Not Staked"
+              }
+            </div>
+
+          </div>
+
+          <div class="asset-mini-chart">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline
+                fill="none"
+                stroke="${
+                  item.userAmount > 0
+                    ? "#19b36b"
+                    : "#b8b8b8"
+                }"
+                stroke-width="2.2"
+                points="
+                  0,28
+                  15,26
+                  30,24
+                  45,22
+                  60,18
+                  75,20
+                  90,14
+                  105,12
+                  120,8
+                "
+              />
+            </svg>
+          </div>
+
+        </div>
+
+        <div class="asset-status">
+          ${
+            item.userAmount > 0
+              ? "🟢 Active"
+              : "⚪ Inactive"
+          }
+        </div>
+
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+
+  applyVisibility();
+}
+
+/* =========================================================
+   UI-ONLY ASSET VISIBILITY
+   This is not authentication or network state.
+========================================================= */
+const VISIBILITY_KEY = "albukhr_assets_visibility";
+
+function isAssetsHidden() {
   try {
-    Object.defineProperty(
-      window,
-      "albukhrSupabase",
-      {
-        configurable: true,
-        get() {
-          return getAlbukhrSupabaseClient();
+    return localStorage.getItem(VISIBILITY_KEY) === "hidden";
+  } catch (_) {
+    return false;
+  }
+}
+
+function setAssetsHidden(hidden) {
+  try {
+    localStorage.setItem(
+      VISIBILITY_KEY,
+      hidden ? "hidden" : "visible"
+    );
+  } catch (_) {}
+}
+
+function applyVisibility() {
+  const hidden = isAssetsHidden();
+
+  document
+    .getElementById("homeStake")
+    ?.classList
+    .toggle("hidden-amount", hidden);
+
+  document
+    .getElementById("homeReward")
+    ?.classList
+    .toggle("hidden-amount", hidden);
+
+  document
+    .querySelectorAll(".asset-stake")
+    .forEach(el =>
+      el.classList.toggle("hidden-amount", hidden)
+    );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  applyVisibility,
+  { once: true }
+);
+
+/* =========================================================
+   SIDE DRAWER
+========================================================= */
+function openDrawer() {
+  document
+    .getElementById("sideDrawer")
+    ?.classList
+    .add("open");
+
+  document
+    .getElementById("drawerOverlay")
+    ?.classList
+    .add("show");
+}
+
+function closeDrawer() {
+  document
+    .getElementById("sideDrawer")
+    ?.classList
+    .remove("open");
+
+  document
+    .getElementById("drawerOverlay")
+    ?.classList
+    .remove("show");
+}
+
+/* =========================================================
+   ALBUKHR AI ACCESS
+========================================================= */
+function openAlbukhrAI() {
+  let admin = false;
+
+  try {
+    admin =
+      sessionStorage.getItem("albukhr_ai_dev") === "true";
+  } catch (_) {}
+
+  if (admin) {
+    window.location.href = "albukhr-ai.html";
+    return;
+  }
+
+  const note =
+    document.getElementById("aiDevNote");
+
+  if (!note) return;
+
+  note.classList.add("show");
+
+  setTimeout(() => {
+    note.classList.remove("show");
+  }, 2500);
+}
+
+/* =========================================================
+   AI FLOATING BUTTON
+   UI position only.
+========================================================= */
+const ai =
+  document.getElementById("albukhrAI");
+
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+let aiDragMoved = false;
+
+try {
+  const raw =
+    localStorage.getItem("albukhr_ai_position");
+
+  const saved =
+    raw ? JSON.parse(raw) : null;
+
+  if (saved && ai) {
+    ai.style.left = saved.left;
+    ai.style.top = saved.top;
+    ai.style.right = "auto";
+    ai.style.bottom = "auto";
+  }
+} catch (_) {}
+
+if (ai) {
+  ai.addEventListener(
+    "touchstart",
+    startDrag,
+    { passive: true }
+  );
+
+  ai.addEventListener(
+    "mousedown",
+    startDrag
+  );
+
+  ai.addEventListener(
+    "click",
+    () => {
+      if (!aiDragMoved) {
+        ai.classList.remove("minimized");
+      }
+      aiDragMoved = false;
+    }
+  );
+}
+
+function startDrag(event) {
+  if (!ai) return;
+
+  isDragging = true;
+  aiDragMoved = false;
+
+  const rect =
+    ai.getBoundingClientRect();
+
+  const point =
+    event.touches
+      ? event.touches[0]
+      : event;
+
+  offsetX =
+    point.clientX - rect.left;
+
+  offsetY =
+    point.clientY - rect.top;
+}
+
+document.addEventListener(
+  "touchmove",
+  drag,
+  { passive: false }
+);
+
+document.addEventListener(
+  "mousemove",
+  drag
+);
+
+function drag(event) {
+  if (!isDragging || !ai) return;
+
+  aiDragMoved = true;
+
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+
+  const point =
+    event.touches
+      ? event.touches[0]
+      : event;
+
+  const x =
+    point.clientX - offsetX;
+
+  const y =
+    point.clientY - offsetY;
+
+  ai.style.left = x + "px";
+  ai.style.top = y + "px";
+  ai.style.right = "auto";
+  ai.style.bottom = "auto";
+}
+
+document.addEventListener(
+  "touchend",
+  stopDrag
+);
+
+document.addEventListener(
+  "mouseup",
+  stopDrag
+);
+
+function stopDrag() {
+  if (!isDragging || !ai) return;
+
+  isDragging = false;
+
+  const rect =
+    ai.getBoundingClientRect();
+
+  const screenWidth =
+    window.innerWidth;
+
+  const snapX =
+    rect.left < screenWidth / 2
+      ? 10
+      : screenWidth - rect.width - 10;
+
+  ai.style.left =
+    snapX + "px";
+
+  try {
+    localStorage.setItem(
+      "albukhr_ai_position",
+      JSON.stringify({
+        left: ai.style.left,
+        top: ai.style.top
+      })
+    );
+  } catch (_) {}
+
+  setTimeout(() => {
+    ai.classList.add("minimized");
+  }, 2000);
+}
+
+/* =========================================================
+   AUTHENTICATION
+   ---------------------------------------------------------
+   Important change:
+   - Wait for the shared auth core.
+   - Do not redirect instantly on a transient initialization
+     race.
+   - Do not create another Pi authentication flow.
+   - Do not use LocalStorage/sessionStorage for auth.
+========================================================= */
+let homeAuthPromise = null;
+let homeAuthRedirected = false;
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function waitForAuthCore(timeout = 5000) {
+  const started = Date.now();
+
+  while (
+    !window.AlbukhrPiAuth &&
+    Date.now() - started < timeout
+  ) {
+    await wait(50);
+  }
+
+  if (!window.AlbukhrPiAuth) {
+    throw new Error(
+      "ALBUKHR Pi Auth Core did not become available."
+    );
+  }
+
+  return window.AlbukhrPiAuth;
+}
+
+function redirectToLoginOnce() {
+  if (homeAuthRedirected) return;
+
+  homeAuthRedirected = true;
+
+  const current =
+    window.location.pathname.split("/").pop() ||
+    "index.html";
+
+  const target =
+    current === "index.html"
+      ? "login.html"
+      : "login.html";
+
+  window.location.replace(target);
+}
+
+async function loadUser() {
+  const el =
+    document.getElementById("piUser");
+
+  if (!el) return null;
+
+  if (homeAuthPromise) {
+    return homeAuthPromise;
+  }
+
+  homeAuthPromise = (async () => {
+    try {
+      const auth =
+        await waitForAuthCore();
+
+      /*
+       * If another page/controller already authenticated the user
+       * in this document, reuse the same in-memory state.
+       */
+      if (
+        typeof auth.isAuthenticated === "function" &&
+        auth.isAuthenticated()
+      ) {
+        const existing =
+          typeof auth.getCurrentUser === "function"
+            ? auth.getCurrentUser()
+            : null;
+
+        if (existing?.uid) {
+          el.innerText =
+            existing.username || "";
+          return existing;
         }
+      }
+
+      /*
+       * One shared authentication call only.
+       */
+      const user =
+        await auth.ensurePiAuth();
+
+      if (!user?.uid) {
+        throw new Error(
+          "Pi authentication did not return a valid user."
+        );
+      }
+
+      el.innerText =
+        user.username || "";
+
+      return user;
+
+    } catch (error) {
+      console.error(
+        "ALBUKHR user authentication failed:",
+        error
+      );
+
+      /*
+       * Give the shared SDK a short opportunity to settle before
+       * sending the user to login. This avoids the immediate
+       * login -> index -> login loop caused by a startup race.
+       */
+      await wait(250);
+
+      redirectToLoginOnce();
+      return null;
+    } finally {
+      document.documentElement.classList.remove(
+        "albukhr-auth-checking"
+      );
+    }
+  })();
+
+  return homeAuthPromise;
+}
+
+/* =========================================================
+   PAGE BOOTSTRAP
+========================================================= */
+async function bootstrapHome() {
+  try {
+    const user =
+      await loadUser();
+
+    if (!user?.uid) return;
+
+    await loadHome();
+
+    console.log(
+      "🚀 ALBUKHR HOME LOAD",
+      {
+        network:
+          typeof getAlbukhrNetwork === "function"
+            ? getAlbukhrNetwork()
+            : null,
+        userid:
+          user.uid
       }
     );
   } catch (error) {
-    console.warn(
-      "Could not define albukhrSupabase compatibility accessor:",
+    console.error(
+      "ALBUKHR HOME BOOTSTRAP ERROR:",
       error
     );
   }
+}
 
-  console.info(
-    "ALBUKHR Supabase Core loaded. Client initialization is lazy."
-  );
-})();
+/* =========================================================
+   KEYBOARD ACCESS FOR AI BUTTON
+========================================================= */
+if (ai) {
+  ai.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openAlbukhrAI();
+    }
+  });
+}
+
+/* =========================================================
+   DOM READY
+========================================================= */
+document.addEventListener(
+  "DOMContentLoaded",
+  bootstrapHome,
+  { once: true }
+);
+</script>
+
+</body>
+</html>
