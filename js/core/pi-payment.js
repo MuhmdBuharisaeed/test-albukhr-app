@@ -1,54 +1,35 @@
-/* =========================================
-   ALBUKHR PI PAYMENT ENGINE
+/* =========================================================
+   ALBUKHR PI PAYMENT ENGINE v4
    js/core/pi-payment.js
 
-   NEW ARCHITECTURE
-   -----------------------------------------
-   Responsibilities:
+   USER FOUNDATION
    - Start Pi payments
-   - Use shared ALBUKHR authentication
-   - Use shared Pi SDK initialization
-   - Approve payments through ALBUKHR API
-   - Complete payments through ALBUKHR API
-   - Resolve Mainnet/Testnet API from shared
-     environment configuration
-   - Return paymentId + txid to the caller
-
-   Architecture rules:
-   - No localStorage
+   - Shared Pi authentication
+   - Shared Pi SDK initialization
+   - Environment-aware backend resolution
+   - Approve/complete through ALBUKHR backend
+   - No LocalStorage/sessionStorage
    - No Supabase client
-   - No Supabase credentials
-   - No Pi authentication implementation
-   - Uses shared pi-auth-core.js
-   - Uses shared environment configuration
-   - Does not modify Dock Navigation
-========================================= */
+   - No credentials/secrets
+========================================================= */
 
 "use strict";
 
 (() => {
-
-  /* =========================================
-     STATE
-  ========================================= */
-
   let paymentInProgress = false;
 
-  /* =========================================
-     SHARED AUTH RESOLUTION
-     pi-auth-core.js must expose
-     window.ensurePiAuth()
-  ========================================= */
-
-  async function getAuthenticatedUser() {
-
-    if (typeof window.ensurePiAuth !== "function") {
+  function getAuthCore() {
+    if (!window.AlbukhrPiAuth) {
       throw new Error(
-        "ALBUKHR Pi Auth Core is unavailable. Load js/core/pi-auth-core.js before js/core/pi-payment.js."
+        "ALBUKHR Pi Auth Core is unavailable. Load pi-auth-core.js first."
       );
     }
+    return window.AlbukhrPiAuth;
+  }
 
-    const user = await window.ensurePiAuth();
+  async function getAuthenticatedUser() {
+    const auth = getAuthCore();
+    const user = await auth.ensurePiAuth();
 
     if (!user?.uid) {
       throw new Error("Pi authentication required.");
@@ -57,135 +38,51 @@
     return user;
   }
 
-  /* =========================================
-     PI SDK CHECK
-  ========================================= */
-
   function getPiSdk() {
-
     if (
       !window.Pi ||
       typeof window.Pi.createPayment !== "function"
     ) {
       throw new Error(
-        "Pi SDK is unavailable. Make sure the Pi SDK is loaded before starting a payment."
+        "Pi SDK is unavailable. Make sure Pi SDK is loaded before payment."
       );
     }
 
     return window.Pi;
   }
 
-  /* =========================================
-     ENVIRONMENT
-  ========================================= */
-
   function getCurrentNetwork() {
-
-    const candidates = [
-      window.AlbukhrNetwork?.current,
-      window.AlbukhrEnvironment?.current,
-      window.AlbukhrEnvironment?.network,
-      window.ALBUKHR_NETWORK,
-      document.documentElement?.dataset?.network,
-      document.body?.dataset?.network
-    ];
-
-    for (const value of candidates) {
-
-      const normalized =
-        String(value || "")
-          .toLowerCase()
-          .trim();
-
-      if (
-        normalized === "mainnet" ||
-        normalized === "testnet"
-      ) {
-        return normalized;
-      }
+    if (typeof window.getAlbukhrNetwork !== "function") {
+      throw new Error(
+        "ALBUKHR environment-switcher.js is not loaded."
+      );
     }
-
-    const host =
-      window.location.hostname
-        .toLowerCase();
-
-    if (
-      host === "test.albukhr.com" ||
-      host.startsWith("test.")
-    ) {
-      return "testnet";
-    }
-
-    return "mainnet";
+    return window.getAlbukhrNetwork();
   }
 
-  /* =========================================
-     PAYMENT API CONFIG
-     -----------------------------------------
-     Preferred:
-       window.AlbukhrPaymentConfig
-
-     Example supplied by the shared
-     environment/config layer:
-
-       window.AlbukhrPaymentConfig = {
-         mainnet: {
-           apiBaseUrl: "https://YOUR-MAINNET-API"
-         },
-         testnet: {
-           apiBaseUrl: "https://test-albukhr-api.onrender.com"
-         }
-       };
-
-     The payment engine itself contains no
-     secret credentials.
-  ========================================= */
-
   function getPaymentConfig() {
+    const network = getCurrentNetwork();
+    const config = window.AlbukhrPaymentConfig;
 
-    const network =
-      getCurrentNetwork();
+    if (config && typeof config === "object") {
+      const networkConfig = config[network];
 
-    const config =
-      window.AlbukhrPaymentConfig;
-
-    if (
-      config &&
-      typeof config === "object"
-    ) {
-
-      const networkConfig =
-        config[network];
-
-      if (
-        networkConfig?.apiBaseUrl
-      ) {
-
+      if (networkConfig?.apiBaseUrl) {
         return {
           network,
-          apiBaseUrl:
-            String(
-              networkConfig.apiBaseUrl
-            ).replace(/\/+$/, "")
+          apiBaseUrl: String(networkConfig.apiBaseUrl).replace(/\/+$/, "")
         };
       }
     }
 
     /*
-     * Backward-compatible testnet fallback.
-     *
-     * This keeps the existing testnet payment
-     * endpoint functional while the shared
-     * environment configuration is being wired.
-     *
-     * Mainnet has NO invented endpoint.
+     * Existing testnet endpoint retained for migration compatibility.
+     * Mainnet intentionally has no invented/default endpoint.
      */
     if (network === "testnet") {
-
       return {
         network,
-        apiBaseUrl:
-          "https://test-albukhr-api.onrender.com"
+        apiBaseUrl: "https://test-albukhr-api.onrender.com"
       };
     }
 
@@ -194,93 +91,37 @@
     );
   }
 
-  /* =========================================
-     API URL
-  ========================================= */
-
   function getApiUrl(action) {
-
-    const config =
-      getPaymentConfig();
-
-    const allowedActions = [
-      "approve",
-      "complete"
-    ];
-
-    if (
-      !allowedActions.includes(action)
-    ) {
-      throw new Error(
-        "Invalid Pi payment server action."
-      );
+    if (!["approve", "complete"].includes(action)) {
+      throw new Error("Invalid Pi payment server action.");
     }
 
-    return (
-      config.apiBaseUrl +
-      "/" +
-      action
-    );
+    return `${getPaymentConfig().apiBaseUrl}/${action}`;
   }
 
-  /* =========================================
-     SERVER REQUEST
-  ========================================= */
+  async function callPaymentServer(action, payload) {
+    const response = await fetch(getApiUrl(action), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-  async function callPaymentServer(
-    action,
-    payload
-  ) {
+    let data;
+    const contentType = response.headers.get("content-type") || "";
 
-    const response =
-      await fetch(
-        getApiUrl(action),
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-            "Accept":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(payload)
-        }
-      );
-
-    let data = null;
-
-    const contentType =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    if (
-      contentType.includes(
-        "application/json"
-      )
-    ) {
-
-      data =
-        await response.json();
-
+    if (contentType.includes("application/json")) {
+      data = await response.json();
     } else {
-
-      const text =
-        await response.text();
-
       data = {
-        success:
-          response.ok,
-        message:
-          text
+        success: response.ok,
+        message: await response.text()
       };
     }
 
-    if (!response.ok) {
-
+    if (!response.ok || data?.success === false) {
       throw new Error(
         data?.error ||
         data?.message ||
@@ -288,63 +129,14 @@
       );
     }
 
-    if (
-      data &&
-      data.success === false
-    ) {
-
-      throw new Error(
-        data.error ||
-        data.message ||
-        `${action} failed.`
-      );
-    }
-
     return data;
   }
 
-  /* =========================================
-     PAYMENT METADATA
-  ========================================= */
+  function validatePaymentInput({ amount, memo }) {
+    const numericAmount = Number(amount);
 
-  function buildMetadata({
-    user,
-    metadata
-  }) {
-
-    return {
-      userId:
-        user.uid,
-
-      ...(metadata &&
-      typeof metadata === "object"
-        ? metadata
-        : {})
-    };
-  }
-
-  /* =========================================
-     VALIDATION
-  ========================================= */
-
-  function validatePaymentInput({
-    amount,
-    memo
-  }) {
-
-    const numericAmount =
-      Number(amount);
-
-    if (
-      !Number.isFinite(
-        numericAmount
-      ) ||
-      numericAmount <= 0
-    ) {
-
-      throw new Error(
-        "A valid Pi payment amount is required."
-      );
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      throw new Error("A valid Pi payment amount is required.");
     }
 
     if (
@@ -352,332 +144,168 @@
       memo !== null &&
       typeof memo !== "string"
     ) {
-
-      throw new Error(
-        "Payment memo must be text."
-      );
+      throw new Error("Payment memo must be text.");
     }
 
     return {
-      amount:
-        numericAmount,
-
-      memo:
-        String(
-          memo ?? ""
-        ).trim()
+      amount: numericAmount,
+      memo: String(memo ?? "").trim()
     };
   }
 
-  /* =========================================
-     START PI PAYMENT
-  ========================================= */
+  function buildMetadata({ user, metadata }) {
+    return {
+      userId: user.uid,
+      ...(metadata && typeof metadata === "object" ? metadata : {})
+    };
+  }
 
   async function startPiPayment({
     amount,
     memo,
     metadata = {}
   } = {}) {
-
     if (paymentInProgress) {
-
-      throw new Error(
-        "A Pi payment is already in progress."
-      );
+      throw new Error("A Pi payment is already in progress.");
     }
 
-    const payment =
-      validatePaymentInput({
-        amount,
-        memo
-      });
-
+    const payment = validatePaymentInput({ amount, memo });
     paymentInProgress = true;
 
     try {
+      const user = await getAuthenticatedUser();
+      const Pi = getPiSdk();
+      const network = getCurrentNetwork();
 
-      /*
-       * Authentication belongs to
-       * pi-auth-core.js.
-       */
-      const user =
-        await getAuthenticatedUser();
+      const paymentMetadata = buildMetadata({
+        user,
+        metadata
+      });
 
-      /*
-       * Pi SDK must already be initialized
-       * by pi-auth-core.js.
-       */
-      const Pi =
-        getPiSdk();
+      return await new Promise((resolve, reject) => {
+        let settled = false;
 
-      const paymentMetadata =
-        buildMetadata({
-          user,
-          metadata
-        });
+        const resolveOnce = (value) => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
 
-      return await new Promise(
-        (resolve, reject) => {
+        const rejectOnce = (error) => {
+          if (settled) return;
+          settled = true;
+          reject(
+            error instanceof Error
+              ? error
+              : new Error(String(error || "Pi payment failed."))
+          );
+        };
 
-          let settled = false;
+        try {
+          const sdkResult = Pi.createPayment(
+            {
+              amount: payment.amount,
+              memo: payment.memo,
+              metadata: paymentMetadata
+            },
+            {
+              onReadyForServerApproval: async (paymentId) => {
+                try {
+                  if (!paymentId) {
+                    throw new Error("Pi payment ID is missing.");
+                  }
 
-          function resolveOnce(value) {
-
-            if (settled) return;
-
-            settled = true;
-            resolve(value);
-          }
-
-          function rejectOnce(error) {
-
-            if (settled) return;
-
-            settled = true;
-
-            reject(
-              error instanceof Error
-                ? error
-                : new Error(
-                    String(
-                      error ||
-                      "Pi payment failed."
-                    )
-                  )
-            );
-          }
-
-          try {
-
-            Pi.createPayment(
-              {
-                amount:
-                  payment.amount,
-
-                memo:
-                  payment.memo,
-
-                metadata:
-                  paymentMetadata
+                  await callPaymentServer("approve", {
+                    paymentId,
+                    network
+                  });
+                } catch (error) {
+                  console.error(
+                    "ALBUKHR Pi approval error:",
+                    error
+                  );
+                  rejectOnce(error);
+                }
               },
 
-              {
-                /* =========================
-                   SERVER APPROVAL
-                ========================= */
-
-                onReadyForServerApproval:
-                  async function(paymentId) {
-
-                    try {
-
-                      if (!paymentId) {
-                        throw new Error(
-                          "Pi payment ID is missing."
-                        );
-                      }
-
-                      console.log(
-                        "ALBUKHR Pi payment approval:",
-                        paymentId
-                      );
-
-                      const data =
-                        await callPaymentServer(
-                          "approve",
-                          {
-                            paymentId
-                          }
-                        );
-
-                      console.log(
-                        "ALBUKHR Pi payment approved:",
-                        paymentId
-                      );
-
-                      /*
-                       * Do not resolve here.
-                       * Pi will continue to
-                       * server completion.
-                       */
-
-                      return data;
-
-                    } catch (error) {
-
-                      console.error(
-                        "ALBUKHR Pi approval error:",
-                        error
-                      );
-
-                      rejectOnce(error);
-                    }
-                  },
-
-                /* =========================
-                   SERVER COMPLETION
-                ========================= */
-
-                onReadyForServerCompletion:
-                  async function(
-                    paymentId,
-                    txid
-                  ) {
-
-                    try {
-
-                      if (!paymentId) {
-                        throw new Error(
-                          "Pi payment ID is missing."
-                        );
-                      }
-
-                      if (!txid) {
-                        throw new Error(
-                          "Pi transaction ID is missing."
-                        );
-                      }
-
-                      console.log(
-                        "ALBUKHR Pi payment completion:",
-                        {
-                          paymentId,
-                          txid
-                        }
-                      );
-
-                      const data =
-                        await callPaymentServer(
-                          "complete",
-                          {
-                            paymentId,
-                            txid
-                          }
-                        );
-
-                      console.log(
-                        "ALBUKHR Pi payment completed:",
-                        paymentId
-                      );
-
-                      resolveOnce({
-                        paymentId,
-                        txid,
-                        network:
-                          getCurrentNetwork(),
-                        server:
-                          data
-                      });
-
-                    } catch (error) {
-
-                      console.error(
-                        "ALBUKHR Pi completion error:",
-                        error
-                      );
-
-                      rejectOnce(error);
-                    }
-                  },
-
-                /* =========================
-                   USER CANCELLED
-                ========================= */
-
-                onCancel:
-                  function(paymentId) {
-
-                    console.warn(
-                      "ALBUKHR Pi payment cancelled:",
-                      paymentId
-                    );
-
-                    rejectOnce(
-                      new Error(
-                        "User cancelled the Pi payment."
-                      )
-                    );
-                  },
-
-                /* =========================
-                   PI PAYMENT ERROR
-                ========================= */
-
-                onError:
-                  function(error) {
-
-                    console.error(
-                      "ALBUKHR Pi payment error:",
-                      error
-                    );
-
-                    rejectOnce(
-                      error ||
-                      new Error(
-                        "Pi payment failed."
-                      )
-                    );
+              onReadyForServerCompletion: async (paymentId, txid) => {
+                try {
+                  if (!paymentId) {
+                    throw new Error("Pi payment ID is missing.");
                   }
+
+                  if (!txid) {
+                    throw new Error("Pi transaction ID is missing.");
+                  }
+
+                  const server = await callPaymentServer("complete", {
+                    paymentId,
+                    txid,
+                    network
+                  });
+
+                  resolveOnce({
+                    paymentId,
+                    txid,
+                    network,
+                    server
+                  });
+                } catch (error) {
+                  console.error(
+                    "ALBUKHR Pi completion error:",
+                    error
+                  );
+                  rejectOnce(error);
+                }
+              },
+
+              onCancel: (paymentId) => {
+                rejectOnce(
+                  new Error(
+                    `User cancelled the Pi payment${paymentId ? ` (${paymentId})` : ""}.`
+                  )
+                );
+              },
+
+              onError: (error) => {
+                rejectOnce(
+                  error instanceof Error
+                    ? error
+                    : new Error(
+                        error?.message || "Pi payment failed."
+                      )
+                );
               }
-            );
+            }
+          );
 
-          } catch (error) {
-
-            console.error(
-              "ALBUKHR Pi.createPayment error:",
-              error
-            );
-
-            rejectOnce(error);
+          if (sdkResult && typeof sdkResult.catch === "function") {
+            sdkResult.catch(rejectOnce);
           }
+        } catch (error) {
+          rejectOnce(error);
         }
-      );
-
+      });
     } finally {
-
       paymentInProgress = false;
     }
   }
 
-  /* =========================================
-     PAYMENT STATUS
-  ========================================= */
-
   function isPaymentInProgress() {
-
     return paymentInProgress;
   }
 
-  /* =========================================
-     PUBLIC API
-  ========================================= */
-
-  window.AlbukhrPiPayment = {
+  window.AlbukhrPiPayment = Object.freeze({
     startPiPayment,
     isPaymentInProgress,
     getCurrentNetwork,
     getPaymentConfig,
     getApiUrl
-  };
+  });
 
-  /*
-   * Backward compatibility:
-   *
-   * Existing ALBUKHR engines can continue
-   * calling startPiPayment(...)
-   * without changing their public interface.
-   */
-  window.startPiPayment =
-    startPiPayment;
-
-  /* =========================================
-     OPTIONAL LEGACY EVENT HOOK
-  ========================================= */
+  window.startPiPayment = startPiPayment;
 
   window.dispatchEvent(
-    new CustomEvent(
-      "albukhrPiPaymentReady"
-    )
+    new CustomEvent("albukhrPiPaymentReady")
   );
-
 })();
