@@ -1,273 +1,292 @@
 /* =========================================
-   ALBUKHR TRANSACTION ENGINE v3
+   ALBUKHR TRANSACTION ENGINE v4
    UNIFIED / NETWORK-AWARE / SUPABASE
    SINGLE SOURCE OF TRUTH
 
-   ARCHITECTURE:
-   - js/core/supabase-core.js
-   - js/transactions/transaction-engine.js
+   FILE:
+   js/transactions/transaction-engine.js
 
-   PURPOSE:
-   - Read unified transaction history from Supabase
-   - Keep Mainnet/Testnet isolated
-   - Preserve getAllTransactionsUnified() compatibility
-   - Never use LocalStorage as transaction persistence
-   - Prevent duplicate stake entries when aggregating sources
+   FOUNDATION:
+   - js/core/environment-switcher.js
+   - js/core/supabase-core.js
+   - js/core/pi-auth-core.js
+   - js/core/pi-payment.js
+   - js/core/pi-project-treasury-payment.js
+
+   RULES:
+   - Supabase is the source of truth.
+   - No LocalStorage transaction persistence.
+   - Shared environment resolver is authoritative.
+   - Every network-sensitive query is isolated.
+   - No second Supabase client or credentials.
+   - Payment creation belongs to payment/backend engines.
+   - Existing public APIs are preserved.
 ========================================= */
 
-(function(){
-
+(function () {
   "use strict";
 
   const ENGINE_NAME = "ALBUKHR Transaction Engine";
-  const ENGINE_VERSION = "3.0.0";
+  const ENGINE_VERSION = "4.0.0";
+
+  const DEFAULT_CONFIG = Object.freeze({
+    transactionsTable: "transactions",
+    stakesTable: "stakes",
+    externalStakesTable: "external_stakes"
+  });
+
+  let transactionConfig = { ...DEFAULT_CONFIG };
 
   /* =========================================
      SAFE HELPERS
-  ========================================= */
+  ========================================== */
 
-  function safeString(value, fallback = ""){
-    if(value === null || value === undefined){
-      return fallback;
-    }
+  function safeString(value, fallback = "") {
+    if (value === null || value === undefined) return fallback;
     return String(value);
   }
 
-  function safeNumber(value, fallback = 0){
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
+  function safeNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
   }
 
-  function safeArray(value){
+  function safeArray(value) {
     return Array.isArray(value) ? value : [];
   }
 
-  function normalizeTimestamp(value){
-    if(value === null || value === undefined || value === ""){
+  function normalizeTimestamp(value) {
+    if (value === null || value === undefined || value === "") {
       return Date.now();
     }
 
-    if(typeof value === "number"){
+    if (value instanceof Date) {
+      const parsed = value.getTime();
+      return Number.isFinite(parsed) ? parsed : Date.now();
+    }
+
+    if (typeof value === "number") {
       return Number.isFinite(value) ? value : Date.now();
     }
 
     const numeric = Number(value);
 
-    if(Number.isFinite(numeric)){
+    if (Number.isFinite(numeric)) {
+      /*
+       * Accept both Unix seconds and JavaScript milliseconds.
+       */
+      if (numeric > 0 && numeric < 100000000000) {
+        return numeric * 1000;
+      }
+
       return numeric;
     }
 
     const parsed = new Date(value).getTime();
-
-    return Number.isFinite(parsed)
-      ? parsed
-      : Date.now();
+    return Number.isFinite(parsed) ? parsed : Date.now();
   }
 
-  function ensureCore(){
-    if(
-      typeof window.requireAlbukhrSupabaseClient !==
-      "function"
-    ){
+  function normalizeLimit(value, fallback = 500) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) return fallback;
+
+    return Math.min(
+      Math.max(1, Math.floor(number)),
+      5000
+    );
+  }
+
+  /* =========================================
+     FOUNDATION
+  ========================================== */
+
+  function ensureCore() {
+    if (
+      typeof window.requireAlbukhrSupabaseClient !== "function"
+    ) {
       throw new Error(
-        "ALBUKHR Supabase Core is not loaded. " +
-        "Load js/core/supabase-core.js before " +
-        "js/transactions/transaction-engine.js."
+        "ALBUKHR Supabase Core is not loaded. Load js/core/supabase-core.js before js/transactions/transaction-engine.js."
       );
     }
 
-    if(
-      typeof window.requireAlbukhrNetwork !==
-      "function"
-    ){
+    if (
+      typeof window.requireAlbukhrNetwork !== "function"
+    ) {
       throw new Error(
-        "ALBUKHR Network Core is not loaded."
+        "ALBUKHR Network Core is not loaded. Load js/core/environment-switcher.js before js/transactions/transaction-engine.js."
       );
     }
   }
 
-  function getClient(){
+  function getClient() {
     ensureCore();
     return window.requireAlbukhrSupabaseClient();
   }
 
-  function getNetwork(){
+  function getNetwork() {
     ensureCore();
-    return window.requireAlbukhrNetwork();
+
+    const network = window.requireAlbukhrNetwork();
+
+    if (network !== "mainnet" && network !== "testnet") {
+      throw new Error(
+        "ALBUKHR: transaction operation refused because network is invalid."
+      );
+    }
+
+    return network;
   }
 
   /* =========================================
-     TABLE CONFIGURATION
-
-     The engine reads the existing unified
-     `transactions` table first.
-
-     Optional source tables can be supplied
-     through configuration without changing
-     the public API.
+     CONFIGURATION
   ========================================== */
 
-  const DEFAULT_CONFIG = {
-    transactionsTable: "transactions",
-    stakesTable: "stakes",
-    externalStakesTable: "external_stakes"
-  };
+  function configureAlbukhrTransactionEngine(options = {}) {
+    if (
+      !options ||
+      typeof options !== "object" ||
+      Array.isArray(options)
+    ) {
+      throw new Error(
+        "Transaction engine configuration must be an object."
+      );
+    }
 
-  let transactionConfig = {
-    ...DEFAULT_CONFIG
-  };
+    const next = { ...transactionConfig };
 
-  function configureAlbukhrTransactionEngine(options = {}){
-    transactionConfig = {
-      ...transactionConfig,
-      ...options
-    };
+    if (options.transactionsTable) {
+      next.transactionsTable =
+        safeString(options.transactionsTable).trim();
+    }
 
-    return {
-      ...transactionConfig
-    };
+    if (options.stakesTable) {
+      next.stakesTable =
+        safeString(options.stakesTable).trim();
+    }
+
+    if (options.externalStakesTable) {
+      next.externalStakesTable =
+        safeString(options.externalStakesTable).trim();
+    }
+
+    for (const [key, value] of Object.entries(next)) {
+      if (!value) {
+        throw new Error(
+          `ALBUKHR: invalid transaction table configuration for ${key}.`
+        );
+      }
+    }
+
+    transactionConfig = next;
+    return { ...transactionConfig };
+  }
+
+  function getAlbukhrTransactionEngineConfig() {
+    return { ...transactionConfig };
   }
 
   /* =========================================
      NORMALIZATION
   ========================================== */
 
-  function normalizeTransaction(row, source = "core"){
-    if(!row || typeof row !== "object"){
-      return null;
-    }
+  function normalizeTransaction(row, source = "core") {
+    if (!row || typeof row !== "object") return null;
 
-    const amount = safeNumber(
-      row.amount,
-      0
+    const amount = safeNumber(row.amount, 0);
+
+    const project = safeString(
+      row.project ||
+      row.project_id ||
+      row.project_code ||
+      ""
+    ).trim();
+
+    const type = safeString(
+      row.transaction_type ||
+      row.type ||
+      "transaction"
+    ).trim().toLowerCase();
+
+    const status = safeString(
+      row.status ||
+      row.transaction_status ||
+      "Successful"
+    ).trim();
+
+    const timestamp = normalizeTimestamp(
+      row.timestamp ||
+      row.created_at ||
+      row.inserted_at ||
+      row.updated_at
     );
 
-    const project =
-      safeString(
-        row.project ||
-        row.project_id ||
-        row.project_code ||
-        ""
-      );
+    const paymentId = safeString(
+      row.payment_id ||
+      row.paymentId ||
+      row.txid ||
+      row.transaction_id ||
+      ""
+    ).trim();
 
-    const type =
-      safeString(
-        row.transaction_type ||
-        row.type ||
-        "transaction"
-      ).toLowerCase();
-
-    const status =
-      safeString(
-        row.status ||
-        row.transaction_status ||
-        "Successful"
-      );
-
-    const timestamp =
-      normalizeTimestamp(
-        row.timestamp ||
-        row.created_at ||
-        row.inserted_at ||
-        row.updated_at
-      );
-
-    const paymentId =
-      safeString(
-        row.payment_id ||
-        row.paymentId ||
-        row.txid ||
-        row.transaction_id ||
-        ""
-      );
+    const network = safeString(
+      row.network || ""
+    ).trim().toLowerCase();
 
     return {
-      id:
-        row.id ?? null,
-
+      id: row.id ?? null,
       source,
-
       project,
-
       amount,
-
       type,
-
       status,
-
       timestamp,
-
-      network:
-        safeString(
-          row.network ||
-          ""
-        ),
-
-      payment_id:
-        paymentId,
-
-      txid:
-        safeString(
-          row.txid ||
-          ""
-        ),
-
-      asset:
-        safeString(
-          row.asset ||
-          "Pi"
-        ),
-
-      from_wallet:
-        safeString(
-          row.from_wallet ||
-          ""
-        ),
-
-      to_wallet:
-        safeString(
-          row.to_wallet ||
-          ""
-        ),
-
+      network,
+      payment_id: paymentId,
+      txid: safeString(row.txid || "").trim(),
+      asset: safeString(row.asset || "Pi").trim() || "Pi",
+      from_wallet: safeString(row.from_wallet || "").trim(),
+      to_wallet: safeString(row.to_wallet || "").trim(),
       raw: row
     };
   }
 
   /* =========================================
-     DUPLICATE KEY
-
-     Payment/transaction identifiers are the
-     strongest identity. Otherwise use a
-     deterministic composite.
+     DEDUPLICATION
   ========================================== */
 
-  function transactionIdentity(tx){
-    if(!tx){
-      return "";
-    }
+  function transactionIdentity(tx, network) {
+    if (!tx) return "";
 
-    const payment =
-      safeString(
-        tx.payment_id ||
-        tx.txid
-      ).trim();
+    const currentNetwork =
+      safeString(tx.network || network).trim().toLowerCase();
 
-    if(payment){
-      return `payment:${payment}`;
+    const payment = safeString(
+      tx.payment_id || tx.txid
+    ).trim();
+
+    if (payment) {
+      return `payment:${currentNetwork}:${payment}`;
     }
 
     const id =
-      tx.id !== null &&
-      tx.id !== undefined
+      tx.id !== null && tx.id !== undefined
         ? String(tx.id)
         : "";
 
-    if(id){
-      return `source:${tx.source}:id:${id}`;
+    if (id) {
+      return [
+        "source",
+        currentNetwork,
+        safeString(tx.source),
+        "id",
+        id
+      ].join(":");
     }
 
     return [
+      "fingerprint",
+      currentNetwork,
       safeString(tx.source),
       safeString(tx.project),
       safeString(tx.type),
@@ -276,20 +295,18 @@
     ].join("|");
   }
 
-  function dedupeTransactions(transactions){
+  function dedupeTransactions(transactions, network) {
     const result = [];
     const seen = new Set();
 
-    for(const tx of safeArray(transactions)){
-      const key = transactionIdentity(tx);
+    for (const tx of safeArray(transactions)) {
+      if (!tx) continue;
 
-      if(key && seen.has(key)){
-        continue;
-      }
+      const key = transactionIdentity(tx, network);
 
-      if(key){
-        seen.add(key);
-      }
+      if (key && seen.has(key)) continue;
+
+      if (key) seen.add(key);
 
       result.push(tx);
     }
@@ -297,357 +314,345 @@
     return result;
   }
 
-  function sortTransactions(transactions){
+  function sortTransactions(transactions) {
     return [...safeArray(transactions)].sort(
       (a, b) =>
-        normalizeTimestamp(b.timestamp) -
-        normalizeTimestamp(a.timestamp)
+        normalizeTimestamp(b?.timestamp) -
+        normalizeTimestamp(a?.timestamp)
+    );
+  }
+
+  function enforceCurrentNetwork(transactions, network) {
+    return safeArray(transactions).filter(
+      tx => !tx?.network || tx.network === network
     );
   }
 
   /* =========================================
-     READ CORE TRANSACTIONS
+     CORE TRANSACTIONS
   ========================================== */
 
-  async function getCoreTransactions(options = {}){
+  async function getCoreTransactions(options = {}) {
     const client = getClient();
     const network = getNetwork();
+    const limit = normalizeLimit(options.limit);
 
-    const limit =
-      Number.isFinite(Number(options.limit))
-        ? Math.max(1, Number(options.limit))
-        : 500;
+    let query = client
+      .from(transactionConfig.transactionsTable)
+      .select("*")
+      .eq("network", network)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-    let query =
-      client
-        .from(transactionConfig.transactionsTable)
-        .select("*")
-        .eq("network", network)
-        .order("created_at", {
-          ascending: false
-        })
-        .limit(limit);
-
-    if(options.type){
+    if (options.type !== undefined) {
       query = query.eq(
         "transaction_type",
         String(options.type)
       );
     }
 
-    if(options.project){
+    if (options.project !== undefined) {
       query = query.eq(
         "project",
         String(options.project)
       );
     }
 
-    if(options.paymentId){
+    if (options.paymentId !== undefined) {
       query = query.eq(
         "payment_id",
         String(options.paymentId)
       );
     }
 
-    const { data, error } =
-      await query;
-
-    if(error){
-      throw new Error(
-        error.message ||
-        "Failed to load transactions."
+    if (options.status !== undefined) {
+      query = query.eq(
+        "status",
+        String(options.status)
       );
     }
 
-    return safeArray(data).map(row =>
-      normalizeTransaction(row, "core")
-    ).filter(Boolean);
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(
+        error.message || "Failed to load transactions."
+      );
+    }
+
+    return enforceCurrentNetwork(
+      safeArray(data)
+        .map(row => normalizeTransaction(row, "core"))
+        .filter(Boolean),
+      network
+    );
   }
 
   /* =========================================
-     READ STAKES
-
-     Stakes are converted into transaction
-     records only when they are not already
-     represented by a payment/transaction id.
+     STAKES
   ========================================== */
 
-  async function getStakeTransactions(options = {}){
+  async function getStakeTransactions(options = {}) {
     const client = getClient();
     const network = getNetwork();
+    const limit = normalizeLimit(options.limit);
 
-    const limit =
-      Number.isFinite(Number(options.limit))
-        ? Math.max(1, Number(options.limit))
-        : 500;
+    let query = client
+      .from(transactionConfig.stakesTable)
+      .select("*")
+      .eq("network", network)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-    let query =
-      client
-        .from(transactionConfig.stakesTable)
-        .select("*")
-        .eq("network", network)
-        .order("created_at", {
-          ascending: false
-        })
-        .limit(limit);
-
-    if(options.project){
+    if (options.project !== undefined) {
       query = query.eq(
         "project",
         String(options.project)
       );
     }
 
-    if(options.status){
+    if (options.status !== undefined) {
       query = query.eq(
         "status",
         String(options.status)
       );
-    }else{
-      /*
-        Unified history should normally expose
-        successful/paid stakes, not cancelled
-        pending records.
-      */
+    } else {
       query = query.in(
         "status",
-        ["paid", "successful", "success", "completed", "Successful"]
+        [
+          "paid",
+          "successful",
+          "success",
+          "completed",
+          "Successful"
+        ]
       );
     }
 
-    const { data, error } =
-      await query;
+    const { data, error } = await query;
 
-    if(error){
+    if (error) {
       /*
-        If the stakes table is unavailable,
-        the unified transaction table remains
-        authoritative. Do not crash the entire
-        transaction history.
-      */
+       * Stakes are secondary. The canonical transactions
+       * table remains usable if this table is unavailable.
+       */
       console.warn(
         "ALBUKHR stake source unavailable:",
         error.message || error
       );
-
       return [];
     }
 
-    return safeArray(data)
-      .map(row => {
-
-        const tx = normalizeTransaction(
-          {
-            ...row,
-            transaction_type:
-              "stake",
-            timestamp:
-              row.created_at ||
-              row.timestamp,
-            payment_id:
-              row.payment_id ||
-              row.txid ||
-              ""
-          },
-          "staking"
-        );
-
-        return tx;
-      })
-      .filter(Boolean);
+    return enforceCurrentNetwork(
+      safeArray(data)
+        .map(row =>
+          normalizeTransaction(
+            {
+              ...row,
+              transaction_type: "stake",
+              timestamp:
+                row.created_at ||
+                row.timestamp,
+              payment_id:
+                row.payment_id ||
+                row.txid ||
+                ""
+            },
+            "staking"
+          )
+        )
+        .filter(Boolean),
+      network
+    );
   }
 
   /* =========================================
-     READ EXTERNAL STAKES
-
-     This table is optional. If it does not
-     exist, return [] and continue safely.
+     EXTERNAL STAKES
   ========================================== */
 
-  async function getExternalStakeTransactions(options = {}){
+  async function getExternalStakeTransactions(options = {}) {
     const client = getClient();
     const network = getNetwork();
+    const limit = normalizeLimit(options.limit);
 
-    const limit =
-      Number.isFinite(Number(options.limit))
-        ? Math.max(1, Number(options.limit))
-        : 500;
+    let query = client
+      .from(transactionConfig.externalStakesTable)
+      .select("*")
+      .eq("network", network)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-    let query =
-      client
-        .from(transactionConfig.externalStakesTable)
-        .select("*")
-        .eq("network", network)
-        .order("created_at", {
-          ascending: false
-        })
-        .limit(limit);
-
-    if(options.project){
+    if (options.project !== undefined) {
       query = query.eq(
         "project_id",
         String(options.project)
       );
     }
 
-    const { data, error } =
-      await query;
+    if (options.status !== undefined) {
+      query = query.eq(
+        "status",
+        String(options.status)
+      );
+    }
 
-    if(error){
+    const { data, error } = await query;
+
+    if (error) {
       console.warn(
         "ALBUKHR external stake source unavailable:",
         error.message || error
       );
-
       return [];
     }
 
-    return safeArray(data)
-      .map(row =>
-        normalizeTransaction(
-          {
-            ...row,
-            project:
-              row.project ||
-              row.project_id,
-            transaction_type:
-              "stake",
-            timestamp:
-              row.created_at ||
-              row.timestamp,
-            payment_id:
-              row.payment_id ||
-              row.txid ||
-              ""
-          },
-          "external"
+    return enforceCurrentNetwork(
+      safeArray(data)
+        .map(row =>
+          normalizeTransaction(
+            {
+              ...row,
+              project:
+                row.project ||
+                row.project_id,
+              transaction_type: "stake",
+              timestamp:
+                row.created_at ||
+                row.timestamp,
+              payment_id:
+                row.payment_id ||
+                row.txid ||
+                ""
+            },
+            "external"
+          )
         )
-      )
-      .filter(Boolean);
+        .filter(Boolean),
+      network
+    );
   }
 
   /* =========================================
-     UNIFIED TRANSACTION HISTORY
-
-     Public compatibility API:
-       getAllTransactionsUnified()
-
-     No LocalStorage.
-     Current network is always enforced.
+     UNIFIED HISTORY
   ========================================== */
 
-  async function getAllTransactionsUnified(options = {}){
+  async function getAllTransactionsUnified(options = {}) {
     const network = getNetwork();
 
-    const [
-      core,
-      stakes,
-      external
-    ] = await Promise.all([
-      getCoreTransactions(options),
-      getStakeTransactions(options),
-      getExternalStakeTransactions(options)
-    ]);
+    const [core, stakes, external] =
+      await Promise.all([
+        getCoreTransactions(options),
+        getStakeTransactions(options),
+        getExternalStakeTransactions(options)
+      ]);
 
     /*
-      The transactions table is the canonical
-      source for transaction history.
-
-      Therefore stake rows already represented
-      by a payment_id/txid are removed from the
-      secondary stake sources.
-    */
+     * Canonical transaction records win.
+     * Secondary records with the same payment/txid
+     * are not added a second time.
+     */
     const corePaymentKeys = new Set();
 
-    core.forEach(tx => {
-      const payment =
-        safeString(
-          tx.payment_id ||
-          tx.txid
-        ).trim();
+    for (const tx of core) {
+      const payment = safeString(
+        tx.payment_id || tx.txid
+      ).trim();
 
-      if(payment){
+      if (payment) {
         corePaymentKeys.add(
-          `payment:${payment}`
+          `payment:${network}:${payment}`
         );
       }
+    }
+
+    const secondary = [...stakes, ...external].filter(tx => {
+      if (
+        tx?.network &&
+        tx.network !== network
+      ) {
+        return false;
+      }
+
+      const payment = safeString(
+        tx?.payment_id || tx?.txid
+      ).trim();
+
+      if (
+        payment &&
+        corePaymentKeys.has(
+          `payment:${network}:${payment}`
+        )
+      ) {
+        return false;
+      }
+
+      return true;
     });
 
-    const secondary =
-      [...stakes, ...external]
-        .filter(tx => {
-
-          if(
-            tx.network &&
-            tx.network !== network
-          ){
-            return false;
-          }
-
-          const payment =
-            safeString(
-              tx.payment_id ||
-              tx.txid
-            ).trim();
-
-          if(
-            payment &&
-            corePaymentKeys.has(
-              `payment:${payment}`
-            )
-          ){
-            return false;
-          }
-
-          return true;
-        });
-
     return sortTransactions(
-      dedupeTransactions([
-        ...core,
-        ...secondary
-      ])
+      dedupeTransactions(
+        [...core, ...secondary],
+        network
+      )
     );
+  }
+
+  async function getTransactionsUnified(options = {}) {
+    return getAllTransactionsUnified(options);
   }
 
   /* =========================================
-     FILTERED HISTORY
+     USER HISTORY
   ========================================== */
-
-  async function getTransactionsUnified(options = {}){
-    return getAllTransactionsUnified(
-      options
-    );
-  }
 
   async function getUserTransactionsUnified(
     userid,
     options = {}
-  ){
-    if(!userid){
-      return [];
-    }
+  ) {
+    const requestedUser =
+      userid ||
+      options.userId ||
+      options.wallet ||
+      options.fromWallet;
+
+    if (!requestedUser) return [];
 
     const client = getClient();
     const network = getNetwork();
+    const limit = normalizeLimit(options.limit);
 
-    const limit =
-      Number.isFinite(Number(options.limit))
-        ? Math.max(1, Number(options.limit))
-        : 500;
+    let query = client
+      .from(transactionConfig.transactionsTable)
+      .select("*")
+      .eq("network", network)
+      .eq("from_wallet", String(requestedUser))
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-    const { data, error } =
-      await client
-        .from(transactionConfig.transactionsTable)
-        .select("*")
-        .eq("network", network)
-        .eq("from_wallet", String(userid))
-        .order("created_at", {
-          ascending: false
-        })
-        .limit(limit);
+    if (options.type !== undefined) {
+      query = query.eq(
+        "transaction_type",
+        String(options.type)
+      );
+    }
 
-    if(error){
+    if (options.project !== undefined) {
+      query = query.eq(
+        "project",
+        String(options.project)
+      );
+    }
+
+    if (options.status !== undefined) {
+      query = query.eq(
+        "status",
+        String(options.status)
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
       throw new Error(
         error.message ||
         "Failed to load user transactions."
@@ -655,23 +660,57 @@
     }
 
     return sortTransactions(
-      safeArray(data)
-        .map(row =>
-          normalizeTransaction(row, "core")
-        )
-        .filter(Boolean)
+      enforceCurrentNetwork(
+        safeArray(data)
+          .map(row =>
+            normalizeTransaction(row, "core")
+          )
+          .filter(Boolean),
+        network
+      )
     );
+  }
+
+  /* =========================================
+     SINGLE TRANSACTION
+  ========================================== */
+
+  async function getTransactionByPaymentId(paymentId) {
+    const normalized =
+      safeString(paymentId).trim();
+
+    if (!normalized) return null;
+
+    const client = getClient();
+    const network = getNetwork();
+
+    const { data, error } = await client
+      .from(transactionConfig.transactionsTable)
+      .select("*")
+      .eq("network", network)
+      .eq("payment_id", normalized)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(
+        error.message ||
+        "Failed to load transaction."
+      );
+    }
+
+    if (!data) return null;
+
+    return normalizeTransaction(data, "core");
   }
 
   /* =========================================
      SUMMARY
   ========================================== */
 
-  async function getTransactionSummary(options = {}){
+  async function getTransactionSummary(options = {}) {
     const transactions =
-      await getAllTransactionsUnified(
-        options
-      );
+      await getAllTransactionsUnified(options);
 
     const summary = {
       network: getNetwork(),
@@ -684,37 +723,43 @@
       failed: 0
     };
 
-    transactions.forEach(tx => {
-      const amount =
-        safeNumber(tx.amount);
+    for (const tx of transactions) {
+      const amount = safeNumber(tx.amount);
 
       summary.totalAmount += amount;
 
-      if(tx.type === "stake"){
+      if (tx.type === "stake") {
         summary.stakes += amount;
-      }else{
+      } else {
         summary.payments += amount;
       }
 
-      const status =
-        safeString(
-          tx.status
-        ).toLowerCase();
+      const status = safeString(tx.status)
+        .trim()
+        .toLowerCase();
 
-      if(
-        ["successful","success","paid","completed"]
-          .includes(status)
-      ){
+      if (
+        [
+          "successful",
+          "success",
+          "paid",
+          "completed"
+        ].includes(status)
+      ) {
         summary.successful++;
-      }else if(status === "pending"){
+      } else if (status === "pending") {
         summary.pending++;
-      }else if(
-        ["failed","cancelled","canceled","error"]
-          .includes(status)
-      ){
+      } else if (
+        [
+          "failed",
+          "cancelled",
+          "canceled",
+          "error"
+        ].includes(status)
+      ) {
         summary.failed++;
       }
-    });
+    }
 
     return summary;
   }
@@ -723,34 +768,44 @@
      HEALTH
   ========================================== */
 
-  function albukhrTransactionEngineHealth(){
+  function albukhrTransactionEngineHealth() {
     let network = null;
     let error = null;
 
-    try{
+    try {
       network = getNetwork();
-    }catch(e){
+    } catch (e) {
       error =
         e?.message ||
         "Network unavailable";
     }
 
+    let supabaseReady = false;
+
+    if (
+      typeof window.requireAlbukhrSupabaseClient ===
+      "function"
+    ) {
+      try {
+        supabaseReady =
+          !!window.requireAlbukhrSupabaseClient();
+      } catch (_) {
+        supabaseReady = false;
+      }
+    }
+
     return {
       ready:
         !error &&
-        typeof window.requireAlbukhrSupabaseClient ===
-          "function",
+        supabaseReady,
 
-      engine:
-        ENGINE_NAME,
-
-      version:
-        ENGINE_VERSION,
-
+      engine: ENGINE_NAME,
+      version: ENGINE_VERSION,
       network,
-
-      network_ready:
-        !!network,
+      network_ready: !!network,
+      supabase_core_ready:
+        typeof window.requireAlbukhrSupabaseClient ===
+        "function",
 
       transactions_table:
         transactionConfig.transactionsTable,
@@ -767,7 +822,7 @@
 
   /* =========================================
      GLOBAL EXPORTS
-  ========================================== */
+     ========================================== */
 
   window.getAllTransactionsUnified =
     getAllTransactionsUnified;
@@ -781,22 +836,41 @@
   window.getTransactionSummary =
     getTransactionSummary;
 
+  window.getTransactionByPaymentId =
+    getTransactionByPaymentId;
+
   window.configureAlbukhrTransactionEngine =
     configureAlbukhrTransactionEngine;
 
+  window.getAlbukhrTransactionEngineConfig =
+    getAlbukhrTransactionEngineConfig;
+
   window.albukhrTransactionEngineHealth =
     albukhrTransactionEngineHealth;
+
+  window.AlbukhrTransactionEngine =
+    Object.freeze({
+      getAllTransactionsUnified,
+      getTransactionsUnified,
+      getUserTransactionsUnified,
+      getTransactionSummary,
+      getTransactionByPaymentId,
+      configureAlbukhrTransactionEngine,
+      getAlbukhrTransactionEngineConfig,
+      health:
+        albukhrTransactionEngineHealth
+    });
 
   /* =========================================
      DEBUG
   ========================================== */
 
-  try{
+  try {
     console.log(
       `${ENGINE_NAME} v${ENGINE_VERSION} ready — ` +
       `${getNetwork().toUpperCase()}`
     );
-  }catch(e){
+  } catch (e) {
     console.warn(
       `${ENGINE_NAME} initialization warning:`,
       e?.message || e
