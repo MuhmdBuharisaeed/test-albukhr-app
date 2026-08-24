@@ -1,61 +1,39 @@
-/* =========================================
-   ALBUKHR PI AUTH CORE
-   File:
+/* =========================================================
+   ALBUKHR PI AUTH CORE v4
    js/core/pi-auth-core.js
 
-   Responsibilities:
+   USER FOUNDATION
    - Pi SDK initialization
-   - Pi authentication
-   - Shared authenticated-user state
-   - Environment-aware Pi initialization
+   - Shared Pi authentication
+   - In-memory authenticated-user state
+   - Environment-aware sandbox mode
    - Auth guards
-   - No localStorage auth persistence
+   - No LocalStorage/sessionStorage persistence
    - No Supabase credentials
-   - No page-specific authentication logic
-========================================= */
+   - No page-specific auth logic
+
+   Depends on:
+   js/core/environment-switcher.js
+========================================================= */
 
 "use strict";
 
 (() => {
+  const PI_SDK_VERSION = "2.0";
 
   let initialized = false;
   let initializing = null;
   let authenticating = null;
-  let currentUser = null;
-
-  const PI_SDK_VERSION = "2.0";
+  let currentAuth = null;
 
   function getEnvironment() {
-    const candidates = [
-      window.AlbukhrEnvironment?.current,
-      window.AlbukhrEnvironment?.network,
-      window.AlbukhrNetwork?.current,
-      window.AlbukhrNetwork?.network,
-      window.ALBUKHR_NETWORK,
-      document.documentElement?.dataset?.network,
-      document.body?.dataset?.network
-    ];
-
-    for (const value of candidates) {
-      const normalized = String(value || "").toLowerCase().trim();
-
-      if (normalized === "mainnet" || normalized === "testnet") {
-        return normalized;
-      }
+    if (typeof window.getAlbukhrNetwork === "function") {
+      return window.getAlbukhrNetwork();
     }
 
-    const hostname = window.location.hostname.toLowerCase();
-
-    if (
-      hostname === "test.albukhr.com" ||
-      hostname.startsWith("test.") ||
-      hostname === "dev.albukhr.com" ||
-      hostname.startsWith("dev.")
-    ) {
-      return "testnet";
-    }
-
-    return "mainnet";
+    throw new Error(
+      "ALBUKHR environment-switcher.js must load before pi-auth-core.js."
+    );
   }
 
   function isSandboxEnvironment() {
@@ -63,9 +41,7 @@
   }
 
   function getPiSDK() {
-    return typeof window.Pi === "undefined"
-      ? null
-      : window.Pi;
+    return typeof window.Pi === "undefined" ? null : window.Pi;
   }
 
   function requirePiSDK() {
@@ -78,15 +54,11 @@
     }
 
     if (typeof Pi.init !== "function") {
-      throw new Error(
-        "Pi SDK initialization API is unavailable."
-      );
+      throw new Error("Pi SDK initialization API is unavailable.");
     }
 
     if (typeof Pi.authenticate !== "function") {
-      throw new Error(
-        "Pi SDK authentication API is unavailable."
-      );
+      throw new Error("Pi SDK authentication API is unavailable.");
     }
 
     return Pi;
@@ -99,33 +71,25 @@
     initializing = (async () => {
       try {
         const Pi = requirePiSDK();
-        const sandbox = isSandboxEnvironment();
+        const network = getEnvironment();
 
         Pi.init({
           version: PI_SDK_VERSION,
-          sandbox
+          sandbox: network === "testnet"
         });
 
         initialized = true;
 
-        console.log(
-          "ALBUKHR Pi SDK initialized:",
-          {
-            version: PI_SDK_VERSION,
-            network: getEnvironment(),
-            sandbox
-          }
-        );
+        console.info("ALBUKHR Pi SDK initialized.", {
+          version: PI_SDK_VERSION,
+          network,
+          sandbox: network === "testnet"
+        });
 
         return true;
       } catch (error) {
         initialized = false;
-
-        console.error(
-          "ALBUKHR Pi initialization failed:",
-          error
-        );
-
+        console.error("ALBUKHR Pi initialization failed:", error);
         return false;
       } finally {
         initializing = null;
@@ -139,17 +103,8 @@
     if (!auth) return null;
 
     const source = auth.user || auth;
-
-    const uid =
-      source.uid ||
-      auth.uid ||
-      "";
-
-    const username =
-      source.username ||
-      auth.username ||
-      "";
-
+    const uid = source.uid || auth.uid || "";
+    const username = source.username || auth.username || "";
     const walletAddress =
       source.wallet_address ||
       source.walletAddress ||
@@ -159,135 +114,130 @@
 
     if (!uid) return null;
 
-    return {
+    return Object.freeze({
       uid: String(uid),
       username: username ? String(username) : "",
       wallet_address: walletAddress ? String(walletAddress) : ""
-    };
+    });
+  }
+
+  function buildAuthState(auth) {
+    const user = normalizeUser(auth);
+    if (!user?.uid) return null;
+
+    const network = getEnvironment();
+
+    /*
+     * accessToken is kept only in memory and is never written to
+     * LocalStorage/sessionStorage. It is exposed through getAuthContext()
+     * for trusted backend requests that require the Pi auth token.
+     */
+    return Object.freeze({
+      user,
+      uid: user.uid,
+      username: user.username,
+      wallet_address: user.wallet_address,
+      accessToken: auth.accessToken
+        ? String(auth.accessToken)
+        : "",
+      network
+    });
   }
 
   function handleIncompletePayment(payment) {
-    console.log(
-      "ALBUKHR Pi incomplete payment:",
-      payment
-    );
-
     try {
       window.dispatchEvent(
-        new CustomEvent(
-          "albukhrPiIncompletePayment",
-          { detail: payment }
-        )
+        new CustomEvent("albukhrPiIncompletePayment", {
+          detail: payment
+        })
       );
     } catch (error) {
       console.warn(
-        "ALBUKHR payment event dispatch failed:",
+        "ALBUKHR incomplete payment event failed:",
         error
       );
     }
   }
 
   async function ensurePiAuth() {
-    if (currentUser) return currentUser;
-    if (authenticating) return authenticating;
+    if (currentAuth?.user?.uid) {
+      return currentAuth.user;
+    }
+
+    if (authenticating) {
+      const authState = await authenticating;
+      return authState?.user || null;
+    }
 
     authenticating = (async () => {
       try {
-        const ready = await initPi();
-
-        if (!ready) {
-          throw new Error(
-            "Pi SDK initialization failed."
-          );
+        if (!(await initPi())) {
+          throw new Error("Pi SDK initialization failed.");
         }
 
         const Pi = requirePiSDK();
 
-        const scopes = [
-          "username",
-          "payments",
-          "wallet_address"
-        ];
-
         const auth = await Pi.authenticate(
-          scopes,
+          ["username", "payments", "wallet_address"],
           handleIncompletePayment
         );
 
-        console.log(
-          "ALBUKHR Pi authentication response:",
-          auth
-        );
+        const authState = buildAuthState(auth);
 
-        const user = normalizeUser(auth);
-
-        if (!user?.uid) {
+        if (!authState) {
           throw new Error(
             "Pi authentication succeeded but no valid UID was returned."
           );
         }
 
-        currentUser = Object.freeze({
-          ...user,
-          network: getEnvironment()
-        });
+        currentAuth = authState;
 
-        console.log(
-          "ALBUKHR authenticated user:",
-          currentUser
+        window.dispatchEvent(
+          new CustomEvent("albukhrAuthChanged", {
+            detail: authState.user
+          })
         );
 
-        try {
-          window.dispatchEvent(
-            new CustomEvent(
-              "albukhrAuthChanged",
-              { detail: currentUser }
-            )
-          );
-        } catch (eventError) {
-          console.warn(
-            "ALBUKHR auth event dispatch failed:",
-            eventError
-          );
-        }
-
-        return currentUser;
+        return authState;
       } catch (error) {
-        console.error(
-          "ALBUKHR Pi authentication failed:",
-          error
-        );
-
-        currentUser = null;
+        currentAuth = null;
+        console.error("ALBUKHR Pi authentication failed:", error);
         return null;
       } finally {
         authenticating = null;
       }
     })();
 
-    return authenticating;
+    const authState = await authenticating;
+    return authState?.user || null;
   }
 
   function getCurrentUser() {
-    return currentUser;
+    return currentAuth?.user || null;
+  }
+
+  function getAuthContext() {
+    return currentAuth;
+  }
+
+  function getAccessToken() {
+    return currentAuth?.accessToken || "";
   }
 
   function isAuthenticated() {
-    return Boolean(currentUser?.uid);
+    return Boolean(currentAuth?.user?.uid);
   }
 
   async function requireAuth(options = {}) {
     const redirect = options.redirect !== false;
 
     if (isAuthenticated()) {
-      return currentUser;
+      return getCurrentUser();
     }
 
     const user = await ensurePiAuth();
 
-    if (user) {
-      return user;
-    }
+    if (user) return user;
 
     if (redirect && typeof window !== "undefined") {
       const loginPage = options.loginPage || "login.html";
@@ -298,18 +248,13 @@
   }
 
   function clearAuth() {
-    currentUser = null;
+    currentAuth = null;
 
     try {
       window.dispatchEvent(
-        new CustomEvent(
-          "albukhrAuthChanged",
-          { detail: null }
-        )
+        new CustomEvent("albukhrAuthChanged", { detail: null })
       );
-    } catch (_) {
-      /* Ignore event errors */
-    }
+    } catch (_) {}
   }
 
   async function logout() {
@@ -325,32 +270,34 @@
     return initialized;
   }
 
-  window.AlbukhrPiAuth = {
+  window.AlbukhrPiAuth = Object.freeze({
     initPi,
     ensurePiAuth,
     getCurrentUser,
+    getAuthContext,
+    getAccessToken,
     isAuthenticated,
     requireAuth,
     clearAuth,
     logout,
     getNetwork,
     isInitialized
-  };
+  });
 
   /*
-   * Temporary compatibility aliases while
-   * remaining ALBUKHR engines are migrated.
+   * Compatibility aliases for engines that have not yet migrated.
    */
   window.initPi = initPi;
   window.ensurePiAuth = ensurePiAuth;
   window.getCurrentUser = getCurrentUser;
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      initPi();
-    },
-    { once: true }
-  );
-
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => { void initPi(); },
+      { once: true }
+    );
+  } else {
+    void initPi();
+  }
 })();
