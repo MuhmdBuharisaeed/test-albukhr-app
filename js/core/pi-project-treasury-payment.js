@@ -1,399 +1,160 @@
-/* =========================================
-   ALBUKHR PI PROJECT TREASURY PAYMENT ADAPTER
+/* =========================================================
+   ALBUKHR PI PROJECT TREASURY PAYMENT ADAPTER v4
    js/core/pi-project-treasury-payment.js
 
-   NEW ARCHITECTURE
-   -----------------------------------------
+   USER/TREASURY FOUNDATION
    U2A: Pioneer -> ALBUKHR App
 
-   Responsibilities:
-   - Add project liquidity through Pi Payment
-   - Authenticate Pioneer through shared Pi SDK
-   - Authenticate administrator through shared
-     ALBUKHR Admin Auth Core
-   - Send treasury operations only to the
-     dedicated backend endpoint
-   - Enforce Mainnet/Testnet isolation
-   - Never write directly to treasury records
-   - Never use LocalStorage
-   - Never contain Supabase credentials
-   - Never create a Supabase client
-
-   Required shared dependencies:
-   - Pi SDK
-   - js/core/pi-auth-core.js
-   - js/core/admin-auth-core.js
-   - shared environment/network resolver
-========================================= */
+   - Uses shared Pi Auth Core.
+   - Uses shared environment resolver.
+   - Sends treasury mutations to backend only.
+   - Never writes treasury rows directly.
+   - Never uses LocalStorage/sessionStorage.
+   - No Supabase client/credentials in this adapter.
+   - No duplicate Pi authentication implementation.
+========================================================= */
 
 "use strict";
 
 (() => {
-
-  /* =========================================
-     CONFIG
-  ========================================= */
-
-  const ENDPOINT =
-    "/api/pi-project-treasury-payment";
-
-  const PAYMENT_MEMO_PREFIX =
-    "ALBUKHR liquidity";
-
-  const ALBUKHR_VERSION =
-    "1.0.0";
-
-  /* =========================================
-     STATE
-  ========================================= */
+  const ENDPOINT = "/api/pi-project-treasury-payment";
+  const PAYMENT_MEMO_PREFIX = "ALBUKHR liquidity";
+  const ALBUKHR_VERSION = "1.0.0";
 
   let paymentBusy = false;
 
-  /* =========================================
-     HELPERS
-  ========================================= */
-
-  function stringValue(
-    value,
-    fallback = ""
-  ) {
-    return value == null
-      ? fallback
-      : String(value);
+  function stringValue(value, fallback = "") {
+    return value == null ? fallback : String(value);
   }
 
-  function numberValue(
-    value,
-    fallback = 0
-  ) {
-    const number =
-      Number(value);
-
-    return Number.isFinite(number)
-      ? number
-      : fallback;
+  function numberValue(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
   }
-
-  /* =========================================
-     NETWORK
-     ========================================= */
 
   function getNetwork() {
-
-    /*
-     * Preferred shared resolver.
-     */
-    if (
-      typeof window.getAlbukhrNetwork ===
-      "function"
-    ) {
-
-      const resolved =
-        window.getAlbukhrNetwork();
-
-      if (
-        resolved === "mainnet" ||
-        resolved === "testnet"
-      ) {
-        return resolved;
-      }
+    if (typeof window.getAlbukhrNetwork !== "function") {
+      throw new Error(
+        "ALBUKHR environment-switcher.js is not loaded."
+      );
     }
-
-    /*
-     * New architecture environment layer.
-     */
-    const candidates = [
-      window.AlbukhrNetwork?.current,
-      window.AlbukhrEnvironment?.current,
-      window.AlbukhrEnvironment?.network,
-      window.ALBUKHR_NETWORK,
-      document.documentElement?.dataset?.network,
-      document.body?.dataset?.network
-    ];
-
-    for (const value of candidates) {
-
-      const normalized =
-        stringValue(value)
-          .toLowerCase()
-          .trim();
-
-      if (
-        normalized === "mainnet" ||
-        normalized === "testnet"
-      ) {
-        return normalized;
-      }
-    }
-
-    /*
-     * Hostname fallback.
-     */
-    const hostname =
-      window.location.hostname
-        .toLowerCase();
-
-    if (
-      hostname === "test.albukhr.com" ||
-      hostname.startsWith("test.")
-    ) {
-      return "testnet";
-    }
-
-    if (
-      hostname === "app.albukhr.com" ||
-      hostname.startsWith("app.")
-    ) {
-      return "mainnet";
-    }
-
-    throw new Error(
-      "ALBUKHR network could not be determined."
-    );
+    return window.getAlbukhrNetwork();
   }
 
-  /* =========================================
-     PI SDK
-     ========================================= */
+  function requirePiAuthCore() {
+    if (!window.AlbukhrPiAuth) {
+      throw new Error(
+        "ALBUKHR Pi Auth Core is not loaded."
+      );
+    }
+    return window.AlbukhrPiAuth;
+  }
 
   function requirePiSdk() {
-
     if (
       !window.Pi ||
-      typeof window.Pi.authenticate !==
-        "function" ||
-      typeof window.Pi.createPayment !==
-        "function"
+      typeof window.Pi.createPayment !== "function"
     ) {
-
       throw new Error(
         "Pi SDK is not available. Open ALBUKHR inside Pi Browser."
       );
     }
-
     return window.Pi;
   }
 
-  /* =========================================
-     ADMIN AUTH
-     ========================================= */
+  /*
+   * Backend authorization is based on the shared Pi auth context.
+   * The previous version incorrectly required an administrator Supabase
+   * session for a Pioneer -> App liquidity operation.
+   */
+  async function getPioneerAuth() {
+    const authCore = requirePiAuthCore();
+    const user = await authCore.ensurePiAuth();
 
-  async function getAdminAccessToken() {
+    if (!user?.uid) {
+      throw new Error("Pi authentication required.");
+    }
 
-    /*
-     * Admin authentication belongs to the
-     * shared admin-auth-core.js layer.
-     */
-    if (
-      typeof window.getAlbukhrAdminSupabaseClient !==
-      "function"
-    ) {
+    const accessToken = authCore.getAccessToken();
 
+    if (!accessToken) {
       throw new Error(
-        "ALBUKHR Admin Auth Core is not loaded."
+        "Pi access token is unavailable. Please authenticate again."
       );
     }
 
-    const client =
-      window.getAlbukhrAdminSupabaseClient();
-
-    if (
-      !client ||
-      !client.auth ||
-      typeof client.auth.getSession !==
-        "function"
-    ) {
-
-      throw new Error(
-        "ALBUKHR Admin Auth Core returned an invalid client."
-      );
-    }
-
-    const {
-      data,
-      error
-    } =
-      await client.auth.getSession();
-
-    if (
-      error ||
-      !data?.session?.access_token
-    ) {
-
-      throw new Error(
-        "Administrator session has expired. Please sign in again."
-      );
-    }
-
-    return data.session.access_token;
+    return {
+      user,
+      accessToken
+    };
   }
 
-  /* =========================================
-     BACKEND REQUEST
-     ========================================= */
+  async function postTreasuryRequest(body, accessToken) {
+    if (!accessToken) {
+      throw new Error("Pi access token is required.");
+    }
 
-  async function postTreasuryRequest(
-    body
-  ) {
+    const response = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(body)
+    });
 
-    const token =
-      await getAdminAccessToken();
+    const contentType = response.headers.get("content-type") || "";
+    let data;
 
-    const response =
-      await fetch(
-        ENDPOINT,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "Accept":
-              "application/json",
-
-            "Authorization":
-              `Bearer ${token}`
-          },
-
-          body:
-            JSON.stringify(body)
-        }
-      );
-
-    const contentType =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    let data = null;
-
-    if (
-      contentType.includes(
-        "application/json"
-      )
-    ) {
-
-      data =
-        await response.json();
-
+    if (contentType.includes("application/json")) {
+      data = await response.json();
     } else {
-
-      const text =
-        await response.text();
-
       data = {
-        success:
-          response.ok,
-
-        message:
-          text
+        success: response.ok,
+        message: await response.text()
       };
     }
 
-    if (
-      !response.ok ||
-      !data?.success
-    ) {
-
+    if (!response.ok || !data?.success) {
       throw new Error(
         data?.error ||
         data?.message ||
-        `Payment backend HTTP ${response.status}`
+        `Treasury backend HTTP ${response.status}.`
       );
     }
 
     return data;
   }
 
-  /* =========================================
-     INCOMPLETE PAYMENT RESOLUTION
-     ========================================= */
-
-  async function resolveIncompletePayment(
-    payment,
-    network
-  ) {
-
+  async function resolveIncompletePayment(payment) {
     const paymentId =
       payment?.identifier ||
       payment?.paymentId;
 
-    if (!paymentId) {
-      return;
-    }
+    if (!paymentId) return;
 
     try {
+      const authCore = requirePiAuthCore();
+      const accessToken = authCore.getAccessToken();
 
-      await postTreasuryRequest({
-        action:
-          "resolve_incomplete",
+      if (!accessToken) return;
 
-        paymentId,
-
-        network
-      });
-
+      await postTreasuryRequest(
+        {
+          action: "resolve_incomplete",
+          paymentId,
+          network: getNetwork()
+        },
+        accessToken
+      );
     } catch (error) {
-
-      /*
-       * This callback must not turn an
-       * unrelated Pi authentication flow
-       * into a hard failure.
-       */
       console.warn(
         "ALBUKHR incomplete payment resolution failed:",
         error
       );
     }
   }
-
-  /* =========================================
-     PI AUTHENTICATION
-     ========================================= */
-
-  async function authenticatePioneer(
-    network
-  ) {
-
-    const Pi =
-      requirePiSdk();
-
-    /*
-     * Authentication is deliberately kept
-     * here at the payment boundary because
-     * Pi payment callbacks need the Pi
-     * access token supplied by authentication.
-     *
-     * No LocalStorage is used.
-     */
-    const auth =
-      await Pi.authenticate(
-        ["username"],
-
-        payment =>
-          resolveIncompletePayment(
-            payment,
-            network
-          )
-      );
-
-    if (
-      !auth?.accessToken ||
-      !auth?.user?.uid
-    ) {
-
-      throw new Error(
-        "Pi authentication failed."
-      );
-    }
-
-    return auth;
-  }
-
-  /* =========================================
-     PAYMENT CREATION
-     ========================================= */
 
   function createPiPayment({
     amount,
@@ -402,318 +163,174 @@
     accessToken,
     network
   }) {
+    const Pi = requirePiSdk();
 
-    const Pi =
-      requirePiSdk();
+    return new Promise((resolve, reject) => {
+      let settled = false;
 
-    return new Promise(
-      (resolve, reject) => {
+      const fail = (error) => {
+        if (settled) return;
+        settled = true;
+        paymentBusy = false;
+        reject(
+          error instanceof Error
+            ? error
+            : new Error(
+                stringValue(error, "Pi payment failed.")
+              )
+        );
+      };
 
-        let settled = false;
+      const succeed = (result) => {
+        if (settled) return;
+        settled = true;
+        paymentBusy = false;
+        resolve(result);
+      };
 
-        function fail(error) {
+      try {
+        const sdkResult = Pi.createPayment(
+          {
+            amount,
+            memo,
+            metadata
+          },
+          {
+            onReadyForServerApproval: async (paymentId) => {
+              try {
+                if (!paymentId) {
+                  throw new Error("Pi payment ID is missing.");
+                }
 
-          if (settled) return;
-
-          settled = true;
-          paymentBusy = false;
-
-          reject(
-            error instanceof Error
-              ? error
-              : new Error(
-                  stringValue(
-                    error,
-                    "Pi payment failed."
-                  )
-                )
-          );
-        }
-
-        function succeed(result) {
-
-          if (settled) return;
-
-          settled = true;
-          paymentBusy = false;
-
-          resolve(result);
-        }
-
-        try {
-
-          const payment =
-            Pi.createPayment(
-              {
-                amount,
-                memo,
-                metadata
-              },
-
-              {
-
-                /* =========================
-                   SERVER APPROVAL
-                ========================= */
-
-                onReadyForServerApproval:
-                  async paymentId => {
-
-                    try {
-
-                      if (!paymentId) {
-
-                        throw new Error(
-                          "Pi payment ID is missing."
-                        );
-                      }
-
-                      await postTreasuryRequest({
-                        action:
-                          "approve",
-
-                        paymentId,
-
-                        accessToken,
-
-                        network,
-
-                        metadata
-                      });
-
-                    } catch (error) {
-
-                      console.error(
-                        "ALBUKHR treasury payment approval failed:",
-                        error
-                      );
-
-                      fail(error);
-                    }
-                  },
-
-                /* =========================
-                   SERVER COMPLETION
-                ========================= */
-
-                onReadyForServerCompletion:
-                  async (
+                await postTreasuryRequest(
+                  {
+                    action: "approve",
                     paymentId,
-                    txid
-                  ) => {
-
-                    try {
-
-                      if (!paymentId) {
-
-                        throw new Error(
-                          "Pi payment ID is missing."
-                        );
-                      }
-
-                      if (!txid) {
-
-                        throw new Error(
-                          "Pi transaction ID is missing."
-                        );
-                      }
-
-                      const result =
-                        await postTreasuryRequest({
-                          action:
-                            "complete",
-
-                          paymentId,
-
-                          txid,
-
-                          accessToken,
-
-                          network,
-
-                          metadata
-                        });
-
-                      succeed({
-                        success:
-                          true,
-
-                        paymentId,
-
-                        txid,
-
-                        network,
-
-                        treasury:
-                          result.treasury,
-
-                        transaction:
-                          result.transaction,
-
-                        payment:
-                          result.payment
-                      });
-
-                    } catch (error) {
-
-                      console.error(
-                        "ALBUKHR treasury payment completion failed:",
-                        error
-                      );
-
-                      fail(error);
-                    }
+                    network,
+                    metadata
                   },
-
-                /* =========================
-                   USER CANCEL
-                ========================= */
-
-                onCancel:
-                  paymentId => {
-
-                    console.warn(
-                      "ALBUKHR Pi payment cancelled:",
-                      paymentId
-                    );
-
-                    fail(
-                      new Error(
-                        "Pi payment was cancelled."
-                      )
-                    );
-                  },
-
-                /* =========================
-                   PI ERROR
-                ========================= */
-
-                onError:
-                  error => {
-
-                    console.error(
-                      "ALBUKHR Pi treasury payment error:",
-                      error
-                    );
-
-                    fail(
-                      error?.message
-                        ? new Error(
-                            error.message
-                          )
-                        : new Error(
-                            "Pi payment failed."
-                          )
-                    );
-                  }
+                  accessToken
+                );
+              } catch (error) {
+                console.error(
+                  "ALBUKHR treasury payment approval failed:",
+                  error
+                );
+                fail(error);
               }
-            );
+            },
 
-          /*
-           * Some Pi SDK implementations return
-           * a Promise from createPayment. Others
-           * rely entirely on callbacks.
-           *
-           * Supporting both avoids an
-           * implementation-specific rejection
-           * from becoming an unhandled promise.
-           */
-          if (
-            payment &&
-            typeof payment.catch ===
-              "function"
-          ) {
+            onReadyForServerCompletion: async (paymentId, txid) => {
+              try {
+                if (!paymentId) {
+                  throw new Error("Pi payment ID is missing.");
+                }
 
-            payment.catch(fail);
+                if (!txid) {
+                  throw new Error("Pi transaction ID is missing.");
+                }
+
+                const result = await postTreasuryRequest(
+                  {
+                    action: "complete",
+                    paymentId,
+                    txid,
+                    network,
+                    metadata
+                  },
+                  accessToken
+                );
+
+                succeed({
+                  success: true,
+                  paymentId,
+                  txid,
+                  network,
+                  treasury: result.treasury,
+                  transaction: result.transaction,
+                  payment: result.payment
+                });
+              } catch (error) {
+                console.error(
+                  "ALBUKHR treasury payment completion failed:",
+                  error
+                );
+                fail(error);
+              }
+            },
+
+            onCancel: (paymentId) => {
+              fail(
+                new Error(
+                  `Pi payment was cancelled${paymentId ? ` (${paymentId})` : ""}.`
+                )
+              );
+            },
+
+            onError: (error) => {
+              fail(
+                error instanceof Error
+                  ? error
+                  : new Error(
+                      error?.message || "Pi payment failed."
+                    )
+              );
+            }
           }
+        );
 
-        } catch (error) {
-
-          fail(error);
+        if (sdkResult && typeof sdkResult.catch === "function") {
+          sdkResult.catch(fail);
         }
+      } catch (error) {
+        fail(error);
       }
-    );
+    });
   }
 
-  /* =========================================
-     ADD PROJECT LIQUIDITY
-     ========================================= */
-
-  async function addProjectLiquidityWithPiPayment(
-    context = {}
-  ) {
-
+  async function addProjectLiquidityWithPiPayment(context = {}) {
     if (paymentBusy) {
-
       return {
-        success:
-          false,
-
-        error:
-          "Another Pi payment is already processing."
+        success: false,
+        error: "Another Pi payment is already processing."
       };
     }
 
-    const amount =
-      numberValue(
-        context.amount
-      );
-
+    const amount = numberValue(context.amount);
     const projectCode =
-      stringValue(
-        context.project_code
-      ).trim();
+      stringValue(context.project_code).trim();
 
     if (amount <= 0) {
-
       return {
-        success:
-          false,
-
-        error:
-          "Invalid Pi liquidity amount."
+        success: false,
+        error: "Invalid Pi liquidity amount."
       };
     }
 
     if (!projectCode) {
-
       return {
-        success:
-          false,
-
-        error:
-          "Project code is required."
+        success: false,
+        error: "Project code is required."
       };
     }
 
     let currentNetwork;
 
     try {
-
-      currentNetwork =
-        getNetwork();
-
+      currentNetwork = getNetwork();
     } catch (error) {
-
       return {
-        success:
-          false,
-
-        error:
-          error.message
+        success: false,
+        error: error.message
       };
     }
 
     if (
       context.network &&
-      context.network !==
-        currentNetwork
+      context.network !== currentNetwork
     ) {
-
       return {
-        success:
-          false,
-
+        success: false,
         error:
           `Network mismatch: current environment is ${currentNetwork}.`
       };
@@ -722,79 +339,37 @@
     paymentBusy = true;
 
     try {
+      const { user, accessToken } = await getPioneerAuth();
 
-      /*
-       * Pioneer authentication.
-       */
-      const auth =
-        await authenticatePioneer(
-          currentNetwork
-        );
-
-      /*
-       * Metadata is sent to the backend.
-       * Treasury writes remain server-side.
-       */
       const metadata = {
-
-        albukhr_version:
-          ALBUKHR_VERSION,
-
-        action:
-          "add_liquidity",
-
-        project_code:
-          projectCode,
-
-        project_name:
-          stringValue(
-            context.project_name ||
-            projectCode
-          ),
-
-        project_type:
-          stringValue(
-            context.project_type ||
-            "core"
-          ),
-
-        network:
-          currentNetwork,
-
+        albukhr_version: ALBUKHR_VERSION,
+        action: "add_liquidity",
+        user_id: user.uid,
+        project_code: projectCode,
+        project_name: stringValue(
+          context.project_name || projectCode
+        ),
+        project_type: stringValue(
+          context.project_type || "core"
+        ),
+        network: currentNetwork,
         amount,
-
-        source:
-          stringValue(
-            context.source ||
-            "universal_project_dashboard"
-          )
+        source: stringValue(
+          context.source || "universal_project_dashboard"
+        )
       };
 
       return await createPiPayment({
-
         amount,
-
-        memo:
-          `${PAYMENT_MEMO_PREFIX}: ${projectCode}`,
-
+        memo: `${PAYMENT_MEMO_PREFIX}: ${projectCode}`,
         metadata,
-
-        accessToken:
-          auth.accessToken,
-
-        network:
-          currentNetwork
-
+        accessToken,
+        network: currentNetwork
       });
-
     } catch (error) {
-
       paymentBusy = false;
-
       return {
-        success:
-          false,
-
+        success: false,
         error:
           error?.message ||
           "Pi liquidity payment failed."
@@ -802,123 +377,69 @@
     }
   }
 
-  /* =========================================
-     WITHDRAWAL
-     ========================================= */
-
   async function withdrawProjectLiquidityWithPiPayment() {
-
     return {
-      success:
-        false,
-
-      error:
-        "Pi treasury withdrawal adapter is not enabled yet."
+      success: false,
+      error: "Pi treasury withdrawal adapter is not enabled yet."
     };
   }
-
-  /* =========================================
-     HEALTH
-     ========================================= */
 
   function albukhrPiPaymentHealth() {
-
-    let currentNetwork =
-      null;
-
-    let networkError =
-      null;
+    let currentNetwork = null;
+    let networkError = null;
 
     try {
-
-      currentNetwork =
-        getNetwork();
-
+      currentNetwork = getNetwork();
     } catch (error) {
-
-      networkError =
-        error.message;
+      networkError = error.message;
     }
 
-    const piReady =
-      !!(
-        window.Pi &&
-        typeof window.Pi.authenticate ===
-          "function" &&
-        typeof window.Pi.createPayment ===
-          "function"
-      );
+    const piReady = Boolean(
+      window.Pi &&
+      typeof window.Pi.authenticate === "function" &&
+      typeof window.Pi.createPayment === "function"
+    );
 
-    const adminAuthReady =
-      typeof window.getAlbukhrAdminSupabaseClient ===
-        "function";
+    const authCoreReady = Boolean(window.AlbukhrPiAuth);
 
     return {
-
       ready:
         piReady &&
-        adminAuthReady &&
+        authCoreReady &&
         !networkError,
-
-      pi_sdk_ready:
-        piReady,
-
-      admin_auth_core_ready:
-        adminAuthReady,
-
-      network:
-        currentNetwork,
-
-      payment_busy:
-        paymentBusy,
-
-      endpoint:
-        ENDPOINT,
-
-      network_error:
-        networkError
+      pi_sdk_ready: piReady,
+      pi_auth_core_ready: authCoreReady,
+      network: currentNetwork,
+      payment_busy: paymentBusy,
+      endpoint: ENDPOINT,
+      network_error: networkError
     };
   }
 
-  /* =========================================
-     PUBLIC API
-     ========================================= */
-
-  const TreasuryPaymentAdapter = {
-
+  window.AlbukhrProjectTreasuryPayment = Object.freeze({
     addProjectLiquidityWithPiPayment,
-
     withdrawProjectLiquidityWithPiPayment,
-
     albukhrPiPaymentHealth,
+    getNetwork
+  });
 
-    getNetwork,
-
-    authenticatePioneer
-  };
-
-  window.AlbukhrProjectTreasuryPayment =
-    TreasuryPaymentAdapter;
-
-  /*
-   * Backward-compatible public names.
-   */
   window.addProjectLiquidityWithPiPayment =
     addProjectLiquidityWithPiPayment;
-
   window.withdrawProjectLiquidityWithPiPayment =
     withdrawProjectLiquidityWithPiPayment;
-
   window.albukhrPiPaymentHealth =
     albukhrPiPaymentHealth;
 
   /*
-   * Signal that the adapter is available.
+   * Incomplete-payment resolution is intentionally exposed only as an
+   * adapter method for the Pi auth callback path, not as a page concern.
    */
+  window.AlbukhrProjectTreasuryPayment.resolveIncompletePayment =
+    resolveIncompletePayment;
+
   window.dispatchEvent(
     new CustomEvent(
       "albukhrProjectTreasuryPaymentReady"
     )
   );
-
 })();
