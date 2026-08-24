@@ -204,10 +204,24 @@
      3. Pi Auth Core
 ========================================================= -->
 
+INDEX.HTML SCRIPT ORDER — KEEP THIS ORDER
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core/environment-switcher.js"></script>
 <script src="js/core/supabase-core.js"></script>
 <script src="js/core/pi-auth-core.js"></script>
+
+The repaired pi-auth-core dynamically loads:
+https://sdk.minepi.com/pi-sdk.js
+
+Therefore an additional Pi SDK tag is optional. If you prefer an explicit
+static loader, place this BEFORE pi-auth-core.js:
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+Do not move environment-switcher.js below supabase-core.js or pi-auth-core.js.
+Do not add an environment switcher to Dock Navigation.
+
 
 <!-- =========================================================
      PAGE DATA / DOMAIN ENGINES
