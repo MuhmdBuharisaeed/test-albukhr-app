@@ -1,10 +1,13 @@
 /* =========================================================
-   ALBUKHR – PROJECT CONFIG / REGISTRY ADAPTER v2
+   ALBUKHR – PROJECT CONFIG / REGISTRY ADAPTER v3
+
    NEW ARCHITECTURE
 
    environment-switcher.js
           ↓
    supabase-core.js
+          ↓
+   projects-engine.js
           ↓
    project-config.js
           ↓
@@ -12,78 +15,72 @@
 
    PURPOSE
    -------
-   This file replaces the legacy static PROJECT_CONFIG source
-   with a network-aware Supabase registry adapter.
+   Compatibility adapter for legacy project-config consumers.
 
-   SOURCE OF TRUTH
-   ---------------
-   public.albukhr_project_registry
+   CANONICAL SOURCE
+   ----------------
+   public.projects, through projects-engine.js.
 
    RULES
    -----
-   - No LocalStorage persistence.
+   - No LocalStorage.
    - No direct Supabase credentials.
-   - Current network comes from ALBUKHR Network Core.
-   - Only active + visible projects are exposed.
-   - Core projects are read from project_type = "core".
-   - Mainnet never reads Testnet records and vice versa.
-   - Data is cached in memory only for the current page lifetime.
-   - Legacy getProjectConfig(name) remains available for compatibility.
-   - Supabase registry data takes precedence over legacy static data.
-
-   IMPORTANT
-   ----------
-   The current database schema does not contain a dedicated
-   "durations" column. The legacy duration values are therefore
-   retained only as compatibility metadata until durations are
-   formally stored in Supabase. They are NOT persisted locally.
+   - No second project registry table.
+   - Mainnet/testnet isolation is inherited from projects-engine.js.
+   - Active + visible core projects are exposed by loadProjectRegistry().
+   - PROJECT_CONFIG is no longer a static source of truth.
+   - Legacy metadata is compatibility-only for fields not yet stored
+     in the canonical project schema.
 ========================================================= */
 
-(function () {
-  "use strict";
+"use strict";
 
-  const REGISTRY_TABLE = "albukhr_project_registry";
+(() => {
 
   /*
-    Compatibility metadata only.
-
-    These values came from the legacy project-config.js supplied
-    for migration. They are not the project source of truth and
-    are not written to LocalStorage.
-  */
+   * Compatibility metadata only.
+   * These values are not persisted and are never used to replace
+   * canonical Supabase project fields when those fields exist.
+   */
   const LEGACY_DURATION_MAP = Object.freeze({
-    Azman: [180, 365, 430],
-    Labbaika: [30, 60, 90],
-    Barsh: [30, 60, 90],
-    Urban: [30, 60, 90],
-    Khairat: [30, 60, 90],
-    Hauwal: [30, 60, 90],
-    Raheem: [30, 60, 90]
+    Azman:[180,365,430],
+    Labbaika:[30,60,90],
+    Barsh:[30,60,90],
+    Urban:[30,60,90],
+    Khairat:[30,60,90],
+    Hauwal:[30,60,90],
+    Raheem:[30,60,90]
   });
 
   const LEGACY_ICON_MAP = Object.freeze({
-    Azman: "🧪",
-    Labbaika: "🍞",
-    Barsh: "🌾",
-    Urban: "🚍",
-    Khairat: "♻️",
-    Hauwal: "🌽",
-    Raheem: "💊"
+    Azman:"🧪",
+    Labbaika:"🍞",
+    Barsh:"🌾",
+    Urban:"🚍",
+    Khairat:"♻️",
+    Hauwal:"🌽",
+    Raheem:"💊"
   });
 
   const LEGACY_DESCRIPTION_MAP = Object.freeze({
     Azman:
       "Long-term science, technology, and innovation project focused on future invention and engineering.",
+
     Labbaika:
       "Food production project focused on modern bread and flour processing.",
+
     Barsh:
       "Mechanized farming and livestock project for large-scale agricultural production.",
+
     Urban:
       "Infrastructure project focused on modern transportation of people and goods.",
+
     Khairat:
       "Agricultural supply project improving fertiliser access and farm productivity.",
+
     Hauwal:
       "Agro-processing project modernizing maize milling into scalable production.",
+
     Raheem:
       "Healthcare project improving access to essential medicines."
   });
@@ -91,16 +88,22 @@
   const LEGACY_INFO_MAP = Object.freeze({
     Azman:
       "Azman supports research labs, prototyping, and advanced engineering capacity building.",
+
     Labbaika:
       "Labbaika enables scalable bakery production within the ALBUKHR ecosystem.",
+
     Barsh:
       "Barsh integrates modern farming, livestock, and sustainable agriculture systems.",
+
     Urban:
       "Urban improves accessibility and builds sustainable mobility networks.",
+
     Khairat:
       "Khairat supports transparent distribution systems and sustainable farming inputs.",
+
     Hauwal:
       "Hauwal focuses on clean processing, packaging, and food system efficiency.",
+
     Raheem:
       "Raheem provides transparent, community-driven pharmaceutical distribution."
   });
@@ -110,72 +113,128 @@
   let loadingPromise = null;
   let lastError = null;
 
-  function safeString(value, fallback = "") {
-    return value === null || value === undefined
-      ? fallback
-      : String(value);
+  /* =========================================
+     DEPENDENCY / NETWORK
+  ========================================= */
+  function requireProjectsEngine(){
+    if(
+      typeof window.loadProjects !== "function" ||
+      typeof window.getProjectByCode !== "function"
+    ){
+      throw new Error(
+        "projects-engine.js must be loaded before project-config.js."
+      );
+    }
   }
 
-  function requireNetwork() {
-    if (typeof window.requireAlbukhrNetwork === "function") {
-      return window.requireAlbukhrNetwork();
+  function resolveNetwork(explicitNetwork){
+    const normalize = value => {
+      const n =
+        String(value || "")
+          .trim()
+          .toLowerCase();
+
+      if(n === "mainnet") return "mainnet";
+      if(n === "testnet") return "testnet";
+
+      return "";
+    };
+
+    const explicit =
+      normalize(explicitNetwork);
+
+    if(explicit){
+      return explicit;
     }
 
-    if (typeof window.getAlbukhrNetwork === "function") {
-      const network = window.getAlbukhrNetwork();
+    const resolvers = [
+      "requireAlbukhrNetwork",
+      "getAlbukhrNetwork",
+      "getAlbukhrCurrentNetwork",
+      "getCurrentAlbukhrNetwork"
+    ];
 
-      if (network === "mainnet" || network === "testnet") {
-        return network;
+    for(const name of resolvers){
+      try{
+        if(typeof window[name] === "function"){
+          const network =
+            normalize(
+              window[name]()
+            );
+
+          if(network){
+            return network;
+          }
+        }
+      }catch(error){
+        console.warn(
+          `project-config: ${name}() failed:`,
+          error
+        );
       }
     }
 
     throw new Error(
-      "ALBUKHR Network Core is not available. Load environment-switcher.js before project-config.js."
+      "ALBUKHR Network Core is unavailable."
     );
   }
 
-  function requireSupabase() {
-    if (typeof window.requireAlbukhrSupabaseClient === "function") {
-      return window.requireAlbukhrSupabaseClient();
-    }
-
-    if (typeof window.getAlbukhrSupabaseClient === "function") {
-      const client = window.getAlbukhrSupabaseClient();
-
-      if (client) {
-        return client;
-      }
-    }
-
-    throw new Error(
-      "ALBUKHR Supabase Core is not available. Load supabase-core.js before project-config.js."
-    );
-  }
-
-  function getCompatibilityMetadata(projectCode) {
+  /* =========================================
+     COMPATIBILITY METADATA
+  ========================================= */
+  function getCompatibilityMetadata(
+    projectCode
+  ){
     return {
-      icon: LEGACY_ICON_MAP[projectCode] || "📦",
+      icon:
+        LEGACY_ICON_MAP[projectCode] ||
+        "📦",
+
       desc:
-        LEGACY_DESCRIPTION_MAP[projectCode] ||
-        "Albukhr Project",
+        LEGACY_DESCRIPTION_MAP[
+          projectCode
+        ] ||
+        "ALBUKHR Project",
+
       info:
-        LEGACY_INFO_MAP[projectCode] ||
+        LEGACY_INFO_MAP[
+          projectCode
+        ] ||
         "Project information not available.",
+
       durations:
-        Array.isArray(LEGACY_DURATION_MAP[projectCode])
-          ? [...LEGACY_DURATION_MAP[projectCode]]
-          : [30, 60, 90]
+        Array.isArray(
+          LEGACY_DURATION_MAP[
+            projectCode
+          ]
+        )
+          ? [
+              ...LEGACY_DURATION_MAP[
+                projectCode
+              ]
+            ]
+          : [30,60,90]
     };
   }
 
-  function normalizeProject(row) {
-    const projectCode = safeString(row?.project_code).trim();
+  function normalizeProject(
+    row
+  ){
+    const projectCode =
+      String(
+        row?.project_code ||
+        row?.code ||
+        ""
+      ).trim();
 
-    if (!projectCode) {
+    if(!projectCode){
       return null;
     }
 
-    const compatibility = getCompatibilityMetadata(projectCode);
+    const compatibility =
+      getCompatibilityMetadata(
+        projectCode
+      );
 
     const metadata =
       row?.metadata &&
@@ -184,213 +243,302 @@
         ? row.metadata
         : {};
 
-    /*
-      If durations are eventually added to registry metadata,
-      use them. Otherwise retain the supplied legacy compatibility
-      values until the schema is formally extended.
-    */
     const metadataDurations =
-      Array.isArray(metadata.durations)
+      Array.isArray(
+        metadata.durations
+      )
         ? metadata.durations
             .map(Number)
-            .filter(Number.isFinite)
+            .filter(
+              Number.isFinite
+            )
         : null;
 
     const durations =
-      metadataDurations && metadataDurations.length
+      metadataDurations &&
+      metadataDurations.length
         ? metadataDurations
-        : compatibility.durations;
+        : (
+            Array.isArray(
+              row.durations
+            )
+              ? row.durations
+                  .map(Number)
+                  .filter(
+                    Number.isFinite
+                  )
+              : compatibility.durations
+          );
 
     const icon =
-      safeString(metadata.icon).trim() ||
+      String(
+        metadata.icon ||
+        row.icon ||
+        ""
+      ).trim() ||
       compatibility.icon;
 
     const desc =
-      safeString(row.description).trim() ||
-      safeString(metadata.desc).trim() ||
+      String(
+        row.description ||
+        row.desc ||
+        metadata.desc ||
+        ""
+      ).trim() ||
       compatibility.desc;
 
     const info =
-      safeString(row.info).trim() ||
-      safeString(metadata.info).trim() ||
-      desc ||
+      String(
+        row.info ||
+        metadata.info ||
+        ""
+      ).trim() ||
       compatibility.info;
 
     return Object.freeze({
-      id: row.id ?? null,
-      project_code: projectCode,
-      code: projectCode,
-      name: safeString(row.project_name, projectCode),
-      title: safeString(row.project_name, projectCode),
-      project_name: safeString(row.project_name, projectCode),
-      project_type: safeString(row.project_type),
-      status: safeString(row.status),
-      network: safeString(row.network),
-      category: safeString(row.category),
-      stage: safeString(row.stage),
-      description: desc,
+      id:row.id ?? null,
+
+      project_code:projectCode,
+      code:projectCode,
+
+      name:
+        row.project_name ||
+        projectCode,
+
+      title:
+        row.project_name ||
+        projectCode,
+
+      project_name:
+        row.project_name ||
+        projectCode,
+
+      project_type:
+        row.project_type ||
+        "core",
+
+      status:
+        row.status ||
+        "active",
+
+      network:
+        row.network ||
+        null,
+
+      category:
+        row.category ||
+        "",
+
+      stage:
+        row.stage ||
+        "",
+
+      description:desc,
       desc,
       info,
       icon,
-      durations: Object.freeze([...durations]),
-      roi: Number(row.roi ?? 0),
-      reward_rate: Number(row.reward_rate ?? 0),
-      reserve_percent: Number(row.reserve_percent ?? 0),
-      min_liquidity: Number(row.min_liquidity ?? 100),
-      project_visible: row.project_visible === true,
-      dashboard_enabled: row.dashboard_enabled === true,
-      transparency_enabled: row.transparency_enabled === true,
-      metadata: Object.freeze({ ...metadata }),
-      created_at: row.created_at ?? null,
-      updated_at: row.updated_at ?? null
+
+      durations:
+        Object.freeze(
+          [...durations]
+        ),
+
+      roi:
+        Number(
+          row.roi ?? 0
+        ),
+
+      reward_rate:
+        row.reward_rate == null
+          ? null
+          : Number(
+              row.reward_rate
+            ),
+
+      reserve_percent:
+        Number(
+          row.reserve_percent ??
+          0.30
+        ),
+
+      min_liquidity:
+        Number(
+          row.min_liquidity ??
+          100
+        ),
+
+      project_visible:
+        row.project_visible !== false,
+
+      dashboard_enabled:
+        row.dashboard_enabled !== false,
+
+      transparency_enabled:
+        row.transparency_enabled !== false,
+
+      metadata:
+        Object.freeze({
+          ...metadata
+        }),
+
+      created_at:
+        row.created_at ??
+        null,
+
+      updated_at:
+        row.updated_at ??
+        null
     });
   }
 
-  async function loadProjectRegistry(options = {}) {
-    const forceRefresh = options.forceRefresh === true;
-    const coreOnly = options.coreOnly !== false;
-    const network = requireNetwork();
+  /* =========================================
+     LOAD CANONICAL REGISTRY
+  ========================================= */
+  async function loadProjectRegistry(
+    options = {}
+  ){
+    requireProjectsEngine();
 
-    if (
+    const forceRefresh =
+      options.forceRefresh === true;
+
+    const coreOnly =
+      options.coreOnly !== false;
+
+    const network =
+      resolveNetwork(
+        options.network
+      );
+
+    if(
       !forceRefresh &&
       loadedNetwork === network &&
       memoryCache.length
-    ) {
+    ){
       return [...memoryCache];
     }
 
-    if (
+    if(
       !forceRefresh &&
       loadingPromise &&
       loadedNetwork === network
-    ) {
-      return loadingPromise;
+    ){
+      return await loadingPromise;
     }
 
     lastError = null;
 
-    loadingPromise = (async function () {
-      const supabase = requireSupabase();
+    loadingPromise =
+      (async () => {
+        const rows =
+          await window.loadProjects(
+            forceRefresh,
+            {network}
+          );
 
-      let query = supabase
-        .from(REGISTRY_TABLE)
-        .select([
-          "id",
-          "project_code",
-          "project_name",
-          "project_type",
-          "status",
-          "description",
-          "category",
-          "stage",
-          "roi",
-          "reward_rate",
-          "reserve_percent",
-          "min_liquidity",
-          "project_visible",
-          "dashboard_enabled",
-          "transparency_enabled",
-          "metadata",
-          "created_at",
-          "updated_at",
-          "network"
-        ].join(","))
-        .eq("network", network)
-        .eq("status", "active")
-        .eq("project_visible", true);
+        let normalized =
+          (Array.isArray(rows)
+            ? rows
+            : []
+          )
+            .filter(
+              project =>
+                project &&
+                project.network === network &&
+                project.status === "active" &&
+                project.project_visible !== false
+            )
+            .filter(
+              project =>
+                !coreOnly ||
+                project.project_type === "core"
+            )
+            .map(normalizeProject)
+            .filter(Boolean);
 
-      if (coreOnly) {
-        query = query.eq("project_type", "core");
-      }
+        /*
+         * Atomic adapter cache replacement.
+         */
+        memoryCache = normalized;
+        loadedNetwork = network;
 
-      query = query.order("project_name", {
-        ascending: true
-      });
+        return [...memoryCache];
+      })();
 
-      const { data, error } = await query;
-
-      if (error) {
-        throw new Error(
-          error.message ||
-          "Failed to load ALBUKHR project registry."
-        );
-      }
-
-      const rows = Array.isArray(data) ? data : [];
-
-      const normalized = rows
-        .map(normalizeProject)
-        .filter(Boolean)
-        .filter(project => project.network === network);
-
-      /*
-        Replace the cache atomically only after a successful query.
-        This prevents a failed refresh from destroying a previously
-        valid in-memory registry.
-      */
-      memoryCache = normalized;
-      loadedNetwork = network;
-
-      return [...memoryCache];
-    })();
-
-    try {
+    try{
       return await loadingPromise;
-    } catch (error) {
+
+    }catch(error){
       lastError =
         error?.message ||
         "Failed to load ALBUKHR project registry.";
 
       /*
-        Do not silently cross networks. A failed query for the
-        current network never returns another network's cache.
-      */
-      if (loadedNetwork !== network) {
+       * Never retain another network's adapter cache.
+       */
+      if(loadedNetwork !== network){
         memoryCache = [];
         loadedNetwork = network;
       }
 
       throw error;
-    } finally {
+
+    }finally{
       loadingPromise = null;
     }
   }
 
-  async function loadCoreProjects(options = {}) {
-    return loadProjectRegistry({
+  async function loadCoreProjects(
+    options = {}
+  ){
+    return await loadProjectRegistry({
       ...options,
-      coreOnly: true
+      coreOnly:true
     });
   }
 
-  async function getProjectByCode(projectCode, options = {}) {
-    const code = safeString(projectCode).trim();
+  /* =========================================
+     LOOKUP
+  ========================================= */
+  async function getRegistryProjectByCode(
+    projectCode,
+    options = {}
+  ){
+    const code =
+      String(
+        projectCode || ""
+      ).trim();
 
-    if (!code) {
+    if(!code){
       return null;
     }
 
-    const projects = await loadProjectRegistry(options);
+    const projects =
+      await loadProjectRegistry(
+        options
+      );
 
     return (
       projects.find(
         project =>
           project.project_code === code ||
           project.code === code
-      ) || null
+      ) ||
+      null
     );
   }
 
   /*
-    Legacy-compatible synchronous accessor.
-
-    IMPORTANT:
-    This function can only return data already loaded into the
-    current page's in-memory cache. It never queries LocalStorage.
-    New controllers should prefer await loadProjectRegistry().
-  */
-  function getProjectConfig(name) {
-    const code = safeString(name).trim();
+   * Legacy-compatible synchronous accessor.
+   * It reads only the current in-memory cache.
+   */
+  function getProjectConfig(
+    name
+  ){
+    const code =
+      String(
+        name || ""
+      ).trim();
 
     const cached =
       memoryCache.find(
@@ -399,81 +547,134 @@
           project.code === code
       );
 
-    if (cached) {
+    if(cached){
       return cached;
     }
 
-    const compatibility = getCompatibilityMetadata(code);
+    const compatibility =
+      getCompatibilityMetadata(
+        code
+      );
 
     return Object.freeze({
-      project_code: code,
+      project_code:code,
       code,
-      name: code,
-      title: code,
-      project_name: code,
-      project_type: "unknown",
-      status: "unknown",
-      network: loadedNetwork,
-      category: "",
-      stage: "",
-      description: compatibility.desc,
-      desc: compatibility.desc,
-      info: compatibility.info,
-      icon: compatibility.icon,
-      durations: Object.freeze([...compatibility.durations]),
-      roi: 0,
-      reward_rate: 0,
-      reserve_percent: 0,
-      min_liquidity: 100,
-      project_visible: false,
-      dashboard_enabled: false,
-      transparency_enabled: false,
-      metadata: Object.freeze({})
+
+      name:code,
+      title:code,
+      project_name:code,
+
+      project_type:"unknown",
+      status:"unknown",
+      network:loadedNetwork,
+
+      category:"",
+      stage:"",
+
+      description:
+        compatibility.desc,
+
+      desc:
+        compatibility.desc,
+
+      info:
+        compatibility.info,
+
+      icon:
+        compatibility.icon,
+
+      durations:
+        Object.freeze(
+          [...compatibility.durations]
+        ),
+
+      roi:0,
+      reward_rate:null,
+
+      reserve_percent:0,
+      min_liquidity:100,
+
+      project_visible:false,
+      dashboard_enabled:false,
+      transparency_enabled:false,
+
+      metadata:
+        Object.freeze({})
     });
   }
 
-  function getLoadedProjects() {
+  function getLoadedProjects(){
     return [...memoryCache];
   }
 
-  function clearProjectRegistryMemory() {
+  function clearProjectRegistryMemory(){
     memoryCache = [];
     loadedNetwork = null;
     lastError = null;
     loadingPromise = null;
   }
 
-  function getProjectRegistryState() {
+  function getProjectRegistryState(){
     return {
-      table: REGISTRY_TABLE,
-      network: loadedNetwork,
-      count: memoryCache.length,
-      loading: !!loadingPromise,
-      last_error: lastError
+      source:"public.projects via projects-engine.js",
+
+      network:loadedNetwork,
+
+      count:
+        memoryCache.length,
+
+      loading:
+        !!loadingPromise,
+
+      last_error:
+        lastError
     };
   }
 
+  /* =========================================
+     LEGACY PROJECT_CONFIG SURFACE
+  ========================================= */
+  const PROJECT_CONFIG =
+    Object.freeze({});
+
+  window.PROJECT_CONFIG =
+    PROJECT_CONFIG;
+
+  window.loadProjectRegistry =
+    loadProjectRegistry;
+
+  window.loadCoreProjects =
+    loadCoreProjects;
+
+  window.getRegistryProjectByCode =
+    getRegistryProjectByCode;
+
   /*
-    Compatibility surface.
+   * Do not overwrite the canonical projects-engine
+   * getProjectByCode(). This removes the previous global
+   * function collision between two project registries.
+   */
+  if(
+    typeof window.getProjectByCode !== "function"
+  ){
+    window.getProjectByCode =
+      getRegistryProjectByCode;
+  }
 
-    PROJECT_CONFIG is intentionally no longer the source of truth.
-    It is exposed as an empty immutable object so old code that
-    checks for its existence does not crash. Consumers must use
-    loadProjectRegistry()/getProjectConfig().
-  */
-  const PROJECT_CONFIG = Object.freeze({});
+  window.getProjectConfig =
+    getProjectConfig;
 
-  window.PROJECT_CONFIG = PROJECT_CONFIG;
+  window.getLoadedProjects =
+    getLoadedProjects;
 
-  window.loadProjectRegistry = loadProjectRegistry;
-  window.loadCoreProjects = loadCoreProjects;
-  window.getProjectByCode = getProjectByCode;
-  window.getProjectConfig = getProjectConfig;
-  window.getLoadedProjects = getLoadedProjects;
-  window.clearProjectRegistryMemory = clearProjectRegistryMemory;
-  window.getProjectRegistryState = getProjectRegistryState;
+  window.clearProjectRegistryMemory =
+    clearProjectRegistryMemory;
+
+  window.getProjectRegistryState =
+    getProjectRegistryState;
 
   console.log(
     "ALBUKHR Project Config / Registry Adapter loaded."
   );
+
 })();
