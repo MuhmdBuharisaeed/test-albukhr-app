@@ -1,9 +1,9 @@
-/* =========================================
-   ALBUKHR PI AUTH CORE v2.1
+/* =========================================================
+   ALBUKHR PI AUTH CORE v3
    File:
    js/core/pi-auth-core.js
 
-   PURPOSE:
+   PURPOSE
    - Stable Pi SDK loading / initialization
    - Shared Pi authentication
    - Shared in-memory authenticated-user state
@@ -12,64 +12,103 @@
    - No Supabase credentials
    - No page-specific redirect logic
 
-   REPAIR:
-   - Waits for the official Pi SDK before Pi.init().
-   - Dynamically loads the official SDK when necessary.
-   - Retries transient authentication/startup failures.
-   - Does not convert SDK startup failure into an automatic
-     redirect through requireAuth().
-========================================= */
+   NETWORK RULE
+   - ALBUKHR Network Core is the canonical resolver.
+   - This file does not create or overwrite a competing
+     mainnet/testnet resolver.
+   - Pi sandbox mode is derived from the resolved network.
+
+   LOAD ORDER
+   environment-switcher.js
+        ↓
+   js/core/pi-auth-core.js
+        ↓
+   page authentication controller
+========================================================= */
 
 "use strict";
 
 (() => {
 
   const PI_SDK_VERSION = "2.0";
-  const PI_SDK_URL = "https://sdk.minepi.com/pi-sdk.js";
+  const PI_SDK_URL =
+    "https://sdk.minepi.com/pi-sdk.js";
 
   const SDK_WAIT_TIMEOUT_MS = 15000;
   const SDK_POLL_MS = 100;
+
   const AUTH_RETRIES = 2;
   const AUTH_RETRY_DELAY_MS = 700;
 
   let initialized = false;
   let initializedNetwork = null;
+
   let initializing = null;
   let authenticating = null;
+
   let currentUser = null;
   let sdkLoadPromise = null;
 
-  function getEnvironment() {
-    try {
-      if (typeof window.getAlbukhrNetwork === "function") {
-        const resolved = window.getAlbukhrNetwork();
-        if (resolved === "mainnet" || resolved === "testnet") {
-          return resolved;
-        }
-      }
-    } catch (_) {}
+  /* =========================================
+     NETWORK
+  ========================================= */
+  function normalizeNetwork(value){
+    const network =
+      String(value || "")
+        .trim()
+        .toLowerCase();
 
-    const hostname =
-      String(window.location.hostname || "").trim().toLowerCase();
+    if(network === "mainnet") return "mainnet";
+    if(network === "testnet") return "testnet";
 
-    if (
-      hostname === "test.albukhr.com" ||
-      hostname.startsWith("test.") ||
-      hostname === "dev.albukhr.com" ||
-      hostname.startsWith("dev.")
-    ) {
-      return "testnet";
-    }
-
-    return "mainnet";
+    return "";
   }
 
-  function isSandboxEnvironment() {
+  function getEnvironment(){
+    const resolvers = [
+      "requireAlbukhrNetwork",
+      "getAlbukhrNetwork",
+      "getAlbukhrCurrentNetwork",
+      "getCurrentAlbukhrNetwork"
+    ];
+
+    for(const name of resolvers){
+      try{
+        if(typeof window[name] === "function"){
+          const resolved =
+            normalizeNetwork(
+              window[name]()
+            );
+
+          if(resolved){
+            return resolved;
+          }
+        }
+      }catch(error){
+        console.warn(
+          `ALBUKHR Pi Auth: ${name}() failed:`,
+          error
+        );
+      }
+    }
+
+    throw new Error(
+      "ALBUKHR Network Core is unavailable. " +
+      "Load environment-switcher.js before pi-auth-core.js."
+    );
+  }
+
+  function isSandboxEnvironment(){
     return getEnvironment() === "testnet";
   }
 
-  function getPiSDK() {
-    if (typeof window === "undefined") return null;
+  /* =========================================
+     PI SDK
+  ========================================= */
+  function getPiSDK(){
+    if(typeof window === "undefined"){
+      return null;
+    }
 
     return (
       window.Pi &&
@@ -79,7 +118,7 @@
       : null;
   }
 
-  function isPiSDKReady() {
+  function isPiSDKReady(){
     const Pi = getPiSDK();
 
     return !!(
@@ -89,22 +128,22 @@
     );
   }
 
-  function requirePiSDK() {
+  function requirePiSDK(){
     const Pi = getPiSDK();
 
-    if (!Pi) {
+    if(!Pi){
       throw new Error(
         "Pi SDK is unavailable. Open ALBUKHR inside Pi Browser."
       );
     }
 
-    if (typeof Pi.init !== "function") {
+    if(typeof Pi.init !== "function"){
       throw new Error(
         "Pi SDK initialization API is unavailable."
       );
     }
 
-    if (typeof Pi.authenticate !== "function") {
+    if(typeof Pi.authenticate !== "function"){
       throw new Error(
         "Pi SDK authentication API is unavailable."
       );
@@ -113,166 +152,215 @@
     return Pi;
   }
 
-  function loadPiSDK() {
-    if (isPiSDKReady()) {
-      return Promise.resolve(getPiSDK());
+  function loadPiSDK(){
+    if(isPiSDKReady()){
+      return Promise.resolve(
+        getPiSDK()
+      );
     }
 
-    if (sdkLoadPromise) {
+    if(sdkLoadPromise){
       return sdkLoadPromise;
     }
 
-    sdkLoadPromise = new Promise((resolve, reject) => {
-      let settled = false;
+    sdkLoadPromise =
+      new Promise((resolve, reject) => {
+        let settled = false;
 
-      const finishResolve = (Pi) => {
-        if (settled) return;
-        settled = true;
-        resolve(Pi);
-      };
+        const finishResolve = (Pi) => {
+          if(settled) return;
 
-      const finishReject = (error) => {
-        if (settled) return;
-        settled = true;
-        reject(
-          error instanceof Error
-            ? error
-            : new Error(String(error || "Unable to load Pi SDK."))
-        );
-      };
+          settled = true;
+          resolve(Pi);
+        };
 
-      const started = Date.now();
+        const finishReject = (error) => {
+          if(settled) return;
 
-      const poll = () => {
-        if (isPiSDKReady()) {
-          finishResolve(getPiSDK());
-          return;
-        }
+          settled = true;
 
-        if (Date.now() - started >= SDK_WAIT_TIMEOUT_MS) {
-          finishReject(
-            new Error(
-              "Pi SDK did not become available within the expected time."
-            )
+          reject(
+            error instanceof Error
+              ? error
+              : new Error(
+                  String(
+                    error ||
+                    "Unable to load Pi SDK."
+                  )
+                )
           );
-          return;
-        }
+        };
 
-        window.setTimeout(poll, SDK_POLL_MS);
-      };
+        const started = Date.now();
 
-      poll();
+        const poll = () => {
+          if(isPiSDKReady()){
+            finishResolve(
+              getPiSDK()
+            );
 
-      try {
-        const existing = document.querySelector(
-          'script[data-albukhr-pi-sdk="true"]'
-        );
-
-        if (existing) return;
-
-        const script = document.createElement("script");
-        script.src = PI_SDK_URL;
-        script.async = true;
-        script.defer = true;
-        script.dataset.albukhrPiSdk = "true";
-
-        script.onload = () => {
-          if (isPiSDKReady()) {
-            finishResolve(getPiSDK());
+            return;
           }
-        };
 
-        script.onerror = () => {
-          console.warn(
-            "ALBUKHR: Pi SDK script load reported an error; continuing to wait for Pi Browser SDK."
+          if(
+            Date.now() - started >=
+            SDK_WAIT_TIMEOUT_MS
+          ){
+            finishReject(
+              new Error(
+                "Pi SDK did not become available within the expected time."
+              )
+            );
+
+            return;
+          }
+
+          window.setTimeout(
+            poll,
+            SDK_POLL_MS
           );
         };
 
-        (
-          document.head ||
-          document.documentElement
-        ).appendChild(script);
+        poll();
 
-      } catch (error) {
-        console.warn(
-          "ALBUKHR: Pi SDK dynamic loader failed:",
-          error
-        );
-      }
-    }).finally(() => {
-      sdkLoadPromise = null;
-    });
+        try{
+          const existing =
+            document.querySelector(
+              'script[data-albukhr-pi-sdk="true"]'
+            );
+
+          if(existing){
+            return;
+          }
+
+          const script =
+            document.createElement(
+              "script"
+            );
+
+          script.src = PI_SDK_URL;
+          script.async = true;
+          script.defer = true;
+
+          script.dataset.albukhrPiSdk =
+            "true";
+
+          script.onload = () => {
+            if(isPiSDKReady()){
+              finishResolve(
+                getPiSDK()
+              );
+            }
+          };
+
+          script.onerror = () => {
+            console.warn(
+              "ALBUKHR: Pi SDK script load reported an error; continuing to wait for Pi Browser SDK."
+            );
+          };
+
+          (
+            document.head ||
+            document.documentElement
+          ).appendChild(script);
+
+        }catch(error){
+          console.warn(
+            "ALBUKHR: Pi SDK dynamic loader failed:",
+            error
+          );
+        }
+      })
+      .finally(() => {
+        sdkLoadPromise = null;
+      });
 
     return sdkLoadPromise;
   }
 
-  async function initPi() {
-    const network = getEnvironment();
+  /* =========================================
+     PI INITIALIZATION
+  ========================================= */
+  async function initPi(){
+    const network =
+      getEnvironment();
 
-    if (
+    if(
       initialized &&
       initializedNetwork === network &&
       isPiSDKReady()
-    ) {
+    ){
       return true;
     }
 
-    if (initializing) {
+    if(initializing){
       return initializing;
     }
 
-    initializing = (async () => {
-      try {
-        const Pi = await loadPiSDK();
+    initializing =
+      (async () => {
+        try{
+          const Pi =
+            await loadPiSDK();
 
-        if (!Pi) {
-          throw new Error("Pi SDK object was not returned.");
-        }
-
-        const sandbox = network === "testnet";
-
-        Pi.init({
-          version: PI_SDK_VERSION,
-          sandbox
-        });
-
-        initialized = true;
-        initializedNetwork = network;
-
-        console.log(
-          "ALBUKHR Pi SDK initialized:",
-          {
-            version: PI_SDK_VERSION,
-            network,
-            sandbox
+          if(!Pi){
+            throw new Error(
+              "Pi SDK object was not returned."
+            );
           }
-        );
 
-        return true;
+          const sandbox =
+            network === "testnet";
 
-      } catch (error) {
-        initialized = false;
-        initializedNetwork = null;
+          Pi.init({
+            version:PI_SDK_VERSION,
+            sandbox
+          });
 
-        console.error(
-          "ALBUKHR Pi initialization failed:",
-          error
-        );
+          initialized = true;
+          initializedNetwork = network;
 
-        return false;
+          console.log(
+            "ALBUKHR Pi SDK initialized:",
+            {
+              version:PI_SDK_VERSION,
+              network,
+              sandbox
+            }
+          );
 
-      } finally {
-        initializing = null;
-      }
-    })();
+          return true;
+
+        }catch(error){
+          initialized = false;
+          initializedNetwork = null;
+
+          console.error(
+            "ALBUKHR Pi initialization failed:",
+            error
+          );
+
+          return false;
+
+        }finally{
+          initializing = null;
+        }
+      })();
 
     return initializing;
   }
 
-  function normalizeUser(auth) {
-    if (!auth) return null;
+  /* =========================================
+     USER NORMALIZATION
+  ========================================= */
+  function normalizeUser(auth){
+    if(!auth){
+      return null;
+    }
 
-    const source = auth.user || auth;
+    const source =
+      auth.user ||
+      auth;
 
     const uid =
       source.uid ||
@@ -291,31 +379,41 @@
       auth.walletAddress ||
       "";
 
-    if (!uid) return null;
+    if(!uid){
+      return null;
+    }
 
     return {
-      uid: String(uid),
-      username: username ? String(username) : "",
-      wallet_address: walletAddress
-        ? String(walletAddress)
-        : ""
+      uid:String(uid),
+
+      username:
+        username
+          ? String(username)
+          : "",
+
+      wallet_address:
+        walletAddress
+          ? String(walletAddress)
+          : ""
     };
   }
 
-  function handleIncompletePayment(payment) {
+  function handleIncompletePayment(payment){
     console.log(
       "ALBUKHR Pi incomplete payment:",
       payment
     );
 
-    try {
+    try{
       window.dispatchEvent(
         new CustomEvent(
           "albukhrPiIncompletePayment",
-          { detail: payment }
+          {
+            detail:payment
+          }
         )
       );
-    } catch (error) {
+    }catch(error){
       console.warn(
         "ALBUKHR payment event dispatch failed:",
         error
@@ -323,14 +421,21 @@
     }
   }
 
-  async function authenticateOnce() {
-    const ready = await initPi();
+  /* =========================================
+     AUTHENTICATION
+  ========================================= */
+  async function authenticateOnce(){
+    const ready =
+      await initPi();
 
-    if (!ready) {
-      throw new Error("Pi SDK initialization failed.");
+    if(!ready){
+      throw new Error(
+        "Pi SDK initialization failed."
+      );
     }
 
-    const Pi = requirePiSDK();
+    const Pi =
+      requirePiSDK();
 
     const scopes = [
       "username",
@@ -338,19 +443,21 @@
       "wallet_address"
     ];
 
-    const auth = await Pi.authenticate(
-      scopes,
-      handleIncompletePayment
-    );
+    const auth =
+      await Pi.authenticate(
+        scopes,
+        handleIncompletePayment
+      );
 
     console.log(
       "ALBUKHR Pi authentication response:",
       auth
     );
 
-    const user = normalizeUser(auth);
+    const user =
+      normalizeUser(auth);
 
-    if (!user?.uid) {
+    if(!user?.uid){
       throw new Error(
         "Pi authentication returned no valid UID."
       );
@@ -358,200 +465,266 @@
 
     return {
       ...user,
-      network: getEnvironment(),
-      accessToken: auth?.accessToken || ""
+
+      network:
+        getEnvironment(),
+
+      /*
+       * Kept in memory only.
+       * It is never persisted to LocalStorage.
+       */
+      accessToken:
+        auth?.accessToken || ""
     };
   }
 
-  async function ensurePiAuth() {
-    if (currentUser) {
-      if (currentUser.network === getEnvironment()) {
+  async function ensurePiAuth(){
+    const network =
+      getEnvironment();
+
+    if(currentUser){
+      if(
+        currentUser.network ===
+        network
+      ){
         return currentUser;
       }
 
       currentUser = null;
     }
 
-    if (authenticating) {
+    if(authenticating){
       return authenticating;
     }
 
-    authenticating = (async () => {
-      let lastError = null;
+    authenticating =
+      (async () => {
+        let lastError = null;
 
-      try {
-        for (
-          let attempt = 0;
-          attempt <= AUTH_RETRIES;
-          attempt++
-        ) {
-          try {
-            const user = await authenticateOnce();
+        try{
+          for(
+            let attempt = 0;
+            attempt <= AUTH_RETRIES;
+            attempt++
+          ){
+            try{
+              const user =
+                await authenticateOnce();
 
-            currentUser = Object.freeze(user);
+              currentUser =
+                Object.freeze(user);
 
-            console.log(
-              "ALBUKHR authenticated user:",
-              currentUser
-            );
-
-            try {
-              window.dispatchEvent(
-                new CustomEvent(
-                  "albukhrAuthChanged",
-                  { detail: currentUser }
-                )
+              console.log(
+                "ALBUKHR authenticated user:",
+                currentUser
               );
-            } catch (eventError) {
-              console.warn(
-                "ALBUKHR auth event dispatch failed:",
-                eventError
-              );
-            }
 
-            return currentUser;
-
-          } catch (error) {
-            lastError = error;
-
-            console.warn(
-              `ALBUKHR authentication attempt ${attempt + 1} failed:`,
-              error
-            );
-
-            if (attempt < AUTH_RETRIES) {
-              await new Promise((resolve) => {
-                window.setTimeout(
-                  resolve,
-                  AUTH_RETRY_DELAY_MS
+              try{
+                window.dispatchEvent(
+                  new CustomEvent(
+                    "albukhrAuthChanged",
+                    {
+                      detail:currentUser
+                    }
+                  )
                 );
-              });
+              }catch(eventError){
+                console.warn(
+                  "ALBUKHR auth event dispatch failed:",
+                  eventError
+                );
+              }
+
+              return currentUser;
+
+            }catch(error){
+              lastError = error;
+
+              console.warn(
+                `ALBUKHR authentication attempt ${attempt + 1} failed:`,
+                error
+              );
+
+              if(
+                attempt <
+                AUTH_RETRIES
+              ){
+                await new Promise(
+                  resolve => {
+                    window.setTimeout(
+                      resolve,
+                      AUTH_RETRY_DELAY_MS
+                    );
+                  }
+                );
+              }
             }
           }
-        }
 
-        currentUser = null;
+          currentUser = null;
 
-        console.error(
-          "ALBUKHR Pi authentication failed after retries:",
-          lastError
-        );
-
-        try {
-          window.dispatchEvent(
-            new CustomEvent(
-              "albukhrAuthFailed",
-              {
-                detail: {
-                  error:
-                    lastError?.message ||
-                    String(
-                      lastError ||
-                      "Pi authentication failed."
-                    )
-                }
-              }
-            )
+          console.error(
+            "ALBUKHR Pi authentication failed after retries:",
+            lastError
           );
-        } catch (_) {}
 
-        return null;
+          try{
+            window.dispatchEvent(
+              new CustomEvent(
+                "albukhrAuthFailed",
+                {
+                  detail:{
+                    error:
+                      lastError?.message ||
+                      String(
+                        lastError ||
+                        "Pi authentication failed."
+                      )
+                  }
+                }
+              )
+            );
+          }catch(_){}
 
-      } finally {
-        authenticating = null;
-      }
-    })();
+          return null;
+
+        }finally{
+          authenticating = null;
+        }
+      })();
 
     return authenticating;
   }
 
-  function getCurrentUser() {
+  /* =========================================
+     AUTH STATE
+  ========================================= */
+  function getCurrentUser(){
     return currentUser;
   }
 
-  function isAuthenticated() {
-    return Boolean(currentUser?.uid);
+  function isAuthenticated(){
+    return Boolean(
+      currentUser?.uid
+    );
   }
 
-  async function requireAuth(options = {}) {
+  async function requireAuth(
+    options = {}
+  ){
     /*
-     * Redirect is now opt-in.
-     * Page controllers should call ensurePiAuth()
-     * when they want authentication without a forced
-     * navigation.
+     * Redirect is opt-in.
+     * Page controllers decide whether they need
+     * navigation after authentication failure.
      */
-    const redirect = options.redirect === true;
+    const redirect =
+      options.redirect === true;
 
-    if (isAuthenticated()) {
+    if(isAuthenticated()){
       return currentUser;
     }
 
-    const user = await ensurePiAuth();
+    const user =
+      await ensurePiAuth();
 
-    if (user) {
+    if(user){
       return user;
     }
 
-    if (
+    if(
       redirect &&
       typeof window !== "undefined"
-    ) {
+    ){
       const loginPage =
-        options.loginPage || "login.html";
+        options.loginPage ||
+        "login.html";
 
-      window.location.replace(loginPage);
+      window.location.replace(
+        loginPage
+      );
     }
 
     return null;
   }
 
-  function clearAuth() {
+  function clearAuth(){
     currentUser = null;
 
-    try {
+    try{
       window.dispatchEvent(
         new CustomEvent(
           "albukhrAuthChanged",
-          { detail: null }
+          {
+            detail:null
+          }
         )
       );
-    } catch (_) {}
+    }catch(_){}
   }
 
-  async function logout() {
+  async function logout(){
     clearAuth();
     return true;
   }
 
-  function getNetwork() {
+  function getNetwork(){
     return getEnvironment();
   }
 
-  function isInitialized() {
+  function isInitialized(){
     return initialized;
   }
 
-  function getAuthStatus() {
+  function getAuthStatus(){
+    let currentNetwork = null;
+    let networkError = null;
+
+    try{
+      currentNetwork =
+        getEnvironment();
+    }catch(error){
+      networkError =
+        error?.message ||
+        "Network unavailable";
+    }
+
     return {
       initialized,
       initializedNetwork,
-      currentNetwork: getEnvironment(),
-      sdkReady: isPiSDKReady(),
-      authenticated: isAuthenticated(),
-      uid: currentUser?.uid || null,
-      username: currentUser?.username || null
+      currentNetwork,
+
+      network_error:
+        networkError,
+
+      sdkReady:
+        isPiSDKReady(),
+
+      authenticated:
+        isAuthenticated(),
+
+      uid:
+        currentUser?.uid || null,
+
+      username:
+        currentUser?.username || null
     };
   }
 
+  /* =========================================
+     GLOBAL API
+  ========================================= */
   window.AlbukhrPiAuth = {
     initPi,
     loadPiSDK,
     ensurePiAuth,
+
     getCurrentUser,
     isAuthenticated,
     requireAuth,
+
     clearAuth,
     logout,
+
     getNetwork,
     isInitialized,
     isPiSDKReady,
@@ -562,26 +735,40 @@
   window.ensurePiAuth = ensurePiAuth;
   window.getCurrentUser = getCurrentUser;
   window.isPiSDKReady = isPiSDKReady;
-  window.getAlbukhrPiAuthStatus = getAuthStatus;
+  window.getAlbukhrPiAuthStatus =
+    getAuthStatus;
 
-  function preparePiSDK() {
-    loadPiSDK()
-      .then(() => initPi())
-      .catch((error) => {
-        console.warn(
-          "ALBUKHR Pi SDK preparation failed:",
-          error
-        );
-      });
+  /* =========================================
+     SDK PREPARATION
+  ========================================= */
+  function preparePiSDK(){
+    try{
+      loadPiSDK()
+        .then(() => initPi())
+        .catch(error => {
+          console.warn(
+            "ALBUKHR Pi SDK preparation failed:",
+            error
+          );
+        });
+    }catch(error){
+      console.warn(
+        "ALBUKHR Pi SDK preparation skipped:",
+        error
+      );
+    }
   }
 
-  if (document.readyState === "loading") {
+  if(
+    document.readyState ===
+    "loading"
+  ){
     document.addEventListener(
       "DOMContentLoaded",
       preparePiSDK,
-      { once: true }
+      {once:true}
     );
-  } else {
+  }else{
     preparePiSDK();
   }
 
