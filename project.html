@@ -216,6 +216,14 @@ Cancel
 </div>
 </div>
   
+<!-- 1. PI SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- 2. AUTH -->
+<script src="js/pi-auth.js"></script>
+
+<!-- 3. PAYMENT (NEW) -->
+<script src="js/pi-payment.js"></script>
 
 <!-- 4. INIT -->
 <script>
@@ -232,59 +240,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 
-<!-- =========================================
-     PI SDK
-========================================= -->
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<!-- 5. OTHER FILES -->
+<script src="js/project-config.js"></script>
+<script src="js/unified-transactions.js"></script>
+<script src="js/albukhr-transaction-engine.js"></script>
+<script src="js/smart-liquidity-engine.js"></script>
+<script src="js/staking.js"></script>
 
-<!-- =========================================
-     SUPABASE SDK
-========================================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- =========================================
-     ALBUKHR NETWORK FOUNDATION
-========================================= -->
-<script src="js/environment-switcher.js"></script>
-<script src="js/supabase-core.js"></script>
+<script>
+const supabase = window.supabase.createClient(
+  "https://qexmnghilahsvethlxem.supabase.co",
+  "sb_publishable_mSbWlhVKdmSjasKJC50QYw_5wzgRMe2"
+);
+</script>
 
-<!-- =========================================
-     PI AUTH
-========================================= -->
-<script src="js/pi-auth.js"></script>
-
-<!-- =========================================
-     PI PAYMENT
-========================================= -->
-<script src="js/pi-payment.js"></script>
-
-<!-- =========================================
-     PROJECT CONFIG
-========================================= -->
-<script src="js/project-config.js"></script>
-
-<!-- =========================================
-     ALBUKHR ENGINES
-========================================= -->
-<script src="js/payments/transaction-engine.js"></script>
-<script src="js/projects/smart-liquidity-engine.js"></script>
-<script src="js/staking/staking-engine.js"></script>
-<script src="js/withdrawals/withdraw-engine.js"></script>
-<script src="js/treasury/project-treasury.js"></script>
-<script src="js/projects/projects-engine.js"></script>
-<!-- =========================================
-     UI ALERT
-========================================= -->
+<script src="js/withdraw.js"></script>
+<!-- Custom App Alert -->
 <script src="js/app-alert.js"></script>
 
-<!-- =========================================
-     PROJECT CONTROLLER
-========================================= -->
-<script src="js/pages/project-page.js"></script>
-
-<!-- =========================================
-     APP ALERT UI
-========================================= -->
 <div id="appAlert" class="app-alert">
 
   <div class="app-alert-box">
@@ -302,6 +277,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   </div>
 
 </div>
+
+<script src="js/project.js"></script>
   
 </body>
   </html>
