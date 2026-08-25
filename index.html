@@ -13,70 +13,199 @@
 <link rel="stylesheet" href="css/side-drower.css">
 
 <style>
-.header-right{display:flex;align-items:center;gap:10px}
-.user-box{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;max-width:80px}
-#piUser{font-size:10px;margin-top:2px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.header-right{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* USER BOX */
+.user-box{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;   /* 👈 KEY FIX */
+  justify-content: center;
+  max-width: 80px;
+}
+
+/* USERNAME */
+#piUser{
+  font-size: 10px;
+  margin-top: 2px;
+  color: #fff;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  text-align: right;   /* 👈 KEY FIX */
+}
+
+/* =========================================
+   ALBUKHR – ENVIRONMENT SWITCHER
+   SIDE DRAWER HEADER
+========================================= */
 
 .environment-switcher{
-  display:flex;align-items:center;justify-content:center;gap:5px;min-width:68px;height:28px;
-  padding:4px 8px;border:1px solid rgba(255,255,255,.35);border-radius:20px;
-  background:rgba(255,255,255,.10);color:#fff;font-size:9px;font-weight:800;
-  letter-spacing:.5px;cursor:pointer;user-select:none;appearance:none;-webkit-appearance:none;
-  transition:background .2s ease,transform .2s ease,border-color .2s ease
-}
-.environment-switcher:hover{background:rgba(255,255,255,.18)}
-.environment-switcher:active{transform:scale(.95)}
-.environment-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#f0ad00;box-shadow:0 0 0 2px rgba(240,173,0,.15)}
-#environmentLabel{line-height:1;white-space:nowrap}
-.environment-switcher.mainnet{border-color:rgba(25,179,107,.55)}
-.environment-switcher.mainnet .environment-dot{background:#19b36b;box-shadow:0 0 0 2px rgba(25,179,107,.16)}
-.environment-switcher.testnet{border-color:rgba(240,173,0,.55)}
-.environment-switcher.testnet .environment-dot{background:#f0ad00;box-shadow:0 0 0 2px rgba(240,173,0,.16)}
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
 
-.project-logo{
-  width:46px;height:46px;flex:0 0 46px;border-radius:12px;object-fit:cover;
-  background:#f3f5f4;border:1px solid rgba(15,122,61,.10);
-  display:block;
+  min-width:68px;
+  height:28px;
+
+  padding:4px 8px;
+
+  border:1px solid rgba(255,255,255,0.35);
+  border-radius:20px;
+
+  background:rgba(255,255,255,0.10);
+
+  color:#fff;
+
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.5px;
+
+  cursor:pointer;
+  user-select:none;
+
+  appearance:none;
+  -webkit-appearance:none;
+
+  transition:
+    background .2s ease,
+    transform .2s ease,
+    border-color .2s ease;
 }
-.project-logo.logo-fallback{
-  object-fit:contain;padding:7px;background:#f7f8f7;
+
+.environment-switcher:hover{
+  background:rgba(255,255,255,0.18);
 }
-.popular-card .project-logo{width:44px;height:44px;flex-basis:44px;border-radius:11px}
-.asset-item .project-logo{margin-right:10px}
-.project-logo[hidden]{display:none}
-.project-logo-placeholder{
-  width:46px;height:46px;flex:0 0 46px;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  background:#f3f5f4;color:#777;font-size:10px;font-weight:700;
-  border:1px solid rgba(15,122,61,.10);
+
+.environment-switcher:active{
+  transform:scale(.95);
 }
-.popular-card .project-logo-placeholder{width:44px;height:44px;flex-basis:44px;border-radius:11px}
+
+
+/* =========================================
+   ENVIRONMENT DOT
+========================================= */
+
+.environment-dot{
+  width:7px;
+  height:7px;
+
+  flex:0 0 7px;
+
+  border-radius:50%;
+
+  background:#f0ad00;
+
+  box-shadow:
+    0 0 0 2px rgba(240,173,0,.15);
+}
+
+
+/* =========================================
+   ENVIRONMENT LABEL
+========================================= */
+
+#environmentLabel{
+  line-height:1;
+  white-space:nowrap;
+}
+
+
+/* =========================================
+   MAINNET
+========================================= */
+
+.environment-switcher.mainnet{
+  border-color:rgba(25,179,107,.55);
+}
+
+.environment-switcher.mainnet
+.environment-dot{
+  background:#19b36b;
+
+  box-shadow:
+    0 0 0 2px rgba(25,179,107,.16);
+}
+
+
+/* =========================================
+   TESTNET
+========================================= */
+
+.environment-switcher.testnet{
+  border-color:rgba(240,173,0,.55);
+}
+
+.environment-switcher.testnet
+.environment-dot{
+  background:#f0ad00;
+
+  box-shadow:
+    0 0 0 2px rgba(240,173,0,.16);
+  }
 </style>
+
 </head>
 
 <body data-page="home">
 
-<header class="header">
-  <div class="header-left"><span class="brand">ALBUKHR</span></div>
-  <div class="header-right">
-    <div class="header-btn user-box" id="userBox">
-      <div class="user-icon">👤</div>
-      <div id="piUser"></div>
-    </div>
-    <div class="header-btn notification-btn" onclick="openNotifications()">🔔<span id="notifBadge" class="notification-badge"></span></div>
-    <div class="header-btn menu-icon">☰</div>
+<script>
+(function(){
+  const user = JSON.parse(localStorage.getItem("pi_user"));
+  if(!user || !user.uid){
+    window.location.replace("login.html");
+  }
+})();
+</script>
+
+  <header class="header">
+
+  <div class="header-left">
+  <span class="brand">ALBUKHR</span>
   </div>
-</header>
+
+  <div class="header-right">
+
+  <div class="header-btn user-box" id="userBox">
+  <div class="user-icon">👤</div>
+  <div id="piUser"></div>
+  </div>
+  
+  <div class="header-btn notification-btn" onclick="openNotifications()">
+    🔔
+    <span id="notifBadge" class="notification-badge"></span>
+  </div>
+
+  <div class="header-btn menu-icon">
+    ☰
+  </div>
+
+ </div>
+
+  </header>
 
 <div class="welcome-bar">
   <div id="welcomeScroll" class="welcome-track">
-    Welcome to Albukhr Investment Limited — Building sustainable industries &amp; empowering communities through investment.
+    Welcome to Albukhr Investment Limited — Building sustainable industries & empowering communities through investment.
   </div>
 </div>
 
 <section class="stats">
-  <div class="stat-card"><span>Total Staking</span><strong id="homeStake">0.00 Pi</strong></div>
-  <div class="stat-card"><span>Total Rewards</span><strong id="homeReward">0.00 Pi</strong></div>
+  <div class="stat-card">
+    <span>Total Staking</span>
+    <strong id="homeStake">0.00 Pi</strong>
+  </div>
+  <div class="stat-card">
+    <span>Total Rewards</span>
+    <strong id="homeReward">0.00 Pi</strong>
+  </div>
 </section>
 
 <div class="popular-section">
@@ -84,894 +213,1150 @@
   <div class="popular-scroll" id="popularProjects"></div>
 </div>
 
+<!-- ===== ASSETS ===== -->
 <section class="section">
   <div class="assets-header">
     <div style="display:flex;align-items:center;gap:8px;">
       <h3 style="margin:0;">Assets</h3>
       <span id="toggleAssets" style="cursor:pointer;font-size:16px;"></span>
     </div>
-    <button class="explore-btn" onclick="location.href='explore-projects.html'">
-      <i class="fa-solid fa-compass"></i><span>Explore Projects</span>
-    </button>
+    
+<button
+class="explore-btn"
+onclick="location.href='explore-projects.html'">
+
+<i class="fa-solid fa-compass"></i>
+
+<span>Explore Projects</span>
+
+</button>
+    
   </div>
+
   <div id="assetsContainer"></div>
 </section>
 
-<div class="albukhr-ai-btn" id="albukhrAI" onclick="openAlbukhrAI()">
-  <img src="images/ALBUKHR_Logo_Optimized_1024x1024.png" class="albukhr-ai-logo" alt="ALBUKHR AI">
-</div>
-<div id="aiDevNote" class="ai-dev-note">Albukhr AI is under development</div>
+<!-- ===============================
+ALBUKHR AI FLOATING BUTTON
+================================ -->
 
-<!-- ALBUKHR DOCK NAV — intentionally unchanged -->
+<div 
+class="albukhr-ai-btn"
+id="albukhrAI"
+onclick="openAlbukhrAI()"
+>
+
+<img 
+src="images/ALBUKHR_Logo_Optimized_1024x1024.png"
+class="albukhr-ai-logo"
+/>
+
+</div>
+
+<div 
+id="aiDevNote"
+class="ai-dev-note"
+>
+Albukhr AI is under development
+</div>
+
+<!-- ===== ALBUKHR DOCK NAV ===== -->
+
 <div class="dock-nav">
-  <a href="index.html" class="dock-item"><svg viewBox="0 0 24 24" class="dock-icon"><path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg><span>Home</span></a>
-  <a href="investor-dashboard.html" class="dock-item"><svg viewBox="0 0 24 24" class="dock-icon"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/><path d="M8 11c1.66 0 3-1.34-3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/><path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/><path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/></svg><span>Investors</span></a>
-  <a href="transparency.html" class="dock-item"><svg viewBox="0 0 24 24" class="dock-icon"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M8 11h8"/><path d="M8 14h8"/><ellipse cx="12" cy="18" rx="4" ry="2"/><circle cx="12" cy="18" r=".8"/></svg><span>Transparency</span></a>
-  <a href="services.html" class="dock-item"><svg viewBox="0 0 24 24" class="dock-icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/></svg><span>Services</span></a>
+
+  <!-- HOME -->
+  <a href="index.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>
+    </svg>
+    <span>Home</span>
+  </a>
+
+
+  <!-- INVESTORS -->
+  <a href="investor-dashboard.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/>
+    </svg>
+    <span>Investors</span>
+  </a>
+
+
+  <!-- TRANSPARENCY HUB -->
+  <a href="transparency.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      
+      <!-- Document -->
+      <path d="M6 3h8l4 4v14H6z"/>
+      
+      <!-- Fold -->
+      <path d="M14 3v4h4"/>
+      
+      <!-- Lines -->
+      <path d="M8 11h8"/>
+      <path d="M8 14h8"/>
+      
+      <!-- Eye -->
+      <ellipse cx="12" cy="18" rx="4" ry="2"/>
+      <circle cx="12" cy="18" r="0.8"/>
+      
+    </svg>
+    <span>Transparency</span>
+  </a>
+
+
+  <!-- SERVICES -->
+  <a href="services.html" class="dock-item">
+    <svg viewBox="0 0 24 24" class="dock-icon">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1 1 0 000-6l2-1-2-3-2 1a7 7 0 00-4-2V1H10v3a7 7 0 00-4 2l-2-1-2 3 2 1a7 7 0 000 6l-2 1 2 3 2-1a7 7 0 004 2v3h4v-3a7 7 0 004-2l2 1 2-3z"/>
+    </svg>
+    <span>Services</span>
+  </a>
+
+         </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://ribpntyqdleytsyktdfb.supabase.co",
+  "sb_publishable_6pRDCPwk97eCz2Fpu1cadg__XIQlZX2"
+);
+</script>
+  
+
+  
+<script>
+
+let lastScroll = 0;
+let threshold = 10;
+
+const dock = document.querySelector(".dock-nav");
+
+if(dock){
+  window.addEventListener("scroll",()=>{
+    let current = window.pageYOffset;
+
+    if(Math.abs(current-lastScroll)<=threshold) return;
+
+    if(current > lastScroll){
+      dock.classList.add("hide");
+    }else{
+      dock.classList.remove("hide");
+    }
+
+    lastScroll = current;
+  });
+}
+
+window.addEventListener("scroll",()=>{
+
+const current =
+window.pageYOffset;
+
+if(Math.abs(current-lastScroll)<=threshold)
+return;
+
+if(current > lastScroll){
+
+/* scroll down */
+dock.classList.add("hide");
+
+}else{
+
+/* scroll up */
+dock.classList.remove("hide");
+
+}
+
+lastScroll = current;
+
+});
+
+</script>
+
+<script>
+const current = location.pathname.split("/").pop() || "index.html";
+
+document.querySelectorAll(".dock-item").forEach(link=>{
+  if(link.getAttribute("href") === current){
+    link.classList.add("active");
+  }
+});
+</script>
+   
+<!-- SIDE DRAWER -->
+<div id="sideDrawer" class="side-drawer">
+
+  
+<!-- DRAWER HEADER -->
+<div class="drawer-header">
+
+  <h3>Settings</h3>
+
+  <!-- ENVIRONMENT SWITCHER -->
+  <button
+    type="button"
+    id="environmentSwitcher"
+    class="environment-switcher"
+    aria-label="Switch environment">
+
+    <span
+      id="environmentDot"
+      class="environment-dot">
+    </span>
+
+    <span
+  id="environmentLabel">
+    </span>
+
+  </button>
+
+  <!-- CLOSE DRAWER -->
+  <button
+    type="button"
+    class="close-drawer"
+    onclick="closeDrawer()"
+    aria-label="Close settings">
+
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true">
+
+      <path d="M6 6L18 18"></path>
+      <path d="M18 6L6 18"></path>
+
+    </svg>
+
+  </button>
+
 </div>
 
-<!-- Core architecture -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core/environment-switcher.js"></script>
-<script src="js/core/supabase-core.js"></script>
-<script src="js/core/pi-auth-core.js"></script>
+  <!-- ORIGINAL LINKS (UNCHANGED) -->
+  <div class="drawer-body">
 
-<!-- Project source of truth -->
-<script src="js/project-registry.js"></script>
-<script src="js/project-config.js"></script>
+    <a href="user-profile.html">
+      Profile
+    </a>
+
+    <a href="preferences.html">
+      Preferences
+    </a>
+
+    <a href="security.html">
+      Security
+    </a>
+
+    <a href="help.html">
+      Help
+    </a>
+
+  </div>
+
+
+  <hr style="margin:12px 0">
+
+
+  <!-- ===============================
+       EXTENDED DRAWER CONTENT
+  ================================ -->
+
+  <div class="drawer-extra">
+
+
+    <!-- ===============================
+         LEGAL & POLICIES
+    ================================ -->
+
+    <div class="drawer-title">
+
+      <svg
+        class="drawer-section-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
+
+        <path d="M12 3v18"></path>
+
+        <path d="M5 6h14"></path>
+
+        <path d="M7 6l-3 7h6L7 6z"></path>
+
+        <path d="M17 6l-3 7h6l-3-7z"></path>
+
+        <path d="M3 18h8"></path>
+
+        <path d="M13 18h8"></path>
+
+      </svg>
+
+      <span>Legal &amp; Policies</span>
+
+    </div>
+
+
+    <div class="drawer-policy">
+
+
+      <!-- PRIVACY POLICY -->
+      <a href="privacy-policy.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <rect
+              x="5"
+              y="3"
+              width="14"
+              height="18"
+              rx="2">
+            </rect>
+
+            <path d="M9 8h6"></path>
+
+            <path d="M9 12h6"></path>
+
+            <path d="M8 16l2 2 5-5"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Privacy Policy</span>
+
+      </a>
+
+
+      <!-- TERMS OF SERVICE -->
+      <a href="terms-of-service.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <path d="M6 3h8l4 4v14H6z"></path>
+
+            <path d="M14 3v4h4"></path>
+
+            <path d="M9 11h6"></path>
+
+            <path d="M9 15h6"></path>
+
+            <path d="M9 18h4"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Terms of Service</span>
+
+      </a>
+
+
+      <!-- WHITEPAPER -->
+      <a href="whitepaper.html">
+
+        <div class="policy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true">
+
+            <path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path>
+
+            <path d="M19 4h-6c-2 0-3 1-3 3v13c0-2 1-3 3-3h6z"></path>
+
+            <path d="M8 8h3"></path>
+
+            <path d="M8 11h3"></path>
+
+          </svg>
+
+        </div>
+
+        <span>Whitepaper</span>
+
+      </a>
+
+    </div>
+
+
+    <!-- GOVERNANCE NOTE -->
+
+    <div class="drawer-note">
+
+      All users must comply with ALBUKHR governance rules.
+
+    </div>
+
+
+    <!-- ===============================
+         MEDIA / CHANNELS
+    ================================ -->
+
+    <div class="drawer-title">
+
+      <svg
+        class="drawer-section-icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true">
+
+        <circle
+          cx="12"
+          cy="12"
+          r="9">
+        </circle>
+
+        <path d="M3 12h18"></path>
+
+        <path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path>
+
+        <path d="M12 3c-2.5 2.5-3.5 5.5-3.5 9s1 6.5 3.5 9"></path>
+
+      </svg>
+
+      <span>Media &amp; Channels</span>
+
+    </div>
+
+
+    <div class="drawer-social">
+
+
+      <!-- TELEGRAM -->
+      <a
+        class="social-item"
+        href="https://t.me/albukhrtelegramchannel"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images (2).jpeg"
+            alt="Telegram">
+        </div>
+
+        <span>Telegram</span>
+
+      </a>
+
+
+      <!-- WHATSAPP -->
+      <a
+        class="social-item"
+        href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images.png"
+            alt="WhatsApp">
+        </div>
+
+        <span>WhatsApp</span>
+
+      </a>
+
+
+      <!-- FACEBOOK -->
+      <a
+        class="social-item"
+        href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images (1).jpeg"
+            alt="Facebook">
+        </div>
+
+        <span>Facebook</span>
+
+      </a>
+
+
+      <!-- YOUTUBE -->
+      <a
+        class="social-item"
+        href="https://www.youtube.com/@Albukhrinvestmentlimited"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images.jpeg"
+            alt="YouTube">
+        </div>
+
+        <span>YouTube</span>
+
+      </a>
+
+
+      <!-- X -->
+      <a
+        class="social-item"
+        href="#"
+        target="_blank"
+        rel="noopener">
+
+        <div class="social-icon">
+          <img
+            src="images/images (1).png"
+            alt="X">
+        </div>
+
+        <span>X</span>
+
+      </a>
+
+    </div>
+
+
+    <!-- MEDIA NOTE -->
+
+    <div class="drawer-note">
+
+      Official public channels of ALBUKHR ecosystem
+
+    </div>
+
+
+  </div>
+
+</div>
+
+
+<!-- DRAWER OVERLAY -->
+
+<div
+  id="drawerOverlay"
+  class="drawer-overlay"
+  onclick="closeDrawer()">
+</div>
+
+<script src="js/project-config.js"></script>   
 <script src="js/staking.js"></script>
+
+<script>
+
+async function loadHome(){
+
+  try{
+
+    // ===== DEPENDENCY CHECK =====
+    if(typeof getAllStakesMerged !== "function"){
+      console.warn("getAllStakesMerged missing");
+      return;
+    }
+
+    let stakes = await getAllStakesMerged();
+
+    const globalStakes =
+await getGlobalStakes();
+
+/* ✅ FALLBACK FOR NEW USERS */
+if(!Array.isArray(stakes)){
+    stakes = [];
+  }
+
+    // ===== MAPS =====
+    const userMap = {};
+    const globalMap = {};
+    const popularMap = {};
+    const countMap = {};
+
+    let totalStake = 0;
+    let totalReward = 0;
+
+    // ===== MAIN LOOP =====
+stakes.forEach(s=>{
+
+  if(!s) return;
+  if(!s.project) return;
+
+  const type = s.type || "stake";
+  const amount = Number(s.amount) || 0;
+
+  // =========================
+  // STAKE
+  // =========================
+  if(type === "stake"){
+
+    totalStake += amount;
+
+    userMap[s.project] =
+      (userMap[s.project] || 0)
+      + amount;
+
+    if(!globalMap[s.project]){
+      globalMap[s.project] = {
+        total:0,
+        investors:0
+      };
+    }
+
+    globalMap[s.project].total += amount;
+
+    const total =
+      Number(s.reward) || 0;
+
+    const withdrawn =
+      Number(s.withdrawnReward) || 0;
+
+    totalReward +=
+      Math.max(0, total - withdrawn);
+
+  }
+
+  // =========================
+  // CAPITAL WITHDRAW
+  // =========================
+  if(type === "capital"){
+
+    totalStake -= Math.abs(amount);
+
+    userMap[s.project] =
+      (userMap[s.project] || 0)
+      - Math.abs(amount);
+
+    if(globalMap[s.project]){
+      globalMap[s.project].total -=
+        Math.abs(amount);
+    }
+
+  }
+
+  // =========================
+  // INVESTOR COUNT
+  // =========================
+  countMap[s.project] =
+    (countMap[s.project] || 0) + 1;
+
+});
+
+/* =========================
+   GLOBAL POPULAR PROJECTS
+========================= */
+
+globalStakes.forEach(s=>{
+
+  if(!s) return;
+
+  if(s.type !== "stake") return;
+
+  if(!s.project) return;
+
+  if(!popularMap[s.project]){
+
+    popularMap[s.project] = {
+      total: 0,
+      investors: 0
+    };
+
+  }
+
+  popularMap[s.project].total +=
+    Number(s.amount) || 0;
+
+});
+
+    // ===== ASSIGN COUNTS =====
+    Object.keys(globalMap).forEach(project=>{
+
+      globalMap[project].investors =
+        countMap[project] || 0;
+
+    });
+
+    // ===== SAFE DOM UPDATE =====
+    const stakeEl =
+      document.getElementById("homeStake");
+
+    const rewardEl =
+      document.getElementById("homeReward");
+
+    if(stakeEl){
+
+      stakeEl.innerText =
+        totalStake.toFixed(2)+" Pi";
+
+    }
+
+    if(rewardEl){
+
+      rewardEl.innerText =
+        totalReward.toFixed(2)+" Pi";
+
+    }
+
+    // ===== RENDER =====
+    if(typeof renderPopular === "function"){
+      renderPopular(popularMap);
+    }
+
+    if(typeof renderAssets === "function"){
+      renderAssets(userMap, globalMap);
+    }
+
+  }catch(err){
+
+    console.error(
+      "loadHome error:",
+      err
+    );
+
+  }
+
+}
+
+function renderPopular(globalMap){
+
+if(typeof PROJECT_CONFIG === "undefined"){
+  console.warn("PROJECT_CONFIG missing");
+  return;
+}
+
+  const container = document.getElementById("popularProjects");
+  container.innerHTML = "";
+
+  let entries = Object.entries(globalMap);
+
+/* ✅ idan babu staking data */
+if(entries.length === 0){
+
+  entries = Object.keys(PROJECT_CONFIG).map(p=>[
+    p,
+    { total: 0, investors: 0 }
+  ]);
+
+}
+
+const sorted = entries
+  .sort((a,b)=>b[1].total - a[1].total)
+  .slice(0,10);
+
+  sorted.forEach(([project,data],index)=>{
+
+    const config = PROJECT_CONFIG[project];
+
+    if(!config) return;
+
+    const div = document.createElement("div");
+    div.className="popular-card";
+
+    div.setAttribute("data-rank","#"+(index+1));
+
+    div.onclick = () =>
+      location.href = `project.html?project=${project}`;
+
+    div.innerHTML = `
+      <div class="popular-icon">${config.icon}</div>
+      <div class="popular-name">${config.title}</div>
+      <div class="popular-amount">${data.total.toFixed(2)} Pi</div>
+    `;
+
+    container.appendChild(div);
+
+  });
+
+}
+
+function renderAssets(userMap, globalMap){
+
+if(typeof PROJECT_CONFIG === "undefined"){
+  console.warn("PROJECT_CONFIG missing");
+  return;
+}
+
+  const container = document.getElementById("assetsContainer");
+  container.innerHTML = "";
+
+  const merged = Object.keys(PROJECT_CONFIG).map(project => ({
+
+    name: project,
+    config: PROJECT_CONFIG[project],
+
+    globalTotal: Number(globalMap[project]?.total) || 0,
+userAmount: Math.max(
+  0,
+  Number(userMap[project]) || 0
+)
+  }));
+
+  /* SORT LOGIC */
+  merged.sort((a,b)=>{
+
+    if(a.userAmount > 0 && b.userAmount === 0) return -1;
+    if(a.userAmount === 0 && b.userAmount > 0) return 1;
+
+    if(a.userAmount !== b.userAmount)
+      return b.userAmount - a.userAmount;
+
+    return b.globalTotal - a.globalTotal;
+
+  });
+
+  merged.forEach(item => {
+
+    if(!item.config) return;
+
+    const div = document.createElement("div");
+    div.className = "asset-item";
+
+    div.onclick = () =>
+      location.href = `project.html?project=${item.name}`;
+
+    div.innerHTML = `
+
+<div class="asset-icon">
+    ${item.config.icon}
+</div>
+
+<div class="asset-left">
+
+    <div class="asset-header">
+
+        <div class="asset-info">
+
+            <div class="asset-name">
+                ${item.config.title}
+            </div>
+
+            <div class="asset-stake">
+                ${
+                    item.userAmount > 0
+                    ? item.userAmount.toFixed(2) + " Pi Staked"
+                    : "Not Staked"
+                }
+            </div>
+
+        </div>
+
+        <div class="asset-mini-chart">
+
+            <svg
+                viewBox="0 0 120 36"
+                preserveAspectRatio="none">
+
+                <polyline
+                    fill="none"
+                    stroke="${
+                        item.userAmount > 0
+                        ? "#19b36b"
+                        : "#b8b8b8"
+                    }"
+                    stroke-width="2.2"
+                    points="
+0,28
+15,26
+30,24
+45,22
+60,18
+75,20
+90,14
+105,12
+120,8
+"/>
+
+            </svg>
+
+        </div>
+
+    </div>
+
+    <div class="asset-status">
+
+        ${
+            item.userAmount > 0
+            ? "🟢 Active"
+            : "⚪ Inactive"
+        }
+
+    </div>
+
+</div>
+
+`;
+
+    container.appendChild(div);
+
+  });
+
+   }
+
+/* ASSETS VISIBILITY */
+const VISIBILITY_KEY="albukhr_assets_visibility";
+function isAssetsHidden(){return localStorage.getItem(VISIBILITY_KEY)==="hidden";}
+function setAssetsHidden(hidden){localStorage.setItem(VISIBILITY_KEY,hidden?"hidden":"visible");}
+function applyVisibility(){
+  const hidden=isAssetsHidden();
+  document.getElementById("homeStake")?.classList.toggle("hidden-amount",hidden);
+  document.getElementById("homeReward")?.classList.toggle("hidden-amount",hidden);
+  document.querySelectorAll(".asset-stake").forEach(el=>el.classList.toggle("hidden-amount",hidden));
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  applyVisibility();
+});
+
+/* SIDE DRAWER */
+function openDrawer(){
+  document.getElementById("sideDrawer").classList.add("open");
+  document.getElementById("drawerOverlay").classList.add("show");
+}
+function closeDrawer(){
+  document.getElementById("sideDrawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("show");
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  const menu = document.querySelector(".menu-icon");
+  if(menu){
+    menu.addEventListener("click", openDrawer);
+  }
+});
+</script>
+
 <script src="js/notifications.js"></script>
 <script src="js/project-treasury.js"></script>
 <script src="js/smart-liquidity-engine.js"></script>
 
-<div id="sideDrawer" class="side-drawer">
-  <div class="drawer-header">
-    <h3>Settings</h3>
-    <button type="button" id="environmentSwitcher" class="environment-switcher" aria-label="Switch environment">
-      <span id="environmentDot" class="environment-dot"></span><span id="environmentLabel"></span>
-    </button>
-    <button type="button" class="close-drawer" onclick="closeDrawer()" aria-label="Close settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18"></path><path d="M18 6L6 18"></path></svg>
-    </button>
-  </div>
+<script>
 
-  <div class="drawer-body">
-    <a href="user-profile.html">Profile</a>
-    <a href="preferences.html">Preferences</a>
-    <a href="security.html">Security</a>
-    <a href="help.html">Help</a>
-  </div>
+/* ===============================
+   ALBUKHR AI ACCESS CONTROL
+================================ */
 
-  <hr style="margin:12px 0">
+function openAlbukhrAI(){
 
-  <div class="drawer-extra">
-    <div class="drawer-title"><svg class="drawer-section-icon" viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M5 6h14"></path><path d="M7 6l-3 7h6L7 6z"></path><path d="M17 6l-3 7h6l-3-7z"></path><path d="M3 18h8"></path><path d="M13 18h8"></path></svg><span>Legal &amp; Policies</span></div>
+/* ADMIN BYPASS */
 
-    <div class="drawer-policy">
-      <a href="privacy-policy.html"><div class="policy-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 8h6"></path><path d="M9 12h6"></path><path d="M8 16l2 2 5-5"></path></svg></div><span>Privacy Policy</span></a>
-      <a href="terms-of-service.html"><div class="policy-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 11h6"></path><path d="M9 15h6"></path><path d="M9 18h4"></path></svg></div><span>Terms of Service</span></a>
-      <a href="whitepaper.html"><div class="policy-icon"><svg viewBox="0 0 24 24"><path d="M5 4h6c2 0 3 1 3 3v13c0-2-1-3-3-3H5z"></path><path d="M19 4h-6c-2 0-3 1-3 3v13c0-2 1-3 3-3h6z"></path><path d="M8 8h3"></path><path d="M8 11h3"></path></svg></div><span>Whitepaper</span></a>
-    </div>
+const admin =
+localStorage.getItem("albukhr_ai_dev");
 
-    <div class="drawer-note">All users must comply with ALBUKHR governance rules.</div>
+if(admin === "true"){
 
-    <div class="drawer-title"><svg class="drawer-section-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9"></path><path d="M12 3c-2.5 2.5-3.5 6.5-3.5 9s-1 6.5 3.5 9"></path></svg><span>Media &amp; Channels</span></div>
+window.location.href =
+"albukhr-ai.html";
 
-    <div class="drawer-social">
-      <a class="social-item" href="https://t.me/albukhrtelegramchannel" target="_blank" rel="noopener"><div class="social-icon"><img src="images/images (2).jpeg" alt="Telegram"></div><span>Telegram</span></a>
-      <a class="social-item" href="https://whatsapp.com/channel/0029VbAyyWgI7BeNfCDjyZ1C" target="_blank" rel="noopener"><div class="social-icon"><img src="images/images.png" alt="WhatsApp"></div><span>WhatsApp</span></a>
-      <a class="social-item" href="https://www.facebook.com/groups/1491982365549301/permalink/1646336656780537/?mibextid=Nif5oz" target="_blank" rel="noopener"><div class="social-icon"><img src="images/images (1) (1).jpeg" alt="Facebook"></div><span>Facebook</span></a>
-      <a class="social-item" href="https://www.youtube.com/@Albukhrinvestmentlimited" target="_blank" rel="noopener"><div class="social-icon"><img src="images/images.jpeg" alt="YouTube"></div><span>YouTube</span></a>
-      <a class="social-item" href="#" target="_blank" rel="noopener"><div class="social-icon"><img src="images/images (1).png" alt="X"></div><span>X</span></a>
-    </div>
+return;
 
-    <div class="drawer-note">Official public channels of ALBUKHR ecosystem</div>
-  </div>
-</div>
+}
 
-<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+/* SHOW UNDER DEVELOPMENT */
+
+const note =
+document.getElementById("aiDevNote");
+
+note.classList.add("show");
+
+setTimeout(()=>{
+
+note.classList.remove("show");
+
+},2500);
+
+}
+
+</script>
 
 <script>
-"use strict";
 
-/* =========================================================
-   ALBUKHR HOME — NEW ARCHITECTURE
-   Project source of truth:
-     Supabase public.projects
-   Network isolation:
-     handled by the project registry/core architecture
-   Project visual identity:
-     logo_url / logo_path only — NEVER project icons
-========================================================= */
+const ai =
+document.getElementById("albukhrAI");
 
-let lastScroll = 0;
-const threshold = 10;
-const dock = document.querySelector(".dock-nav");
+let isDragging = false;
+let offsetX, offsetY;
 
-if(dock){
-  window.addEventListener("scroll", ()=>{
-    const current = window.pageYOffset;
-    if(Math.abs(current-lastScroll) <= threshold) return;
-    dock.classList.toggle("hide", current > lastScroll);
-    lastScroll = current;
-  }, {passive:true});
+/* LOAD SAVED POSITION */
+
+const saved =
+JSON.parse(
+localStorage.getItem("albukhr_ai_position")
+);
+
+if(saved){
+
+ai.style.left = saved.left;
+ai.style.top = saved.top;
+
+ai.style.right = "auto";
+ai.style.bottom = "auto";
+
 }
 
-const currentPage = location.pathname.split("/").pop() || "index.html";
-document.querySelectorAll(".dock-item").forEach(link=>{
-  if(link.getAttribute("href") === currentPage){
-    link.classList.add("active");
-  }
+/* START DRAG */
+
+ai.addEventListener("touchstart",startDrag);
+ai.addEventListener("mousedown",startDrag);
+
+function startDrag(e){
+
+isDragging = true;
+
+const rect =
+ai.getBoundingClientRect();
+
+offsetX =
+(e.touches ? e.touches[0].clientX : e.clientX)
+- rect.left;
+
+offsetY =
+(e.touches ? e.touches[0].clientY : e.clientY)
+- rect.top;
+
+}
+
+/* DRAG */
+
+document.addEventListener("touchmove",drag);
+document.addEventListener("mousemove",drag);
+
+function drag(e){
+
+if(!isDragging) return;
+
+const x =
+(e.touches ? e.touches[0].clientX : e.clientX)
+- offsetX;
+
+const y =
+(e.touches ? e.touches[0].clientY : e.clientY)
+- offsetY;
+
+ai.style.left = x + "px";
+ai.style.top = y + "px";
+
+ai.style.right = "auto";
+ai.style.bottom = "auto";
+
+}
+
+/* STOP DRAG */
+
+document.addEventListener("touchend",stopDrag);
+document.addEventListener("mouseup",stopDrag);
+
+function stopDrag(){
+
+if(!isDragging) return;
+
+isDragging = false;
+
+/* SNAP TO EDGE */
+
+const rect =
+ai.getBoundingClientRect();
+
+const screenWidth =
+window.innerWidth;
+
+let snapX;
+
+if(rect.left < screenWidth/2){
+
+snapX = 10;
+
+}else{
+
+snapX = screenWidth - rect.width - 10;
+
+}
+
+ai.style.left = snapX + "px";
+
+/* SAVE POSITION */
+
+localStorage.setItem(
+"albukhr_ai_position",
+JSON.stringify({
+
+left: ai.style.left,
+top: ai.style.top
+
+})
+
+);
+
+/* AUTO MINIMIZE */
+
+setTimeout(()=>{
+
+ai.classList.add("minimized");
+
+},2000);
+
+}
+
+/* EXPAND ON TOUCH */
+
+ai.addEventListener("click",()=>{
+
+ai.classList.remove("minimized");
+
 });
 
-/* =========================================================
-   PROJECT REGISTRY RESOLUTION
-   Prefer the new canonical registry.
-   Legacy getAlbukhrCoreProjects is supported only as a
-   compatibility bridge; it is never the visual source.
-========================================================= */
+function showUser(user){
 
-let HOME_PROJECTS = [];
+  const header = document.querySelector(".header-right");
 
-function normalizeHomeProject(project){
-  if(!project) return null;
+  let box = document.getElementById("userBox");
 
-  const raw = project.raw || project;
-  const code = String(
-    project.project_code ||
-    raw.project_code ||
-    raw.code ||
-    ""
-  ).trim();
-
-  if(!code) return null;
-
-  const name = String(
-    project.project_name ||
-    project.title ||
-    raw.project_name ||
-    raw.title ||
-    code
-  ).trim();
-
-  const projectType = String(
-    project.project_type ||
-    raw.project_type ||
-    "core"
-  ).trim().toLowerCase();
-
-  const status = String(
-    project.status ||
-    raw.status ||
-    "active"
-  ).trim().toLowerCase();
-
-  const visible =
-    project.is_visible !== undefined
-      ? project.is_visible !== false
-      : raw.project_visible !== false;
-
-  /*
-    LOGO-ONLY RULE:
-    No emoji/icon fallback is allowed for projects.
-    logo_url is preferred, logo_path is supported.
-  */
-  const logoUrl = String(
-    project.logo_url ||
-    raw.logo_url ||
-    ""
-  ).trim();
-
-  const logoPath = String(
-    project.logo_path ||
-    raw.logo_path ||
-    ""
-  ).trim();
-
-  return {
-    ...project,
-    project_code: code,
-    project_name: name,
-    project_type: projectType,
-    status,
-    is_visible: visible,
-    logo_url: logoUrl,
-    logo_path: logoPath,
-    description: String(
-      project.description ||
-      raw.description ||
-      ""
-    ),
-    info: String(
-      project.info ||
-      raw.info ||
-      ""
-    ),
-    network: String(
-      project.network ||
-      raw.network ||
-      ""
-    ).trim().toLowerCase()
-  };
-}
-
-function getProjectLogoSource(project){
-  const p = normalizeHomeProject(project);
-  if(!p) return "";
-
-  /*
-    logo_url is the canonical browser URL.
-    logo_path is a supported storage/path field.
-    If the registry already resolved logo_path to a URL,
-    it can be used directly.
-  */
-  return p.logo_url || p.logo_path || "";
-}
-
-function createProjectLogo(project, className = "project-logo"){
-  const source = getProjectLogoSource(project);
-  const name = normalizeHomeProject(project)?.project_name || "Project";
-
-  if(!source){
-    const placeholder = document.createElement("div");
-    placeholder.className = className.replace("project-logo","project-logo-placeholder");
-    placeholder.setAttribute("aria-label", `${name} logo unavailable`);
-    placeholder.textContent = "LOGO";
-    return placeholder;
+  if(!box){
+    box = document.createElement("div");
+    box.id = "userBox";
+    box.className = "user-box";
+    header.prepend(box);
   }
 
-  const img = document.createElement("img");
-  img.className = className;
-  img.src = source;
-  img.alt = `${name} logo`;
-  img.loading = "lazy";
-  img.decoding = "async";
-
-  img.addEventListener("error", ()=>{
-    const placeholder = document.createElement("div");
-    placeholder.className = className.replace("project-logo","project-logo-placeholder");
-    placeholder.setAttribute("aria-label", `${name} logo unavailable`);
-    placeholder.textContent = "LOGO";
-    img.replaceWith(placeholder);
-  }, {once:true});
-
-  return img;
+  box.innerHTML = `
+    <div>👤</div>
+    <div id="piUser">${user.username}</div>
+  `;
 }
 
-async function loadHomeProjects(){
-  let projects = null;
+function loadUser(){
 
-  /*
-    Canonical path:
-    getAllProjects() -> projects table -> normalized registry.
-  */
-  if(typeof window.getAllProjects === "function"){
-    projects = await window.getAllProjects({
-      visibleOnly: true,
-      activeOnly: false
-    });
-  }
+  const user = JSON.parse(
+    localStorage.getItem("pi_user")
+  );
 
-  /*
-    Compatibility path for the current project-registry engine.
-    This must still resolve from the new registry/table layer.
-  */
-  if(!Array.isArray(projects) && typeof window.getAlbukhrCoreProjects === "function"){
-    projects = await window.getAlbukhrCoreProjects();
-  }
+  const el =
+    document.getElementById("piUser");
 
-  if(!Array.isArray(projects)){
-    throw new Error("ALBUKHR Project Registry Engine is not available.");
-  }
+  if(!el || !user) return;
 
-  HOME_PROJECTS = projects
-    .map(normalizeHomeProject)
-    .filter(Boolean)
-    .filter(project => project.is_visible !== false)
-    .filter(project => project.status !== "archived" && project.status !== "disabled");
+  el.innerText = user.username;
 
-  return HOME_PROJECTS;
-}
-
-function projectByCode(code){
-  const normalized = String(code || "").trim().toLowerCase();
-  return HOME_PROJECTS.find(p =>
-    String(p.project_code || "").trim().toLowerCase() === normalized
-  ) || null;
-}
-
-/* =========================================================
-   POPULAR PROJECTS
-========================================================= */
-
-async function renderPopular(globalMap){
-  const container = document.getElementById("popularProjects");
-  if(!container) return;
-
-  container.innerHTML = "";
-
-  const entries = HOME_PROJECTS
-    .map(project => [
-      project.project_code,
-      globalMap?.[project.project_code] || {total:0, investors:0}
-    ])
-    .sort((a,b)=>(Number(b[1]?.total)||0)-(Number(a[1]?.total)||0))
-    .slice(0,10);
-
-  entries.forEach(([code,data], index)=>{
-    const project = projectByCode(code);
-    if(!project) return;
-
-    const div = document.createElement("div");
-    div.className = "popular-card";
-    div.setAttribute("data-rank", "#"+(index+1));
-    div.setAttribute("data-project-code", project.project_code);
-
-    div.onclick = () =>
-      location.href = "project.html?project=" +
-        encodeURIComponent(project.project_code);
-
-    const logo = createProjectLogo(project);
-    div.appendChild(logo);
-
-    const name = document.createElement("div");
-    name.className = "popular-name";
-    name.textContent = project.project_name;
-
-    const amount = document.createElement("div");
-    amount.className = "popular-amount";
-    amount.textContent =
-      (Number(data?.total)||0).toFixed(2) + " Pi";
-
-    div.appendChild(name);
-    div.appendChild(amount);
-
-    container.appendChild(div);
-  });
-}
-
-/* =========================================================
-   ASSETS
-========================================================= */
-
-async function renderAssets(userMap, globalMap){
-  const container = document.getElementById("assetsContainer");
-  if(!container) return;
-
-  container.innerHTML = "";
-
-  const merged = HOME_PROJECTS
-    .map(project=>{
-      const code = project.project_code;
-
-      return {
-        project,
-        name: code,
-        globalTotal: Number(globalMap?.[code]?.total) || 0,
-        userAmount: Math.max(0, Number(userMap?.[code]) || 0)
-      };
-    })
-    .sort((a,b)=>{
-      if(a.userAmount > 0 && b.userAmount === 0) return -1;
-      if(a.userAmount === 0 && b.userAmount > 0) return 1;
-
-      if(a.userAmount !== b.userAmount){
-        return b.userAmount - a.userAmount;
-      }
-
-      return b.globalTotal - a.globalTotal;
-    });
-
-  merged.forEach(item=>{
-    const div = document.createElement("div");
-    div.className = "asset-item";
-    div.setAttribute("data-project-code", item.name);
-
-    div.onclick = () =>
-      location.href = "project.html?project=" +
-        encodeURIComponent(item.name);
-
-    const active = item.userAmount > 0;
-
-    const logo = createProjectLogo(item.project);
-    div.appendChild(logo);
-
-    const left = document.createElement("div");
-    left.className = "asset-left";
-
-    const header = document.createElement("div");
-    header.className = "asset-header";
-
-    const info = document.createElement("div");
-    info.className = "asset-info";
-
-    const title = document.createElement("div");
-    title.className = "asset-name";
-    title.textContent = item.project.project_name;
-
-    const stake = document.createElement("div");
-    stake.className = "asset-stake";
-    stake.textContent = active
-      ? item.userAmount.toFixed(2) + " Pi Staked"
-      : "Not Staked";
-
-    info.appendChild(title);
-    info.appendChild(stake);
-
-    const chart = document.createElement("div");
-    chart.className = "asset-mini-chart";
-    chart.innerHTML = `
-      <svg viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true">
-        <polyline
-          fill="none"
-          stroke="${active ? "#19b36b" : "#b8b8b8"}"
-          stroke-width="2.2"
-          points="0,28 15,26 30,24 45,22 60,18 75,20 90,14 105,12 120,8">
-        </polyline>
-      </svg>
-    `;
-
-    header.appendChild(info);
-    header.appendChild(chart);
-
-    const status = document.createElement("div");
-    status.className = "asset-status";
-    status.textContent = active ? "🟢 Active" : "⚪ Inactive";
-
-    left.appendChild(header);
-    left.appendChild(status);
-
-    div.appendChild(left);
-    container.appendChild(div);
-  });
-
-  applyVisibility();
-}
-
-/* =========================================================
-   HOME DATA
-   Projects must render independently from staking data.
-========================================================= */
-
-async function loadHome(){
-  await loadHomeProjects();
-
-  const stakes = [];
-  const globalStakes = [];
-
-  let totalStake = 0;
-  let totalReward = 0;
-
-  const userMap = {};
-  const globalMap = {};
-  const popularMap = {};
-  const countMap = {};
-
-  try{
-    if(typeof getAllStakesMerged === "function"){
-      const raw = await getAllStakesMerged();
-      if(Array.isArray(raw)) stakes.push(...raw);
-    }
-  }catch(error){
-    console.warn(
-      "ALBUKHR: staking data unavailable; projects will still render.",
-      error
-    );
-  }
-
-  try{
-    if(typeof getGlobalStakes === "function"){
-      const raw = await getGlobalStakes();
-      if(Array.isArray(raw)) globalStakes.push(...raw);
-    }
-  }catch(error){
-    console.warn(
-      "ALBUKHR: global staking data unavailable; projects will still render.",
-      error
-    );
-  }
-
-  stakes.forEach(s=>{
-    if(!s || !s.project) return;
-
-    const type = s.type || "stake";
-    const amount = Number(s.amount) || 0;
-
-    if(type === "stake"){
-      totalStake += amount;
-
-      userMap[s.project] =
-        (userMap[s.project] || 0) + amount;
-
-      globalMap[s.project] ??= {
-        total:0,
-        investors:0
-      };
-
-      globalMap[s.project].total += amount;
-
-      totalReward += Math.max(
-        0,
-        (Number(s.reward)||0) -
-        (Number(s.withdrawnReward)||0)
-      );
-    }
-
-    if(type === "capital"){
-      totalStake -= Math.abs(amount);
-
-      userMap[s.project] =
-        (userMap[s.project] || 0) -
-        Math.abs(amount);
-
-      if(globalMap[s.project]){
-        globalMap[s.project].total -= Math.abs(amount);
-      }
-    }
-
-    countMap[s.project] =
-      (countMap[s.project] || 0) + 1;
-  });
-
-  globalStakes.forEach(s=>{
-    if(!s || s.type !== "stake" || !s.project) return;
-
-    popularMap[s.project] ??= {
-      total:0,
-      investors:0
-    };
-
-    popularMap[s.project].total +=
-      Number(s.amount) || 0;
-  });
-
-  Object.keys(globalMap).forEach(project=>{
-    popularMap[project] ??= {
-      total:0,
-      investors:0
-    };
-
-    if(!(Number(popularMap[project].total) > 0)){
-      popularMap[project].total =
-        Number(globalMap[project].total) || 0;
-    }
-
-    popularMap[project].investors =
-      countMap[project] || 0;
-  });
-
-  const stakeEl = document.getElementById("homeStake");
-  const rewardEl = document.getElementById("homeReward");
-
-  if(stakeEl){
-    stakeEl.innerText =
-      Math.max(0,totalStake).toFixed(2) + " Pi";
-  }
-
-  if(rewardEl){
-    rewardEl.innerText =
-      Math.max(0,totalReward).toFixed(2) + " Pi";
-  }
-
-  await renderPopular(popularMap);
-  await renderAssets(userMap, globalMap);
-  applyVisibility();
-}
-
-/* =========================================================
-   ASSETS VISIBILITY
-   NOTE: this is UI preference only, not application state.
-========================================================= */
-
-const VISIBILITY_KEY = "albukhr_assets_visibility";
-
-function isAssetsHidden(){
-  try{
-    return localStorage.getItem(VISIBILITY_KEY) === "hidden";
-  }catch(_){
-    return false;
-  }
-}
-
-function setAssetsHidden(hidden){
-  try{
-    localStorage.setItem(
-      VISIBILITY_KEY,
-      hidden ? "hidden" : "visible"
-    );
-  }catch(_){}
-}
-
-function applyVisibility(){
-  const hidden = isAssetsHidden();
-
-  document
-    .getElementById("homeStake")
-    ?.classList.toggle("hidden-amount", hidden);
-
-  document
-    .getElementById("homeReward")
-    ?.classList.toggle("hidden-amount", hidden);
-
-  document
-    .querySelectorAll(".asset-stake")
-    .forEach(el =>
-      el.classList.toggle("hidden-amount", hidden)
-    );
-}
-
-/* =========================================================
-   SIDE DRAWER
-========================================================= */
-
-function openDrawer(){
-  document
-    .getElementById("sideDrawer")
-    ?.classList.add("open");
-
-  document
-    .getElementById("drawerOverlay")
-    ?.classList.add("show");
-}
-
-function closeDrawer(){
-  document
-    .getElementById("sideDrawer")
-    ?.classList.remove("open");
-
-  document
-    .getElementById("drawerOverlay")
-    ?.classList.remove("show");
 }
 
 document.addEventListener("DOMContentLoaded", ()=>{
-  document
-    .querySelector(".menu-icon")
-    ?.addEventListener("click", openDrawer);
 
-  applyVisibility();
-});
+  // 🔐 CHECK LOGIN
+  const user = JSON.parse(localStorage.getItem("pi_user"));
 
-/* =========================================================
-   ALBUKHR AI
-========================================================= */
-
-function openAlbukhrAI(){
-  let admin = false;
-
-  try{
-    admin =
-      sessionStorage.getItem("albukhr_ai_dev") === "true";
-  }catch(_){}
-
-  if(admin){
-    location.href = "albukhr-ai.html";
+  if(!user || !user.uid){
+    window.location.href = "login.html";
     return;
   }
 
-  const note = document.getElementById("aiDevNote");
-  if(!note) return;
-
-  note.classList.add("show");
-
-  setTimeout(()=>{
-    note.classList.remove("show");
-  },2500);
-}
-
-/* =========================================================
-   AI FLOATING BUTTON DRAG
-========================================================= */
-
-const ai = document.getElementById("albukhrAI");
-let isDragging = false;
-let offsetX = 0;
-let offsetY = 0;
-
-try{
-  const saved =
-    JSON.parse(localStorage.getItem("albukhr_ai_position"));
-
-  if(saved && ai){
-    ai.style.left = saved.left;
-    ai.style.top = saved.top;
-    ai.style.right = "auto";
-    ai.style.bottom = "auto";
-  }
-}catch(_){}
-
-if(ai){
-  ai.addEventListener(
-    "touchstart",
-    startDrag,
-    {passive:true}
-  );
-
-  ai.addEventListener(
-    "mousedown",
-    startDrag
-  );
-
-  ai.addEventListener(
-    "click",
-    ()=>{
-      ai.classList.remove("minimized");
-    }
-  );
-}
-
-function startDrag(event){
-  if(!ai) return;
-
-  isDragging = true;
-
-  const rect = ai.getBoundingClientRect();
-  const point = event.touches
-    ? event.touches[0]
-    : event;
-
-  offsetX = point.clientX - rect.left;
-  offsetY = point.clientY - rect.top;
-}
-
-document.addEventListener(
-  "touchmove",
-  drag,
-  {passive:false}
-);
-
-document.addEventListener(
-  "mousemove",
-  drag
-);
-
-function drag(event){
-  if(!isDragging || !ai) return;
-
-  if(event.cancelable){
-    event.preventDefault();
-  }
-
-  const point = event.touches
-    ? event.touches[0]
-    : event;
-
-  ai.style.left =
-    (point.clientX - offsetX) + "px";
-
-  ai.style.top =
-    (point.clientY - offsetY) + "px";
-
-  ai.style.right = "auto";
-  ai.style.bottom = "auto";
-}
-
-document.addEventListener(
-  "touchend",
-  stopDrag
-);
-
-document.addEventListener(
-  "mouseup",
-  stopDrag
-);
-
-function stopDrag(){
-  if(!isDragging || !ai) return;
-
-  isDragging = false;
-
-  const rect = ai.getBoundingClientRect();
-  const screenWidth = innerWidth;
-
-  ai.style.left =
-    (rect.left < screenWidth / 2
-      ? 10
-      : screenWidth - rect.width - 10) + "px";
-
-  try{
-    localStorage.setItem(
-      "albukhr_ai_position",
-      JSON.stringify({
-        left: ai.style.left,
-        top: ai.style.top
-      })
-    );
-  }catch(_){}
-
-  setTimeout(()=>{
-    ai.classList.add("minimized");
-  },2000);
-}
-
-/* =========================================================
-   USER / NEW AUTH CORE
-   No direct pi_user authentication logic.
-========================================================= */
-
-async function loadUser(){
-  const el = document.getElementById("piUser");
-  if(!el) return null;
-
-  try{
-    if(typeof window.ensurePiAuth !== "function"){
-      throw new Error(
-        "ALBUKHR Pi Auth Core is not available."
-      );
-    }
-
-    const user = await window.ensurePiAuth();
-
-    if(!user?.uid){
-      console.warn(
-        "ALBUKHR: Pi Auth returned no uid."
-      );
-      return null;
-    }
-
-    el.innerText = user.username || "";
-    return user;
-
-  }catch(error){
-    console.error(
-      "ALBUKHR user authentication failed:",
-      error
-    );
-
-    return null;
-  }
-}
-
-/* =========================================================
-   BOOTSTRAP
-   Auth is initialized through pi-auth-core.
-   Project registry remains the canonical project source.
-========================================================= */
-
-async function bootstrapHome(){
-  try{
-    const user = await loadUser();
-
-    await loadHome();
-
-    let network = null;
-
-    if(typeof window.getAlbukhrNetwork === "function"){
-      network = window.getAlbukhrNetwork();
-    }
-
-    console.log(
-      "🚀 ALBUKHR HOME LOAD",
-      {
-        network,
-        userid:user?.uid || null,
-        projects:HOME_PROJECTS.length,
-        projectSource:"projects"
-      }
-    );
-
-  }catch(error){
-    console.error(
-      "ALBUKHR HOME BOOTSTRAP ERROR:",
-      error
-    );
-
-    const container =
-      document.getElementById("assetsContainer");
-
-    if(container){
-      container.innerHTML =
-        '<div style="padding:16px;text-align:center;">Projects are temporarily unavailable.</div>';
-    }
-  }
-}
-
-document.addEventListener(
-  "DOMContentLoaded",
-  bootstrapHome,
-  {once:true}
-);
+  // 🚀 LOAD DATA
+  loadUser();   // 👈 NEW
+  loadHome();
+console.log("🚀 HOME LOAD");
+});
 </script>
+
+<script src="js/environment-switcher.js"></script>
 
 </body>
 </html>
