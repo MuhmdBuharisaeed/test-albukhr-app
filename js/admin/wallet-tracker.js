@@ -2,7 +2,7 @@ const ALBUKHR_WALLET =
 "GA6JI5N5HZIVG3VD5PM7W4U6DXPT73AZ5CHYURU2YJDPLPL77Q5KPCMD";
 
 const HORIZON_URL =
-"https://api.mainnet.minepi.com";
+"https://api.tesnet.minepi.com";
 
 async function getWalletInfo(){
 
