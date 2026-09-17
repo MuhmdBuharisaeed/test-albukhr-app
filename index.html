@@ -1,16 +1,45 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALBUKHR Testnet</title><meta name="theme-color" content="#0f7a3d">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALBUKHR Testnet</title>
+<meta name="theme-color" content="#0f7a3d">
 <link rel="stylesheet" href="css/testnet.css">
-</head><body>
-<header class="header"><strong>ALBUKHR</strong><span class="env">TESTNET</span></header>
+</head>
+<body>
+<header class="header">
+  <strong>ALBUKHR</strong>
+  <span class="env">TESTNET</span>
+</header>
+
 <main>
-<section class="hero"><p class="eyebrow">ALBUKHR INVESTMENT LIMITED</p><h1>Testnet Environment</h1><p>Safe testing environment for the ALBUKHR ecosystem. Mainnet data and transactions are not used here.</p></section>
-<section><div class="section-head"><h2>Approved Projects</h2><span id="registryStatus">Loading…</span></div><div id="projectList" class="project-grid"></div></section>
-<section class="notice"><strong>Testing only</strong><p>Investment, staking and withdrawals remain disabled until the secure Testnet authentication and transaction gateway is implemented.</p></section>
+<section class="hero">
+  <p class="eyebrow">ALBUKHR INVESTMENT LIMITED</p>
+  <h1>Testnet Environment</h1>
+  <p>Safe testing environment for the ALBUKHR ecosystem. Mainnet data and transactions are not used here.</p>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Approved Projects</h2>
+    <span id="registryStatus">Authenticating…</span>
+  </div>
+  <div id="projectList" class="project-grid"></div>
+</section>
+
+<section class="notice">
+  <strong>Testing only</strong>
+  <p>Investment, staking and withdrawals remain disabled until the secure Testnet transaction gateway is enabled.</p>
+</section>
 </main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core/environment-core.js"></script><script src="js/core/supabase-core.js"></script>
-<script src="js/project-registry.js"></script><script src="js/project-navigation.js"></script><script src="js/testnet-app.js"></script>
-</body></html>
+<script src="js/core/environment-core.js"></script>
+<script src="js/core/supabase-core.js"></script>
+<script src="js/testnet-gateway-auth.js"></script>
+<script src="js/project-registry.js"></script>
+<script src="js/project-navigation.js"></script>
+<script src="js/testnet-app.js"></script>
+</body>
+</html>
