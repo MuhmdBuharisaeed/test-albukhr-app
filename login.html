@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALBUKHR Testnet Login</title>
+<meta name="theme-color" content="#0f7a3d">
+<link rel="stylesheet" href="css/testnet.css">
+</head>
+<body>
+<header class="header">
+  <strong>ALBUKHR</strong>
+  <span class="env">TESTNET</span>
+</header>
+
+<main>
+<section class="hero">
+  <p class="eyebrow">SECURE TESTNET ACCESS</p>
+  <h1>Verify with Pi</h1>
+  <p>Testnet access is issued only after your Pi identity is verified by the ALBUKHR Mainnet authentication gateway.</p>
+
+  <button id="testnetLoginButton" class="testnet-login-button" type="button" onclick="login()">
+    <span class="login-text">Continue with Pi</span>
+    <span>→</span>
+  </button>
+
+  <p id="status" class="notice">Preparing secure authentication…</p>
+</section>
+</main>
+
+<script src="js/testnet-gateway-auth.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
