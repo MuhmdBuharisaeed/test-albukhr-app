@@ -1,33 +1,46 @@
-/* ALBUKHR LOGIN PAGE CONTROLLER */
-(function(window){"use strict";
-function el(id){return document.getElementById(id)}
-function setStatus(message){const e=el("status");if(e)e.textContent=String(message||"")}
-function setLoading(loading,text){const b=el("piLoginButton");if(!b)return;b.disabled=Boolean(loading);const t=b.querySelector(".pi-login-text");if(t&&typeof text==="string")t.textContent=text}
-function checkDependencies(){
- if(!window.ALBukhrEnvironment||!window.ALBukhrEnvironment.isKnown())throw new Error("ALBUKHR environment is unavailable.");
- if(!window.ALBUKHR_SUPABASE)throw new Error("ALBUKHR Supabase Core is unavailable.");
- if(!window.AlbukhrPiAuth)throw new Error("ALBUKHR Pi Auth Core is unavailable.");
-}
-function getTarget(){const r=new URLSearchParams(location.search).get("returnTo");return r==="testnet"?"testnet":(r&&r.startsWith("/")&&!r.startsWith("//")?r:"index.html")}
-async function login(){
- try{
-  checkDependencies();setLoading(true,"Connecting to Pi...");setStatus("Initializing secure Pi authentication...");
-  const user=await window.AlbukhrPiAuth.ensurePiAuth();
-  if(!user||!user.pi_uid)throw new Error("Pi authentication returned an invalid user.");
-  if(getTarget()==="testnet"){
-   setStatus("Mainnet identity verified. Creating secure Testnet access...");setLoading(true,"Opening Testnet...");
-   if(!window.AlbukhrTestnetHandoff)throw new Error("Testnet handoff module is unavailable.");
-   await window.AlbukhrTestnetHandoff.handoffToTestnet();
-   return;
+/* ALBUKHR TESTNET LOGIN CONTROLLER
+   Testnet never authenticates directly with Pi.
+   It requests Mainnet Pi authentication and receives a one-time Testnet code.
+*/
+(function(window, document){
+  "use strict";
+
+  const MAINNET_LOGIN = "https://app.albukhr.com/login.html?returnTo=testnet";
+
+  function el(id){ return document.getElementById(id); }
+
+  function setStatus(message){
+    const node = el("status");
+    if(node) node.textContent = String(message || "");
   }
-  setStatus("Login successful: "+user.username);setLoading(true,"Opening Dashboard...");
-  window.setTimeout(()=>window.location.replace(getTarget()),600);
- }catch(error){
-  console.error("[ALBUKHR LOGIN]",error);setLoading(false,"Login with Pi");
-  setStatus(error&&error.message?"Login failed: "+error.message:"Login failed.");
- }
-}
-window.login=login;
-function init(){try{checkDependencies();setStatus("Ready to login with Pi.");setLoading(false,"Login with Pi")}catch(error){console.error(error);setLoading(true,"Login unavailable");setStatus("Login system is unavailable.")}}
-document.readyState==="loading"?document.addEventListener("DOMContentLoaded",init):init();
-})(window);
+
+  function setLoading(loading, label){
+    const button = el("testnetLoginButton");
+    if(!button) return;
+    button.disabled = Boolean(loading);
+    const text = button.querySelector(".login-text");
+    if(text && typeof label === "string") text.textContent = label;
+  }
+
+  function goMainnet(){
+    window.location.replace(MAINNET_LOGIN);
+  }
+
+  async function start(){
+    setLoading(true, "Opening Mainnet...");
+    setStatus("Testnet uses secure Mainnet identity verification. No Pi access token is sent to Testnet.");
+    window.setTimeout(goMainnet, 250);
+  }
+
+  function init(){
+    setLoading(false, "Continue with Pi");
+    setStatus("Continue to Mainnet to verify your Pi identity.");
+  }
+
+  window.login = start;
+  window.AlbukhrTestnetLogin = Object.freeze({ start, goMainnet });
+
+  document.readyState === "loading"
+    ? document.addEventListener("DOMContentLoaded", init, {once:true})
+    : init();
+})(window, document);
