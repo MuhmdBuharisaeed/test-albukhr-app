@@ -29,11 +29,7 @@
 
   function fail(error) {
     const message = errorMessage(error);
-    console.error("[ALBUKHR TESTNET DIAGNOSTIC]", {
-      stage,
-      error,
-      message
-    });
+    console.error("[ALBUKHR TESTNET DIAGNOSTIC]", { stage, error, message });
     setStatus("FAILED • " + stage + " • " + message);
   }
 
@@ -49,23 +45,20 @@
       const session = await window.AlbukhrTestnetAuth.requireTestnetAuth();
       if (!session) return;
 
-      setStatus(
-        "AUTH • OK • " +
-        clean(session.username || session.pi_uid || "Pi user")
-      );
+      setStatus("AUTH • OK • " + clean(session.username || session.pi_uid || "Pi user"));
 
       stage = "ENVIRONMENT";
-      if (!window.AlbukhrEnvironment) {
+      if (!window.ALBukhrEnvironment) {
         throw new Error("Environment Core is unavailable.");
       }
 
       if (
-        !window.AlbukhrEnvironment.isKnown() ||
-        window.AlbukhrEnvironment.getNetwork() !== "testnet"
+        !window.ALBukhrEnvironment.isKnown() ||
+        window.ALBukhrEnvironment.getNetwork() !== "testnet"
       ) {
         throw new Error(
           "Invalid environment: expected testnet, got " +
-          clean(window.AlbukhrEnvironment.getNetwork())
+          clean(window.ALBukhrEnvironment.getNetwork())
         );
       }
 
@@ -77,9 +70,7 @@
       }
 
       if (!window.ALBUKHR_SUPABASE) {
-        throw new Error(
-          "Supabase Core is unavailable. Check js/core/supabase-core.js."
-        );
+        throw new Error("Supabase Core is unavailable. Check js/core/supabase-core.js.");
       }
 
       setStatus("SUPABASE • OK");
@@ -87,8 +78,7 @@
       stage = "REGISTRY_MODULE";
       if (!window.AlbukhrTestnetRegistry) {
         throw new Error(
-          "Testnet Project Registry module is unavailable. " +
-          "Check js/project-registry.js."
+          "Testnet Project Registry module is unavailable. Check js/project-registry.js."
         );
       }
 
@@ -107,10 +97,7 @@
 
       stage = "RENDER";
       const list = document.getElementById("projectList");
-
-      if (!list) {
-        throw new Error("Project list container #projectList is missing.");
-      }
+      if (!list) throw new Error("Project list container #projectList is missing.");
 
       window.AlbukhrTestnetRegistry.render(list, projects);
 
@@ -123,7 +110,7 @@
       );
 
       console.log("[ALBUKHR TESTNET DIAGNOSTIC] READY", {
-        network: window.AlbukhrEnvironment.getNetwork(),
+        network: window.ALBukhrEnvironment.getNetwork(),
         projectCount: projects.length,
         projects
       });
