@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Investor • ALBUKHR TESTNET</title>
+<meta name="description" content="ALBUKHR Testnet Investor Dashboard">
+<meta name="theme-color" content="#0f7a3d">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/testnet.css">
+<link rel="stylesheet" href="css/testnet-investor.css">
+</head>
+<body>
+
+<header class="tn-header">
+  <a class="tn-brand" href="index.html" aria-label="ALBUKHR Testnet Home">ALBUKHR</a>
+  <a class="tn-env" href="https://app.albukhr.com/investor-dashboard.html" aria-label="Switch to ALBUKHR Mainnet">TESTNET</a>
+</header>
+
+<main class="investor-page">
+
+  <section class="investor-hero" aria-labelledby="heroUserName">
+    <div class="hero-copy">
+      <div class="hero-greeting">
+        <span id="greetingText">Welcome</span>
+        <span class="hero-wave" aria-hidden="true">⌁</span>
+      </div>
+      <h1 id="heroUserName">Investor</h1>
+      <p class="hero-label">Testnet Portfolio</p>
+      <div class="hero-balance-row">
+        <strong id="heroPortfolio">0.00 Pi</strong>
+        <span class="locked-pill">LOCKED</span>
+      </div>
+      <p class="hero-note">Testnet investment values are simulated/read-only until transaction testing is enabled.</p>
+    </div>
+    <div class="hero-mark" aria-hidden="true">
+      <div class="pi-mark">π</div>
+      <span>TESTNET</span>
+    </div>
+  </section>
+
+  <section class="testnet-notice" aria-label="Testnet notice">
+    <div class="notice-icon">!</div>
+    <div>
+      <strong>Investor controls are locked</strong>
+      <p>Project discovery is available for testing. Investment, staking, withdrawal and payment actions are not enabled on Testnet yet.</p>
+    </div>
+  </section>
+
+  <section class="summary-grid" aria-label="Investor summary">
+    <article class="summary-card">
+      <span class="summary-icon">P</span>
+      <span class="summary-title">Portfolio</span>
+      <strong id="totalPortfolio">0.00 Pi</strong>
+      <small>Testnet value</small>
+    </article>
+    <article class="summary-card">
+      <span class="summary-icon">I</span>
+      <span class="summary-title">Invested</span>
+      <strong id="totalInvest">0.00 Pi</strong>
+      <small>Transactions locked</small>
+    </article>
+    <article class="summary-card">
+      <span class="summary-icon">E</span>
+      <span class="summary-title">Earnings</span>
+      <strong id="totalEarn">0.00 Pi</strong>
+      <small>Rewards locked</small>
+    </article>
+    <article class="summary-card">
+      <span class="summary-icon">7</span>
+      <span class="summary-title">Projects</span>
+      <strong id="totalProjects">0</strong>
+      <small>Approved Testnet</small>
+    </article>
+  </section>
+
+  <section class="quick-actions" aria-label="Investor navigation">
+    <a class="action-item" href="marketplace.html">
+      <span class="action-icon">⌂</span><span>Marketplace</span>
+    </a>
+    <a class="action-item locked-action" href="#staking" aria-disabled="true">
+      <span class="action-icon">S</span><span>Staking</span>
+    </a>
+    <a class="action-item" href="#history">
+      <span class="action-icon">H</span><span>History</span>
+    </a>
+    <a class="action-item locked-action" href="#withdraw" aria-disabled="true">
+      <span class="action-icon">W</span><span>Withdraw</span>
+    </a>
+  </section>
+
+  <section class="section-head">
+    <div>
+      <h2>My Investments</h2>
+      <p>Testnet portfolio positions</p>
+    </div>
+    <span class="section-status">TESTNET</span>
+  </section>
+
+  <section id="investments" class="investments-list" aria-live="polite"></section>
+
+  <section class="empty-state" id="emptyInvestments">
+    <div class="empty-mark">+</div>
+    <h3>No Testnet investments yet</h3>
+    <p>Approved projects can be viewed in the marketplace. Investment actions will remain locked until the Testnet transaction layer is enabled.</p>
+    <a class="primary-btn" href="marketplace.html">Browse Projects</a>
+  </section>
+
+  <section id="history" class="locked-panel">
+    <div class="panel-title">
+      <h2>Transaction History</h2>
+      <span>LOCKED</span>
+    </div>
+    <p>Testnet investment and withdrawal transaction history will appear here after the controlled transaction layer is enabled.</p>
+  </section>
+
+  <section id="staking" class="locked-panel">
+    <div class="panel-title">
+      <h2>Staking</h2>
+      <span>LOCKED</span>
+    </div>
+    <p>Staking positions and reward calculations are reserved for a later Testnet testing stage.</p>
+  </section>
+
+  <section id="withdraw" class="locked-panel">
+    <div class="panel-title">
+      <h2>Withdrawals</h2>
+      <span>LOCKED</span>
+    </div>
+    <p>Withdrawals are disabled on Testnet. No Pi transfer is initiated from this page.</p>
+  </section>
+
+</main>
+
+<!-- ALBUKHR TESTNET DOCK NAV -->
+<div class="dock-nav">
+  <a href="index.html" class="dock-item"><span class="dock-icon">⌂</span><span>Home</span></a>
+  <a href="investor.html" class="dock-item active"><span class="dock-icon">◉</span><span>Investor</span></a>
+  <a href="marketplace.html" class="dock-item"><span class="dock-icon">▦</span><span>Marketplace</span></a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/core/environment-core.js"></script>
+<script src="js/core/supabase-core.js"></script>
+<script src="js/testnet-gateway-auth.js"></script>
+<script src="js/project-registry.js"></script>
+<script src="js/testnet-investor.js"></script>
+</body>
+</html>
