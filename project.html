@@ -1,77 +1,422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f7a3d">
-<title id="pageTitle">Project • ALBUKHR TESTNET</title>
-<link rel="stylesheet" href="css/testnet-project.css">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f7a3d"
+  >
+
+  <meta
+    name="description"
+    content="ALBUKHR Testnet project details and registry information."
+  >
+
+  <meta
+    name="color-scheme"
+    content="light"
+  >
+
+  <title id="pageTitle">Project • ALBUKHR TESTNET</title>
+
+  <link
+    rel="stylesheet"
+    href="css/testnet-project.css"
+  >
 </head>
-<body>
+
+<body data-page="project">
+
 <header class="testnet-project-header">
-  <a class="header-brand" href="index.html"><span class="brand">ALBUKHR</span></a>
+
+  <a
+    class="header-brand"
+    href="index.html"
+    aria-label="ALBUKHR Testnet Home"
+  >
+    <span class="brand">ALBUKHR</span>
+  </a>
+
   <div class="header-actions">
-    <a class="mainnet-switch" href="https://app.albukhr.com/login.html">TESTNET</a>
-    <button class="info-button" id="infoButton" type="button" aria-label="Testnet information">ℹ</button>
+
+    <a
+      class="mainnet-switch"
+      href="https://app.albukhr.com/login.html"
+      aria-label="Return to ALBUKHR Mainnet"
+      title="Return to Mainnet"
+    >
+      TESTNET
+    </a>
+
+    <button
+      class="info-button"
+      id="infoButton"
+      type="button"
+      aria-label="Testnet information"
+      aria-controls="infoModal"
+      aria-expanded="false"
+    >
+      ℹ
+    </button>
+
   </div>
+
 </header>
+
 <main class="project-page">
+
+  <!-- PROJECT HERO -->
   <section class="project-hero">
+
     <div class="project-identity">
+
       <div class="detail-logo-wrap">
-        <img id="projectLogo" class="detail-logo" alt="" hidden>
-        <div id="logoFallback" class="detail-logo-fallback">A</div>
+        <img
+          id="projectLogo"
+          class="detail-logo"
+          alt=""
+          hidden
+          loading="eager"
+          decoding="async"
+        >
+
+        <div
+          id="logoFallback"
+          class="detail-logo-fallback"
+          aria-hidden="true"
+        >
+          A
+        </div>
       </div>
+
       <div class="identity-copy">
-        <span id="projectState" class="status">TESTNET • LOADING</span>
-        <h1 id="projectTitle">Project</h1>
-        <p id="projectMeta">Loading registered project…</p>
+
+        <span
+          id="projectState"
+          class="status"
+          role="status"
+          aria-live="polite"
+        >
+          TESTNET • LOADING
+        </span>
+
+        <h1 id="projectTitle">
+          Project
+        </h1>
+
+        <p id="projectMeta">
+          Loading registered project…
+        </p>
+
       </div>
+
     </div>
-    <div class="testnet-strip"><span class="strip-dot"></span><strong>TESTNET</strong><span>Safe testing mode — Mainnet funds and transactions remain isolated.</span></div>
+
+    <div class="testnet-strip">
+      <span
+        class="strip-dot"
+        aria-hidden="true"
+      ></span>
+
+      <strong>TESTNET</strong>
+
+      <span>
+        Safe testing mode — Mainnet funds and transactions remain isolated.
+      </span>
+    </div>
+
   </section>
-  <section class="stats">
-    <article class="stat-card"><span>Your Stake</span><strong id="aStake">LOCKED</strong><small>Testnet staking not enabled</small></article>
-    <article class="stat-card"><span>Your Reward</span><strong id="aReward">LOCKED</strong><small>Testnet reward ledger not enabled</small></article>
-    <article class="stat-card"><span>Investment</span><strong id="investmentState">LOCKED</strong><small>Mainnet investment is isolated</small></article>
+
+
+  <!-- PROJECT STATS -->
+  <section
+    class="stats"
+    aria-label="Project testnet status"
+  >
+
+    <article class="stat-card">
+      <span>Your Stake</span>
+
+      <strong id="aStake">
+        LOCKED
+      </strong>
+
+      <small>
+        Testnet staking not enabled
+      </small>
+    </article>
+
+    <article class="stat-card">
+      <span>Your Reward</span>
+
+      <strong id="aReward">
+        LOCKED
+      </strong>
+
+      <small>
+        Testnet reward ledger not enabled
+      </small>
+    </article>
+
+    <article class="stat-card">
+      <span>Investment</span>
+
+      <strong id="investmentState">
+        LOCKED
+      </strong>
+
+      <small>
+        Mainnet investment is isolated
+      </small>
+    </article>
+
   </section>
+
+
+  <!-- PROJECT INFORMATION -->
   <section class="panel">
-    <div class="section-kicker">PROJECT</div><h2>About this project</h2>
-    <p id="projectDescription">Loading project information…</p>
+
+    <div class="section-kicker">
+      PROJECT
+    </div>
+
+    <h2>
+      About this project
+    </h2>
+
+    <p id="projectDescription">
+      Loading project information…
+    </p>
+
     <div class="project-meta-grid">
-      <div><span>Project Code</span><strong id="projectCode">—</strong></div>
-      <div><span>Project Type</span><strong id="projectType">—</strong></div>
-      <div><span>Core Slot</span><strong id="projectSlot">—</strong></div>
-      <div><span>Network</span><strong id="projectNetwork">TESTNET</strong></div>
+
+      <div>
+        <span>Project Code</span>
+        <strong id="projectCode">—</strong>
+      </div>
+
+      <div>
+        <span>Project Type</span>
+        <strong id="projectType">—</strong>
+      </div>
+
+      <div>
+        <span>Core Slot</span>
+        <strong id="projectSlot">—</strong>
+      </div>
+
+      <div>
+        <span>Network</span>
+        <strong id="projectNetwork">TESTNET</strong>
+      </div>
+
     </div>
+
   </section>
+
+
+  <!-- TESTNET CONTROLS -->
   <section class="panel">
-    <div class="section-kicker">TESTNET CONTROLS</div><h2>Investment controls</h2>
-    <p>These controls are intentionally locked while the secure Testnet transaction gateway is being prepared.</p>
+
+    <div class="section-kicker">
+      TESTNET CONTROLS
+    </div>
+
+    <h2>
+      Investment controls
+    </h2>
+
+    <p>
+      These controls are intentionally locked while the secure Testnet
+      transaction gateway is being prepared.
+    </p>
+
     <div class="action-grid">
-      <button class="action-btn primary" type="button" disabled><span>Stake</span><small>Locked</small></button>
-      <button class="action-btn" type="button" disabled><span>Withdraw Rewards</span><small>Locked</small></button>
-      <button class="action-btn" type="button" disabled><span>Withdraw Capital</span><small>Locked</small></button>
+
+      <button
+        class="action-btn primary"
+        type="button"
+        disabled
+        aria-disabled="true"
+      >
+        <span>Stake</span>
+        <small>Locked</small>
+      </button>
+
+      <button
+        class="action-btn"
+        type="button"
+        disabled
+        aria-disabled="true"
+      >
+        <span>Withdraw Rewards</span>
+        <small>Locked</small>
+      </button>
+
+      <button
+        class="action-btn"
+        type="button"
+        disabled
+        aria-disabled="true"
+      >
+        <span>Withdraw Capital</span>
+        <small>Locked</small>
+      </button>
+
     </div>
+
   </section>
+
+
+  <!-- TRANSACTION HISTORY -->
   <section class="panel">
-    <div class="history-head"><div><div class="section-kicker">ACTIVITY</div><h2>Transaction History</h2></div><button id="refreshBtn" class="refresh-btn" type="button">↻ Refresh</button></div>
-    <div id="projectHistory" class="history-empty"><div class="empty-icon">✓</div><strong>No Testnet transactions</strong><p>Transaction simulation and Testnet settlement are not enabled for this project yet.</p></div>
+
+    <div class="history-head">
+
+      <div>
+        <div class="section-kicker">
+          ACTIVITY
+        </div>
+
+        <h2>
+          Transaction History
+        </h2>
+      </div>
+
+      <button
+        id="refreshBtn"
+        class="refresh-btn"
+        type="button"
+      >
+        ↻ Refresh
+      </button>
+
+    </div>
+
+    <div
+      id="projectHistory"
+      class="history-empty"
+      aria-live="polite"
+    >
+
+      <div
+        class="empty-icon"
+        aria-hidden="true"
+      >
+        ✓
+      </div>
+
+      <strong>
+        No Testnet transactions
+      </strong>
+
+      <p>
+        Transaction simulation and Testnet settlement are not enabled
+        for this project yet.
+      </p>
+
+    </div>
+
   </section>
-  <section class="testnet-notice"><div class="notice-icon">!</div><div><strong>Testnet controls are currently locked</strong><p>This page uses the ALBUKHR Testnet project registry. It does not read or write Mainnet investment, staking, withdrawal, or transaction data.</p></div></section>
+
+
+  <!-- TESTNET SAFETY NOTICE -->
+  <section class="testnet-notice">
+
+    <div
+      class="notice-icon"
+      aria-hidden="true"
+    >
+      !
+    </div>
+
+    <div>
+
+      <strong>
+        Testnet controls are currently locked
+      </strong>
+
+      <p>
+        This page uses the ALBUKHR Testnet project registry.
+        It does not read or write Mainnet investment, staking,
+        withdrawal, or transaction data.
+      </p>
+
+    </div>
+
+  </section>
+
 </main>
-<div id="infoModal" class="info-modal" hidden>
-  <div class="info-box" role="dialog" aria-modal="true">
-    <button id="closeInfo" class="close-info" type="button">×</button>
-    <div class="section-kicker">ALBUKHR TESTNET</div><h2>Safe testing environment</h2>
-    <p>Project information is loaded from the Testnet public project registry. Investment, staking, withdrawals and transaction settlement remain isolated from Mainnet.</p>
-    <button id="infoOk" class="info-ok" type="button">Close</button>
+
+
+<!-- INFORMATION MODAL -->
+<div
+  id="infoModal"
+  class="info-modal"
+  hidden
+>
+
+  <div
+    class="info-box"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="infoTitle"
+    aria-describedby="infoDescription"
+  >
+
+    <button
+      id="closeInfo"
+      class="close-info"
+      type="button"
+      aria-label="Close Testnet information"
+    >
+      ×
+    </button>
+
+    <div class="section-kicker">
+      ALBUKHR TESTNET
+    </div>
+
+    <h2 id="infoTitle">
+      Safe testing environment
+    </h2>
+
+    <p id="infoDescription">
+      Project information is loaded from the Testnet public project
+      registry. Investment, staking, withdrawals and transaction
+      settlement remain isolated from Mainnet.
+    </p>
+
+    <button
+      id="infoOk"
+      class="info-ok"
+      type="button"
+    >
+      Close
+    </button>
+
   </div>
+
 </div>
+
+
+<!-- SUPABASE SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core/environment-core.js"></script>
-<script src="js/core/supabase-core.js"></script>
-<script src="js/project-registry.js"></script>
-<script src="js/testnet-project.js"></script>
+
+<!-- ALBUKHR TESTNET CORE -->
+<script src="js/core/environment-core.js?v=20260920-assetfix1"></script>
+<script src="js/core/supabase-core.js?v=20260920-assetfix1"></script>
+
+<!-- TESTNET PROJECT REGISTRY -->
+<script src="js/project-registry.js?v=20260920-assetfix1"></script>
+
+<!-- TESTNET PROJECT PAGE -->
+<script src="js/testnet-project.js?v=20260920-assetfix1"></script>
+
 </body>
 </html>
