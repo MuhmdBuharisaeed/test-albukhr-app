@@ -1,27 +1,38 @@
+/* ALBUKHR TESTNET ENVIRONMENT CORE v4 */
 (function(window){
-"use strict";
-const CONFIG=Object.freeze({
-  key:"testnet",
-  name:"TESTNET",
-  host:"test.albukhr.com",
-  appUrl:"https://test.albukhr.com",
-  supabaseUrl:"https://vhvkwvngmrlgyzwemttt.supabase.co",
-  network:"testnet"
-});
-const host=String(window.location.hostname||"").toLowerCase().replace(/\.$/,"");
-const known=host==="test.albukhr.com";
-window.ALBukhrEnvironment=Object.freeze({
-  current:known?CONFIG:null,
-  environments:Object.freeze({testnet:CONFIG}),
-  getKey:()=>known?"testnet":null,
-  getName:()=>known?"TESTNET":null,
-  getNetwork:()=>known?"testnet":null,
-  getAppUrl:()=>known?CONFIG.appUrl:null,
-  getSupabaseUrl:()=>known?CONFIG.supabaseUrl:null,
-  getHostname:()=>host,
-  isKnown:()=>known,
-  isTestnet:()=>known,
-  isMainnet:()=>false,
-  getConfig:()=>known?CONFIG:null
-});
+  "use strict";
+  window.__ALBUKHR_ENVIRONMENT_CORE_LOADED__ = true;
+
+  var host = String(window.location && window.location.hostname ? window.location.hostname : "")
+    .toLowerCase().replace(/\.$/,"");
+  var known = host === "test.albukhr.com";
+
+  var config = {
+    key: "testnet",
+    name: "TESTNET",
+    host: "test.albukhr.com",
+    appUrl: "https://test.albukhr.com",
+    supabaseUrl: "https://vhvkwvngmrlgyzwemttt.supabase.co",
+    network: "testnet"
+  };
+
+  window.ALBukhrEnvironment = {
+    current: known ? config : null,
+    environments: { testnet: config },
+    getKey: function(){ return known ? "testnet" : null; },
+    getName: function(){ return known ? "TESTNET" : null; },
+    getNetwork: function(){ return known ? "testnet" : null; },
+    getAppUrl: function(){ return known ? config.appUrl : null; },
+    getSupabaseUrl: function(){ return known ? config.supabaseUrl : null; },
+    getHostname: function(){ return host; },
+    isKnown: function(){ return known; },
+    isTestnet: function(){ return known; },
+    isMainnet: function(){ return false; },
+    getConfig: function(){ return known ? config : null; }
+  };
+
+  try {
+    Object.freeze(config);
+    Object.freeze(window.ALBukhrEnvironment);
+  } catch (_) {}
 })(window);
