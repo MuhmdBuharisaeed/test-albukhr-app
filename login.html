@@ -1,1 +1,134 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ALBUKHR Testnet Login</title><meta name="theme-color" content="#0f7a3d"><link rel="stylesheet" href="css/testnet.css"></head><body><header class="header"><strong>ALBUKHR</strong><span class="env">TESTNET</span></header><main><section class="hero"><p class="eyebrow">SECURE TESTNET ACCESS</p><h1>Verify with Pi</h1><p>Testnet access is issued only after your Pi identity is verified by the ALBUKHR Mainnet authentication gateway.</p><button id="testnetLoginButton" class="testnet-login-button" type="button" onclick="login()"><span class="login-text">Continue with Pi</span><span>→</span></button><p id="status" class="notice">Preparing secure authentication…</p></section></main><script src="js/testnet-gateway-auth.js"></script><script src="js/login.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>ALBUKHR Testnet Login</title>
+
+  <meta
+    name="theme-color"
+    content="#0f7a3d"
+  >
+
+  <meta
+    name="description"
+    content="Secure ALBUKHR Testnet access through verified Mainnet Pi identity."
+  >
+
+  <meta
+    name="color-scheme"
+    content="light"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/testnet.css"
+  >
+
+</head>
+
+
+<body data-page="testnet-login">
+
+
+<header class="header">
+
+  <strong>
+    ALBUKHR
+  </strong>
+
+  <span
+    class="env"
+    aria-label="Current environment: Testnet"
+  >
+    TESTNET
+  </span>
+
+</header>
+
+
+<main>
+
+  <section
+    class="hero"
+    aria-labelledby="loginTitle"
+  >
+
+    <p class="eyebrow">
+      SECURE TESTNET ACCESS
+    </p>
+
+
+    <h1 id="loginTitle">
+      Verify with Pi
+    </h1>
+
+
+    <p>
+      Testnet access is issued only after your Pi identity
+      is verified by the ALBUKHR Mainnet authentication gateway.
+    </p>
+
+
+    <button
+      id="testnetLoginButton"
+      class="testnet-login-button"
+      type="button"
+      aria-describedby="status"
+    >
+
+      <span class="login-text">
+        Continue with Pi
+      </span>
+
+      <span
+        aria-hidden="true"
+      >
+        →
+      </span>
+
+    </button>
+
+
+    <p
+      id="status"
+      class="notice"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      Preparing secure authentication…
+    </p>
+
+  </section>
+
+</main>
+
+
+<!--
+  ALBUKHR TESTNET LOGIN BOOT
+
+  This page intentionally does NOT load:
+    - environment-core.js
+    - supabase-core.js
+    - project-registry.js
+
+  Testnet login is a gateway page.
+  The actual Pi identity verification occurs through
+  the ALBUKHR Mainnet authentication gateway.
+
+  Cache-busting is intentional.
+-->
+<script src="js/testnet-gateway-auth.js?v=20260920-assetfix1"></script>
+
+<script src="js/login.js?v=20260920-assetfix1"></script>
+
+
+</body>
+</html>
