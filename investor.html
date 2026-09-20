@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -38,14 +39,18 @@
 
 <link
   rel="stylesheet"
-  href="css/testnet-investor.css"
+  href="css/testnet-investor.css?v=20260920-investorui1"
 >
 
 </head>
 
 
-<body data-page="investor">
+<body data-page="investor" data-network="testnet">
 
+
+<!-- =========================================================
+     ALBUKHR TESTNET HEADER
+     ========================================================= -->
 
 <header class="tn-header">
 
@@ -57,10 +62,11 @@
     ALBUKHR
   </a>
 
+
   <a
     class="tn-env"
     href="https://app.albukhr.com/investor-dashboard.html"
-    aria-label="Switch to ALBUKHR Mainnet"
+    aria-label="Return to ALBUKHR Mainnet Investor Dashboard"
     title="Return to ALBUKHR Mainnet"
   >
     TESTNET
@@ -69,12 +75,20 @@
 </header>
 
 
-<main class="investor-page">
+
+<!-- =========================================================
+     INVESTOR PAGE
+     ========================================================= -->
+
+<main
+  class="investor-shell investor-page"
+  id="investorPage"
+>
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        INVESTOR HERO
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     class="investor-hero"
@@ -84,6 +98,7 @@
     <div class="hero-copy">
 
       <div class="hero-greeting">
+
         <span id="greetingText">
           Welcome
         </span>
@@ -94,6 +109,7 @@
         >
           ⌁
         </span>
+
       </div>
 
 
@@ -102,7 +118,7 @@
       </h1>
 
 
-      <p class="hero-label">
+      <p class="hero-label investor-subtitle">
         Testnet Portfolio
       </p>
 
@@ -121,9 +137,26 @@
 
 
       <p class="hero-note">
-        Testnet investment values are simulated/read-only until
-        transaction testing is enabled.
+        Testnet investment values are simulated/read-only
+        until transaction testing is enabled.
       </p>
+
+
+      <div
+        id="walletAddress"
+        class="wallet-address"
+        aria-label="Testnet wallet identity"
+      >
+        Wallet verified through Testnet session
+      </div>
+
+
+      <span
+        class="data-state"
+        aria-label="Current network status"
+      >
+        TESTNET
+      </span>
 
     </div>
 
@@ -147,13 +180,13 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        TESTNET NOTICE
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     class="testnet-notice"
-    aria-label="Testnet notice"
+    aria-label="Testnet investor restrictions"
   >
 
     <div
@@ -182,15 +215,17 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        INVESTOR SUMMARY
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     class="summary-grid"
     aria-label="Investor summary"
   >
 
+
+    <!-- PORTFOLIO -->
 
     <article class="summary-card">
 
@@ -217,6 +252,8 @@
 
 
 
+    <!-- INVESTED -->
+
     <article class="summary-card">
 
       <span
@@ -242,6 +279,8 @@
 
 
 
+    <!-- EARNINGS -->
+
     <article class="summary-card">
 
       <span
@@ -266,6 +305,8 @@
     </article>
 
 
+
+    <!-- PROJECTS -->
 
     <article class="summary-card">
 
@@ -295,9 +336,9 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        QUICK ACTIONS
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     class="quick-actions"
@@ -305,9 +346,12 @@
   >
 
 
+    <!-- MARKETPLACE -->
+
     <a
       class="action-item"
       href="marketplace.html"
+      aria-label="Open Testnet Marketplace"
     >
 
       <span
@@ -325,10 +369,13 @@
 
 
 
+    <!-- STAKING -->
+
     <a
       class="action-item locked-action"
       href="#staking"
       aria-disabled="true"
+      aria-label="Staking is locked on Testnet"
     >
 
       <span
@@ -346,9 +393,12 @@
 
 
 
+    <!-- HISTORY -->
+
     <a
       class="action-item"
       href="#history"
+      aria-label="View Testnet transaction history"
     >
 
       <span
@@ -366,10 +416,13 @@
 
 
 
+    <!-- WITHDRAW -->
+
     <a
       class="action-item locked-action"
       href="#withdraw"
       aria-disabled="true"
+      aria-label="Withdrawals are locked on Testnet"
     >
 
       <span
@@ -390,9 +443,9 @@
 
 
 
-  <!-- =========================================================
-       MY INVESTMENTS
-       ========================================================= -->
+  <!-- =======================================================
+       MY INVESTMENTS HEADER
+       ======================================================= -->
 
   <section
     class="section-head"
@@ -420,23 +473,30 @@
 
 
 
+  <!-- =======================================================
+       INVESTMENTS LIST
+       ======================================================= -->
+
   <section
     id="investments"
-    class="investments-list"
+    class="investment-list investments-list"
+    aria-label="Testnet investments"
     aria-live="polite"
     aria-busy="true"
-  ></section>
+  >
+  </section>
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        EMPTY INVESTMENTS STATE
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     class="empty-state"
     id="emptyInvestments"
     aria-labelledby="emptyInvestmentsTitle"
+    hidden
   >
 
     <div
@@ -470,13 +530,13 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        TRANSACTION HISTORY
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     id="history"
-    class="locked-panel"
+    class="locked-panel locked-section"
     aria-labelledby="historyTitle"
   >
 
@@ -503,13 +563,13 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        STAKING
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     id="staking"
-    class="locked-panel"
+    class="locked-panel locked-section"
     aria-labelledby="stakingTitle"
   >
 
@@ -535,13 +595,13 @@
 
 
 
-  <!-- =========================================================
+  <!-- =======================================================
        WITHDRAWALS
-       ========================================================= -->
+       ======================================================= -->
 
   <section
     id="withdraw"
-    class="locked-panel"
+    class="locked-panel locked-section"
     aria-labelledby="withdrawTitle"
   >
 
@@ -570,19 +630,27 @@
 
 
 
-ALBUKHR TESTNET DOCK NAVIGATION
+<!-- =========================================================
+     ALBUKHR TESTNET DOCK NAVIGATION
 
-  IMPORTANT:
-  This navigation is intentionally preserved.
-  Do not redesign, replace, or alter its structure here.
--->
-<nav class="dock-nav" aria-label="Primary navigation">
+     IMPORTANT:
+     Navigation structure is intentionally preserved.
+     Only the active page state is corrected to Investor.
+     ========================================================= -->
+
+<nav
+  class="dock-nav"
+  aria-label="Primary navigation"
+>
+
+
+  <!-- HOME -->
 
   <a
     href="index.html"
-    class="dock-item active"
-    aria-current="page"
+    class="dock-item"
   >
+
     <svg
       viewBox="0 0 24 24"
       class="dock-icon"
@@ -591,46 +659,75 @@ ALBUKHR TESTNET DOCK NAVIGATION
       <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"></path>
     </svg>
 
-    <span>Home</span>
+    <span>
+      Home
+    </span>
+
   </a>
 
 
+
+  <!-- INVESTOR -->
+
   <a
     href="investor.html"
-    class="dock-item"
+    class="dock-item active"
+    aria-current="page"
   >
+
     <svg
       viewBox="0 0 24 24"
       class="dock-icon"
       aria-hidden="true"
     >
+
       <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"></path>
+
       <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"></path>
+
       <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"></path>
+
       <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"></path>
+
     </svg>
 
-    <span>Investor</span>
+    <span>
+      Investor
+    </span>
+
   </a>
 
+
+
+  <!-- MARKETPLACE -->
 
   <a
     href="marketplace.html"
     class="dock-item"
   >
+
     <svg
       viewBox="0 0 24 24"
       class="dock-icon"
       aria-hidden="true"
     >
+
       <path d="M4 9h16l-1.3-5H5.3L4 9z"></path>
+
       <path d="M5 9v10h14V9"></path>
+
       <path d="M3 9h18"></path>
+
       <path d="M8 19v2h8v-2"></path>
+
     </svg>
 
-    <span>Marketplace</span>
+    <span>
+      Marketplace
+    </span>
+
   </a>
+
 
 </nav>
 
@@ -650,26 +747,40 @@ ALBUKHR TESTNET DOCK NAVIGATION
      Cache-busting is intentional.
      ========================================================= -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
 
 
-<script src="js/core/environment-core.js?v=20260920-assetfix1"></script>
+<script
+  src="js/core/environment-core.js?v=20260920-testnet1"
+></script>
 
 
-<script src="js/core/supabase-core.js?v=20260920-assetfix1"></script>
+<script
+  src="js/core/supabase-core.js?v=20260920-testnet1"
+></script>
 
 
-<script src="js/testnet-gateway-auth.js?v=20260920-assetfix1"></script>
+<script
+  src="js/testnet-gateway-auth.js?v=20260920-testnet1"
+></script>
 
 
-<script src="js/project-registry.js?v=20260920-assetfix1"></script>
+<script
+  src="js/project-registry.js?v=20260920-testnet1"
+></script>
 
 
-<!-- Testnet API client must come before investor -->
-<script src="js/testnet-api-core.js?v=20260920-assetfix1"></script>
+<script
+  src="js/testnet-api-core.js?v=20260920-testnet1"
+></script>
 
 
-<script src="js/testnet-investor.js?v=20260920-assetfix1"></script>
+<script
+  src="js/testnet-investor.js?v=20260920-testnet1"
+></script>
 
 
 </body>
