@@ -4,152 +4,448 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f7a3d">
+<meta name="description" content="ALBUKHR Testnet — secure testing environment for the ALBUKHR ecosystem.">
 <title>ALBUKHR Testnet</title>
 <link rel="stylesheet" href="css/testnet-index.css">
 </head>
+
 <body data-page="home">
 
 <header class="testnet-header">
   <div class="header-brand">
     <span class="brand">ALBUKHR</span>
   </div>
+
   <div class="header-actions">
-    <a class="network-badge" href="https://app.albukhr.com/login.html" aria-label="Return to ALBUKHR Mainnet" title="Return to Mainnet">TESTNET</a>
-    <div class="header-status"><span class="status-dot"></span><span>TEST ENVIRONMENT</span></div>
+    <a
+      class="network-badge"
+      href="https://app.albukhr.com/login.html"
+      aria-label="Return to ALBUKHR Mainnet"
+      title="Return to Mainnet"
+    >TESTNET</a>
+
+    <div class="header-status" aria-label="Test environment status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span>TEST ENVIRONMENT</span>
+    </div>
   </div>
 </header>
 
-<section class="testnet-banner">
-  <div class="banner-mark">T</div>
+
+<section class="testnet-banner" aria-label="Testnet environment notice">
+  <div class="banner-mark" aria-hidden="true">T</div>
+
   <div class="banner-copy">
     <strong>ALBUKHR Testnet</strong>
-    <span>Safe testing environment — Mainnet funds and transactions are not used here.</span>
+    <span>
+      Safe testing environment — Mainnet funds and transactions are not used here.
+    </span>
   </div>
 </section>
 
-<section class="welcome-bar">
+
+<section class="welcome-bar" aria-label="Welcome message">
   <div id="welcomeScroll" class="welcome-track">
     Welcome to ALBUKHR Testnet — testing the ecosystem, project registry and investor experience safely.
   </div>
 </section>
 
+
 <main class="testnet-main">
 
-  <section class="hero-card">
+  <section class="hero-card" aria-labelledby="testnetHeroTitle">
+
     <div class="hero-copy">
       <span class="eyebrow">ALBUKHR INVESTMENT LIMITED</span>
-      <h1>Build. Test. Verify.</h1>
-      <p>Explore approved ALBUKHR projects in the Testnet environment. Production investment activity remains isolated on Mainnet.</p>
-      <div class="hero-pills">
-        <span>TESTNET</span><span>MAINNET ISOLATED</span><span>APPROVED PROJECTS</span>
+
+      <h1 id="testnetHeroTitle">
+        Build. Test. Verify.
+      </h1>
+
+      <p>
+        Explore approved ALBUKHR projects in the Testnet environment.
+        Production investment activity remains isolated on Mainnet.
+      </p>
+
+      <div class="hero-pills" aria-label="Testnet features">
+        <span>TESTNET</span>
+        <span>MAINNET ISOLATED</span>
+        <span>APPROVED PROJECTS</span>
       </div>
     </div>
-    <div class="hero-state">
+
+    <div class="hero-state" aria-label="Current environment">
       <span class="state-label">Environment</span>
       <strong>TESTNET</strong>
       <small>Safe testing mode</small>
     </div>
+
   </section>
 
+
   <section class="stats" aria-label="Testnet overview">
+
     <article class="stat-card">
       <span>Approved Projects</span>
       <strong id="approvedProjectCount">—</strong>
       <small>From Testnet registry</small>
     </article>
+
     <article class="stat-card">
       <span>Investment</span>
       <strong class="locked-value">LOCKED</strong>
       <small>Testing gateway not enabled</small>
     </article>
+
     <article class="stat-card">
       <span>Staking</span>
       <strong class="locked-value">LOCKED</strong>
       <small>Testing gateway not enabled</small>
     </article>
+
   </section>
 
-  <section class="project-section">
+
+  <section class="project-section" aria-labelledby="projectRegistryTitle">
+
     <div class="section-heading">
+
       <div>
         <span class="section-kicker">PROJECT REGISTRY</span>
-        <h2>Approved Projects</h2>
-        <p>Projects approved for the ALBUKHR Testnet environment.</p>
+
+        <h2 id="projectRegistryTitle">
+          Approved Projects
+        </h2>
+
+        <p>
+          Projects approved for the ALBUKHR Testnet environment.
+        </p>
       </div>
-      <div id="registryStatus" class="registry-status" aria-live="polite">Authenticating…</div>
+
+      <div
+        id="registryStatus"
+        class="registry-status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Authenticating…
+      </div>
+
     </div>
-    <div id="projectList" class="project-grid" aria-live="polite"></div>
+
+    <div
+      id="projectList"
+      class="project-grid"
+      aria-live="polite"
+      aria-busy="true"
+    ></div>
+
+    <noscript>
+      <p>
+        JavaScript is required to load the ALBUKHR Testnet project registry.
+      </p>
+    </noscript>
+
   </section>
 
-  <section id="investor" class="investor-section">
+
+  <section
+    id="investor"
+    class="investor-section"
+    aria-labelledby="investorExperienceTitle"
+  >
+
     <div class="investor-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19H2"></path><path d="M4 7l5-4 4 3 7-5"></path></svg>
+      <svg
+        viewBox="0 0 24 24"
+        role="img"
+        aria-hidden="true"
+      >
+        <path d="M4 19V9"></path>
+        <path d="M10 19V5"></path>
+        <path d="M16 19v-7"></path>
+        <path d="M22 19H2"></path>
+        <path d="M4 7l5-4 4 3 7-5"></path>
+      </svg>
     </div>
+
     <div class="investor-copy">
       <span class="section-kicker">INVESTOR</span>
-      <h2>Investor Experience</h2>
-      <p>The Investor area is reserved for Testnet investor features and controlled testing. No Mainnet investment balance is displayed here.</p>
+
+      <h2 id="investorExperienceTitle">
+        Investor Experience
+      </h2>
+
+      <p>
+        The Investor area is reserved for Testnet investor features and
+        controlled testing. No Mainnet investment balance is displayed here.
+      </p>
     </div>
-    <a class="investor-action" href="index.html#investor">Open Investor <span>→</span></a>
+
+    <a
+      class="investor-action"
+      href="index.html#investor"
+      aria-label="Open Investor section"
+    >
+      Open Investor
+      <span aria-hidden="true">→</span>
+    </a>
+
   </section>
 
-  <section class="testnet-notice">
-    <div class="notice-icon">!</div>
+
+  <section
+    class="testnet-notice"
+    aria-label="Testnet controls notice"
+  >
+
+    <div class="notice-icon" aria-hidden="true">!</div>
+
     <div>
-      <strong>Testnet controls are currently locked</strong>
-      <p>Investment, staking and withdrawals remain disabled until the secure Testnet transaction gateway is enabled. Testnet activity must remain isolated from Mainnet.</p>
+      <strong>
+        Testnet controls are currently locked
+      </strong>
+
+      <p>
+        Investment, staking and withdrawals remain disabled until the secure
+        Testnet transaction gateway is enabled. Testnet activity must remain
+        isolated from Mainnet.
+      </p>
     </div>
+
   </section>
 
 </main>
 
+
+<!--
+  ALBUKHR TESTNET DOCK NAVIGATION
+
+  IMPORTANT:
+  This navigation is intentionally preserved.
+  Do not redesign, replace, or alter its structure here.
+-->
 <nav class="dock-nav" aria-label="Primary navigation">
-  <a href="index.html" class="dock-item active" aria-current="page">
-    <svg viewBox="0 0 24 24" class="dock-icon"><path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>
+
+  <a
+    href="index.html"
+    class="dock-item active"
+    aria-current="page"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      class="dock-icon"
+      aria-hidden="true"
+    >
+      <path d="M3 10L12 3l9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"></path>
+    </svg>
+
     <span>Home</span>
   </a>
-  <a href="investor.html" class="dock-item">
-    <svg viewBox="0 0 24 24" class="dock-icon"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"/><path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"/><path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"/><path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"/></svg>
+
+
+  <a
+    href="investor.html"
+    class="dock-item"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      class="dock-icon"
+      aria-hidden="true"
+    >
+      <path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3z"></path>
+      <path d="M8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3z"></path>
+      <path d="M2 20v-1c0-2.21 3.58-4 6-4s6 1.79 6 4v1z"></path>
+      <path d="M14 20v-1c0-1.5 1.5-2.8 3.5-3.5 2 .7 3.5 2 3.5 3.5v1z"></path>
+    </svg>
+
     <span>Investor</span>
   </a>
-  <a href="marketplace.html" class="dock-item">
-    <svg viewBox="0 0 24 24" class="dock-icon"><path d="M4 9h16l-1.3-5H5.3L4 9z"/><path d="M5 9v10h14V9"/><path d="M3 9h18"/><path d="M8 19v2h8v-2"/></svg>
+
+
+  <a
+    href="marketplace.html"
+    class="dock-item"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      class="dock-icon"
+      aria-hidden="true"
+    >
+      <path d="M4 9h16l-1.3-5H5.3L4 9z"></path>
+      <path d="M5 9v10h14V9"></path>
+      <path d="M3 9h18"></path>
+      <path d="M8 19v2h8v-2"></path>
+    </svg>
+
     <span>Marketplace</span>
   </a>
+
 </nav>
 
+
+<!--
+  ALBUKHR TESTNET JAVASCRIPT BOOT ORDER
+
+  1. Supabase SDK
+  2. Environment Core
+  3. Supabase Core
+  4. Testnet Gateway Authentication
+  5. Testnet Project Registry
+  6. Project Navigation
+  7. Testnet Application Boot
+
+  Cache-busting is intentional.
+  It prevents the browser/CDN from reusing an older environment-core.js.
+-->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core/environment-core.js"></script>
-<script src="js/core/supabase-core.js"></script>
-<script src="js/testnet-gateway-auth.js"></script>
-<script src="js/project-registry.js"></script>
-<script src="js/project-navigation.js"></script>
-<script src="js/testnet-app.js"></script>
+
+<script src="js/core/environment-core.js?v=20260920-assetfix1"></script>
+
+<script src="js/core/supabase-core.js?v=20260920-assetfix1"></script>
+
+<script src="js/testnet-gateway-auth.js?v=20260920-assetfix1"></script>
+
+<script src="js/project-registry.js?v=20260920-assetfix1"></script>
+
+<script src="js/project-navigation.js?v=20260920-assetfix1"></script>
+
+<script src="js/testnet-app.js?v=20260920-assetfix1"></script>
+
 
 <script>
 (function(){
   "use strict";
-  const count=document.getElementById("approvedProjectCount");
-  window.addEventListener("albukhr:testnet-registry-ready",function(e){
-    const p=e.detail&&e.detail.projects;
-    if(count&&Array.isArray(p)) count.textContent=String(p.length);
-  });
-  const status=document.getElementById("registryStatus");
-  const observer=new MutationObserver(function(){
-    const m=(status?.textContent||"").match(/OK • (\d+) project/);
-    if(m&&count) count.textContent=m[1];
-  });
-  if(status) observer.observe(status,{childList:true,characterData:true,subtree:true});
-  let lastScroll=0;
-  const dock=document.querySelector(".dock-nav");
-  window.addEventListener("scroll",function(){
-    if(!dock)return;
-    const y=window.pageYOffset||0;
-    if(Math.abs(y-lastScroll)<=10)return;
-    dock.classList.toggle("hide",y>lastScroll&&y>80);
-    lastScroll=y;
-  },{passive:true});
+
+  /*
+   * ALBUKHR TESTNET HOME PAGE UI BRIDGE
+   *
+   * This block does not perform authentication,
+   * database access, project loading, or navigation.
+   *
+   * Those responsibilities remain inside the
+   * dedicated Testnet JavaScript modules above.
+   */
+
+  const count = document.getElementById("approvedProjectCount");
+  const status = document.getElementById("registryStatus");
+  const projectList = document.getElementById("projectList");
+
+
+  /*
+   * Registry-ready event
+   */
+  window.addEventListener(
+    "albukhr:testnet-registry-ready",
+    function(event){
+
+      const projects =
+        event.detail &&
+        Array.isArray(event.detail.projects)
+          ? event.detail.projects
+          : null;
+
+      if(count && projects){
+        count.textContent = String(projects.length);
+      }
+
+      if(projectList){
+        projectList.setAttribute("aria-busy", "false");
+      }
+
+    }
+  );
+
+
+  /*
+   * Registry status observer
+   *
+   * Supports statuses such as:
+   *   OK • 5 projects
+   *   EMPTY • 0 projects
+   *   ERROR • ...
+   */
+  if(status){
+
+    const observer =
+      new MutationObserver(function(){
+
+        const message =
+          String(status.textContent || "").trim();
+
+        const match =
+          message.match(/OK\s*•\s*(\d+)\s+projects?/i);
+
+        if(match && count){
+          count.textContent = match[1];
+        }
+
+        if(projectList){
+
+          const loading =
+            /authenticating|loading/i.test(message);
+
+          projectList.setAttribute(
+            "aria-busy",
+            loading ? "true" : "false"
+          );
+        }
+
+      });
+
+    observer.observe(
+      status,
+      {
+        childList: true,
+        characterData: true,
+        subtree: true
+      }
+    );
+
+  }
+
+
+  /*
+   * Preserve existing Testnet Dock Navigation behavior.
+   *
+   * The Dock Navigation itself is NOT redesigned.
+   */
+  let lastScroll = 0;
+
+  const dock =
+    document.querySelector(".dock-nav");
+
+  window.addEventListener(
+    "scroll",
+    function(){
+
+      if(!dock){
+        return;
+      }
+
+      const y =
+        window.pageYOffset || 0;
+
+      if(Math.abs(y - lastScroll) <= 10){
+        return;
+      }
+
+      dock.classList.toggle(
+        "hide",
+        y > lastScroll && y > 80
+      );
+
+      lastScroll = y;
+
+    },
+    {
+      passive: true
+    }
+  );
+
 })();
 </script>
+
+
 </body>
-</html>
+  </html>
