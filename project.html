@@ -60,12 +60,18 @@
   </section>
   <section class="testnet-notice"><div class="notice-icon">!</div><div><strong>Testnet controls are currently locked</strong><p>This page uses the ALBUKHR Testnet project registry. It does not read or write Mainnet investment, staking, withdrawal, or transaction data.</p></div></section>
 </main>
-
-<div id="infoModal" class="info-modal" hidden><div class="info-box" role="dialog" aria-modal="true"><button id="closeInfo" class="close-info" type="button">×</button><div class="section-kicker">ALBUKHR TESTNET</div><h2>Safe testing environment</h2><p>Project information is loaded from the Testnet public project registry. Investment, staking, withdrawals and transaction settlement remain isolated from Mainnet.</p><button id="infoOk" class="info-ok" type="button">Close</button></div></div>
+<div id="infoModal" class="info-modal" hidden>
+  <div class="info-box" role="dialog" aria-modal="true">
+    <button id="closeInfo" class="close-info" type="button">×</button>
+    <div class="section-kicker">ALBUKHR TESTNET</div><h2>Safe testing environment</h2>
+    <p>Project information is loaded from the Testnet public project registry. Investment, staking, withdrawals and transaction settlement remain isolated from Mainnet.</p>
+    <button id="infoOk" class="info-ok" type="button">Close</button>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/core/environment-core.js"></script>
-<script src="js/core/supabase-core.js"></script>
-<script src="js/project-registry.js"></script>
-<script src="js/testnet-project.js"></script>
+<script src="js/core/environment-core.js?v=4"></script>
+<script src="js/core/supabase-core.js?v=4"></script>
+<script src="js/project-registry.js?v=4"></script>
+<script src="js/testnet-project.js?v=4"></script>
 </body>
 </html>
