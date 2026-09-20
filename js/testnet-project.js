@@ -1,222 +1,886 @@
-/* ALBUKHR TESTNET PROJECT — DIAGNOSTIC BUILD v3 */
-(function(window, document){
-"use strict";
+/* ALBUKHR TESTNET PROJECT PAGE v6 */
+(function (window, document) {
+  "use strict";
 
-function clean(v){ return String(v == null ? "" : v).trim(); }
-function el(id){ return document.getElementById(id); }
-function set(id,v){ const n=el(id); if(n) n.textContent=clean(v); }
+  /*
+   * ALBUKHR TESTNET PROJECT PAGE
+   *
+   * Responsibilities:
+   * - Resolve the requested project identity from the URL.
+   * - Read the project from the Testnet public registry.
+   * - Render project identity, metadata and logo.
+   * - Keep Testnet investment controls locked until enabled.
+   * - Provide project information modal and registry refresh.
+   *
+   * This file does NOT:
+   * - dynamically load Environment Core;
+   * - dynamically load Supabase Core;
+   * - access Mainnet;
+   * - create a Supabase client;
+   * - perform investments;
+   * - perform staking;
+   * - perform withdrawals;
+   * - perform payments.
+   */
 
-function identity(){
-  const q=new URLSearchParams(location.search);
-  return clean(q.get("project") || q.get("project_code") || q.get("slug") || q.get("project_id"));
-}
+  var initialized = false;
+  var loadingPromise = null;
 
-function escapeHtml(v){
-  return String(v == null ? "" : v).replace(/[&<>"]/g,function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
-  });
-}
+  /*
+   * ------------------------------------------------------------------
+   * Utilities
+   * ------------------------------------------------------------------
+   */
 
-function showDiagnostic(type,message,extra){
-  let box=el("albukhrProjectDiagnostic");
-  if(!box){
-    box=document.createElement("section");
-    box.id="albukhrProjectDiagnostic";
-    box.style.cssText=
-      "position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483647;"+
-      "padding:14px 16px;border:1px solid #e5c76b;border-radius:14px;"+
-      "background:#fff8e1;color:#3f2d00;box-shadow:0 12px 35px rgba(0,0,0,.18);"+
-      "font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
-    document.body.appendChild(box);
-  }
-  box.innerHTML=
-    "<strong>ALBUKHR TESTNET PROJECT DIAGNOSTIC v3</strong>"+
-    "<div style='margin-top:6px'><b>Stage:</b> "+escapeHtml(type)+"</div>"+
-    "<div style='margin-top:4px'><b>Message:</b> "+escapeHtml(message)+"</div>"+
-    (extra ? "<div style='margin-top:4px;word-break:break-word'><b>Details:</b> "+escapeHtml(extra)+"</div>" : "");
-}
-
-function notFound(){
-  set("projectTitle","Project not found");
-  set("projectState","TESTNET • NOT FOUND");
-  set("projectMeta","This project is not available in the Testnet registry.");
-  set("projectDescription","The requested project could not be resolved against the approved Testnet project registry.");
-  document.title="Project not found • ALBUKHR TESTNET";
-}
-
-function render(p){
-  const name=clean(p.name)||clean(p.title)||"Project";
-  const code=clean(p.project_code)||"—";
-  const type=clean(p.project_type).toUpperCase()||"—";
-  const slot=p.core_slot==null ? "—" : p.core_slot;
-  const status=clean(p.status).toUpperCase()||"APPROVED";
-
-  set("projectTitle",name);
-  set("projectState","TESTNET • "+status);
-  set("projectMeta",type+" • Core Slot "+slot);
-  set("projectDescription",clean(p.description)||"Registered ALBUKHR project available for controlled Testnet exploration.");
-  set("projectCode",code);
-  set("projectType",type);
-  set("projectSlot",slot);
-  set("projectNetwork",clean(p.network).toUpperCase()||"TESTNET");
-  document.title=name+" • ALBUKHR TESTNET";
-
-  const img=el("projectLogo");
-  const fb=el("logoFallback");
-  const logo=clean(p.logo_url);
-
-  if(img && logo){
-    img.src=logo;
-    img.alt=name;
-    img.hidden=false;
-    if(fb) fb.hidden=true;
-    img.onerror=function(){
-      img.hidden=true;
-      if(fb) fb.hidden=false;
-    };
-  }else{
-    if(img) img.hidden=true;
-    if(fb) fb.hidden=false;
-  }
-}
-
-function environmentDiagnostics(){
-  const script=document.querySelector('script[src*="environment-core.js"]');
-  const env=window.AlbukhrEnvironment;
-  const host=clean(location.hostname).toLowerCase();
-  const expected="test.albukhr.com";
-  const scriptPresent=!!script;
-  const scriptSrc=script ? script.src : "MISSING";
-  const envPresent=!!env;
-  const known=envPresent && typeof env.isKnown==="function" ? !!env.isKnown() : null;
-  const network=envPresent && typeof env.getNetwork==="function" ? clean(env.getNetwork()) : "UNAVAILABLE";
-  return {scriptPresent,scriptSrc,envPresent,host,expected,known,network};
-}
-
-async function ensureEnvironmentCore(){
-  let d=environmentDiagnostics();
-
-  if(d.envPresent){
-    if(!d.known) throw new Error("ENVIRONMENT_HOST_REJECTED: environment-core loaded, but the current hostname is not accepted.");
-    if(d.network!=="testnet") throw new Error("ENVIRONMENT_NETWORK_INVALID: environment-core loaded, but network is not testnet.");
-    return d;
+  function clean(value) {
+    return String(
+      value == null ? "" : value
+    ).trim();
   }
 
-  const src="https://test.albukhr.com/js/core/environment-core.js?v=project-v3";
-  await new Promise(function(resolve,reject){
-    const s=document.createElement("script");
-    s.src=src;
-    s.async=false;
-    s.onload=resolve;
-    s.onerror=function(){
-      reject(new Error("ENVIRONMENT_CORE_LOAD_FAILED: browser could not load environment-core.js from the Testnet origin."));
-    };
-    document.head.appendChild(s);
-  });
+  function element(id) {
+    return document.getElementById(id);
+  }
 
-  d=environmentDiagnostics();
-  if(!d.envPresent) throw new Error("ENVIRONMENT_CORE_MISSING: environment-core.js loaded without creating ALBUKHR environment.");
-  if(!d.known) throw new Error("ENVIRONMENT_HOST_REJECTED: current host is not accepted as Testnet.");
-  if(d.network!=="testnet") throw new Error("ENVIRONMENT_NETWORK_INVALID: expected testnet network.");
-  return d;
-}
+  function setText(id, value) {
+    var node =
+      element(id);
 
-async function load(){
-  const id=identity();
+    if (node) {
+      node.textContent =
+        clean(value);
+    }
+  }
 
-  try{
-    const envInfo=await ensureEnvironmentCore();
-
-    if(!window.ALBUKHR_SUPABASE) throw new Error("SUPABASE_CORE_MISSING: Testnet Supabase Core is unavailable.");
-    if(!window.AlbukhrTestnetRegistry) throw new Error("PROJECT_REGISTRY_MODULE_MISSING: Testnet Project Registry module is unavailable.");
-
-    if(!id){
-      notFound();
-      showDiagnostic("PROJECT_ID_MISSING","No project identity was supplied in the page URL.");
-      return null;
+  function getErrorMessage(
+    error,
+    fallback
+  ) {
+    if (
+      error &&
+      typeof error.message === "string" &&
+      error.message.trim()
+    ) {
+      return error.message.trim();
     }
 
-    set("projectState","TESTNET • LOADING");
-    set("projectMeta","Loading registered project…");
+    return (
+      fallback ||
+      "Unable to load Testnet project."
+    );
+  }
 
-    const projects=await window.AlbukhrTestnetRegistry.load(true);
-    if(!Array.isArray(projects)) throw new Error("PROJECT_REGISTRY_INVALID: registry returned an invalid response.");
+  /*
+   * ------------------------------------------------------------------
+   * Environment validation
+   * ------------------------------------------------------------------
+   */
 
-    const p=window.AlbukhrTestnetRegistry.resolve(id);
+  function validateEnvironment() {
+    var env =
+      window.ALBukhrEnvironment;
 
-    if(!p){
-      notFound();
-      showDiagnostic("PROJECT_NOT_FOUND","Registry loaded successfully, but the requested project was not found.",
-        "Requested identity: "+id+"; registry count: "+projects.length);
-      return null;
+    if (
+      !env ||
+      typeof env.isKnown !== "function" ||
+      typeof env.isTestnet !== "function" ||
+      typeof env.getNetwork !== "function"
+    ) {
+      throw new Error(
+        "ALBUKHR Testnet Environment Core is unavailable."
+      );
     }
 
-    render(p);
-    showDiagnostic("PROJECT_OK","Testnet project loaded successfully.",
-      "project="+id+"; registry_count="+projects.length+"; host="+envInfo.host+"; network="+envInfo.network);
-    return p;
+    if (
+      !env.isKnown() ||
+      !env.isTestnet() ||
+      env.getNetwork() !== "testnet"
+    ) {
+      throw new Error(
+        "Invalid ALBUKHR Testnet environment."
+      );
+    }
 
-  }catch(e){
-    console.error("[ALBUKHR TESTNET PROJECT]",e);
-    set("projectState","TESTNET • UNAVAILABLE");
-    set("projectMeta","Unable to load the Testnet project registry.");
-    set("projectDescription","The Testnet project data could not be loaded.");
-
-    const d=environmentDiagnostics();
-    const detail=[
-      "project="+(id||"missing"),
-      "host="+d.host,
-      "expected_host="+d.expected,
-      "environment_script="+d.scriptPresent,
-      "environment_object="+d.envPresent,
-      "network="+d.network,
-      "script="+d.scriptSrc
-    ].join("; ");
-
-    const msg=e && e.message ? e.message : "Unknown project registry error.";
-    let stage="PROJECT_REGISTRY_ERROR";
-    if(msg.indexOf("ENVIRONMENT_CORE_LOAD_FAILED")===0) stage="ENVIRONMENT_CORE_LOAD_FAILED";
-    else if(msg.indexOf("ENVIRONMENT_CORE_MISSING")===0) stage="ENVIRONMENT_CORE_MISSING";
-    else if(msg.indexOf("ENVIRONMENT_HOST_REJECTED")===0) stage="ENVIRONMENT_HOST_REJECTED";
-    else if(msg.indexOf("ENVIRONMENT_NETWORK_INVALID")===0) stage="ENVIRONMENT_NETWORK_INVALID";
-    else if(msg.indexOf("SUPABASE_CORE_MISSING")===0) stage="SUPABASE_CORE_MISSING";
-    else if(msg.indexOf("PROJECT_REGISTRY_MODULE_MISSING")===0) stage="PROJECT_REGISTRY_MODULE_MISSING";
-
-    showDiagnostic(stage,msg,detail);
-    return null;
+    return env;
   }
-}
 
-function init(){
-  const modal=el("infoModal");
-  const close=()=>{if(modal) modal.hidden=true;};
-  const info=el("infoButton");
+  /*
+   * ------------------------------------------------------------------
+   * Project identity
+   * ------------------------------------------------------------------
+   */
 
-  if(info) info.onclick=()=>{if(modal) modal.hidden=false;};
-  if(el("closeInfo")) el("closeInfo").onclick=close;
-  if(el("infoOk")) el("infoOk").onclick=close;
-  if(modal) modal.onclick=e=>{if(e.target===modal) close();};
+  function getIdentity() {
+    var params;
 
-  const refresh=el("refreshBtn");
-  if(refresh){
-    refresh.onclick=async function(){
-      refresh.disabled=true;
-      refresh.textContent="↻ Loading…";
-      try{ await load(); }
-      finally{
-        refresh.disabled=false;
-        refresh.textContent="↻ Refresh";
+    try {
+      params =
+        new URLSearchParams(
+          window.location.search
+        );
+    } catch (_) {
+      return "";
+    }
+
+    return clean(
+      params.get("project") ||
+      params.get("project_code") ||
+      params.get("slug") ||
+      params.get("project_id")
+    );
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Project not-found state
+   * ------------------------------------------------------------------
+   */
+
+  function notFound() {
+    setText(
+      "projectTitle",
+      "Project not found"
+    );
+
+    setText(
+      "projectState",
+      "TESTNET • NOT FOUND"
+    );
+
+    setText(
+      "projectMeta",
+      "This project is not available in the Testnet registry."
+    );
+
+    setText(
+      "projectDescription",
+      "The requested project could not be resolved against the approved Testnet project registry."
+    );
+
+    setText(
+      "projectCode",
+      "—"
+    );
+
+    setText(
+      "projectType",
+      "—"
+    );
+
+    setText(
+      "projectSlot",
+      "—"
+    );
+
+    setText(
+      "projectNetwork",
+      "TESTNET"
+    );
+
+    var image =
+      element("projectLogo");
+
+    var fallback =
+      element("logoFallback");
+
+    if (image) {
+      image.hidden =
+        true;
+
+      image.removeAttribute(
+        "src"
+      );
+    }
+
+    if (fallback) {
+      fallback.hidden =
+        false;
+    }
+
+    document.title =
+      "Project not found • ALBUKHR TESTNET";
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Logo rendering
+   * ------------------------------------------------------------------
+   */
+
+  function renderLogo(
+    project,
+    name
+  ) {
+    var image =
+      element("projectLogo");
+
+    var fallback =
+      element("logoFallback");
+
+    if (!image) {
+      return;
+    }
+
+    var logo =
+      clean(
+        project &&
+        project.logo_url
+      );
+
+    /*
+     * Every ALBUKHR project should have a registry logo.
+     *
+     * We do not create an emoji or artificial project logo when
+     * logo_url is missing.
+     */
+    if (!logo) {
+      image.hidden =
+        true;
+
+      image.removeAttribute(
+        "src"
+      );
+
+      if (fallback) {
+        fallback.hidden =
+          true;
+
+        fallback.setAttribute(
+          "aria-hidden",
+          "true"
+        );
       }
+
+      return;
+    }
+
+    /*
+     * Clear the previous image before assigning the new project logo.
+     */
+    image.hidden =
+      true;
+
+    image.alt =
+      name + " logo";
+
+    image.onload =
+      function () {
+        image.hidden =
+          false;
+
+        if (fallback) {
+          fallback.hidden =
+            true;
+        }
+      };
+
+    image.onerror =
+      function () {
+        image.hidden =
+          true;
+
+        image.removeAttribute(
+          "src"
+        );
+
+        if (fallback) {
+          fallback.hidden =
+            true;
+        }
+      };
+
+    image.src =
+      logo;
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Project rendering
+   * ------------------------------------------------------------------
+   */
+
+  function render(project) {
+    if (!project) {
+      notFound();
+      return;
+    }
+
+    var name =
+      clean(project.name) ||
+      clean(project.title) ||
+      "Project";
+
+    var code =
+      clean(project.project_code) ||
+      "—";
+
+    var type =
+      clean(project.project_type)
+        .toUpperCase() ||
+      "—";
+
+    var slot =
+      project.core_slot == null ||
+      project.core_slot === ""
+        ? "—"
+        : String(
+            project.core_slot
+          );
+
+    var status =
+      clean(project.status)
+        .toUpperCase() ||
+      "APPROVED";
+
+    var network =
+      clean(project.network)
+        .toUpperCase() ||
+      "TESTNET";
+
+    /*
+     * Defensive network validation.
+     *
+     * This page must never render a Mainnet registry row.
+     */
+    if (
+      network.toLowerCase() !==
+      "testnet"
+    ) {
+      throw new Error(
+        "PROJECT_NETWORK_INVALID: requested project is not a Testnet project."
+      );
+    }
+
+    setText(
+      "projectTitle",
+      name
+    );
+
+    setText(
+      "projectState",
+      "TESTNET • " +
+        status
+    );
+
+    setText(
+      "projectMeta",
+      type +
+        " • Core Slot " +
+        slot
+    );
+
+    setText(
+      "projectDescription",
+      clean(project.description) ||
+        "Registered ALBUKHR project available for controlled Testnet exploration."
+    );
+
+    setText(
+      "projectCode",
+      code
+    );
+
+    setText(
+      "projectType",
+      type
+    );
+
+    setText(
+      "projectSlot",
+      slot
+    );
+
+    setText(
+      "projectNetwork",
+      network
+    );
+
+    document.title =
+      name +
+      " • ALBUKHR TESTNET";
+
+    renderLogo(
+      project,
+      name
+    );
+
+    /*
+     * Testnet controls remain locked.
+     *
+     * These IDs are retained so a future transaction module can
+     * activate them only after the Testnet transaction gateway
+     * is explicitly enabled.
+     */
+    setText(
+      "aStake",
+      "LOCKED"
+    );
+
+    setText(
+      "aReward",
+      "LOCKED"
+    );
+
+    setText(
+      "investmentState",
+      "LOCKED"
+    );
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Load project
+   * ------------------------------------------------------------------
+   */
+
+  async function load() {
+    /*
+     * Prevent duplicate simultaneous loads.
+     */
+    if (loadingPromise) {
+      return loadingPromise;
+    }
+
+    loadingPromise =
+      (async function () {
+        var identity =
+          getIdentity();
+
+        try {
+          validateEnvironment();
+
+          /*
+           * The HTML page already loads the shared Testnet Supabase
+           * Core. This module must not create another client.
+           */
+          if (
+            !window.ALBUKHR_SUPABASE
+          ) {
+            throw new Error(
+              "SUPABASE_CORE_MISSING: Testnet Supabase Core is unavailable."
+            );
+          }
+
+          if (
+            window.ALBUKHR_SUPABASE.network !==
+            "testnet"
+          ) {
+            throw new Error(
+              "SUPABASE_NETWORK_INVALID: Supabase Core is not configured for Testnet."
+            );
+          }
+
+          /*
+           * Registry module must already be loaded by project.html.
+           */
+          if (
+            !window.AlbukhrTestnetRegistry ||
+            typeof
+              window.AlbukhrTestnetRegistry
+                .load !== "function" ||
+            typeof
+              window.AlbukhrTestnetRegistry
+                .resolve !== "function"
+          ) {
+            throw new Error(
+              "PROJECT_REGISTRY_MODULE_MISSING: Testnet Project Registry module is unavailable."
+            );
+          }
+
+          /*
+           * A project identity is mandatory.
+           */
+          if (!identity) {
+            notFound();
+
+            return null;
+          }
+
+          setText(
+            "projectState",
+            "TESTNET • LOADING"
+          );
+
+          setText(
+            "projectMeta",
+            "Loading registered project…"
+          );
+
+          /*
+           * Refresh the registry so the detail page can resolve the
+           * current approved/active Testnet project identity.
+           */
+          var projects =
+            await window
+              .AlbukhrTestnetRegistry
+              .load(true);
+
+          if (
+            !Array.isArray(projects)
+          ) {
+            throw new Error(
+              "PROJECT_REGISTRY_INVALID: registry returned an invalid response."
+            );
+          }
+
+          /*
+           * Resolve only against the registry that was loaded from
+           * the Testnet RPC.
+           */
+          var project =
+            window
+              .AlbukhrTestnetRegistry
+              .resolve(identity);
+
+          if (!project) {
+            notFound();
+
+            return null;
+          }
+
+          /*
+           * Final defensive network check.
+           */
+          if (
+            clean(project.network)
+              .toLowerCase() !==
+            "testnet"
+          ) {
+            throw new Error(
+              "PROJECT_NETWORK_INVALID: resolved project is not a Testnet project."
+            );
+          }
+
+          render(
+            project
+          );
+
+          try {
+            window.dispatchEvent(
+              new CustomEvent(
+                "albukhr:testnet-project-loaded",
+                {
+                  detail: {
+                    project:
+                      project,
+                    identity:
+                      identity
+                  }
+                }
+              )
+            );
+          } catch (_) {}
+
+          return project;
+
+        } catch (error) {
+          console.error(
+            "[ALBUKHR TESTNET PROJECT]",
+            error
+          );
+
+          setText(
+            "projectState",
+            "TESTNET • UNAVAILABLE"
+          );
+
+          setText(
+            "projectMeta",
+            "Unable to load the Testnet project registry."
+          );
+
+          setText(
+            "projectDescription",
+            getErrorMessage(
+              error,
+              "The Testnet project data could not be loaded."
+            )
+          );
+
+          /*
+           * Keep the project identity visible when possible.
+           */
+          if (identity) {
+            setText(
+              "projectCode",
+              identity
+            );
+          }
+
+          setText(
+            "projectType",
+            "—"
+          );
+
+          setText(
+            "projectSlot",
+            "—"
+          );
+
+          setText(
+            "projectNetwork",
+            "TESTNET"
+          );
+
+          document.title =
+            "Project unavailable • ALBUKHR TESTNET";
+
+          try {
+            window.dispatchEvent(
+              new CustomEvent(
+                "albukhr:testnet-project-error",
+                {
+                  detail: {
+                    error:
+                      error,
+                    identity:
+                      identity
+                  }
+                }
+              )
+            );
+          } catch (_) {}
+
+          return null;
+
+        } finally {
+          loadingPromise =
+            null;
+        }
+      })();
+
+    return loadingPromise;
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Information modal
+   * ------------------------------------------------------------------
+   */
+
+  function initInfoModal() {
+    var modal =
+      element("infoModal");
+
+    var infoButton =
+      element("infoButton");
+
+    var closeButton =
+      element("closeInfo");
+
+    var okButton =
+      element("infoOk");
+
+    function open() {
+      if (!modal) {
+        return;
+      }
+
+      modal.hidden =
+        false;
+
+      if (infoButton) {
+        infoButton.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+      }
+
+      /*
+       * Move focus to the close control when available.
+       */
+      if (closeButton) {
+        try {
+          closeButton.focus();
+        } catch (_) {}
+      }
+    }
+
+    function close() {
+      if (!modal) {
+        return;
+      }
+
+      modal.hidden =
+        true;
+
+      if (infoButton) {
+        infoButton.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        try {
+          infoButton.focus();
+        } catch (_) {}
+      }
+    }
+
+    if (infoButton) {
+      infoButton.addEventListener(
+        "click",
+        open
+      );
+    }
+
+    if (closeButton) {
+      closeButton.addEventListener(
+        "click",
+        close
+      );
+    }
+
+    if (okButton) {
+      okButton.addEventListener(
+        "click",
+        close
+      );
+    }
+
+    if (modal) {
+      modal.addEventListener(
+        "click",
+        function (event) {
+          if (
+            event.target ===
+            modal
+          ) {
+            close();
+          }
+        }
+      );
+    }
+
+    document.addEventListener(
+      "keydown",
+      function (event) {
+        if (
+          event.key === "Escape" &&
+          modal &&
+          !modal.hidden
+        ) {
+          close();
+        }
+      }
+    );
+
+    return {
+      open: open,
+      close: close
     };
   }
 
-  load();
-}
+  /*
+   * ------------------------------------------------------------------
+   * Refresh
+   * ------------------------------------------------------------------
+   */
 
-window.AlbukhrTestnetProject=Object.freeze({load:load});
+  function initRefresh() {
+    var refresh =
+      element("refreshBtn");
 
-document.readyState==="loading"
-  ? document.addEventListener("DOMContentLoaded",init,{once:true})
-  : init();
+    if (!refresh) {
+      return;
+    }
 
-})(window,document);
+    refresh.addEventListener(
+      "click",
+      async function () {
+        if (
+          refresh.disabled
+        ) {
+          return;
+        }
+
+        refresh.disabled =
+          true;
+
+        refresh.setAttribute(
+          "aria-busy",
+          "true"
+        );
+
+        refresh.textContent =
+          "↻ Loading…";
+
+        try {
+          await load();
+        } finally {
+          refresh.disabled =
+            false;
+
+          refresh.removeAttribute(
+            "aria-busy"
+          );
+
+          refresh.textContent =
+            "↻ Refresh";
+        }
+      }
+    );
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Initialization
+   * ------------------------------------------------------------------
+   */
+
+  function init() {
+    if (initialized) {
+      return;
+    }
+
+    initialized =
+      true;
+
+    initInfoModal();
+
+    initRefresh();
+
+    /*
+     * Load the project after the page DOM is ready.
+     */
+    load();
+  }
+
+  /*
+   * ------------------------------------------------------------------
+   * Public API
+   * ------------------------------------------------------------------
+   */
+
+  var api = {
+    load: load
+  };
+
+  try {
+    Object.freeze(api);
+  } catch (_) {}
+
+  window.AlbukhrTestnetProject =
+    api;
+
+  /*
+   * ------------------------------------------------------------------
+   * DOM initialization
+   * ------------------------------------------------------------------
+   */
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      {
+        once: true
+      }
+    );
+  } else {
+    init();
+  }
+
+})(window, document);
