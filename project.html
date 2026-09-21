@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1, viewport-fit=cover"
@@ -14,7 +15,7 @@
 
   <meta
     name="description"
-    content="ALBUKHR Testnet project details and registry information."
+    content="ALBUKHR Testnet project details, registry information, staking status, and withdrawal controls."
   >
 
   <meta
@@ -26,11 +27,13 @@
 
   <link
     rel="stylesheet"
-    href="css/testnet-project.css"
+    href="css/testnet-project.css?v=20260921-project2"
   >
 
-  <link rel="stylesheet" href="css/testnet-withdrawal.css?v=20260921-withdraw1">
-  
+  <link
+    rel="stylesheet"
+    href="css/testnet-withdrawal.css?v=20260921-withdraw2"
+  >
 </head>
 
 <body data-page="project">
@@ -71,6 +74,7 @@
 
 </header>
 
+
 <main class="project-page">
 
   <!-- PROJECT HERO -->
@@ -79,6 +83,7 @@
     <div class="project-identity">
 
       <div class="detail-logo-wrap">
+
         <img
           id="projectLogo"
           class="detail-logo"
@@ -95,6 +100,7 @@
         >
           A
         </div>
+
       </div>
 
       <div class="identity-copy">
@@ -120,7 +126,9 @@
 
     </div>
 
+
     <div class="testnet-strip">
+
       <span
         class="strip-dot"
         aria-hidden="true"
@@ -131,6 +139,7 @@
       <span>
         Safe testing mode — Mainnet funds and transactions remain isolated.
       </span>
+
     </div>
 
   </section>
@@ -139,34 +148,41 @@
   <!-- PROJECT STATS -->
   <section
     class="stats"
-    aria-label="Project testnet status"
+    aria-label="Project Testnet status"
   >
 
     <article class="stat-card">
+
       <span>Your Stake</span>
 
       <strong id="aStake">
         LOCKED
       </strong>
 
-      <small>
-        Testnet staking not enabled
+      <small id="aStakeNote">
+        Testnet staking creation is not enabled
       </small>
+
     </article>
 
+
     <article class="stat-card">
+
       <span>Your Reward</span>
 
       <strong id="aReward">
         LOCKED
       </strong>
 
-      <small>
-        Testnet reward ledger not enabled
+      <small id="aRewardNote">
+        Loading Testnet reward status…
       </small>
+
     </article>
 
+
     <article class="stat-card">
+
       <span>Investment</span>
 
       <strong id="investmentState">
@@ -174,8 +190,9 @@
       </strong>
 
       <small>
-        Mainnet investment is isolated
+        Mainnet investment remains isolated
       </small>
+
     </article>
 
   </section>
@@ -195,6 +212,7 @@
     <p id="projectDescription">
       Loading project information…
     </p>
+
 
     <div class="project-meta-grid">
 
@@ -231,17 +249,22 @@
     </div>
 
     <h2>
-      Investment controls
+      Investment & withdrawal controls
     </h2>
 
-    <p>
-      These controls are intentionally locked while the secure Testnet
-      transaction gateway is being prepared.
+    <p id="controlDescription">
+      Testnet withdrawals use your verified Testnet session.
+      Reward withdrawals are subject to your available reward balance.
+      Capital withdrawals become available after the staking duration
+      has completed.
     </p>
+
 
     <div class="action-grid">
 
+      <!-- STAKE REMAINS LOCKED -->
       <button
+        id="stakeBtn"
         class="action-btn primary"
         type="button"
         disabled
@@ -251,24 +274,30 @@
         <small>Locked</small>
       </button>
 
+
+      <!-- WITHDRAW REWARDS -->
       <button
+        id="withdrawRewardsBtn"
         class="action-btn"
         type="button"
         disabled
         aria-disabled="true"
       >
         <span>Withdraw Rewards</span>
-        <small>Locked</small>
+        <small>Checking…</small>
       </button>
 
+
+      <!-- WITHDRAW CAPITAL -->
       <button
+        id="withdrawCapitalBtn"
         class="action-btn"
         type="button"
         disabled
         aria-disabled="true"
       >
         <span>Withdraw Capital</span>
-        <small>Locked</small>
+        <small>Checking…</small>
       </button>
 
     </div>
@@ -282,6 +311,7 @@
     <div class="history-head">
 
       <div>
+
         <div class="section-kicker">
           ACTIVITY
         </div>
@@ -289,7 +319,9 @@
         <h2>
           Transaction History
         </h2>
+
       </div>
+
 
       <button
         id="refreshBtn"
@@ -300,6 +332,7 @@
       </button>
 
     </div>
+
 
     <div
       id="projectHistory"
@@ -319,8 +352,8 @@
       </strong>
 
       <p>
-        Transaction simulation and Testnet settlement are not enabled
-        for this project yet.
+        Testnet project activity will appear here when supported
+        transaction history is available.
       </p>
 
     </div>
@@ -341,13 +374,13 @@
     <div>
 
       <strong>
-        Testnet controls are currently locked
+        Testnet environment
       </strong>
 
       <p>
-        This page uses the ALBUKHR Testnet project registry.
-        It does not read or write Mainnet investment, staking,
-        withdrawal, or transaction data.
+        This page uses the ALBUKHR Testnet project registry and
+        Testnet transaction gateway. It does not read or write
+        Mainnet investment, staking, withdrawal, or transaction data.
       </p>
 
     </div>
@@ -381,19 +414,24 @@
       ×
     </button>
 
+
     <div class="section-kicker">
       ALBUKHR TESTNET
     </div>
+
 
     <h2 id="infoTitle">
       Safe testing environment
     </h2>
 
+
     <p id="infoDescription">
       Project information is loaded from the Testnet public project
-      registry. Investment, staking, withdrawals and transaction
-      settlement remain isolated from Mainnet.
+      registry. Mainnet investment remains isolated. Testnet
+      withdrawals use the secure Testnet API and verified Testnet
+      session.
     </p>
+
 
     <button
       id="infoOk"
@@ -408,13 +446,67 @@
 </div>
 
 
-<!-- SUPABASE SDK -->
-<script src="js/testnet-project.js?v=..."></script>
+<!-- =========================================================
+     SUPABASE BROWSER SDK
+     ========================================================= -->
 
-<script src="js/testnet-gateway-auth.js?v=20260921-withdraw1"></script>
-<script src="js/testnet-api-core.js?v=20260921-withdraw1"></script>
-<script src="js/testnet-withdrawal-api.js?v=20260921-withdraw1"></script>
-<script src="js/testnet-withdrawal.js?v=20260921-withdraw1"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<!-- =========================================================
+     ALBUKHR TESTNET ENVIRONMENT
+     ========================================================= -->
+
+<script src="js/core/environment-core.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     ALBUKHR SHARED TESTNET SUPABASE CORE
+     ========================================================= -->
+
+<script src="js/core/supabase-core.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET PROJECT REGISTRY
+     ========================================================= -->
+
+<script src="js/project-registry.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET PROJECT PAGE
+     ========================================================= -->
+
+<script src="js/testnet-project.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET AUTHENTICATION
+     ========================================================= -->
+
+<script src="js/testnet-gateway-auth.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET INVESTOR API
+     ========================================================= -->
+
+<script src="js/testnet-api-core.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET WITHDRAWAL API
+     ========================================================= -->
+
+<script src="js/testnet-withdrawal-api.js?v=20260921-project2"></script>
+
+
+<!-- =========================================================
+     TESTNET WITHDRAWAL UI
+     ========================================================= -->
+
+<script src="js/testnet-withdrawal.js?v=20260921-project2"></script>
 
 </body>
-</html>
+  </html>
