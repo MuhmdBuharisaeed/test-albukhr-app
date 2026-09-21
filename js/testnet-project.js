@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET PROJECT PAGE v6 */
+/* ALBUKHR TESTNET PROJECT PAGE v7 */
 (function (window, document) {
   "use strict";
 
@@ -6,25 +6,30 @@
    * ALBUKHR TESTNET PROJECT PAGE
    *
    * Responsibilities:
-   * - Resolve the requested project identity from the URL.
-   * - Read the project from the Testnet public registry.
+   * - Resolve project identity from the URL.
+   * - Read the approved Testnet project registry.
    * - Render project identity, metadata and logo.
-   * - Keep Testnet investment controls locked until enabled.
-   * - Provide project information modal and registry refresh.
+   * - Keep staking creation locked.
+   * - Cooperate with the Testnet withdrawal module.
+   * - Provide information modal.
+   * - Provide project registry refresh.
    *
    * This file does NOT:
-   * - dynamically load Environment Core;
-   * - dynamically load Supabase Core;
-   * - access Mainnet;
    * - create a Supabase client;
-   * - perform investments;
-   * - perform staking;
-   * - perform withdrawals;
-   * - perform payments.
+   * - access Mainnet;
+   * - perform Pi payments;
+   * - create stakes;
+   * - create withdrawals;
+   * - submit blockchain transactions.
+   *
+   * Withdrawal state is owned by:
+   *   js/testnet-withdrawal.js
    */
 
   var initialized = false;
   var loadingPromise = null;
+  var currentProject = null;
+
 
   /*
    * ------------------------------------------------------------------
@@ -38,24 +43,27 @@
     ).trim();
   }
 
+
+  function lower(value) {
+    return clean(value).toLowerCase();
+  }
+
+
   function element(id) {
     return document.getElementById(id);
   }
 
+
   function setText(id, value) {
-    var node =
-      element(id);
+    var node = element(id);
 
     if (node) {
-      node.textContent =
-        clean(value);
+      node.textContent = clean(value);
     }
   }
 
-  function getErrorMessage(
-    error,
-    fallback
-  ) {
+
+  function getErrorMessage(error, fallback) {
     if (
       error &&
       typeof error.message === "string" &&
@@ -69,6 +77,28 @@
       "Unable to load Testnet project."
     );
   }
+
+
+  function numberValue(value) {
+    var number = Number(value);
+
+    if (
+      typeof Number.isFinite === "function" &&
+      Number.isFinite(number)
+    ) {
+      return number;
+    }
+
+    return isFinite(number)
+      ? number
+      : 0;
+  }
+
+
+  function formatPi(value) {
+    return numberValue(value).toFixed(2) + " Pi";
+  }
+
 
   /*
    * ------------------------------------------------------------------
@@ -104,6 +134,7 @@
     return env;
   }
 
+
   /*
    * ------------------------------------------------------------------
    * Project identity
@@ -130,13 +161,106 @@
     );
   }
 
+
   /*
    * ------------------------------------------------------------------
-   * Project not-found state
+   * Logo rendering
+   * ------------------------------------------------------------------
+   */
+
+  function hideLogo() {
+    var image =
+      element("projectLogo");
+
+    var fallback =
+      element("logoFallback");
+
+    if (image) {
+      image.hidden = true;
+
+      image.removeAttribute(
+        "src"
+      );
+    }
+
+    /*
+     * No artificial project logo is generated.
+     *
+     * The registry is expected to provide logo_url.
+     */
+    if (fallback) {
+      fallback.hidden = true;
+
+      fallback.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+    }
+  }
+
+
+  function renderLogo(project, name) {
+    var image =
+      element("projectLogo");
+
+    var fallback =
+      element("logoFallback");
+
+    if (!image) {
+      return;
+    }
+
+    var logo =
+      clean(
+        project &&
+        project.logo_url
+      );
+
+    if (!logo) {
+      hideLogo();
+      return;
+    }
+
+    image.hidden = true;
+
+    image.alt =
+      name + " logo";
+
+    image.onload =
+      function () {
+        image.hidden = false;
+
+        if (fallback) {
+          fallback.hidden = true;
+        }
+      };
+
+    image.onerror =
+      function () {
+        image.hidden = true;
+
+        image.removeAttribute(
+          "src"
+        );
+
+        if (fallback) {
+          fallback.hidden = true;
+        }
+      };
+
+    image.src = logo;
+  }
+
+
+  /*
+   * ------------------------------------------------------------------
+   * Project not found
    * ------------------------------------------------------------------
    */
 
   function notFound() {
+    currentProject = null;
+
     setText(
       "projectTitle",
       "Project not found"
@@ -177,121 +301,170 @@
       "TESTNET"
     );
 
-    var image =
-      element("projectLogo");
+    setText(
+      "aStake",
+      "LOCKED"
+    );
 
-    var fallback =
-      element("logoFallback");
+    setText(
+      "aStakeNote",
+      "No Testnet stake found"
+    );
 
-    if (image) {
-      image.hidden =
-        true;
+    setText(
+      "aReward",
+      "LOCKED"
+    );
 
-      image.removeAttribute(
-        "src"
-      );
-    }
+    setText(
+      "aRewardNote",
+      "No Testnet reward balance found"
+    );
 
-    if (fallback) {
-      fallback.hidden =
-        false;
-    }
+    setText(
+      "investmentState",
+      "LOCKED"
+    );
+
+    hideLogo();
 
     document.title =
       "Project not found • ALBUKHR TESTNET";
+
+    resetWithdrawalButtons(
+      "Unavailable"
+    );
   }
+
 
   /*
    * ------------------------------------------------------------------
-   * Logo rendering
+   * Withdrawal button protection
+   *
+   * testnet-project.js does NOT own withdrawal buttons.
+   *
+   * This helper only establishes the initial safe state.
+   * testnet-withdrawal.js is the owner that enables them.
    * ------------------------------------------------------------------
    */
 
-  function renderLogo(
-    project,
-    name
-  ) {
-    var image =
-      element("projectLogo");
+  function getWithdrawalButtons() {
+    var reward =
+      element(
+        "withdrawRewardsBtn"
+      );
 
-    var fallback =
-      element("logoFallback");
-
-    if (!image) {
-      return;
-    }
-
-    var logo =
-      clean(
-        project &&
-        project.logo_url
+    var capital =
+      element(
+        "withdrawCapitalBtn"
       );
 
     /*
-     * Every ALBUKHR project should have a registry logo.
-     *
-     * We do not create an emoji or artificial project logo when
-     * logo_url is missing.
+     * Compatibility fallback for older markup.
      */
-    if (!logo) {
-      image.hidden =
-        true;
-
-      image.removeAttribute(
-        "src"
-      );
-
-      if (fallback) {
-        fallback.hidden =
-          true;
-
-        fallback.setAttribute(
-          "aria-hidden",
-          "true"
+    if (!reward || !capital) {
+      var buttons =
+        document.querySelectorAll(
+          ".action-grid .action-btn"
         );
+
+      for (
+        var i = 0;
+        i < buttons.length;
+        i += 1
+      ) {
+        var text =
+          lower(
+            buttons[i].textContent
+          );
+
+        if (
+          !reward &&
+          text.indexOf(
+            "withdraw rewards"
+          ) !== -1
+        ) {
+          reward =
+            buttons[i];
+        }
+
+        if (
+          !capital &&
+          text.indexOf(
+            "withdraw capital"
+          ) !== -1
+        ) {
+          capital =
+            buttons[i];
+        }
       }
+    }
 
+    return {
+      reward: reward,
+      capital: capital
+    };
+  }
+
+
+  function setButtonState(
+    button,
+    disabled,
+    label
+  ) {
+    if (!button) {
       return;
     }
 
-    /*
-     * Clear the previous image before assigning the new project logo.
-     */
-    image.hidden =
-      true;
+    button.disabled =
+      !!disabled;
 
-    image.alt =
-      name + " logo";
+    if (disabled) {
+      button.setAttribute(
+        "aria-disabled",
+        "true"
+      );
+    } else {
+      button.removeAttribute(
+        "aria-disabled"
+      );
+    }
 
-    image.onload =
-      function () {
-        image.hidden =
-          false;
+    var small =
+      button.querySelector(
+        "small"
+      );
 
-        if (fallback) {
-          fallback.hidden =
-            true;
-        }
-      };
-
-    image.onerror =
-      function () {
-        image.hidden =
-          true;
-
-        image.removeAttribute(
-          "src"
-        );
-
-        if (fallback) {
-          fallback.hidden =
-            true;
-        }
-      };
-
-    image.src =
-      logo;
+    if (small) {
+      small.textContent =
+        clean(label);
+    }
   }
+
+
+  function resetWithdrawalButtons(
+    label
+  ) {
+    var buttons =
+      getWithdrawalButtons();
+
+    /*
+     * Only reset buttons that have not already been claimed by
+     * the withdrawal module.
+     */
+    setButtonState(
+      buttons.reward,
+      true,
+      label || "Checking…"
+    );
+
+    setButtonState(
+      buttons.capital,
+      true,
+      label || "Checking…"
+    );
+  }
+
 
   /*
    * ------------------------------------------------------------------
@@ -304,6 +477,23 @@
       notFound();
       return;
     }
+
+    var network =
+      lower(project.network);
+
+    /*
+     * Hard Testnet isolation.
+     */
+    if (
+      network !== "testnet"
+    ) {
+      throw new Error(
+        "PROJECT_NETWORK_INVALID: resolved project is not a Testnet project."
+      );
+    }
+
+    currentProject =
+      project;
 
     var name =
       clean(project.name) ||
@@ -332,24 +522,6 @@
         .toUpperCase() ||
       "APPROVED";
 
-    var network =
-      clean(project.network)
-        .toUpperCase() ||
-      "TESTNET";
-
-    /*
-     * Defensive network validation.
-     *
-     * This page must never render a Mainnet registry row.
-     */
-    if (
-      network.toLowerCase() !==
-      "testnet"
-    ) {
-      throw new Error(
-        "PROJECT_NETWORK_INVALID: requested project is not a Testnet project."
-      );
-    }
 
     setText(
       "projectTitle",
@@ -392,7 +564,7 @@
 
     setText(
       "projectNetwork",
-      network
+      "TESTNET"
     );
 
     document.title =
@@ -404,12 +576,9 @@
       name
     );
 
+
     /*
-     * Testnet controls remain locked.
-     *
-     * These IDs are retained so a future transaction module can
-     * activate them only after the Testnet transaction gateway
-     * is explicitly enabled.
+     * Staking creation remains locked.
      */
     setText(
       "aStake",
@@ -417,41 +586,401 @@
     );
 
     setText(
-      "aReward",
-      "LOCKED"
+      "aStakeNote",
+      "Testnet staking creation is not enabled"
     );
 
+
+    /*
+     * Investment remains Mainnet-isolated.
+     */
     setText(
       "investmentState",
       "LOCKED"
     );
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT set aReward here to LOCKED after the withdrawal
+     * module has loaded.
+     *
+     * The withdrawal/investor module owns the live reward state.
+     *
+     * Only show a neutral loading state during initial project
+     * rendering.
+     */
+    var rewardNode =
+      element("aReward");
+
+    if (
+      rewardNode &&
+      !rewardNode.dataset.liveState
+    ) {
+      rewardNode.textContent =
+        "CHECKING";
+    }
+
+    var rewardNote =
+      element("aRewardNote");
+
+    if (
+      rewardNote &&
+      !rewardNote.dataset.liveState
+    ) {
+      rewardNote.textContent =
+        "Checking Testnet reward balance…";
+    }
+
+
+    /*
+     * Keep withdrawal controls under the withdrawal module.
+     *
+     * We do not attach click handlers here.
+     */
+    var buttons =
+      getWithdrawalButtons();
+
+    if (
+      buttons.reward &&
+      !buttons.reward.dataset.withdrawalOwner
+    ) {
+      setButtonState(
+        buttons.reward,
+        true,
+        "Checking…"
+      );
+    }
+
+    if (
+      buttons.capital &&
+      !buttons.capital.dataset.withdrawalOwner
+    ) {
+      setButtonState(
+        buttons.capital,
+        true,
+        "Checking…"
+      );
+    }
+
+
+    /*
+     * Notify dependent modules.
+     */
+    try {
+      window.dispatchEvent(
+        new CustomEvent(
+          "albukhr:testnet-project-rendered",
+          {
+            detail: {
+              project: project
+            }
+          }
+        )
+      );
+    } catch (_) {}
   }
+
 
   /*
    * ------------------------------------------------------------------
-   * Load project
+   * Testnet investor state bridge
+   *
+   * This function does not make API calls.
+   *
+   * testnet-withdrawal.js can call the public renderInvestorState()
+   * method after it has loaded investor data.
+   * ------------------------------------------------------------------
+   */
+
+  function renderInvestorState(
+    payload
+  ) {
+    if (
+      !payload ||
+      !currentProject
+    ) {
+      return;
+    }
+
+    var stakes =
+      Array.isArray(
+        payload.stakes
+      )
+        ? payload.stakes
+        : [];
+
+    var withdrawals =
+      Array.isArray(
+        payload.withdrawals
+      )
+        ? payload.withdrawals
+        : [];
+
+
+    var projectCode =
+      lower(
+        currentProject.project_code
+      );
+
+    var projectId =
+      lower(
+        currentProject.id
+      );
+
+    var projectSlug =
+      lower(
+        currentProject.slug
+      );
+
+
+    var matches =
+      stakes.filter(
+        function (stake) {
+          if (!stake) {
+            return false;
+          }
+
+          if (
+            lower(stake.network) &&
+            lower(stake.network) !==
+              "testnet"
+          ) {
+            return false;
+          }
+
+          var stakeCode =
+            lower(
+              stake.project_code
+            );
+
+          var stakeId =
+            lower(
+              stake.project_id
+            );
+
+          var stakeSlug =
+            lower(
+              stake.slug
+            );
+
+          if (
+            projectCode &&
+            stakeCode === projectCode
+          ) {
+            return true;
+          }
+
+          if (
+            projectId &&
+            stakeId === projectId
+          ) {
+            return true;
+          }
+
+          if (
+            projectSlug &&
+            stakeSlug === projectSlug
+          ) {
+            return true;
+          }
+
+          return false;
+        }
+      );
+
+
+    if (!matches.length) {
+      setText(
+        "aStake",
+        "0.00 Pi"
+      );
+
+      setText(
+        "aStakeNote",
+        "No active Testnet stake"
+      );
+
+      setText(
+        "aReward",
+        "0.00 Pi"
+      );
+
+      setText(
+        "aRewardNote",
+        "No available Testnet reward"
+      );
+
+      var rewardNodeEmpty =
+        element("aReward");
+
+      var rewardNoteEmpty =
+        element("aRewardNote");
+
+      if (rewardNodeEmpty) {
+        rewardNodeEmpty.dataset.liveState =
+          "true";
+      }
+
+      if (rewardNoteEmpty) {
+        rewardNoteEmpty.dataset.liveState =
+          "true";
+      }
+
+      return;
+    }
+
+
+    /*
+     * Use the newest active/completed stake.
+     */
+    matches.sort(
+      function (a, b) {
+        return (
+          Date.parse(
+            b.created_at || ""
+          ) -
+          Date.parse(
+            a.created_at || ""
+          )
+        );
+      }
+    );
+
+
+    var stake =
+      matches[0];
+
+    var stakeAmount =
+      numberValue(
+        stake.amount
+      );
+
+    var rewardAmount =
+      numberValue(
+        stake.reward_amount
+      );
+
+
+    /*
+     * Subtract completed/pending/processing/approved withdrawals.
+     */
+    var usedReward =
+      withdrawals
+        .filter(
+          function (row) {
+            return (
+              clean(
+                row.stake_id
+              ) ===
+                clean(stake.id) &&
+              lower(
+                row.withdrawal_type
+              ) ===
+                "reward" &&
+              [
+                "pending",
+                "processing",
+                "approved",
+                "completed"
+              ].indexOf(
+                lower(row.status)
+              ) !== -1
+            );
+          }
+        )
+        .reduce(
+          function (sum, row) {
+            return (
+              sum +
+              numberValue(
+                row.net_amount ||
+                row.requested_amount
+              )
+            );
+          },
+          0
+        );
+
+
+    var availableReward =
+      Math.max(
+        0,
+        rewardAmount -
+          usedReward
+      );
+
+
+    setText(
+      "aStake",
+      formatPi(
+        stakeAmount
+      )
+    );
+
+    setText(
+      "aStakeNote",
+      "Active Testnet stake"
+    );
+
+
+    setText(
+      "aReward",
+      formatPi(
+        availableReward
+      )
+    );
+
+    setText(
+      "aRewardNote",
+      availableReward > 0
+        ? "Available Testnet reward"
+        : "No available Testnet reward"
+    );
+
+
+    var rewardNode =
+      element("aReward");
+
+    var rewardNote =
+      element("aRewardNote");
+
+    if (rewardNode) {
+      rewardNode.dataset.liveState =
+        "true";
+    }
+
+    if (rewardNote) {
+      rewardNote.dataset.liveState =
+        "true";
+    }
+  }
+
+
+  /*
+   * ------------------------------------------------------------------
+   * Project load
    * ------------------------------------------------------------------
    */
 
   async function load() {
-    /*
-     * Prevent duplicate simultaneous loads.
-     */
     if (loadingPromise) {
       return loadingPromise;
     }
 
     loadingPromise =
       (async function () {
+
         var identity =
           getIdentity();
 
         try {
           validateEnvironment();
 
+
           /*
-           * The HTML page already loads the shared Testnet Supabase
-           * Core. This module must not create another client.
+           * Shared Supabase Core must already exist.
            */
           if (
             !window.ALBUKHR_SUPABASE
@@ -460,6 +989,7 @@
               "SUPABASE_CORE_MISSING: Testnet Supabase Core is unavailable."
             );
           }
+
 
           if (
             window.ALBUKHR_SUPABASE.network !==
@@ -470,31 +1000,30 @@
             );
           }
 
+
           /*
-           * Registry module must already be loaded by project.html.
+           * Registry must already exist.
            */
           if (
             !window.AlbukhrTestnetRegistry ||
             typeof
-              window.AlbukhrTestnetRegistry
-                .load !== "function" ||
+              window.AlbukhrTestnetRegistry.load !==
+              "function" ||
             typeof
-              window.AlbukhrTestnetRegistry
-                .resolve !== "function"
+              window.AlbukhrTestnetRegistry.resolve !==
+              "function"
           ) {
             throw new Error(
               "PROJECT_REGISTRY_MODULE_MISSING: Testnet Project Registry module is unavailable."
             );
           }
 
-          /*
-           * A project identity is mandatory.
-           */
+
           if (!identity) {
             notFound();
-
             return null;
           }
+
 
           setText(
             "projectState",
@@ -506,14 +1035,15 @@
             "Loading registered project…"
           );
 
+
           /*
-           * Refresh the registry so the detail page can resolve the
-           * current approved/active Testnet project identity.
+           * Refresh registry.
            */
           var projects =
             await window
               .AlbukhrTestnetRegistry
               .load(true);
+
 
           if (
             !Array.isArray(projects)
@@ -523,27 +1053,25 @@
             );
           }
 
-          /*
-           * Resolve only against the registry that was loaded from
-           * the Testnet RPC.
-           */
+
           var project =
             window
               .AlbukhrTestnetRegistry
-              .resolve(identity);
+              .resolve(
+                identity
+              );
+
 
           if (!project) {
             notFound();
-
             return null;
           }
 
-          /*
-           * Final defensive network check.
-           */
+
           if (
-            clean(project.network)
-              .toLowerCase() !==
+            lower(
+              project.network
+            ) !==
             "testnet"
           ) {
             throw new Error(
@@ -551,9 +1079,11 @@
             );
           }
 
+
           render(
             project
           );
+
 
           try {
             window.dispatchEvent(
@@ -571,13 +1101,20 @@
             );
           } catch (_) {}
 
+
           return project;
 
         } catch (error) {
+
           console.error(
             "[ALBUKHR TESTNET PROJECT]",
             error
           );
+
+
+          currentProject =
+            null;
+
 
           setText(
             "projectState",
@@ -597,15 +1134,14 @@
             )
           );
 
-          /*
-           * Keep the project identity visible when possible.
-           */
+
           if (identity) {
             setText(
               "projectCode",
               identity
             );
           }
+
 
           setText(
             "projectType",
@@ -622,8 +1158,38 @@
             "TESTNET"
           );
 
+          setText(
+            "aStake",
+            "LOCKED"
+          );
+
+          setText(
+            "aReward",
+            "UNAVAILABLE"
+          );
+
+          setText(
+            "aRewardNote",
+            "Testnet project data unavailable"
+          );
+
+          setText(
+            "investmentState",
+            "LOCKED"
+          );
+
+
+          hideLogo();
+
+
+          resetWithdrawalButtons(
+            "Unavailable"
+          );
+
+
           document.title =
             "Project unavailable • ALBUKHR TESTNET";
+
 
           try {
             window.dispatchEvent(
@@ -641,16 +1207,19 @@
             );
           } catch (_) {}
 
+
           return null;
 
         } finally {
           loadingPromise =
             null;
         }
+
       })();
 
     return loadingPromise;
   }
+
 
   /*
    * ------------------------------------------------------------------
@@ -671,6 +1240,7 @@
     var okButton =
       element("infoOk");
 
+
     function open() {
       if (!modal) {
         return;
@@ -686,15 +1256,13 @@
         );
       }
 
-      /*
-       * Move focus to the close control when available.
-       */
       if (closeButton) {
         try {
           closeButton.focus();
         } catch (_) {}
       }
     }
+
 
     function close() {
       if (!modal) {
@@ -716,12 +1284,14 @@
       }
     }
 
+
     if (infoButton) {
       infoButton.addEventListener(
         "click",
         open
       );
     }
+
 
     if (closeButton) {
       closeButton.addEventListener(
@@ -730,12 +1300,14 @@
       );
     }
 
+
     if (okButton) {
       okButton.addEventListener(
         "click",
         close
       );
     }
+
 
     if (modal) {
       modal.addEventListener(
@@ -751,6 +1323,7 @@
       );
     }
 
+
     document.addEventListener(
       "keydown",
       function (event) {
@@ -764,11 +1337,13 @@
       }
     );
 
+
     return {
       open: open,
       close: close
     };
   }
+
 
   /*
    * ------------------------------------------------------------------
@@ -784,14 +1359,17 @@
       return;
     }
 
+
     refresh.addEventListener(
       "click",
       async function () {
+
         if (
           refresh.disabled
         ) {
           return;
         }
+
 
         refresh.disabled =
           true;
@@ -804,9 +1382,31 @@
         refresh.textContent =
           "↻ Loading…";
 
+
         try {
           await load();
+
+          /*
+           * Ask the withdrawal module to refresh its investor data
+           * when the module is available.
+           */
+          var withdrawal =
+            window.AlbukhrTestnetWithdrawal;
+
+          if (
+            withdrawal &&
+            typeof withdrawal.refresh ===
+              "function"
+          ) {
+            await withdrawal
+              .refresh()
+              .catch(
+                function () {}
+              );
+          }
+
         } finally {
+
           refresh.disabled =
             false;
 
@@ -817,9 +1417,100 @@
           refresh.textContent =
             "↻ Refresh";
         }
+
       }
     );
   }
+
+
+  /*
+   * ------------------------------------------------------------------
+   * Withdrawal module bridge
+   * ------------------------------------------------------------------
+   *
+   * The withdrawal module owns the actual buttons.
+   *
+   * This listener deliberately does NOT overwrite button state.
+   */
+
+  function initWithdrawalBridge() {
+
+    window.addEventListener(
+      "albukhr:testnet-investor-data-loaded",
+      function (event) {
+
+        if (
+          event.detail &&
+          event.detail.payload
+        ) {
+          renderInvestorState(
+            event.detail.payload
+          );
+        }
+      }
+    );
+
+
+    window.addEventListener(
+      "albukhr:testnet-withdrawal-state",
+      function (event) {
+
+        if (
+          !event.detail
+        ) {
+          return;
+        }
+
+        /*
+         * If the withdrawal module provides a live reward amount,
+         * reflect it in the project stats.
+         */
+        if (
+          event.detail.reward_available !=
+          null
+        ) {
+
+          var reward =
+            numberValue(
+              event.detail
+                .reward_available
+            );
+
+          setText(
+            "aReward",
+            formatPi(
+              reward
+            )
+          );
+
+          setText(
+            "aRewardNote",
+            reward > 0
+              ? "Available Testnet reward"
+              : "No available Testnet reward"
+          );
+
+
+          var rewardNode =
+            element("aReward");
+
+          var rewardNote =
+            element("aRewardNote");
+
+          if (rewardNode) {
+            rewardNode.dataset.liveState =
+              "true";
+          }
+
+          if (rewardNote) {
+            rewardNote.dataset.liveState =
+              "true";
+          }
+        }
+      }
+    );
+  }
+
 
   /*
    * ------------------------------------------------------------------
@@ -828,6 +1519,7 @@
    */
 
   function init() {
+
     if (initialized) {
       return;
     }
@@ -835,15 +1527,20 @@
     initialized =
       true;
 
+
     initInfoModal();
 
     initRefresh();
 
+    initWithdrawalBridge();
+
+
     /*
-     * Load the project after the page DOM is ready.
+     * Load project first.
      */
     load();
   }
+
 
   /*
    * ------------------------------------------------------------------
@@ -852,15 +1549,29 @@
    */
 
   var api = {
-    load: load
+
+    load:
+      load,
+
+    getProject:
+      function () {
+        return currentProject;
+      },
+
+    renderInvestorState:
+      renderInvestorState
+
   };
+
 
   try {
     Object.freeze(api);
   } catch (_) {}
 
+
   window.AlbukhrTestnetProject =
     api;
+
 
   /*
    * ------------------------------------------------------------------
@@ -872,6 +1583,7 @@
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init,
@@ -879,8 +1591,11 @@
         once: true
       }
     );
+
   } else {
+
     init();
+
   }
 
 })(window, document);
