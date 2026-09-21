@@ -2,255 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
-
-  <meta
-    name="theme-color"
-    content="#0f7a3d"
-  >
-
-  <meta
-    name="description"
-    content="ALBUKHR Testnet project details, registry information, staking status, and withdrawal controls."
-  >
-
-  <meta
-    name="color-scheme"
-    content="light"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f7a3d">
+  <meta name="description" content="ALBUKHR Testnet project details, registry information, staking status, and withdrawal controls.">
+  <meta name="color-scheme" content="light">
   <title id="pageTitle">Project • ALBUKHR TESTNET</title>
 
-  <link
-    rel="stylesheet"
-    href="css/testnet-project.css?v=20260921-project2"
-  >
-
-  <link
-    rel="stylesheet"
-    href="css/testnet-withdrawal.css?v=20260921-withdraw2"
-  >
+  <link rel="stylesheet" href="css/testnet-project.css?v=20260921-project3">
+  <link rel="stylesheet" href="css/testnet-withdrawal.css?v=20260921-withdraw3">
 </head>
 
 <body data-page="project">
 
 <header class="testnet-project-header">
-
-  <a
-    class="header-brand"
-    href="index.html"
-    aria-label="ALBUKHR Testnet Home"
-  >
+  <a class="header-brand" href="index.html" aria-label="ALBUKHR Testnet Home">
     <span class="brand">ALBUKHR</span>
   </a>
 
   <div class="header-actions">
+    <a class="mainnet-switch"
+       href="https://app.albukhr.com/login.html"
+       aria-label="Return to ALBUKHR Mainnet"
+       title="Return to Mainnet">TESTNET</a>
 
-    <a
-      class="mainnet-switch"
-      href="https://app.albukhr.com/login.html"
-      aria-label="Return to ALBUKHR Mainnet"
-      title="Return to Mainnet"
-    >
-      TESTNET
-    </a>
-
-    <button
-      class="info-button"
-      id="infoButton"
-      type="button"
-      aria-label="Testnet information"
-      aria-controls="infoModal"
-      aria-expanded="false"
-    >
-      ℹ
-    </button>
-
+    <button class="info-button"
+            id="infoButton"
+            type="button"
+            aria-label="Testnet information"
+            aria-controls="infoModal"
+            aria-expanded="false">ℹ</button>
   </div>
-
 </header>
-
 
 <main class="project-page">
 
-  <!-- PROJECT HERO -->
   <section class="project-hero">
-
     <div class="project-identity">
-
       <div class="detail-logo-wrap">
-
-        <img
-          id="projectLogo"
-          class="detail-logo"
-          alt=""
-          hidden
-          loading="eager"
-          decoding="async"
-        >
-
-        <div
-          id="logoFallback"
-          class="detail-logo-fallback"
-          aria-hidden="true"
-        >
-          A
-        </div>
-
+        <img id="projectLogo"
+             class="detail-logo"
+             alt=""
+             hidden
+             loading="eager"
+             decoding="async">
+        <div id="logoFallback"
+             class="detail-logo-fallback"
+             aria-hidden="true">A</div>
       </div>
 
       <div class="identity-copy">
+        <span id="projectState"
+              class="status"
+              role="status"
+              aria-live="polite">TESTNET • LOADING</span>
 
-        <span
-          id="projectState"
-          class="status"
-          role="status"
-          aria-live="polite"
-        >
-          TESTNET • LOADING
-        </span>
-
-        <h1 id="projectTitle">
-          Project
-        </h1>
-
-        <p id="projectMeta">
-          Loading registered project…
-        </p>
-
+        <h1 id="projectTitle">Project</h1>
+        <p id="projectMeta">Loading registered project…</p>
       </div>
-
     </div>
-
 
     <div class="testnet-strip">
-
-      <span
-        class="strip-dot"
-        aria-hidden="true"
-      ></span>
-
+      <span class="strip-dot" aria-hidden="true"></span>
       <strong>TESTNET</strong>
-
-      <span>
-        Safe testing mode — Mainnet funds and transactions remain isolated.
-      </span>
-
+      <span>Safe testing mode — Mainnet funds and transactions remain isolated.</span>
     </div>
-
   </section>
 
-
-  <!-- PROJECT STATS -->
-  <section
-    class="stats"
-    aria-label="Project Testnet status"
-  >
-
+  <section class="stats" aria-label="Project Testnet status">
     <article class="stat-card">
-
       <span>Your Stake</span>
-
-      <strong id="aStake">
-        LOCKED
-      </strong>
-
-      <small id="aStakeNote">
-        Testnet staking creation is not enabled
-      </small>
-
+      <strong id="aStake">LOCKED</strong>
+      <small id="aStakeNote">Testnet staking creation is not enabled</small>
     </article>
 
-
     <article class="stat-card">
-
       <span>Your Reward</span>
-
-      <strong id="aReward">
-        LOCKED
-      </strong>
-
-      <small id="aRewardNote">
-        Loading Testnet reward status…
-      </small>
-
+      <strong id="aReward">LOCKED</strong>
+      <small id="aRewardNote">Loading Testnet reward status…</small>
     </article>
-
 
     <article class="stat-card">
-
       <span>Investment</span>
-
-      <strong id="investmentState">
-        LOCKED
-      </strong>
-
-      <small>
-        Mainnet investment remains isolated
-      </small>
-
+      <strong id="investmentState">LOCKED</strong>
+      <small>Mainnet investment remains isolated</small>
     </article>
-
   </section>
 
-
-  <!-- PROJECT INFORMATION -->
   <section class="panel">
-
-    <div class="section-kicker">
-      PROJECT
-    </div>
-
-    <h2>
-      About this project
-    </h2>
-
-    <p id="projectDescription">
-      Loading project information…
-    </p>
-
+    <div class="section-kicker">PROJECT</div>
+    <h2>About this project</h2>
+    <p id="projectDescription">Loading project information…</p>
 
     <div class="project-meta-grid">
-
-      <div>
-        <span>Project Code</span>
-        <strong id="projectCode">—</strong>
-      </div>
-
-      <div>
-        <span>Project Type</span>
-        <strong id="projectType">—</strong>
-      </div>
-
-      <div>
-        <span>Core Slot</span>
-        <strong id="projectSlot">—</strong>
-      </div>
-
-      <div>
-        <span>Network</span>
-        <strong id="projectNetwork">TESTNET</strong>
-      </div>
-
+      <div><span>Project Code</span><strong id="projectCode">—</strong></div>
+      <div><span>Project Type</span><strong id="projectType">—</strong></div>
+      <div><span>Core Slot</span><strong id="projectSlot">—</strong></div>
+      <div><span>Network</span><strong id="projectNetwork">TESTNET</strong></div>
     </div>
-
   </section>
 
-
-  <!-- TESTNET CONTROLS -->
-  <section class="panel">
-
-    <div class="section-kicker">
-      TESTNET CONTROLS
-    </div>
-
-    <h2>
-      Investment & withdrawal controls
-    </h2>
+  <section class="panel" data-project-panel="controls">
+    <div class="section-kicker">TESTNET CONTROLS</div>
+    <h2>Investment &amp; withdrawal controls</h2>
 
     <p id="controlDescription">
       Testnet withdrawals use your verified Testnet session.
@@ -259,171 +112,86 @@
       has completed.
     </p>
 
-
     <div class="action-grid">
-
-      <!-- STAKE REMAINS LOCKED -->
-      <button
-        id="stakeBtn"
-        class="action-btn primary"
-        type="button"
-        disabled
-        aria-disabled="true"
-      >
+      <button id="stakeBtn"
+              class="action-btn primary"
+              type="button"
+              disabled
+              aria-disabled="true">
         <span>Stake</span>
         <small>Locked</small>
       </button>
 
-
-      <!-- WITHDRAW REWARDS -->
-      <button
-        id="withdrawRewardsBtn"
-        class="action-btn"
-        type="button"
-        disabled
-        aria-disabled="true"
-      >
+      <button id="withdrawRewardsBtn"
+              class="action-btn"
+              type="button"
+              disabled
+              aria-disabled="true">
         <span>Withdraw Rewards</span>
         <small>Checking…</small>
       </button>
 
-
-      <!-- WITHDRAW CAPITAL -->
-      <button
-        id="withdrawCapitalBtn"
-        class="action-btn"
-        type="button"
-        disabled
-        aria-disabled="true"
-      >
+      <button id="withdrawCapitalBtn"
+              class="action-btn"
+              type="button"
+              disabled
+              aria-disabled="true">
         <span>Withdraw Capital</span>
         <small>Checking…</small>
       </button>
-
     </div>
-
   </section>
 
-
-  <!-- TRANSACTION HISTORY -->
-  <section class="panel">
-
+  <section class="panel" data-project-panel="history">
     <div class="history-head">
-
       <div>
-
-        <div class="section-kicker">
-          ACTIVITY
-        </div>
-
-        <h2>
-          Transaction History
-        </h2>
-
+        <div class="section-kicker">ACTIVITY</div>
+        <h2>Transaction History</h2>
       </div>
 
-
-      <button
-        id="refreshBtn"
-        class="refresh-btn"
-        type="button"
-      >
-        ↻ Refresh
-      </button>
-
+      <button id="refreshBtn"
+              class="refresh-btn"
+              type="button">↻ Refresh</button>
     </div>
 
-
-    <div
-      id="projectHistory"
-      class="history-empty"
-      aria-live="polite"
-    >
-
-      <div
-        class="empty-icon"
-        aria-hidden="true"
-      >
-        ✓
-      </div>
-
-      <strong>
-        No Testnet transactions
-      </strong>
-
-      <p>
-        Testnet project activity will appear here when supported
-        transaction history is available.
-      </p>
-
+    <div id="projectHistory"
+         class="history-empty"
+         aria-live="polite">
+      <div class="empty-icon" aria-hidden="true">✓</div>
+      <strong>No Testnet transactions</strong>
+      <p>Testnet project activity will appear here when supported transaction history is available.</p>
     </div>
-
   </section>
 
-
-  <!-- TESTNET SAFETY NOTICE -->
   <section class="testnet-notice">
-
-    <div
-      class="notice-icon"
-      aria-hidden="true"
-    >
-      !
-    </div>
-
+    <div class="notice-icon" aria-hidden="true">!</div>
     <div>
-
-      <strong>
-        Testnet environment
-      </strong>
-
+      <strong>Testnet environment</strong>
       <p>
         This page uses the ALBUKHR Testnet project registry and
         Testnet transaction gateway. It does not read or write
         Mainnet investment, staking, withdrawal, or transaction data.
       </p>
-
     </div>
-
   </section>
 
 </main>
 
+<div id="infoModal" class="info-modal" hidden>
+  <div class="info-box"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="infoTitle"
+       aria-describedby="infoDescription">
 
-<!-- INFORMATION MODAL -->
-<div
-  id="infoModal"
-  class="info-modal"
-  hidden
->
+    <button id="closeInfo"
+            class="close-info"
+            type="button"
+            aria-label="Close Testnet information">×</button>
 
-  <div
-    class="info-box"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="infoTitle"
-    aria-describedby="infoDescription"
-  >
+    <div class="section-kicker">ALBUKHR TESTNET</div>
 
-    <button
-      id="closeInfo"
-      class="close-info"
-      type="button"
-      aria-label="Close Testnet information"
-    >
-      ×
-    </button>
-
-
-    <div class="section-kicker">
-      ALBUKHR TESTNET
-    </div>
-
-
-    <h2 id="infoTitle">
-      Safe testing environment
-    </h2>
-
+    <h2 id="infoTitle">Safe testing environment</h2>
 
     <p id="infoDescription">
       Project information is loaded from the Testnet public project
@@ -432,81 +200,22 @@
       session.
     </p>
 
-
-    <button
-      id="infoOk"
-      class="info-ok"
-      type="button"
-    >
-      Close
-    </button>
-
+    <button id="infoOk"
+            class="info-ok"
+            type="button">Close</button>
   </div>
-
 </div>
-
-
-<!-- =========================================================
-     SUPABASE BROWSER SDK
-     ========================================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-
-<!-- =========================================================
-     ALBUKHR TESTNET ENVIRONMENT
-     ========================================================= -->
-
-<script src="js/core/environment-core.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     ALBUKHR SHARED TESTNET SUPABASE CORE
-     ========================================================= -->
-
-<script src="js/core/supabase-core.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET PROJECT REGISTRY
-     ========================================================= -->
-
-<script src="js/project-registry.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET PROJECT PAGE
-     ========================================================= -->
-
-<script src="js/testnet-project.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET AUTHENTICATION
-     ========================================================= -->
-
-<script src="js/testnet-gateway-auth.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET INVESTOR API
-     ========================================================= -->
-
-<script src="js/testnet-api-core.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET WITHDRAWAL API
-     ========================================================= -->
-
-<script src="js/testnet-withdrawal-api.js?v=20260921-project2"></script>
-
-
-<!-- =========================================================
-     TESTNET WITHDRAWAL UI
-     ========================================================= -->
-
-<script src="js/testnet-withdrawal.js?v=20260921-project2"></script>
+<script src="js/core/environment-core.js?v=20260921-project3"></script>
+<script src="js/core/supabase-core.js?v=20260921-project3"></script>
+<script src="js/project-registry.js?v=20260921-project3"></script>
+<script src="js/testnet-project.js?v=20260921-project3"></script>
+<script src="js/testnet-gateway-auth.js?v=20260921-project3"></script>
+<script src="js/testnet-api-core.js?v=20260921-project3"></script>
+<script src="js/testnet-withdrawal-api.js?v=20260921-project3"></script>
+<script src="js/testnet-withdrawal.js?v=20260921-project3"></script>
 
 </body>
-  </html>
+</html>
