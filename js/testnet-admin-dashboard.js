@@ -1,204 +1,132 @@
-/* ALBUKHR TESTNET ADMIN DASHBOARD v1 */
+/* ALBUKHR TESTNET ADMIN DASHBOARD v2 */
 (function(window, document){
   "use strict";
 
   var initialized = false;
+  var rows = [];
 
-  function el(id){
-    return document.getElementById(id);
-  }
+  function el(id){ return document.getElementById(id); }
+  function clean(v){ return String(v == null ? "" : v).trim(); }
+  function pi(v){ var n = Number(v); if(!Number.isFinite(n)) n=0; return n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4}) + " Pi"; }
+  function status(message, error){ var n=el("pageStatus"); if(n){ n.textContent=clean(message); n.className="page-status"+(error?" error":""); } }
 
-  function clean(value){
-    return String(value == null ? "" : value).trim();
-  }
-
-  function setStatus(message, error){
-    var node = el("pageStatus");
-    if(!node) return;
-    node.textContent = clean(message);
-    node.className = "page-status" + (error ? " error" : "");
-  }
-
-  function formatPi(value){
-    var n = Number(value);
-    if(!Number.isFinite(n)) n = 0;
-    return n.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4
-    }) + " Pi";
-  }
-
-  function escapeText(value){
-    return clean(value);
-  }
-
-  function createProjectLogo(project){
-    var url = clean(project && project.logo_url);
-    if(url){
-      var image = document.createElement("img");
-      image.className = "project-logo";
-      image.alt = clean(project.name || "Project") + " logo";
-      image.loading = "lazy";
-      image.decoding = "async";
-      image.src = url;
-      return image;
-    }
-
-    var fallback = document.createElement("div");
-    fallback.className = "project-logo-fallback";
-    fallback.setAttribute("aria-hidden", "true");
-    fallback.textContent = (clean(project && project.name) || "P").charAt(0).toUpperCase();
-    return fallback;
-  }
-
-  function render(rows){
-    var body = el("projectRows");
-    var empty = el("emptyState");
-
-    if(!body) return;
+  function render(){
+    var body=el("projectRows"); if(!body) return;
     body.replaceChildren();
-
-    var ready = 0;
-    var pending = 0;
-    var verifiedTotal = 0;
+    var ready=0,pending=0,total=0;
 
     rows.forEach(function(row){
-      var project = row.project || {};
-      var r = row.readiness || {};
+      var project=row.project||{};
+      var req=Number(row.required||0), ver=Number(row.verified||0);
+      if(row.ready) ready++; else pending++;
+      total += ver;
 
-      if(r.ready) ready += 1;
-      else pending += 1;
-      verifiedTotal += Number(r.verified || 0);
+      var tr=document.createElement("tr");
+      var td=document.createElement("td");
+      var wrap=document.createElement("div"); wrap.className="project-cell";
+      if(project.logo_url){ var img=document.createElement("img"); img.className="project-logo"; img.src=project.logo_url; img.alt=clean(project.name||"Project")+" logo"; img.loading="lazy"; wrap.appendChild(img); }
+      else { var fallback=document.createElement("div"); fallback.className="project-logo-fallback"; fallback.textContent=(clean(project.name)||"P").charAt(0).toUpperCase(); wrap.appendChild(fallback); }
+      var nw=document.createElement("div"); nw.className="project-name";
+      var name=document.createElement("strong"); name.textContent=clean(project.name||project.project_code||"Project");
+      var code=document.createElement("small"); code.textContent=clean(project.project_code||"—");
+      nw.appendChild(name); nw.appendChild(code); wrap.appendChild(nw); td.appendChild(wrap); tr.appendChild(td);
 
-      var tr = document.createElement("tr");
+      td=document.createElement("td"); td.className="metric"; td.textContent=pi(req); tr.appendChild(td);
+      td=document.createElement("td"); td.className="metric"; td.textContent=pi(ver); tr.appendChild(td);
 
-      var projectCell = document.createElement("td");
-      var projectWrap = document.createElement("div");
-      projectWrap.className = "project-cell";
-      projectWrap.appendChild(createProjectLogo(project));
+      td=document.createElement("td");
+      var bar=document.createElement("div"); bar.className="coverage-bar";
+      var fill=document.createElement("div"); fill.className="coverage-fill"; fill.style.width=Math.min(100,Math.max(0,Number(row.coverage||0)))+"%"; bar.appendChild(fill);
+      var label=document.createElement("div"); label.className="coverage-label"; label.textContent=Number(row.coverage||0).toFixed(1)+"%";
+      td.appendChild(bar); td.appendChild(label); tr.appendChild(td);
 
-      var nameWrap = document.createElement("div");
-      nameWrap.className = "project-name";
-
-      var name = document.createElement("strong");
-      name.textContent = escapeText(project.name || project.project_code || "Project");
-
-      var code = document.createElement("small");
-      code.textContent = escapeText(project.project_code || "—");
-
-      nameWrap.appendChild(name);
-      nameWrap.appendChild(code);
-      projectWrap.appendChild(nameWrap);
-      projectCell.appendChild(projectWrap);
-      tr.appendChild(projectCell);
-
-      var requiredCell = document.createElement("td");
-      requiredCell.className = "metric";
-      requiredCell.textContent = formatPi(r.required);
-      tr.appendChild(requiredCell);
-
-      var verifiedCell = document.createElement("td");
-      verifiedCell.className = "metric";
-      verifiedCell.textContent = formatPi(r.verified);
-      tr.appendChild(verifiedCell);
-
-      var coverageCell = document.createElement("td");
-      var bar = document.createElement("div");
-      bar.className = "coverage-bar";
-      var fill = document.createElement("div");
-      fill.className = "coverage-fill";
-      fill.style.width = Math.min(100, Math.max(0, Number(r.coverage || 0))) + "%";
-      bar.appendChild(fill);
-
-      var label = document.createElement("div");
-      label.className = "coverage-label";
-      label.textContent = Number(r.coverage || 0).toFixed(1) + "%";
-      coverageCell.appendChild(bar);
-      coverageCell.appendChild(label);
-      tr.appendChild(coverageCell);
-
-      var stateCell = document.createElement("td");
-      var state = document.createElement("span");
-      state.className = "state " + clean(r.code || "pending");
-      state.textContent = clean(r.label || "LIQUIDITY PENDING");
-      stateCell.appendChild(state);
-      tr.appendChild(stateCell);
-
+      td=document.createElement("td");
+      var state=document.createElement("span"); state.className="state "+clean(row.code||"pending"); state.textContent=row.ready?"TESTNET READY":(ver>0?"LIQUIDITY PARTIAL":"LIQUIDITY PENDING"); td.appendChild(state);
+      var action=document.createElement("button"); action.type="button"; action.className="row-action"; action.textContent=row.treasury?"Recompute":"Initialize 100 Pi";
+      action.dataset.projectId=clean(project.id); action.dataset.mode=row.treasury?"recompute":"initialize"; td.appendChild(action); tr.appendChild(td);
       body.appendChild(tr);
     });
 
-    el("approvedCount").textContent = String(rows.length);
-    el("readyCount").textContent = String(ready);
-    el("pendingCount").textContent = String(pending);
-    el("verifiedTotal").textContent = formatPi(verifiedTotal);
-
-    if(empty){
-      empty.hidden = rows.length > 0;
-    }
+    el("approvedCount").textContent=String(rows.length);
+    el("readyCount").textContent=String(ready);
+    el("pendingCount").textContent=String(pending);
+    el("verifiedTotal").textContent=pi(total);
+    el("emptyState").hidden=rows.length>0;
   }
 
   async function load(){
-    if(!window.AlbukhrTestnetLiquidity ||
-       typeof window.AlbukhrTestnetLiquidity.load !== "function"){
-      throw new Error("TESTNET_LIQUIDITY_MODULE_UNAVAILABLE");
-    }
-
-    setStatus("Loading Testnet projects and treasury status…");
-
-    var rows = await window.AlbukhrTestnetLiquidity.load();
-    render(rows);
-
-    if(rows.length){
-      setStatus(
-        rows.length + " approved Testnet project" + (rows.length === 1 ? "" : "s") +
-        " loaded. Minimum threshold: 100 Pi."
-      );
-    }else{
-      setStatus("No approved Testnet projects were returned.");
-    }
-
+    status("Loading Testnet liquidity status…");
+    rows=await window.AlbukhrTestnetLiquidity.load();
+    render();
+    status(rows.length ? rows.length+" approved Testnet project"+(rows.length===1?"":"s")+" loaded. Minimum threshold: 100 Pi." : "No approved Testnet projects were returned.");
     return rows;
   }
 
-  async function init(){
-    if(initialized) return;
-    initialized = true;
+  async function initializeProject(projectId){
+    var row=rows.find(function(item){ return String(item.project && item.project.id)===String(projectId); });
+    if(!row) throw new Error("PROJECT_NOT_FOUND");
+    var wallet=window.prompt("Enter the Testnet treasury wallet for " + (row.project.name||row.project.project_code) + "", clean(row.treasury && row.treasury.treasury_wallet));
+    if(wallet===null) return;
+    wallet=clean(wallet);
+    if(!wallet) throw new Error("TREASURY_WALLET_REQUIRED");
+    var required=window.prompt("Required Testnet liquidity (minimum 100 Pi)", String(Math.max(100,Number(row.required||100))));
+    if(required===null) return;
+    await window.AlbukhrTestnetLiquidity.initialize(projectId,wallet,required);
+    await load();
+  }
 
+  async function handleRowAction(event){
+    var button=event.target.closest("button.row-action");
+    if(!button) return;
+    var id=clean(button.dataset.projectId), mode=clean(button.dataset.mode);
+    button.disabled=true;
     try{
-      var env = window.ALBukhrEnvironment;
-      if(!env || !env.isKnown || !env.isTestnet || !env.getNetwork ||
-         !env.isKnown() || !env.isTestnet() || env.getNetwork() !== "testnet"){
-        throw new Error("This dashboard is available only on test.albukhr.com.");
-      }
-
-      var refresh = el("refreshButton");
-      if(refresh){
-        refresh.addEventListener("click", function(){
-          refresh.disabled = true;
-          load().catch(function(error){
-            console.error("[ALBUKHR TESTNET ADMIN]", error);
-            setStatus("Unable to load Testnet liquidity status: " + (error.message || error), true);
-          }).finally(function(){
-            refresh.disabled = false;
-          });
-        });
-      }
-
-      await load();
+      if(mode==="initialize") await initializeProject(id);
+      else { await window.AlbukhrTestnetLiquidity.recompute(id); await load(); }
     }catch(error){
-      console.error("[ALBUKHR TESTNET ADMIN]", error);
-      setStatus("Testnet liquidity dashboard error: " + (error.message || error), true);
-    }
+      console.error("[ALBUKHR TESTNET ADMIN]",error);
+      status("Action failed: "+(error.message||error),true);
+    }finally{ button.disabled=false; }
   }
 
-  window.AlbukhrTestnetAdminDashboard = Object.freeze({
-    init: init,
-    load: load
-  });
-
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", init, {once:true});
-  }else{
-    init();
+  async function verifyPayment(){
+    var record=el("paymentRecordId"), reference=el("paymentReference");
+    var id=clean(record&&record.value), ref=clean(reference&&reference.value);
+    if(!id){ status("Enter a liquidity payment record ID.",true); return; }
+    try{
+      el("verifyPaymentButton").disabled=true;
+      status("Verifying liquidity payment record…");
+      await window.AlbukhrTestnetLiquidity.verifyPayment(id,ref);
+      if(record) record.value=""; if(reference) reference.value="";
+      await load();
+    }catch(error){ console.error(error); status("Payment verification failed: "+(error.message||error),true); }
+    finally{ el("verifyPaymentButton").disabled=false; }
   }
-})(window, document);
+
+  async function init(){
+    if(initialized) return; initialized=true;
+    try{
+      var env=window.ALBukhrEnvironment;
+      if(!env || !env.isKnown || !env.isTestnet || !env.isKnown() || !env.isTestnet() || env.getNetwork()!=="testnet") throw new Error("TESTNET_ADMIN_ENVIRONMENT_REQUIRED");
+      if(!window.AlbukhrTestnetAdminAuth) throw new Error("TESTNET_ADMIN_AUTH_UNAVAILABLE");
+      window.AlbukhrTestnetAdminAuth.init();
+      var session=await window.AlbukhrTestnetAdminAuth.requireAdmin({redirectOnFailure:true});
+      if(!session) return;
+
+      el("adminEmail").textContent=clean(session.admin && session.admin.email) || "Authenticated admin";
+      el("adminRoles").textContent=Array.isArray(session.admin && session.admin.roles) ? session.admin.roles.join(", ") : "—";
+
+      el("refreshButton").addEventListener("click",function(){
+        el("refreshButton").disabled=true;
+        load().catch(function(error){status("Unable to load Testnet liquidity status: "+(error.message||error),true);}).finally(function(){el("refreshButton").disabled=false;});
+      });
+      el("projectRows").addEventListener("click",handleRowAction);
+      el("verifyPaymentButton").addEventListener("click",verifyPayment);
+      el("logoutButton").addEventListener("click",function(){ window.AlbukhrTestnetAdminAuth.logout(); window.location.replace("index.html"); });
+      await load();
+    }catch(error){ console.error("[ALBUKHR TESTNET ADMIN]",error); status("Testnet admin dashboard error: "+(error.message||error),true); }
+  }
+
+  window.AlbukhrTestnetAdminDashboard=Object.freeze({init:init,load:load});
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init,{once:true}); else init();
+})(window,document);
