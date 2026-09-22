@@ -42,8 +42,7 @@
 
       td=document.createElement("td");
       var state=document.createElement("span"); state.className="state "+clean(row.code||"pending"); state.textContent=row.ready?"TESTNET READY":(ver>0?"LIQUIDITY PARTIAL":"LIQUIDITY PENDING"); td.appendChild(state);
-      var action=document.createElement("button"); action.type="button"; action.className="row-action"; action.textContent=row.treasury?"Recompute":"Initialize 100 Pi";
-      action.dataset.projectId=clean(project.id); action.dataset.mode=row.treasury?"recompute":"initialize"; td.appendChild(action); tr.appendChild(td);
+      var action=document.createElement("button"); action.type="button"; action.className="row-action"; action.dataset.projectId=clean(project.id); action.dataset.mode=row.treasury?(row.ready?"recompute":"fund"):"initialize"; action.textContent=row.treasury?(row.ready?"Recompute":"Pay "+Math.max(0,req-ver).toFixed(2)+" Pi"):"Initialize 100 Pi"; td.appendChild(action); tr.appendChild(td);
       body.appendChild(tr);
     });
 
@@ -75,6 +74,26 @@
     await load();
   }
 
+  async function fundProject(projectId){
+    var row=rows.find(function(item){ return String(item.project && item.project.id)===String(projectId); });
+    if(!row) throw new Error("PROJECT_NOT_FOUND");
+    if(!row.treasury) throw new Error("TREASURY_NOT_CONFIGURED");
+    var remaining=Math.max(0,Number(row.required||100)-Number(row.verified||0));
+    if(remaining<=0) throw new Error("PROJECT_LIQUIDITY_ALREADY_READY");
+    if(!window.AlbukhrTestnetLiquidityPayment) throw new Error("TESTNET_LIQUIDITY_PAYMENT_UNAVAILABLE");
+    status("Opening Pi Testnet payment for "+remaining.toFixed(2)+" Pi…");
+    var result=await window.AlbukhrTestnetLiquidityPayment.startPayment({
+      projectId:clean(row.project && row.project.id),
+      projectCode:clean(row.project && row.project.project_code),
+      amount:remaining,
+      memo:"ALBUKHR Testnet liquidity • "+clean(row.project && row.project.project_code)
+    });
+    var recordId=clean(result && result.record && result.record.id);
+    if(recordId && el("paymentRecordId")) el("paymentRecordId").value=recordId;
+    status(recordId ? "Pi payment completed. Verification is pending. Payment record ID has been placed below." : "Pi payment completed. Verification is pending.");
+    await load();
+  }
+
   async function handleRowAction(event){
     var button=event.target.closest("button.row-action");
     if(!button) return;
@@ -82,6 +101,7 @@
     button.disabled=true;
     try{
       if(mode==="initialize") await initializeProject(id);
+      else if(mode==="fund") await fundProject(id);
       else { await window.AlbukhrTestnetLiquidity.recompute(id); await load(); }
     }catch(error){
       console.error("[ALBUKHR TESTNET ADMIN]",error);
