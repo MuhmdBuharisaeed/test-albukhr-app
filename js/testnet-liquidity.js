@@ -1,164 +1,106 @@
-/* ALBUKHR TESTNET LIQUIDITY MODEL v1 */
+/* ALBUKHR TESTNET LIQUIDITY ADMIN API v2 */
 (function(window){
   "use strict";
 
   var NETWORK = "testnet";
+  var HOST = "test.albukhr.com";
+  var BASE = "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-liquidity-admin";
   var MIN_REQUIRED_LIQUIDITY = 100;
 
-  function clean(value){
-    return String(value == null ? "" : value).trim();
-  }
+  function clean(v){ return String(v == null ? "" : v).trim(); }
+  function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
 
-  function number(value){
-    var n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function validateEnvironment(){
+  function validate(){
     var env = window.ALBukhrEnvironment;
-
-    if(!env || typeof env.isKnown !== "function" ||
-       typeof env.isTestnet !== "function" ||
-       typeof env.getNetwork !== "function"){
-      throw new Error("TESTNET_ENVIRONMENT_UNAVAILABLE");
-    }
-
-    if(!env.isKnown() || !env.isTestnet() || env.getNetwork() !== NETWORK){
-      throw new Error("INVALID_TESTNET_ENVIRONMENT");
-    }
-
-    return env;
+    if(!env || typeof env.isKnown !== "function" || typeof env.isTestnet !== "function" || typeof env.getNetwork !== "function") throw new Error("TESTNET_ENVIRONMENT_UNAVAILABLE");
+    if(!env.isKnown() || !env.isTestnet() || env.getNetwork() !== NETWORK) throw new Error("INVALID_TESTNET_ENVIRONMENT");
+    var host = typeof env.getHostname === "function" ? clean(env.getHostname()).toLowerCase() : clean(window.location.hostname).toLowerCase();
+    if(host !== HOST) throw new Error("TESTNET_LIQUIDITY_HOST_REQUIRED");
   }
 
-  function getSupabase(){
-    validateEnvironment();
-    var core = window.ALBUKHR_SUPABASE;
-
-    if(!core || !core.client || core.network !== NETWORK){
-      throw new Error("TESTNET_SUPABASE_CORE_UNAVAILABLE");
-    }
-
-    return core;
+  function token(){
+    validate();
+    var auth = window.AlbukhrTestnetAdminAuth;
+    if(!auth || typeof auth.getSessionToken !== "function") throw new Error("TESTNET_ADMIN_AUTH_UNAVAILABLE");
+    var value = clean(auth.getSessionToken());
+    if(!value) throw new Error("TESTNET_ADMIN_SESSION_REQUIRED");
+    return value;
   }
 
-  function getRequiredLiquidity(treasury){
-    var configured = number(treasury && treasury.required_liquidity);
-    return Math.max(MIN_REQUIRED_LIQUIDITY, configured);
+  async function request(method, body){
+    var bearer = token();
+    var options = {
+      method: method,
+      headers: {"Accept":"application/json", "Authorization":"Bearer " + bearer}
+    };
+    if(body != null){
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(body);
+    }
+    var response = await fetch(BASE, options);
+    var data = null;
+    try{ data = await response.json(); }catch(_){ }
+    if(!response.ok){
+      var err = new Error(clean(data && (data.error || data.message)) || "TESTNET_LIQUIDITY_API_ERROR");
+      err.status = response.status;
+      err.body = data;
+      throw err;
+    }
+    return data;
   }
 
-  function getVerifiedLiquidity(treasury){
-    return Math.max(0, number(treasury && treasury.verified_liquidity));
-  }
-
-  function getCoverage(verified, required){
-    if(required <= 0) return 0;
-    return (verified / required) * 100;
-  }
-
-  function getReadiness(project, treasury){
-    var status = clean(project && project.status).toLowerCase();
-    var required = getRequiredLiquidity(treasury);
-    var verified = getVerifiedLiquidity(treasury);
-
-    if(status !== "approved"){
-      return {
-        code: "blocked",
-        label: "NOT APPROVED",
-        ready: false,
-        required: required,
-        verified: verified,
-        coverage: getCoverage(verified, required)
-      };
-    }
-
-    if(verified >= required){
-      return {
-        code: "ready",
-        label: "TESTNET READY",
-        ready: true,
-        required: required,
-        verified: verified,
-        coverage: getCoverage(verified, required)
-      };
-    }
-
-    if(verified > 0){
-      return {
-        code: "partial",
-        label: "LIQUIDITY PARTIAL",
-        ready: false,
-        required: required,
-        verified: verified,
-        coverage: getCoverage(verified, required)
-      };
-    }
-
+  function readiness(row){
+    var project = row && row.project || {};
+    var treasury = row && row.treasury || null;
+    var required = Math.max(MIN_REQUIRED_LIQUIDITY, num(row && row.readiness && row.readiness.required));
+    var verified = Math.max(0, num(row && row.readiness && row.readiness.verified));
     return {
-      code: "pending",
-      label: "LIQUIDITY PENDING",
-      ready: false,
+      project: project,
+      treasury: treasury,
+      payments: Array.isArray(row && row.payments) ? row.payments : [],
       required: required,
       verified: verified,
-      coverage: 0
+      coverage: required > 0 ? (verified / required) * 100 : 0,
+      ready: String(project.status || "").toLowerCase() === "approved" && verified >= required,
+      code: verified >= required ? "ready" : verified > 0 ? "partial" : "pending"
     };
   }
 
   async function load(){
-    var core = getSupabase();
+    var result = await request("GET");
+    var rows = Array.isArray(result && result.projects) ? result.projects : [];
+    return rows.map(readiness);
+  }
 
-    var projectsQuery = core.rpc("get_public_project_registry", {
-      p_network: NETWORK
+  async function initialize(projectId, treasuryWallet, requiredLiquidity){
+    return request("POST", {
+      action: "initialize",
+      project_id: clean(projectId),
+      treasury_wallet: clean(treasuryWallet),
+      required_liquidity: Math.max(MIN_REQUIRED_LIQUIDITY, num(requiredLiquidity || MIN_REQUIRED_LIQUIDITY))
     });
+  }
 
-    var treasuryQuery = core.from("project_treasury")
-      .select("id,project_id,network,treasury_wallet,required_liquidity,verified_liquidity,status")
-      .eq("network", NETWORK);
+  async function recompute(projectId){
+    return request("POST", {action:"recompute", project_id:clean(projectId)});
+  }
 
-    var results = await Promise.all([projectsQuery, treasuryQuery]);
-
-    if(results[0].error){
-      throw new Error("TESTNET_PROJECT_REGISTRY_LOAD_FAILED:" + results[0].error.message);
-    }
-
-    if(results[1].error){
-      throw new Error("TESTNET_TREASURY_READ_FAILED:" + results[1].error.message);
-    }
-
-    var projects = Array.isArray(results[0].data) ? results[0].data : [];
-    var treasuries = Array.isArray(results[1].data) ? results[1].data : [];
-
-    var treasuryMap = new Map();
-    treasuries.forEach(function(row){
-      if(row && row.project_id){
-        treasuryMap.set(String(row.project_id), row);
-      }
+  async function verifyPayment(paymentRecordId, reference){
+    return request("POST", {
+      action: "verify_payment",
+      payment_record_id: clean(paymentRecordId),
+      verification_reference: clean(reference)
     });
-
-    var rows = projects
-      .filter(function(project){
-        return project && clean(project.network).toLowerCase() === NETWORK &&
-          clean(project.status).toLowerCase() === "approved";
-      })
-      .map(function(project){
-        var treasury = treasuryMap.get(String(project.id)) || null;
-        return {
-          project: project,
-          treasury: treasury,
-          readiness: getReadiness(project, treasury)
-        };
-      });
-
-    return rows;
   }
 
   window.AlbukhrTestnetLiquidity = Object.freeze({
     network: NETWORK,
+    host: HOST,
+    baseUrl: BASE,
     MIN_REQUIRED_LIQUIDITY: MIN_REQUIRED_LIQUIDITY,
     load: load,
-    getRequiredLiquidity: getRequiredLiquidity,
-    getVerifiedLiquidity: getVerifiedLiquidity,
-    getCoverage: getCoverage,
-    getReadiness: getReadiness
+    initialize: initialize,
+    recompute: recompute,
+    verifyPayment: verifyPayment
   });
-
 })(window);
