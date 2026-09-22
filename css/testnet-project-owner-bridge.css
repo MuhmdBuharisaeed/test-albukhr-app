@@ -1,0 +1,18 @@
+.project-owner-action-wrap{
+  margin-top:10px;
+}
+.project-owner-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:7px 11px;
+  border-radius:10px;
+  border:1px solid #bcdcc9;
+  background:#eaf6ef;
+  color:#0f7a3d;
+  text-decoration:none;
+  font-size:9px;
+  font-weight:900;
+}
+.project-owner-button:hover{background:#e1f2e8}
