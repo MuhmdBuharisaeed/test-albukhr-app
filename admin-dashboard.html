@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f7a3d">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="ALBUKHR Testnet Liquidity Control Center.">
+  <title>ALBUKHR Testnet • Liquidity Control Center</title>
+  <link rel="stylesheet" href="css/testnet.css">
+  <link rel="stylesheet" href="css/testnet-admin.css">
+</head>
+<body data-page="testnet-admin-dashboard" data-network="testnet">
+
+<header class="admin-header">
+  <a class="admin-brand" href="index.html" aria-label="Back to ALBUKHR Testnet">
+    <span class="admin-brand-main">ALBUKHR</span>
+    <span class="admin-brand-sub">TESTNET ADMIN</span>
+  </a>
+
+  <div class="admin-header-actions">
+    <span class="environment-badge">TESTNET</span>
+    <a class="back-link" href="index.html">Home</a>
+  </div>
+</header>
+
+<main class="admin-main">
+
+  <section class="admin-hero">
+    <div>
+      <span class="section-kicker">TESTNET LIQUIDITY CONTROL CENTER</span>
+      <h1>Project Liquidity</h1>
+      <p>
+        Monitor the minimum Testnet liquidity threshold and project readiness before
+        Testnet staking and reward testing are enabled.
+      </p>
+    </div>
+    <div class="hero-threshold" aria-label="Minimum Testnet liquidity">
+      <span>Minimum</span>
+      <strong>100 Pi</strong>
+      <small>Per approved project</small>
+    </div>
+  </section>
+
+  <section class="security-notice" aria-label="Security boundary">
+    <div class="notice-mark" aria-hidden="true">!</div>
+    <div>
+      <strong>Testnet only</strong>
+      <p>
+        This dashboard reads only the Testnet project registry and Testnet treasury
+        status. No Mainnet investment, staking, payment, or transaction data is used here.
+      </p>
+    </div>
+  </section>
+
+  <section class="summary-grid" aria-label="Liquidity summary">
+    <article class="summary-card">
+      <span>Approved Projects</span>
+      <strong id="approvedCount">0</strong>
+      <small>Testnet registry</small>
+    </article>
+    <article class="summary-card">
+      <span>Testnet Ready</span>
+      <strong id="readyCount">0</strong>
+      <small>100 Pi threshold met</small>
+    </article>
+    <article class="summary-card">
+      <span>Liquidity Pending</span>
+      <strong id="pendingCount">0</strong>
+      <small>Below minimum</small>
+    </article>
+    <article class="summary-card">
+      <span>Total Verified</span>
+      <strong id="verifiedTotal">0.00 Pi</strong>
+      <small>Across Testnet projects</small>
+    </article>
+  </section>
+
+  <section class="panel" aria-labelledby="projectLiquidityTitle">
+    <div class="panel-heading">
+      <div>
+        <span class="section-kicker">PROJECT READINESS</span>
+        <h2 id="projectLiquidityTitle">Approved Project Liquidity</h2>
+      </div>
+      <button id="refreshButton" class="refresh-button" type="button">↻ Refresh</button>
+    </div>
+
+    <p id="pageStatus" class="page-status" aria-live="polite">Loading Testnet liquidity status…</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Required</th>
+            <th>Verified</th>
+            <th>Coverage</th>
+            <th>Readiness</th>
+          </tr>
+        </thead>
+        <tbody id="projectRows"></tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state" hidden>
+      <strong>No approved Testnet projects</strong>
+      <p>The Testnet registry returned no approved projects.</p>
+    </div>
+  </section>
+
+  <section class="panel action-panel" aria-labelledby="adminActionsTitle">
+    <span class="section-kicker">PRIVILEGED ACTIONS</span>
+    <h2 id="adminActionsTitle">Liquidity Administration</h2>
+    <p>
+      Setting the required threshold, verifying a liquidity payment, and marking a
+      project Testnet-ready are privileged operations. They are intentionally locked
+      in this first frontend slice until the secure Mainnet-admin → Testnet-admin
+      gateway is connected.
+    </p>
+    <div class="locked-actions">
+      <button type="button" disabled>Initialize 100 Pi Threshold</button>
+      <button type="button" disabled>Verify Liquidity Payment</button>
+      <button type="button" disabled>Mark Testnet Ready</button>
+    </div>
+    <div class="gateway-note">
+      <strong>Secure admin gateway required</strong>
+      <span>
+        No admin secret, service-role key, or Testnet admin credential is embedded in
+        this frontend.
+      </span>
+    </div>
+  </section>
+
+  <section class="panel rules-panel" aria-labelledby="rulesTitle">
+    <span class="section-kicker">TESTNET RULES</span>
+    <h2 id="rulesTitle">Liquidity Readiness Rules</h2>
+    <div class="rules-grid">
+      <article>
+        <strong>01</strong>
+        <p>Only projects with <b>approved</b> status participate in Testnet testing.</p>
+      </article>
+      <article>
+        <strong>02</strong>
+        <p>Minimum required Testnet liquidity is <b>100 Pi</b> per approved project.</p>
+      </article>
+      <article>
+        <strong>03</strong>
+        <p>Testnet-ready means verified liquidity is at least the required threshold.</p>
+      </article>
+      <article>
+        <strong>04</strong>
+        <p><b>active</b> remains the Mainnet transaction state; Testnet does not require active status.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="testnet-footer-note">
+    <strong>ALBUKHR TESTNET</strong>
+    <p>
+      This page is a Testnet-only control surface. Mainnet code and Mainnet database
+      records remain outside this application.
+    </p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/core/environment-core.js"></script>
+<script src="js/core/supabase-core.js"></script>
+<script src="js/testnet-liquidity.js"></script>
+<script src="js/testnet-admin-dashboard.js"></script>
+</body>
+</html>
