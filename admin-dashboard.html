@@ -52,7 +52,7 @@
   <section class="panel action-panel" aria-labelledby="paymentVerifyTitle">
     <span class="section-kicker">LIQUIDITY PAYMENT VERIFICATION</span>
     <h2 id="paymentVerifyTitle">Verify an Existing Payment Record</h2>
-    <p>The backend accepts verification only for a Testnet <code>add_liquidity</code> record whose Pi status is already <code>completed</code>. The admin page never submits a Pi payment itself.</p>
+    <p>The dashboard can start a Testnet <code>add_liquidity</code> payment when liquidity is still below the threshold. After Pi server-side completion, the payment record remains pending verification until an authorized admin verifies it.</p>
     <div class="admin-form-grid">
       <label>Payment record ID<input id="paymentRecordId" type="text" autocomplete="off" placeholder="UUID"></label>
       <label>Verification reference<input id="paymentReference" type="text" autocomplete="off" placeholder="Optional reference"></label>
@@ -71,8 +71,10 @@
   </section>
 </main>
 <script src="js/core/environment-core.js?v=20260922-admin1"></script>
-<script src="js/testnet-admin-auth.js?v=20260922-admin1"></script>
-<script src="js/testnet-liquidity.js?v=20260922-admin1"></script>
-<script src="js/testnet-admin-dashboard.js?v=20260922-admin1"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="js/testnet-admin-auth.js?v=20260922-admin2"></script>
+<script src="js/testnet-liquidity.js?v=20260922-admin2"></script>
+<script src="js/testnet-liquidity-payment.js?v=20260922-admin2"></script>
+<script src="js/testnet-admin-dashboard.js?v=20260922-admin2"></script>
 </body>
 </html>
