@@ -428,3 +428,5 @@ td{font-size:11px;color:#34483c}
   .rules-grid{grid-template-columns:1fr}
   .back-link{font-size:9px;padding:6px 8px}
 }
+
+.admin-identity{margin-top:8px;font-size:11px;color:#64756c}.row-action{display:block;margin-top:8px;border:1px solid #cfe1d7;background:#fff;color:#0f7a3d;border-radius:9px;padding:6px 8px;font-size:10px;font-weight:800}.row-action:hover{background:#f1f8f4}.admin-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.admin-form-grid label{display:grid;gap:6px;color:#476056;font-size:11px;font-weight:800}.admin-form-grid input{width:100%;border:1px solid #d7e6dd;border-radius:10px;padding:10px 11px;background:#fff;color:#173127;font:inherit;font-size:12px}.primary-admin-button{border:0;border-radius:10px;padding:10px 13px;background:#0f7a3d;color:#fff;font-weight:800;cursor:pointer}.primary-admin-button:disabled,.row-action:disabled,.refresh-button:disabled{opacity:.6;cursor:not-allowed}@media(max-width:680px){.admin-form-grid{grid-template-columns:1fr}.row-action{margin-top:6px}}
