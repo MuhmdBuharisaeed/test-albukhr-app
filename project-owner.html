@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f7a3d">
+<title>Project Owner • ALBUKHR TESTNET</title>
+<link rel="stylesheet" href="css/testnet-project-owner.css?v=20260922-owner1">
+</head>
+
+<body data-page="project-owner" data-network="testnet">
+
+<header class="owner-header">
+  <a class="brand-link" href="index.html" aria-label="ALBUKHR Testnet Home">ALBUKHR</a>
+
+  <div class="owner-header-actions">
+    <span class="network-badge">TESTNET</span>
+    <a class="back-link" id="backToProject" href="index.html">Project</a>
+  </div>
+</header>
+
+<main class="owner-shell">
+
+  <section class="owner-hero">
+    <div class="owner-identity">
+      <span class="owner-kicker">PROJECT OWNER</span>
+      <h1 id="ownerTitle">Manage Project</h1>
+      <p id="ownerSubtitle">Verifying project ownership…</p>
+
+      <div class="owner-pills">
+        <span>TESTNET</span>
+        <span>OWNER ACCESS</span>
+        <span id="ownerUserPill">—</span>
+      </div>
+    </div>
+
+    <div class="owner-mark" aria-hidden="true">✓</div>
+  </section>
+
+  <section id="ownerError" class="notice error" hidden>
+    <strong id="ownerErrorTitle">Access denied</strong>
+    <p id="ownerErrorText">This project is not assigned to your Testnet identity.</p>
+    <a class="button secondary" href="index.html">Return to Testnet</a>
+  </section>
+
+  <div id="ownerContent" hidden>
+
+    <section class="project-card">
+      <div class="project-logo-wrap">
+        <img id="ownerProjectLogo" alt="" hidden>
+        <div id="ownerProjectLogoFallback">A</div>
+      </div>
+
+      <div class="project-copy">
+        <span class="owner-kicker">APPROVED PROJECT</span>
+        <h2 id="projectName">Project</h2>
+        <p id="projectCode">—</p>
+      </div>
+    </section>
+
+    <section class="stats-grid" aria-label="Project owner summary">
+
+      <article class="stat-card">
+        <span>Owner Balance</span>
+        <strong id="ownerBalance">0.00 Pi</strong>
+        <small>Available for owner withdrawal</small>
+      </article>
+
+      <article class="stat-card">
+        <span>Required Liquidity</span>
+        <strong id="requiredLiquidity">0.00 Pi</strong>
+        <small>Testnet treasury requirement</small>
+      </article>
+
+      <article class="stat-card">
+        <span>Verified Liquidity</span>
+        <strong id="verifiedLiquidity">0.00 Pi</strong>
+        <small id="liquidityCoverage">0% coverage</small>
+      </article>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">LIQUIDITY</span>
+          <h2>Add Project Liquidity</h2>
+        </div>
+
+        <span id="treasuryState" class="state-pill">CHECKING</span>
+      </div>
+
+      <p class="muted">
+        Add Testnet Pi to the approved project treasury. The project,
+        network, owner identity and Pi payment are checked server-side.
+      </p>
+
+      <div class="form-grid">
+
+        <label class="field">
+          <span>Amount (Pi)</span>
+          <input
+            id="liquidityAmount"
+            type="number"
+            min="100"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="100.00"
+            autocomplete="off"
+          >
+        </label>
+
+        <div class="field action-field">
+          <span>&nbsp;</span>
+
+          <button
+            id="addLiquidityBtn"
+            class="button primary"
+            type="button"
+            disabled
+          >
+            Add Liquidity
+          </button>
+        </div>
+
+      </div>
+
+      <p
+        id="liquidityStatus"
+        class="status-text"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <div class="security-note">
+        <strong>Payment gate</strong>
+        <span>
+          The Add Liquidity button must remain disabled until the
+          Testnet liquidity payment server has owner authorization enabled.
+        </span>
+      </div>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">WITHDRAWAL</span>
+          <h2>Project Owner Withdrawal</h2>
+        </div>
+
+        <span class="state-pill">OWNER BALANCE</span>
+      </div>
+
+      <p class="muted">
+        This withdrawal is separate from investor reward/capital withdrawals.
+        Only your available Project Owner balance can be requested.
+      </p>
+
+      <div class="form-grid">
+
+        <label class="field">
+          <span>Amount (Pi)</span>
+
+          <input
+            id="withdrawAmount"
+            type="number"
+            min="0.0000001"
+            step="0.0000001"
+            inputmode="decimal"
+            placeholder="0.00"
+            autocomplete="off"
+          >
+        </label>
+
+        <label class="field">
+          <span>Registered Wallet</span>
+
+          <input
+            id="withdrawWallet"
+            type="text"
+            readonly
+          >
+        </label>
+
+      </div>
+
+      <button
+        id="requestWithdrawalBtn"
+        class="button secondary"
+        type="button"
+        disabled
+      >
+        Request Owner Withdrawal
+      </button>
+
+      <p
+        id="withdrawStatus"
+        class="status-text"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="section-head">
+
+        <div>
+          <span class="owner-kicker">HISTORY</span>
+          <h2>Owner Withdrawals</h2>
+        </div>
+
+        <button
+          id="refreshOwnerBtn"
+          class="small-button"
+          type="button"
+        >
+          Refresh
+        </button>
+
+      </div>
+
+      <div id="withdrawalHistory" class="history-list">
+        <div class="empty-state">Loading owner activity…</div>
+      </div>
+
+    </section>
+
+    <section class="notice">
+
+      <div class="notice-icon">i</div>
+
+      <div>
+        <strong>Owner access is server-authorized</strong>
+
+        <p>
+          This page only becomes available after the Testnet owner API
+          confirms that your authenticated Testnet identity is bound to
+          this approved project.
+        </p>
+      </div>
+
+    </section>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/core/environment-core.js?v=20260922-owner1"></script>
+<script src="js/core/supabase-core.js?v=20260922-owner1"></script>
+<script src="js/testnet-gateway-auth.js?v=20260920-assetfix1"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script src="js/testnet-liquidity-payment-client.js?v=20260922-liquidity2"></script>
+<script src="js/testnet-project-owner.js?v=20260922-owner1"></script>
+
+</body>
+</html>
