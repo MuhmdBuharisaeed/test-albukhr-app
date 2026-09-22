@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f7a3d">
-  <meta name="description" content="ALBUKHR Testnet project details, registry information, staking status, and withdrawal controls.">
+  <meta name="description" content="ALBUKHR Testnet project details, registry information, staking status, liquidity, and withdrawal controls.">
   <meta name="color-scheme" content="light">
   <title id="pageTitle">Project • ALBUKHR TESTNET</title>
 
@@ -45,6 +45,7 @@
              hidden
              loading="eager"
              decoding="async">
+
         <div id="logoFallback"
              class="detail-logo-fallback"
              aria-hidden="true">A</div>
@@ -94,10 +95,25 @@
     <p id="projectDescription">Loading project information…</p>
 
     <div class="project-meta-grid">
-      <div><span>Project Code</span><strong id="projectCode">—</strong></div>
-      <div><span>Project Type</span><strong id="projectType">—</strong></div>
-      <div><span>Core Slot</span><strong id="projectSlot">—</strong></div>
-      <div><span>Network</span><strong id="projectNetwork">TESTNET</strong></div>
+      <div>
+        <span>Project Code</span>
+        <strong id="projectCode">—</strong>
+      </div>
+
+      <div>
+        <span>Project Type</span>
+        <strong id="projectType">—</strong>
+      </div>
+
+      <div>
+        <span>Core Slot</span>
+        <strong id="projectSlot">—</strong>
+      </div>
+
+      <div>
+        <span>Network</span>
+        <strong id="projectNetwork">TESTNET</strong>
+      </div>
     </div>
   </section>
 
@@ -142,6 +158,73 @@
     </div>
   </section>
 
+  <!--
+    ============================================================
+    ALBUKHR TESTNET LIQUIDITY
+    ------------------------------------------------------------
+    This is an additive Testnet-only feature.
+    Existing staking, withdrawal, authentication, project
+    registry, and transaction-history functionality is untouched.
+    ============================================================
+  -->
+  <section class="panel" data-project-panel="liquidity">
+    <div class="section-kicker">TESTNET LIQUIDITY</div>
+
+    <h2>Add project liquidity</h2>
+
+    <p>
+      Send Testnet Pi directly to this project's verified Testnet
+      treasury. The payment is checked against the project, network,
+      Pi identity, and treasury before server approval and completion.
+    </p>
+
+    <div class="action-grid">
+
+      <label
+        class="action-btn"
+        style="
+          display:flex;
+          flex-direction:column;
+          align-items:stretch;
+          justify-content:center;
+          gap:6px;
+          cursor:default;
+        "
+      >
+        <span>Liquidity amount (Pi)</span>
+
+        <input
+          id="liquidityAmount"
+          type="number"
+          min="100"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="100.00"
+          autocomplete="off"
+          aria-label="Liquidity amount in Testnet Pi"
+        >
+      </label>
+
+      <button
+        id="addLiquidityBtn"
+        class="action-btn primary"
+        type="button"
+        disabled
+        aria-disabled="true"
+      >
+        <span>Add Liquidity</span>
+        <small>Waiting for project</small>
+      </button>
+
+    </div>
+
+    <p
+      id="liquidityPaymentStatus"
+      role="status"
+      aria-live="polite"
+    ></p>
+  </section>
+
   <section class="panel" data-project-panel="history">
     <div class="history-head">
       <div>
@@ -158,15 +241,22 @@
          class="history-empty"
          aria-live="polite">
       <div class="empty-icon" aria-hidden="true">✓</div>
+
       <strong>No Testnet transactions</strong>
-      <p>Testnet project activity will appear here when supported transaction history is available.</p>
+
+      <p>
+        Testnet project activity will appear here when supported
+        transaction history is available.
+      </p>
     </div>
   </section>
 
   <section class="testnet-notice">
     <div class="notice-icon" aria-hidden="true">!</div>
+
     <div>
       <strong>Testnet environment</strong>
+
       <p>
         This page uses the ALBUKHR Testnet project registry and
         Testnet transaction gateway. It does not read or write
@@ -206,6 +296,12 @@
   </div>
 </div>
 
+<!-- ============================================================
+     EXISTING ALBUKHR DEPENDENCIES
+     ------------------------------------------------------------
+     These existing scripts are preserved in their original order.
+     ============================================================ -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="js/core/environment-core.js?v=20260921-project3"></script>
@@ -214,8 +310,303 @@
 <script src="js/testnet-project.js?v=20260921-project3"></script>
 <script src="js/testnet-gateway-auth.js?v=20260921-project3"></script>
 <script src="js/testnet-api-core.js?v=20260921-project3"></script>
-<script src="js/testnet-withdrawal-api.js?v=20260921-project3"></script>
-<script src="js/testnet-withdrawal.js?v=20260921-project3"></script>
+<script src="js/testnet-withdrawal-api.js?v=20260921-withdraw3"></script>
+<script src="js/testnet-withdrawal.js?v=20260921-withdraw3"></script>
+
+<!-- ============================================================
+     PI NETWORK SDK
+     ------------------------------------------------------------
+     Added for Testnet liquidity payments only.
+     ============================================================ -->
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- ============================================================
+     ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT
+     ============================================================ -->
+
+<script src="js/testnet-liquidity-payment-client.js?v=20260922-liquidity2"></script>
+
+<!-- ============================================================
+     TESTNET LIQUIDITY UI BINDING
+     ------------------------------------------------------------
+     This only connects the new liquidity UI to the existing
+     testnet-project.js project-loaded event.
+     It does not replace or modify existing project logic.
+     ============================================================ -->
+
+<script>
+(() => {
+  "use strict";
+
+  let currentProject = null;
+
+  const amountInput =
+    document.getElementById("liquidityAmount");
+
+  const addButton =
+    document.getElementById("addLiquidityBtn");
+
+  const statusElement =
+    document.getElementById("liquidityPaymentStatus");
+
+  function setStatus(message, type = "") {
+    if (!statusElement) return;
+
+    statusElement.textContent = message;
+
+    if (type) {
+      statusElement.dataset.status = type;
+    } else {
+      delete statusElement.dataset.status;
+    }
+  }
+
+  function setButtonState(
+    enabled,
+    text = "Add Liquidity"
+  ) {
+    if (!addButton) return;
+
+    addButton.disabled = !enabled;
+
+    addButton.setAttribute(
+      "aria-disabled",
+      String(!enabled)
+    );
+
+    const label =
+      addButton.querySelector("span");
+
+    const small =
+      addButton.querySelector("small");
+
+    if (label) {
+      label.textContent = text;
+    }
+
+    if (small) {
+      small.textContent = enabled
+        ? "Send Testnet Pi"
+        : "Waiting for project";
+    }
+  }
+
+  function validateAmount() {
+    if (!amountInput) {
+      return false;
+    }
+
+    const amount =
+      Number(amountInput.value);
+
+    return (
+      Number.isFinite(amount) &&
+      amount >= 100
+    );
+  }
+
+  /*
+   * testnet-project.js dispatches this event after the
+   * approved Testnet project has been loaded.
+   *
+   * We only consume the event here.
+   * We do not modify testnet-project.js.
+   */
+  window.addEventListener(
+    "albukhr:testnet-project-loaded",
+    (event) => {
+      const detail =
+        event.detail || {};
+
+      const project =
+        detail.project || null;
+
+      if (!project) {
+        currentProject = null;
+
+        setButtonState(false);
+
+        setStatus(
+          "Project information is not available.",
+          "error"
+        );
+
+        return;
+      }
+
+      const network =
+        String(project.network || "")
+          .trim()
+          .toLowerCase();
+
+      if (network !== "testnet") {
+        currentProject = null;
+
+        setButtonState(false);
+
+        setStatus(
+          "Liquidity is available only for Testnet projects.",
+          "error"
+        );
+
+        return;
+      }
+
+      /*
+       * Keep the exact project object supplied by the
+       * existing Testnet project loader.
+       */
+      currentProject = project;
+
+      setButtonState(true);
+
+      setStatus(
+        `Ready to add liquidity to ${
+          project.project_code ||
+          project.name ||
+          "this project"
+        }.`
+      );
+    }
+  );
+
+  if (amountInput) {
+    amountInput.addEventListener(
+      "input",
+      () => {
+        if (!currentProject) {
+          setButtonState(false);
+          return;
+        }
+
+        if (!validateAmount()) {
+          setButtonState(true);
+
+          setStatus(
+            "Minimum Testnet liquidity is 100 Pi."
+          );
+
+          return;
+        }
+
+        setStatus("");
+      }
+    );
+  }
+
+  if (addButton) {
+    addButton.addEventListener(
+      "click",
+      async () => {
+        try {
+          if (!currentProject) {
+            setStatus(
+              "Project is not ready yet.",
+              "error"
+            );
+
+            return;
+          }
+
+          if (!validateAmount()) {
+            setStatus(
+              "Minimum Testnet liquidity is 100 Pi.",
+              "error"
+            );
+
+            return;
+          }
+
+          const liquidityPayment =
+            window.AlbukhrTestnetLiquidityPayment;
+
+          if (
+            !liquidityPayment ||
+            typeof liquidityPayment.addLiquidity !==
+              "function"
+          ) {
+            setStatus(
+              "Liquidity payment module is not loaded.",
+              "error"
+            );
+
+            return;
+          }
+
+          const amount =
+            Number(amountInput.value);
+
+          addButton.disabled = true;
+
+          addButton.setAttribute(
+            "aria-disabled",
+            "true"
+          );
+
+          const label =
+            addButton.querySelector("span");
+
+          const small =
+            addButton.querySelector("small");
+
+          if (label) {
+            label.textContent =
+              "Processing...";
+          }
+
+          if (small) {
+            small.textContent =
+              "Waiting for Pi";
+          }
+
+          setStatus(
+            "Opening Pi payment..."
+          );
+
+          const result =
+            await liquidityPayment.addLiquidity(
+              currentProject,
+              amount
+            );
+
+          if (
+            !result ||
+            result.success !== true
+          ) {
+            throw new Error(
+              result?.message ||
+              "Liquidity payment failed."
+            );
+          }
+
+          setStatus(
+            "Liquidity payment completed successfully.",
+            "success"
+          );
+
+        } catch (error) {
+          console.error(
+            "[ALBUKHR Testnet Liquidity]",
+            error
+          );
+
+          setStatus(
+            error?.message ||
+            "Liquidity payment could not be completed.",
+            "error"
+          );
+
+        } finally {
+          setButtonState(
+            Boolean(currentProject)
+          );
+        }
+      }
+    );
+  }
+})();
+</script>
 
 </body>
-</html>
+  </html>
