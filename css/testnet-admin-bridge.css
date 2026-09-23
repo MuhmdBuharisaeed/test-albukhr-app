@@ -1,0 +1,44 @@
+/* ALBUKHR TESTNET ADMIN BRIDGE v1 */
+.testnet-admin-dashboard-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:7px 12px;
+  border:1px solid rgba(15,122,61,.25);
+  border-radius:10px;
+  background:#fff;
+  color:#0f7a3d;
+  font-size:12px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+  text-decoration:none;
+  white-space:nowrap;
+  box-shadow:0 2px 8px rgba(15,122,61,.08);
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .15s ease;
+}
+
+.testnet-admin-dashboard-link:hover{
+  background:#f2fbf6;
+  border-color:rgba(15,122,61,.45);
+  box-shadow:0 4px 12px rgba(15,122,61,.12);
+  transform:translateY(-1px);
+}
+
+.testnet-admin-dashboard-link:focus-visible{
+  outline:3px solid rgba(15,122,61,.22);
+  outline-offset:2px;
+}
+
+.testnet-admin-dashboard-link:active{
+  transform:translateY(0);
+}
+
+@media (max-width:640px){
+  .testnet-admin-dashboard-link{
+    min-height:32px;
+    padding:7px 9px;
+    font-size:11px;
+  }
+}
