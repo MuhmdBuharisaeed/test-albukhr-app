@@ -156,3 +156,23 @@ a{color:inherit}
   .project-card{padding:13px}
   .panel{padding:13px}
 }
+
+/* Additive Step 4C styles. Existing Testnet owner styles remain intact. */
+.field textarea{
+  width:100%;min-height:110px;padding:9px 10px;
+  border:1px solid #dbe7e0;border-radius:10px;
+  background:#fbfdfc;color:#1e3026;font-size:10px;line-height:1.5;outline:none;
+  resize:vertical;
+}
+.field textarea:focus{
+  border-color:#9dccae;
+  box-shadow:0 0 0 3px rgba(25,179,107,.08);
+}
+.field-full{
+  grid-column:1 / -1;
+}
+@media(max-width:600px){
+  .field-full{
+    grid-column:auto;
+  }
+}
