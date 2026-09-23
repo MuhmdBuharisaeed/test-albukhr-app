@@ -152,8 +152,8 @@
       }
 
       /*
-       * The existing project liquidity panel is shown only after
-       * the server confirms owner access.
+       * Existing liquidity panel is shown only after the
+       * server confirms project-owner access.
        */
       showLiquidityPanel();
 
