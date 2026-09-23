@@ -1,11 +1,12 @@
-/* ALBUKHR TESTNET PROJECT OWNER VISIBILITY BRIDGE v1 */
+/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1 */
 (function (window, document) {
   "use strict";
 
   var OWNER_API =
     "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-project-owner";
 
-  var checkedProjectId = "";
+  var initialized = false;
+  var requestInFlight = false;
 
   function clean(value) {
     return String(value == null ? "" : value).trim();
@@ -15,63 +16,112 @@
     return window.AlbukhrTestnetAuth || null;
   }
 
-  function hideLiquidityPanel() {
-    var panel =
-      document.querySelector('[data-project-panel="liquidity"]');
+  function getHeaderContainer() {
+    return (
+      document.querySelector(".header-actions") ||
+      document.querySelector("header .header-actions") ||
+      null
+    );
+  }
 
-    if (panel) {
-      panel.hidden = true;
+  function removeExistingButton() {
+    var existing = document.getElementById("testnetProjectOwnerPageButton");
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
     }
   }
 
-  function showLiquidityPanel() {
-    var panel =
-      document.querySelector('[data-project-panel="liquidity"]');
+  function ensureButton() {
+    var header = getHeaderContainer();
 
-    if (panel) {
-      panel.hidden = false;
-    }
-  }
-
-  function ensureOwnerButton() {
-    var identity =
-      document.querySelector(".project-identity");
-
-    if (!identity || document.getElementById("projectOwnerButton")) {
+    if (!header) {
       return null;
     }
 
-    var wrapper = document.createElement("div");
-    wrapper.className = "project-owner-action-wrap";
+    var existing = document.getElementById("testnetProjectOwnerPageButton");
+
+    if (existing) {
+      return existing;
+    }
 
     var link = document.createElement("a");
-    link.id = "projectOwnerButton";
-    link.className = "project-owner-button";
+    link.id = "testnetProjectOwnerPageButton";
+    link.className = "testnet-owner-page-button";
     link.hidden = true;
-    link.textContent = "Project Owner";
     link.href = "project-owner.html";
+    link.textContent = "Project Owner";
+    link.setAttribute(
+      "aria-label",
+      "Open Project Owner controls"
+    );
+    link.setAttribute(
+      "title",
+      "Project Owner"
+    );
 
-    wrapper.appendChild(link);
-    identity.appendChild(wrapper);
+    /*
+     * Insert without touching the existing Dock Navigation
+     * or replacing any header controls.
+     */
+    header.insertBefore(link, header.firstChild);
 
     return link;
   }
 
-  async function checkOwner(project) {
-    var projectId = clean(project && project.id);
+  function normalizeOwnedProjects(payload) {
+    var list =
+      payload &&
+      Array.isArray(payload.projects)
+        ? payload.projects
+        : [];
 
-    if (!projectId || projectId === checkedProjectId) {
-      return;
+    return list
+      .map(function (item) {
+        var project =
+          item &&
+          item.project &&
+          typeof item.project === "object"
+            ? item.project
+            : item;
+
+        if (!project || typeof project !== "object") {
+          return null;
+        }
+
+        var id = clean(project.id);
+
+        if (!id) {
+          return null;
+        }
+
+        return {
+          id: id,
+          project_code:
+            clean(project.project_code) || id,
+          name:
+            clean(project.name) || "Project"
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function chooseProject(projects) {
+    if (!projects.length) {
+      return null;
     }
 
-    checkedProjectId = projectId;
+    /*
+     * The current ALBUKHR ownership model normally binds one project
+     * to an owner. If an owner later controls more than one project,
+     * preserve deterministic behavior by opening the first project
+     * returned by the server rather than exposing an unscoped page.
+     */
+    return projects[0];
+  }
 
-    hideLiquidityPanel();
-
-    var ownerButton = ensureOwnerButton();
-
-    if (ownerButton) {
-      ownerButton.hidden = true;
+  async function resolveOwnerAccess() {
+    if (requestInFlight) {
+      return;
     }
 
     var auth = getAuth();
@@ -84,110 +134,128 @@
       return;
     }
 
-    var session;
+    requestInFlight = true;
 
     try {
-      session =
+      var session =
         await auth.requireTestnetAuth({
           redirectOnFailure: false
         });
-    } catch (error) {
-      console.warn(
-        "[ALBUKHR TESTNET OWNER BRIDGE] Testnet auth failed.",
-        error
-      );
-      return;
-    }
 
-    if (!session) {
-      return;
-    }
+      if (!session) {
+        return;
+      }
 
-    var token = clean(
-      auth.getSessionToken()
-    );
+      var token =
+        clean(auth.getSessionToken());
 
-    if (!token) {
-      return;
-    }
+      if (!token) {
+        return;
+      }
 
-    var url =
-      OWNER_API +
-      "?project_id=" +
-      encodeURIComponent(projectId);
-
-    try {
       var response =
-        await fetch(url, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "X-Testnet-Session": token
+        await fetch(
+          OWNER_API,
+          {
+            method: "GET",
+            headers: {
+              "Accept": "application/json",
+              "X-Testnet-Session": token
+            }
           }
-        });
+        );
 
       if (!response.ok) {
         return;
       }
 
-      var body = await response.json();
+      var payload =
+        await response.json();
 
-      var owned =
-        body &&
-        Array.isArray(body.projects) &&
-        body.projects.length > 0 &&
-        body.projects[0] &&
-        String(body.projects[0].project.id || "") === projectId;
+      var projects =
+        normalizeOwnedProjects(payload);
 
-      if (!owned) {
+      var project =
+        chooseProject(projects);
+
+      if (!project) {
         return;
       }
 
-      if (ownerButton) {
-        ownerButton.href =
-          "project-owner.html?project=" +
-          encodeURIComponent(project.project_code || projectId);
+      var button =
+        ensureButton();
 
-        ownerButton.hidden = false;
+      if (!button) {
+        return;
       }
 
-      /*
-       * Existing liquidity panel is shown only after the
-       * server confirms project-owner access.
-       */
-      showLiquidityPanel();
+      button.href =
+        "project-owner.html?project=" +
+        encodeURIComponent(
+          project.project_code || project.id
+        );
+
+      button.textContent =
+        projects.length > 1
+          ? "Project Owner (" + projects.length + ")"
+          : "Project Owner";
+
+      button.setAttribute(
+        "aria-label",
+        projects.length > 1
+          ? "Open Project Owner controls for your first owned project"
+          : "Open Project Owner controls"
+      );
+
+      button.hidden = false;
 
       window.dispatchEvent(
         new CustomEvent(
-          "albukhr:testnet-project-owner-authorized",
+          "albukhr:testnet-project-owner-page-authorized",
           {
             detail: {
-              project: project,
-              owner: body.owner || null
+              projects: projects,
+              selectedProject: project
             }
           }
         )
       );
-
     } catch (error) {
+      /*
+       * Owner access is additive. Failure keeps the existing page
+       * unchanged and simply leaves the owner control hidden.
+       */
       console.warn(
-        "[ALBUKHR TESTNET OWNER BRIDGE]",
+        "[ALBUKHR TESTNET OWNER PAGE BRIDGE]",
         error
       );
+    } finally {
+      requestInFlight = false;
     }
   }
 
   function initialize() {
-    hideLiquidityPanel();
-    ensureOwnerButton();
+    if (initialized) {
+      return;
+    }
+
+    initialized = true;
+
+    ensureButton();
+
+    /*
+     * Resolve after the existing Testnet modules have had a chance
+     * to establish the temporary Testnet session.
+     */
+    window.setTimeout(
+      resolveOwnerAccess,
+      0
+    );
 
     window.addEventListener(
-      "albukhr:testnet-project-loaded",
-      function (event) {
-        checkOwner(
-          event.detail &&
-          event.detail.project
-        );
+      "albukhr:testnet-auth-success",
+      function () {
+        resolveOwnerAccess();
       }
     );
   }
@@ -201,5 +269,4 @@
   } else {
     initialize();
   }
-
 })(window, document);
