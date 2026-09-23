@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET ADMIN DASHBOARD v3 — OWNER INTEGRATION */
+/* ALBUKHR TESTNET ADMIN DASHBOARD v4 — OWNER/AUTH PAYMENT SEPARATION */
 (function(window, document){
   "use strict";
 
@@ -93,7 +93,7 @@
     if(remaining<=0) throw new Error("PROJECT_LIQUIDITY_ALREADY_READY");
     if(!window.AlbukhrTestnetLiquidityPayment) throw new Error("TESTNET_LIQUIDITY_PAYMENT_UNAVAILABLE");
     status("Opening Pi Testnet payment for "+remaining.toFixed(2)+" Pi…");
-    var result=await window.AlbukhrTestnetLiquidityPayment.startPayment({
+    var result=await window.AlbukhrTestnetLiquidityPayment.startAdminPayment({
       projectId:clean(row.project && row.project.id),
       projectCode:clean(row.project && row.project.project_code),
       amount:remaining,
