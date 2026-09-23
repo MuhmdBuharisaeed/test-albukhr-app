@@ -7,6 +7,7 @@
 <meta name="description" content="ALBUKHR Testnet — secure testing environment for the ALBUKHR ecosystem.">
 <title>ALBUKHR Testnet</title>
 <link rel="stylesheet" href="css/testnet-index.css">
+<link rel="stylesheet" href="css/testnet-project-owner-page-bridge.css?v=20260923-owner6">
 </head>
 
 <body data-page="home">
@@ -31,7 +32,6 @@
   </div>
 </header>
 
-
 <section class="testnet-banner" aria-label="Testnet environment notice">
   <div class="banner-mark" aria-hidden="true">T</div>
 
@@ -43,13 +43,11 @@
   </div>
 </section>
 
-
 <section class="welcome-bar" aria-label="Welcome message">
   <div id="welcomeScroll" class="welcome-track">
     Welcome to ALBUKHR Testnet — testing the ecosystem, project registry and investor experience safely.
   </div>
 </section>
-
 
 <main class="testnet-main">
 
@@ -82,7 +80,6 @@
 
   </section>
 
-
   <section class="stats" aria-label="Testnet overview">
 
     <article class="stat-card">
@@ -104,7 +101,6 @@
     </article>
 
   </section>
-
 
   <section class="project-section" aria-labelledby="projectRegistryTitle">
 
@@ -147,7 +143,6 @@
     </noscript>
 
   </section>
-
 
   <section
     id="investor"
@@ -193,7 +188,6 @@
 
   </section>
 
-
   <section
     class="testnet-notice"
     aria-label="Testnet controls notice"
@@ -216,7 +210,6 @@
   </section>
 
 </main>
-
 
 <!--
   ALBUKHR TESTNET DOCK NAVIGATION
@@ -243,7 +236,6 @@
     <span>Home</span>
   </a>
 
-
   <a
     href="investor.html"
     class="dock-item"
@@ -261,7 +253,6 @@
 
     <span>Investor</span>
   </a>
-
 
   <a
     href="marketplace.html"
@@ -283,62 +274,25 @@
 
 </nav>
 
-
-<!--
-  ALBUKHR TESTNET JAVASCRIPT BOOT ORDER
-
-  1. Supabase SDK
-  2. Environment Core
-  3. Supabase Core
-  4. Testnet Gateway Authentication
-  5. Testnet Project Registry
-  6. Project Navigation
-  7. Testnet Application Boot
-
-  Cache-busting is intentional.
-  It prevents the browser/CDN from reusing an older environment-core.js.
--->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script src="js/core/environment-core.js?v=20260920-assetfix1"></script>
-
 <script src="js/core/supabase-core.js?v=20260920-assetfix1"></script>
-
 <script src="js/testnet-gateway-auth.js?v=20260920-assetfix1"></script>
-
 <script src="js/project-registry.js?v=20260920-assetfix1"></script>
-
 <script src="js/project-navigation.js?v=20260920-assetfix1"></script>
-
 <script src="js/testnet-app.js?v=20260920-assetfix1"></script>
-
 
 <script>
 (function(){
   "use strict";
 
-  /*
-   * ALBUKHR TESTNET HOME PAGE UI BRIDGE
-   *
-   * This block does not perform authentication,
-   * database access, project loading, or navigation.
-   *
-   * Those responsibilities remain inside the
-   * dedicated Testnet JavaScript modules above.
-   */
-
   const count = document.getElementById("approvedProjectCount");
   const status = document.getElementById("registryStatus");
   const projectList = document.getElementById("projectList");
 
-
-  /*
-   * Registry-ready event
-   */
   window.addEventListener(
     "albukhr:testnet-registry-ready",
     function(event){
-
       const projects =
         event.detail &&
         Array.isArray(event.detail.projects)
@@ -352,24 +306,12 @@
       if(projectList){
         projectList.setAttribute("aria-busy", "false");
       }
-
     }
   );
 
-
-  /*
-   * Registry status observer
-   *
-   * Supports statuses such as:
-   *   OK • 5 projects
-   *   EMPTY • 0 projects
-   *   ERROR • ...
-   */
   if(status){
-
     const observer =
       new MutationObserver(function(){
-
         const message =
           String(status.textContent || "").trim();
 
@@ -381,7 +323,6 @@
         }
 
         if(projectList){
-
           const loading =
             /authenticating|loading/i.test(message);
 
@@ -390,7 +331,6 @@
             loading ? "true" : "false"
           );
         }
-
       });
 
     observer.observe(
@@ -401,24 +341,15 @@
         subtree: true
       }
     );
-
   }
 
-
-  /*
-   * Preserve existing Testnet Dock Navigation behavior.
-   *
-   * The Dock Navigation itself is NOT redesigned.
-   */
   let lastScroll = 0;
-
   const dock =
     document.querySelector(".dock-nav");
 
   window.addEventListener(
     "scroll",
     function(){
-
       if(!dock){
         return;
       }
@@ -436,7 +367,6 @@
       );
 
       lastScroll = y;
-
     },
     {
       passive: true
@@ -446,6 +376,7 @@
 })();
 </script>
 
+<script src="js/testnet-project-owner-page-bridge.js?v=20260923-owner6"></script>
 
 </body>
-  </html>
+</html>
