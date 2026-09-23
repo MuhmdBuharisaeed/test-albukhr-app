@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f7a3d">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>ALBUKHR Testnet • Project Ownership</title>
+<link rel="stylesheet" href="css/testnet.css">
+<link rel="stylesheet" href="css/testnet-admin.css">
+<link rel="stylesheet" href="css/testnet-project-owner-admin.css">
+</head>
+<body data-page="testnet-project-owner-admin" data-network="testnet">
+<header class="admin-header">
+  <a class="admin-brand" href="admin-dashboard.html" aria-label="Back to Testnet Admin">
+    <span class="admin-brand-main">ALBUKHR</span><span class="admin-brand-sub">PROJECT OWNERSHIP</span>
+  </a>
+  <div class="admin-header-actions">
+    <span class="environment-badge">TESTNET</span>
+    <button id="logoutButton" class="back-link" type="button">Sign out</button>
+  </div>
+</header>
+<main class="admin-main owner-admin-main">
+  <section class="admin-hero">
+    <div>
+      <span class="section-kicker">TESTNET OWNERSHIP CONTROL</span>
+      <h1>Project Ownership &amp; Team Identity</h1>
+      <p>Assign, change, revoke, verify, and audit ownership for approved Testnet Core Projects.</p>
+      <p class="admin-identity">Super Admin: <b id="adminEmail">—</b> · Roles: <b id="adminRoles">—</b></p>
+    </div>
+    <div class="hero-threshold owner-hero-badge">
+      <span>Authority</span><strong>SUPER ADMIN</strong><small>Server enforced</small>
+    </div>
+  </section>
+  <section class="security-notice" aria-label="Security boundary">
+    <div class="notice-mark" aria-hidden="true">!</div>
+    <div>
+      <strong>Ownership source of truth</strong>
+      <p><code>projects.owner_user_id</code> remains authoritative. Profile data is identity metadata, while every ownership action is written to the Testnet audit history.</p>
+    </div>
+  </section>
+  <section class="summary-grid" aria-label="Ownership summary">
+    <article class="summary-card"><span>Approved Projects</span><strong id="approvedCount">0</strong><small>Testnet registry</small></article>
+    <article class="summary-card"><span>Assigned Owners</span><strong id="assignedCount">0</strong><small>Bound to projects</small></article>
+    <article class="summary-card"><span>Unassigned</span><strong id="unassignedCount">0</strong><small>Awaiting owner</small></article>
+    <article class="summary-card"><span>Verified Profiles</span><strong id="verifiedCount">0</strong><small>Identity verified</small></article>
+  </section>
+  <section class="panel" aria-labelledby="ownershipTitle">
+    <div class="panel-heading">
+      <div><span class="section-kicker">OWNERSHIP MANAGEMENT</span><h2 id="ownershipTitle">Core Project Owners</h2></div>
+      <button id="refreshButton" class="refresh-button" type="button">↻ Refresh</button>
+    </div>
+    <p id="pageStatus" class="page-status" aria-live="polite">Authenticating Testnet administrator…</p>
+    <div id="projectCards" class="owner-project-list"></div>
+    <div id="emptyState" class="empty-state" hidden><strong>No approved Testnet projects</strong><p>The Testnet registry returned no approved projects.</p></div>
+  </section>
+  <section class="panel" aria-labelledby="historyTitle">
+    <div class="panel-heading"><div><span class="section-kicker">AUDIT TRAIL</span><h2 id="historyTitle">Ownership History</h2></div></div>
+    <div class="table-wrap">
+      <table class="history-table">
+        <thead><tr><th>Time</th><th>Project</th><th>Action</th><th>Previous Owner</th><th>New Owner</th><th>Reason</th></tr></thead>
+        <tbody id="historyRows"></tbody>
+      </table>
+    </div>
+    <div id="historyEmpty" class="empty-state" hidden><strong>No ownership actions recorded</strong><p>Ownership history will appear here after the first server-authorized action.</p></div>
+  </section>
+</main>
+<script src="js/core/environment-core.js?v=20260923-owneradmin1"></script>
+<script src="js/testnet-admin-auth.js?v=20260923-owneradmin1"></script>
+<script src="js/testnet-project-owner-admin.js?v=20260923-owneradmin1"></script>
+</body>
+</html>
