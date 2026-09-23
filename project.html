@@ -10,6 +10,7 @@
 
   <link rel="stylesheet" href="css/testnet-project.css?v=20260921-project3">
   <link rel="stylesheet" href="css/testnet-withdrawal.css?v=20260921-withdraw3">
+  <link rel="stylesheet" href="css/testnet-project-owner-bridge.css?v=20260923-owner5">
 </head>
 
 <body data-page="project">
@@ -298,8 +299,6 @@
 
 <!-- ============================================================
      EXISTING ALBUKHR DEPENDENCIES
-     ------------------------------------------------------------
-     These existing scripts are preserved in their original order.
      ============================================================ -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -313,26 +312,15 @@
 <script src="js/testnet-withdrawal-api.js?v=20260921-withdraw3"></script>
 <script src="js/testnet-withdrawal.js?v=20260921-withdraw3"></script>
 
-<!-- ============================================================
-     PI NETWORK SDK
-     ------------------------------------------------------------
-     Added for Testnet liquidity payments only.
-     ============================================================ -->
-
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-<!-- ============================================================
-     ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT
-     ============================================================ -->
+<script src="js/testnet-liquidity-payment-client.js?v=20260923-owner5"></script>
 
-<script src="js/testnet-liquidity-payment-client.js?v=20260922-liquidity2"></script>
+<!-- Additive owner authorization/visibility bridge. -->
+<script src="js/testnet-project-owner-bridge.js?v=20260923-owner5"></script>
 
 <!-- ============================================================
-     TESTNET LIQUIDITY UI BINDING
-     ------------------------------------------------------------
-     This only connects the new liquidity UI to the existing
-     testnet-project.js project-loaded event.
-     It does not replace or modify existing project logic.
+     EXISTING TESTNET LIQUIDITY UI BINDING
      ============================================================ -->
 
 <script>
@@ -406,13 +394,6 @@
     );
   }
 
-  /*
-   * testnet-project.js dispatches this event after the
-   * approved Testnet project has been loaded.
-   *
-   * We only consume the event here.
-   * We do not modify testnet-project.js.
-   */
   window.addEventListener(
     "albukhr:testnet-project-loaded",
     (event) => {
@@ -424,14 +405,11 @@
 
       if (!project) {
         currentProject = null;
-
         setButtonState(false);
-
         setStatus(
           "Project information is not available.",
           "error"
         );
-
         return;
       }
 
@@ -442,21 +420,14 @@
 
       if (network !== "testnet") {
         currentProject = null;
-
         setButtonState(false);
-
         setStatus(
           "Liquidity is available only for Testnet projects.",
           "error"
         );
-
         return;
       }
 
-      /*
-       * Keep the exact project object supplied by the
-       * existing Testnet project loader.
-       */
       currentProject = project;
 
       setButtonState(true);
@@ -505,7 +476,6 @@
               "Project is not ready yet.",
               "error"
             );
-
             return;
           }
 
@@ -514,7 +484,6 @@
               "Minimum Testnet liquidity is 100 Pi.",
               "error"
             );
-
             return;
           }
 
@@ -530,7 +499,6 @@
               "Liquidity payment module is not loaded.",
               "error"
             );
-
             return;
           }
 
@@ -538,7 +506,6 @@
             Number(amountInput.value);
 
           addButton.disabled = true;
-
           addButton.setAttribute(
             "aria-disabled",
             "true"
