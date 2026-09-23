@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1 */
+/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1.1 */
 (function (window, document) {
   "use strict";
 
@@ -17,18 +17,23 @@
   }
 
   function getHeaderContainer() {
+    /*
+     * index.html / investor.html:
+     *   <div class="header-actions">
+     *
+     * marketplace.html:
+     *   <div aria-label="Testnet marketplace navigation">
+     *
+     * The fallback keeps this additive if a future Testnet header
+     * changes its inner wrapper without changing the header itself.
+     */
     return (
       document.querySelector(".header-actions") ||
-      document.querySelector("header .header-actions") ||
-      null
+      document.querySelector(
+        'header > div[aria-label*="navigation" i]'
+      ) ||
+      document.querySelector("header")
     );
-  }
-
-  function removeExistingButton() {
-    var existing = document.getElementById("testnetProjectOwnerPageButton");
-    if (existing && existing.parentNode) {
-      existing.parentNode.removeChild(existing);
-    }
   }
 
   function ensureButton() {
@@ -38,32 +43,50 @@
       return null;
     }
 
-    var existing = document.getElementById("testnetProjectOwnerPageButton");
+    var existing =
+      document.getElementById(
+        "testnetProjectOwnerPageButton"
+      );
 
     if (existing) {
       return existing;
     }
 
-    var link = document.createElement("a");
-    link.id = "testnetProjectOwnerPageButton";
-    link.className = "testnet-owner-page-button";
+    var link =
+      document.createElement("a");
+
+    link.id =
+      "testnetProjectOwnerPageButton";
+
+    link.className =
+      "testnet-owner-page-button";
+
     link.hidden = true;
-    link.href = "project-owner.html";
-    link.textContent = "Project Owner";
+
+    link.href =
+      "project-owner.html";
+
+    link.textContent =
+      "Project Owner";
+
     link.setAttribute(
       "aria-label",
       "Open Project Owner controls"
     );
+
     link.setAttribute(
       "title",
       "Project Owner"
     );
 
     /*
-     * Insert without touching the existing Dock Navigation
-     * or replacing any header controls.
+     * Do not alter Dock Navigation.
+     * Insert only inside the existing page header area.
      */
-    header.insertBefore(link, header.firstChild);
+    header.insertBefore(
+      link,
+      header.firstChild
+    );
 
     return link;
   }
@@ -84,11 +107,15 @@
             ? item.project
             : item;
 
-        if (!project || typeof project !== "object") {
+        if (
+          !project ||
+          typeof project !== "object"
+        ) {
           return null;
         }
 
-        var id = clean(project.id);
+        var id =
+          clean(project.id);
 
         if (!id) {
           return null;
@@ -97,9 +124,11 @@
         return {
           id: id,
           project_code:
-            clean(project.project_code) || id,
+            clean(project.project_code) ||
+            id,
           name:
-            clean(project.name) || "Project"
+            clean(project.name) ||
+            "Project"
         };
       })
       .filter(Boolean);
@@ -111,10 +140,9 @@
     }
 
     /*
-     * The current ALBUKHR ownership model normally binds one project
-     * to an owner. If an owner later controls more than one project,
-     * preserve deterministic behavior by opening the first project
-     * returned by the server rather than exposing an unscoped page.
+     * Current ownership is normally one project per owner.
+     * If that changes, keep deterministic behavior without
+     * creating an unscoped owner page.
      */
     return projects[0];
   }
@@ -124,12 +152,15 @@
       return;
     }
 
-    var auth = getAuth();
+    var auth =
+      getAuth();
 
     if (
       !auth ||
-      typeof auth.requireTestnetAuth !== "function" ||
-      typeof auth.getSessionToken !== "function"
+      typeof auth.requireTestnetAuth !==
+        "function" ||
+      typeof auth.getSessionToken !==
+        "function"
     ) {
       return;
     }
@@ -147,7 +178,9 @@
       }
 
       var token =
-        clean(auth.getSessionToken());
+        clean(
+          auth.getSessionToken()
+        );
 
       if (!token) {
         return;
@@ -159,8 +192,10 @@
           {
             method: "GET",
             headers: {
-              "Accept": "application/json",
-              "X-Testnet-Session": token
+              "Accept":
+                "application/json",
+              "X-Testnet-Session":
+                token
             }
           }
         );
@@ -173,10 +208,14 @@
         await response.json();
 
       var projects =
-        normalizeOwnedProjects(payload);
+        normalizeOwnedProjects(
+          payload
+        );
 
       var project =
-        chooseProject(projects);
+        chooseProject(
+          projects
+        );
 
       if (!project) {
         return;
@@ -192,12 +231,15 @@
       button.href =
         "project-owner.html?project=" +
         encodeURIComponent(
-          project.project_code || project.id
+          project.project_code ||
+          project.id
         );
 
       button.textContent =
         projects.length > 1
-          ? "Project Owner (" + projects.length + ")"
+          ? "Project Owner (" +
+            projects.length +
+            ")"
           : "Project Owner";
 
       button.setAttribute(
@@ -207,30 +249,35 @@
           : "Open Project Owner controls"
       );
 
-      button.hidden = false;
+      button.hidden =
+        false;
 
       window.dispatchEvent(
         new CustomEvent(
           "albukhr:testnet-project-owner-page-authorized",
           {
             detail: {
-              projects: projects,
-              selectedProject: project
+              projects:
+                projects,
+              selectedProject:
+                project
             }
           }
         )
       );
     } catch (error) {
       /*
-       * Owner access is additive. Failure keeps the existing page
-       * unchanged and simply leaves the owner control hidden.
+       * Additive failure behavior:
+       * leave the existing page untouched and keep the
+       * Project Owner control hidden.
        */
       console.warn(
         "[ALBUKHR TESTNET OWNER PAGE BRIDGE]",
         error
       );
     } finally {
-      requestInFlight = false;
+      requestInFlight =
+        false;
     }
   }
 
@@ -243,10 +290,6 @@
 
     ensureButton();
 
-    /*
-     * Resolve after the existing Testnet modules have had a chance
-     * to establish the temporary Testnet session.
-     */
     window.setTimeout(
       resolveOwnerAccess,
       0
@@ -260,7 +303,10 @@
     );
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState ===
+    "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       initialize,
