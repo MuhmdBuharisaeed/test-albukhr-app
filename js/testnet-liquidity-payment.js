@@ -8,6 +8,7 @@
   var initialized = false;
   var accessToken = "";
   var authPromise = null;
+  var authenticatedMode = "";
 
   function clean(v){
     return String(v == null ? "" : v).trim();
@@ -152,7 +153,7 @@
     return data;
   }
 
-  async function onIncompletePayment(payment){
+  async function recoverIncompletePayment(payment, mode){
     var identifier = clean(payment && payment.identifier);
     if(!identifier) return null;
 
@@ -162,17 +163,21 @@
       payment.transaction.txid
     );
 
-    /*
-     * Recovery remains unauthenticated at the browser level by design.
-     * The server now binds the payment to the currently registered
-     * project owner before allowing recovery.
-     */
-    var response = await fetch(API_BASE + "/incomplete", {
+    var isAdmin = mode === "admin";
+    var headers = {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    };
+
+    if(isAdmin){
+      headers["X-Testnet-Admin-Session"] = getAdminSessionToken();
+    }
+
+    var endpoint = isAdmin ? "/admin-incomplete" : "/incomplete";
+
+    var response = await fetch(API_BASE + endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
+      headers: headers,
       body: JSON.stringify({
         paymentId: identifier,
         txid: txid || undefined
@@ -194,6 +199,14 @@
     return data;
   }
 
+  async function onOwnerIncompletePayment(payment){
+    return recoverIncompletePayment(payment, "owner");
+  }
+
+  async function onAdminIncompletePayment(payment){
+    return recoverIncompletePayment(payment, "admin");
+  }
+
   function init(){
     validateEnvironment();
 
@@ -208,22 +221,29 @@
     initialized = true;
   }
 
-  async function authenticate(){
+  async function authenticate(mode){
     validateEnvironment();
     init();
 
-    if(accessToken){
+    var authMode = mode === "admin" ? "admin" : "owner";
+    var callback = authMode === "admin"
+      ? onAdminIncompletePayment
+      : onOwnerIncompletePayment;
+
+    if(accessToken && authenticatedMode === authMode){
       return { accessToken: accessToken };
     }
 
-    if(authPromise) return authPromise;
+    if(authPromise){
+      return authPromise;
+    }
 
     authPromise = (async function(){
       var Pi = sdk();
 
       var auth = await Pi.authenticate(
         ["username", "payments"],
-        onIncompletePayment
+        callback
       );
 
       if(!auth || !auth.accessToken){
@@ -231,6 +251,7 @@
       }
 
       accessToken = clean(auth.accessToken);
+      authenticatedMode = authMode;
 
       return auth;
     })();
@@ -272,7 +293,7 @@
         ? getAdminSessionToken()
         : null;
 
-    return authenticate().then(function(){
+    return authenticate(mode).then(function(){
       var Pi = sdk();
 
       return new Promise(function(resolve, reject){
@@ -317,6 +338,8 @@
                     }
                   );
 
+                dispatch("albukhr:testnet-liquidity-payment-approved", approved);
+
                 if(!approved || approved.success !== true){
                   throw new Error(
                     "TESTNET_LIQUIDITY_APPROVAL_FAILED"
@@ -358,6 +381,7 @@
                   );
                 }
 
+                dispatch("albukhr:testnet-liquidity-payment-completed", completed);
                 done(resolve, completed);
                 return completed;
               }catch(error){
@@ -376,6 +400,7 @@
                 );
               error.paymentId =
                 paymentId;
+              dispatch("albukhr:testnet-liquidity-payment-cancelled", { paymentId: paymentId, network: NETWORK });
               done(reject, error);
             },
 
@@ -394,6 +419,7 @@
               e.payment =
                 payment || null;
 
+              dispatch("albukhr:testnet-liquidity-payment-error", { error: e, payment: payment || null });
               done(reject, e);
             }
           }
@@ -416,8 +442,51 @@
     );
   }
 
+  async function createLiquidityPayment(project, amount){
+    var safeProject = project || {};
+    var projectId = clean(safeProject.id);
+    var projectCode = clean(safeProject.project_code);
+
+    if(!projectId) throw new Error("PROJECT_ID_REQUIRED");
+    if(!projectCode) throw new Error("PROJECT_CODE_REQUIRED");
+    if(clean(safeProject.network).toLowerCase() !== NETWORK){
+      throw new Error("PROJECT_NETWORK_INVALID");
+    }
+
+    return startPayment({
+      projectId: projectId,
+      projectCode: projectCode,
+      amount: amount,
+      memo: "ALBUKHR Testnet liquidity • " + projectCode
+    });
+  }
+
+  async function addLiquidity(project, amount){
+    return createLiquidityPayment(project, amount);
+  }
+
+  async function recoverIncomplete(payment, mode){
+    return recoverIncompletePayment(
+      payment,
+      mode === "admin" ? "admin" : "owner"
+    );
+  }
+
   function clearAuth(){
     accessToken = "";
+    authenticatedMode = "";
+  }
+
+  function clearInMemoryPiAuth(){
+    clearAuth();
+  }
+
+  function dispatch(name, detail){
+    try{
+      window.dispatchEvent(
+        new CustomEvent(name, { detail: detail || null })
+      );
+    }catch(_){ }
   }
 
   var api = {
@@ -426,9 +495,13 @@
     apiBase: API_BASE,
     init: init,
     authenticate: authenticate,
+    createLiquidityPayment: createLiquidityPayment,
+    addLiquidity: addLiquidity,
     startPayment: startPayment,
     startAdminPayment: startAdminPayment,
-    clearAuth: clearAuth
+    recoverIncomplete: recoverIncomplete,
+    clearAuth: clearAuth,
+    clearInMemoryPiAuth: clearInMemoryPiAuth
   };
 
   try{
