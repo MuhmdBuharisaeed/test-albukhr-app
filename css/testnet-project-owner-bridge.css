@@ -35,3 +35,29 @@
   font-weight:900;
 }
 .project-owner-button:hover{background:#e1f2e8}
+
+/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE */
+.testnet-owner-page-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:7px 10px;
+  border:1px solid #bcdcc9;
+  border-radius:10px;
+  background:#eaf6ef;
+  color:#0f7a3d;
+  text-decoration:none;
+  font-size:9px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  box-sizing:border-box;
+}
+.testnet-owner-page-button:hover{
+  background:#e1f2e8;
+}
+.testnet-owner-page-button:focus-visible{
+  outline:2px solid #33c17d;
+  outline-offset:2px;
+}
