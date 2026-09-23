@@ -1,29 +1,16 @@
-/* ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v1 */
+/* ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v2 */
 (function (window) {
   "use strict";
 
   /*
-   * This module is intentionally NOT loaded automatically by the
-   * current Testnet pages. It is the controlled client integration
-   * layer for the next payment-testing step.
-   *
-   * It uses:
-   *   - ALBUKHR Testnet gateway session for application access;
-   *   - Testnet Pi SDK accessToken only in memory for Pi-side identity
-   *     verification during payment callbacks;
-   *   - no localStorage;
-   *   - no Mainnet Pi access token;
-   *   - no payment secrets in browser storage.
+   * Controlled Testnet liquidity payment client.
+   * Pi access token remains memory-only.
+   * No localStorage/sessionStorage is used for Pi credentials.
    */
 
   var API_BASE = "https://test-albukhr-api.onrender.com";
   var NETWORK = "testnet";
   var PI_SDK_VERSION = "2.0";
-  /*
-   * This is the hosted ALBUKHR Testnet app, not Pi's local Sandbox URL.
-   * Keep sandbox:false here. Set sandbox:true only for an actual Pi Sandbox
-   * development URL registered in the Pi Developer Portal.
-   */
   var PI_SANDBOX = false;
 
   var initialized = false;
@@ -191,10 +178,6 @@
         throw new Error("PI_AUTH_RESULT_INVALID");
       }
 
-      /*
-       * Keep the Testnet Pi access token memory-only.
-       * Never store it in localStorage/sessionStorage/cookies.
-       */
       authResult = {
         accessToken: result.accessToken,
         user: {
@@ -324,9 +307,15 @@
     pendingIncompletePayments = [];
   }
 
+  /*
+   * Compatibility alias:
+   * existing project.html calls addLiquidity().
+   * Keep createLiquidityPayment() unchanged and export both names.
+   */
   window.AlbukhrTestnetLiquidityPayment = Object.freeze({
     authenticate: authenticate,
     createLiquidityPayment: createLiquidityPayment,
+    addLiquidity: createLiquidityPayment,
     recoverIncomplete: recoverIncomplete,
     clearInMemoryPiAuth: clearInMemoryPiAuth,
     network: NETWORK,
