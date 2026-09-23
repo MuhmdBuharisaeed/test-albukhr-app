@@ -29,26 +29,29 @@
     </div>
     <div class="hero-threshold"><span>Minimum</span><strong>100 Pi</strong><small>Per approved project</small></div>
   </section>
-
   <section class="security-notice" aria-label="Security boundary">
     <div class="notice-mark" aria-hidden="true">!</div>
     <div><strong>Testnet only</strong><p>Administrative actions run against the Testnet Supabase project. No Mainnet investment or transaction records are read or changed by this page.</p></div>
   </section>
-
   <section class="summary-grid" aria-label="Liquidity summary">
     <article class="summary-card"><span>Approved Projects</span><strong id="approvedCount">0</strong><small>Testnet registry</small></article>
     <article class="summary-card"><span>Testnet Ready</span><strong id="readyCount">0</strong><small>Threshold met</small></article>
     <article class="summary-card"><span>Liquidity Pending</span><strong id="pendingCount">0</strong><small>Below minimum</small></article>
     <article class="summary-card"><span>Total Verified</span><strong id="verifiedTotal">0.00 Pi</strong><small>Across Testnet projects</small></article>
   </section>
-
+  <section class="panel" aria-labelledby="ownershipTitle">
+    <div class="panel-heading">
+      <div><span class="section-kicker">PROJECT OWNERSHIP</span><h2 id="ownershipTitle">Project Ownership &amp; Team Identity</h2></div>
+      <a id="ownershipManagementLink" class="refresh-button" href="project-owner-admin.html" hidden>Manage Ownership</a>
+    </div>
+    <p id="ownershipStatus" class="page-status">Ownership management is available to authorized Super Admins.</p>
+  </section>
   <section class="panel" aria-labelledby="projectLiquidityTitle">
     <div class="panel-heading"><div><span class="section-kicker">PROJECT READINESS</span><h2 id="projectLiquidityTitle">Approved Project Liquidity</h2></div><button id="refreshButton" class="refresh-button" type="button">↻ Refresh</button></div>
     <p id="pageStatus" class="page-status" aria-live="polite">Authenticating Testnet administrator…</p>
     <div class="table-wrap"><table><thead><tr><th>Project</th><th>Required</th><th>Verified</th><th>Coverage</th><th>Readiness / Action</th></tr></thead><tbody id="projectRows"></tbody></table></div>
     <div id="emptyState" class="empty-state" hidden><strong>No approved Testnet projects</strong><p>The Testnet registry returned no approved projects.</p></div>
   </section>
-
   <section class="panel action-panel" aria-labelledby="paymentVerifyTitle">
     <span class="section-kicker">LIQUIDITY PAYMENT VERIFICATION</span>
     <h2 id="paymentVerifyTitle">Verify an Existing Payment Record</h2>
@@ -59,7 +62,6 @@
     </div>
     <button id="verifyPaymentButton" class="primary-admin-button" type="button">Verify &amp; Recompute Liquidity</button>
   </section>
-
   <section class="panel rules-panel" aria-labelledby="rulesTitle">
     <span class="section-kicker">TESTNET RULES</span><h2 id="rulesTitle">Liquidity Readiness Rules</h2>
     <div class="rules-grid">
@@ -70,11 +72,11 @@
     </div>
   </section>
 </main>
-<script src="js/core/environment-core.js?v=20260922-admin1"></script>
+<script src="js/core/environment-core.js?v=20260923-admin-owner1"></script>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="js/testnet-admin-auth.js?v=20260922-admin2"></script>
-<script src="js/testnet-liquidity.js?v=20260922-admin2"></script>
-<script src="js/testnet-liquidity-payment.js?v=20260922-admin2"></script>
-<script src="js/testnet-admin-dashboard.js?v=20260922-admin2"></script>
+<script src="js/testnet-admin-auth.js?v=20260923-admin-owner1"></script>
+<script src="js/testnet-liquidity.js?v=20260923-admin1"></script>
+<script src="js/testnet-liquidity-payment.js?v=20260923-admin1"></script>
+<script src="js/testnet-admin-dashboard.js?v=20260923-admin-owner1"></script>
 </body>
 </html>
