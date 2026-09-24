@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALBUKHR Pi Testnet Authentication Diagnostic</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #0b1110;
+      color: #ecf4f0;
+      padding: 24px;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { color: #b7c8c1; line-height: 1.5; }
+    .card {
+      background: #121b18;
+      border: 1px solid #263b34;
+      border-radius: 14px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #20302b;
+    }
+    .row:last-child { border-bottom: 0; }
+    .k { color: #8fa79d; }
+    .v { overflow-wrap: anywhere; }
+    .ok { color: #7de2ad; }
+    .warn { color: #ffd27a; }
+    .bad { color: #ff8e8e; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #0f7a3d;
+      color: white;
+      margin-right: 8px;
+    }
+    button:disabled { opacity: .5; cursor: default; }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #0a0f0d;
+      border: 1px solid #1e2d28;
+      border-radius: 10px;
+      padding: 12px;
+      max-height: 420px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .headline { font-weight: 800; }
+    .small { font-size: 12px; color: #8fa79d; }
+  </style>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <h1>ALBUKHR — Pi Testnet Authentication Diagnostic · Step 8</h1>
+  <p>
+    This page is isolated from ALBUKHR ownership, Supabase, gateway, treasury,
+    and payment-business logic. It tests only the Pi SDK bridge on the deployed
+    Testnet domain.
+  </p>
+
+  <div class="card">
+    <div class="row"><div class="k">Host</div><div class="v" id="host"></div></div>
+    <div class="row"><div class="k">Origin</div><div class="v" id="origin"></div></div>
+    <div class="row"><div class="k">HTTPS / secure context</div><div class="v" id="secure"></div></div>
+    <div class="row"><div class="k">window.Pi present</div><div class="v" id="piPresent"></div></div>
+    <div class="row"><div class="k">Pi.init present</div><div class="v" id="piInit"></div></div>
+    <div class="row"><div class="k">Pi.authenticate present</div><div class="v" id="piAuth"></div></div>
+    <div class="row"><div class="k">Pi.nativeFeaturesList present</div><div class="v" id="nativePresent"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="headline">Run diagnostic</div>
+    <p class="small">No access token is stored or displayed. This test does not create a payment.</p>
+    <button id="runFeatures">Check native features</button>
+    <button id="runAuth">Run Pi authentication</button>
+    <div id="status" class="small">Waiting.</div>
+  </div>
+
+  <div class="card">
+    <div class="headline">Native feature result</div>
+    <pre id="features">Not run.</pre>
+  </div>
+
+  <div class="card">
+    <div class="headline">Authentication result</div>
+    <pre id="auth">Not run.</pre>
+  </div>
+
+  <div class="card">
+    <div class="headline">Diagnostic log</div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var EXPECTED_HOST = "test.albukhr.com";
+  var SDK_VERSION = "2.0";
+  var SANDBOX = false;
+  var AUTH_SCOPES = ["username", "payments"];
+
+  var hostEl = document.getElementById("host");
+  var originEl = document.getElementById("origin");
+  var secureEl = document.getElementById("secure");
+  var piPresentEl = document.getElementById("piPresent");
+  var piInitEl = document.getElementById("piInit");
+  var piAuthEl = document.getElementById("piAuth");
+  var nativePresentEl = document.getElementById("nativePresent");
+  var statusEl = document.getElementById("status");
+  var featuresEl = document.getElementById("features");
+  var authEl = document.getElementById("auth");
+  var logEl = document.getElementById("log");
+  var runFeaturesBtn = document.getElementById("runFeatures");
+  var runAuthBtn = document.getElementById("runAuth");
+
+  function clean(v) {
+    return String(v == null ? "" : v).trim();
+  }
+
+  function writeLog(message, data) {
+    var stamp = new Date().toISOString();
+    var line = "[" + stamp + "] " + message;
+    if (data !== undefined) {
+      try {
+        line += " " + JSON.stringify(data, function (key, value) {
+          if (/token|accessToken|authorization/i.test(key)) return "[REDACTED]";
+          return value;
+        }, 2);
+      } catch (_) {}
+    }
+    logEl.textContent += line + "\\n";
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setResult(el, text, cls) {
+    el.textContent = text;
+    el.className = "v " + (cls || "");
+  }
+
+  function describeError(error) {
+    if (!error) return { message: "UNKNOWN_ERROR" };
+    return {
+      name: clean(error.name) || "Error",
+      message: clean(error.message) || clean(error.toString()) || "UNKNOWN_ERROR",
+      code: clean(error.code) || null,
+      stackPresent: Boolean(clean(error.stack))
+    };
+  }
+
+  function raceTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise(function (_, reject) {
+        setTimeout(function () {
+          var e = new Error(label + "_LOCAL_TIMEOUT_" + ms + "MS");
+          e.code = label + "_LOCAL_TIMEOUT";
+          reject(e);
+        }, ms);
+      })
+    ]);
+  }
+
+  function inspectRuntime() {
+    var pi = window.Pi;
+    hostEl.textContent = clean(location.hostname);
+    originEl.textContent = clean(location.origin);
+    setResult(
+      secureEl,
+      window.isSecureContext ? "YES" : "NO",
+      window.isSecureContext ? "ok" : "bad"
+    );
+    setResult(
+      piPresentEl,
+      pi ? "YES" : "NO",
+      pi ? "ok" : "bad"
+    );
+    setResult(
+      piInitEl,
+      pi && typeof pi.init === "function" ? "YES" : "NO",
+      pi && typeof pi.init === "function" ? "ok" : "bad"
+    );
+    setResult(
+      piAuthEl,
+      pi && typeof pi.authenticate === "function" ? "YES" : "NO",
+      pi && typeof pi.authenticate === "function" ? "ok" : "bad"
+    );
+    setResult(
+      nativePresentEl,
+      pi && typeof pi.nativeFeaturesList === "function" ? "YES" : "NO",
+      pi && typeof pi.nativeFeaturesList === "function" ? "ok" : "warn"
+    );
+
+    writeLog("Runtime inspected.", {
+      expectedHost: EXPECTED_HOST,
+      actualHost: clean(location.hostname),
+      origin: clean(location.origin),
+      secureContext: Boolean(window.isSecureContext),
+      piPresent: Boolean(pi),
+      piInitPresent: Boolean(pi && typeof pi.init === "function"),
+      authenticatePresent: Boolean(pi && typeof pi.authenticate === "function"),
+      nativeFeaturesListPresent: Boolean(pi && typeof pi.nativeFeaturesList === "function")
+    });
+  }
+
+  async function runNativeFeatures() {
+    inspectRuntime();
+
+    if (!window.Pi || typeof window.Pi.nativeFeaturesList !== "function") {
+      featuresEl.textContent = "NATIVE_FEATURES_API_UNAVAILABLE";
+      statusEl.textContent = "Pi.nativeFeaturesList is not available on this page.";
+      writeLog("Native feature check unavailable.");
+      return;
+    }
+
+    statusEl.textContent = "Checking Pi native features…";
+    writeLog("nativeFeaturesList called.");
+
+    try {
+      var result = await raceTimeout(
+        Promise.resolve(window.Pi.nativeFeaturesList()),
+        15000,
+        "NATIVE_FEATURES"
+      );
+
+      featuresEl.textContent = JSON.stringify(result, null, 2);
+      statusEl.textContent = "Native feature check completed.";
+      writeLog("nativeFeaturesList resolved.", { result: result });
+    } catch (error) {
+      featuresEl.textContent = JSON.stringify(describeError(error), null, 2);
+      statusEl.textContent = "Native feature check failed or timed out.";
+      writeLog("nativeFeaturesList rejected/threw.", describeError(error));
+    }
+  }
+
+  async function runAuth() {
+    inspectRuntime();
+
+    if (!window.Pi || typeof window.Pi.init !== "function" || typeof window.Pi.authenticate !== "function") {
+      authEl.textContent = "PI_SDK_API_UNAVAILABLE";
+      statusEl.textContent = "Pi SDK API is unavailable.";
+      writeLog("Authentication test blocked: SDK API unavailable.");
+      return;
+    }
+
+    runAuthBtn.disabled = true;
+    runFeaturesBtn.disabled = true;
+    authEl.textContent = "Starting…";
+    statusEl.textContent = "Calling Pi.init, then Pi.authenticate…";
+
+    try {
+      writeLog("Pi.init called.", { version: SDK_VERSION, sandbox: SANDBOX });
+      var initReturn;
+      try {
+        initReturn = window.Pi.init({ version: SDK_VERSION, sandbox: SANDBOX });
+        writeLog("Pi.init returned.", { returnType: typeof initReturn });
+      } catch (initError) {
+        authEl.textContent = JSON.stringify({
+          stage: "Pi.init",
+          error: describeError(initError)
+        }, null, 2);
+        statusEl.textContent = "Pi.init threw an error.";
+        writeLog("Pi.init threw.", describeError(initError));
+        return;
+      }
+
+      var featuresNote = null;
+      if (typeof window.Pi.nativeFeaturesList === "function") {
+        try {
+          featuresNote = await raceTimeout(
+            Promise.resolve(window.Pi.nativeFeaturesList()),
+            10000,
+            "NATIVE_FEATURES"
+          );
+          writeLog("Native feature probe during auth completed.", { result: featuresNote });
+        } catch (featureError) {
+          writeLog("Native feature probe during auth failed.", describeError(featureError));
+        }
+      }
+
+      writeLog("Pi.authenticate called.", {
+        scopes: AUTH_SCOPES,
+        localTimeout: "15000ms warning only; SDK promise is not cancelled"
+      });
+
+      var startedAt = Date.now();
+      var timedNotice = setTimeout(function () {
+        statusEl.textContent =
+          "Pi.authenticate is still pending after 15 seconds. The SDK has not returned yet.";
+        writeLog("Pi.authenticate still pending after local 15s observation window.");
+      }, 15000);
+
+      try {
+        var result = await window.Pi.authenticate(
+          AUTH_SCOPES,
+          function onIncompletePaymentFound(payment) {
+            writeLog("onIncompletePaymentFound fired.", {
+              identifier: clean(payment && (payment.identifier || payment.id)),
+              hasPaymentObject: Boolean(payment)
+            });
+          }
+        );
+
+        clearTimeout(timedNotice);
+
+        var safe = {
+          resolved: true,
+          elapsedMs: Date.now() - startedAt,
+          userPresent: Boolean(result && result.user),
+          uidPresent: Boolean(result && result.user && clean(result.user.uid)),
+          usernamePresent: Boolean(result && result.user && clean(result.user.username)),
+          accessTokenPresent: Boolean(result && clean(result.accessToken)),
+          note: "Access token value intentionally not displayed."
+        };
+
+        authEl.textContent = JSON.stringify(safe, null, 2);
+        statusEl.textContent = "Pi.authenticate resolved successfully.";
+        writeLog("Pi.authenticate resolved.", safe);
+      } catch (authError) {
+        clearTimeout(timedNotice);
+
+        var safeError = {
+          resolved: false,
+          elapsedMs: Date.now() - startedAt,
+          error: describeError(authError),
+          interpretation:
+            "The Pi SDK authentication promise rejected or threw. No payment was created by this diagnostic page."
+        };
+
+        authEl.textContent = JSON.stringify(safeError, null, 2);
+        statusEl.textContent = "Pi.authenticate failed.";
+        writeLog("Pi.authenticate rejected/threw.", safeError);
+      }
+    } finally {
+      runAuthBtn.disabled = false;
+      runFeaturesBtn.disabled = false;
+    }
+  }
+
+  runFeaturesBtn.addEventListener("click", runNativeFeatures);
+  runAuthBtn.addEventListener("click", runAuth);
+
+  inspectRuntime();
+  writeLog("Step 8 diagnostic loaded.");
+})();
+</script>
+</body>
+</html>
