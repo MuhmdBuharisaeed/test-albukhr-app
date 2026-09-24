@@ -176,3 +176,9 @@ a{color:inherit}
     grid-column:auto;
   }
 }
+
+/* Additive visibility safeguard: keep HTML [hidden] elements hidden
+   on Android WebView/browser builds even when component display rules exist. */
+*[hidden]{
+  display:none !important;
+}
