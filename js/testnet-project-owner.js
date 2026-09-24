@@ -1,6 +1,7 @@
-/* ALBUKHR TESTNET PROJECT OWNER PAGE v4C
+/* ALBUKHR TESTNET PROJECT OWNER PAGE v5
  * Additive owner self-service profile layer.
  * Ownership transfer remains Super Admin-only.
+ * Step 5: enable owner-authorized Testnet liquidity payment flow.
  */
 (function (window, document) {
   "use strict";
@@ -19,6 +20,7 @@
     ownerProfile: null,
     withdrawalInFlight: false,
     profileSaveInFlight: false,
+    liquidityPaymentInFlight: false,
     ownerLoaded: false
   };
 
@@ -155,6 +157,69 @@
     } catch (_) { return date.toLocaleDateString(); }
   }
 
+  function liquidityPaymentClientAvailable() {
+    var client = window.AlbukhrTestnetLiquidityPayment;
+    return !!client && typeof client.createLiquidityPayment === "function";
+  }
+
+  function setLiquidityAvailability() {
+    var button = byId("addLiquidityBtn");
+    if (!button) return;
+
+    var liquidity = state.liquidity || {};
+    var profile = state.ownerProfile || {};
+    var owner = state.owner || {};
+    var required = numberValue(liquidity.required);
+    var verified = numberValue(liquidity.verified);
+    var due = Math.max(0, required - verified);
+
+    var ownerBound =
+      !!clean(owner.user_id || owner.id) &&
+      !!clean(owner.pi_uid);
+
+    var ownerVerified =
+      clean(profile.verification_status).toLowerCase() === "verified";
+
+    var treasuryReady =
+      !!state.treasury &&
+      !!liquidity.treasury_configured;
+
+    var ready =
+      ownerBound &&
+      ownerVerified &&
+      treasuryReady &&
+      due > 0 &&
+      liquidityPaymentClientAvailable() &&
+      !state.liquidityPaymentInFlight;
+
+    button.disabled = !ready;
+    button.title = ready
+      ? "Start the server-authorized Testnet liquidity payment."
+      : "";
+
+    var amountNode = byId("liquidityAmount");
+    if (amountNode) {
+      amountNode.min = String(Math.max(100, due));
+      if (due > 0 && !clean(amountNode.value)) {
+        amountNode.placeholder = due.toFixed(2);
+      }
+    }
+
+    if (state.liquidityPaymentInFlight) {
+      setStatus("liquidityStatus", "Pi liquidity payment is in progress…");
+    } else if (!ownerVerified) {
+      setStatus("liquidityStatus", "Owner identity verification is required before liquidity can be added.", "error");
+    } else if (!treasuryReady) {
+      setStatus("liquidityStatus", "The Testnet project treasury is not ready for liquidity.", "error");
+    } else if (due <= 0) {
+      setStatus("liquidityStatus", "The project liquidity requirement is already satisfied.", "success");
+    } else if (!liquidityPaymentClientAvailable()) {
+      setStatus("liquidityStatus", "The Testnet Pi payment module is not available on this page.", "error");
+    } else {
+      setStatus("liquidityStatus", "Owner authorization verified. Minimum remaining liquidity: " + formatPi(due) + ".");
+    }
+  }
+
   function renderOwner(stateRow, ownerData) {
     var project = stateRow.project || {};
     var liquidity = stateRow.liquidity || {};
@@ -197,9 +262,7 @@
       withdrawButton.disabled = !owner || !clean(owner.wallet_address) || state.ownerBalance <= 0;
     }
 
-    var addButton = byId("addLiquidityBtn");
-    if (addButton) addButton.disabled = true;
-    setStatus("liquidityStatus", "Add Liquidity remains held pending the server-side owner gate on the Pi payment router.");
+    setLiquidityAvailability();
 
     renderLogo(project);
     renderWithdrawals(stateRow.withdrawals || []);
@@ -264,6 +327,72 @@
     } catch (error) {
       console.error("[ALBUKHR TESTNET PROJECT OWNER REFRESH]", error);
       setStatus("withdrawStatus", error && error.message ? error.message : "Unable to refresh owner state.", "error");
+    }
+  }
+
+  async function startLiquidityPayment() {
+    if (state.liquidityPaymentInFlight) return;
+
+    try {
+      await ensureSession();
+
+      var amountNode = byId("liquidityAmount");
+      var amount = numberValue(amountNode && amountNode.value);
+      var required = numberValue(state.liquidity && state.liquidity.required);
+      var verified = numberValue(state.liquidity && state.liquidity.verified);
+      var due = Math.max(0, required - verified);
+
+      if (due <= 0) {
+        setStatus("liquidityStatus", "The project liquidity requirement is already satisfied.", "success");
+        return;
+      }
+      if (amount < 100 || amount < due) {
+        setStatus("liquidityStatus", "Enter at least " + formatPi(Math.max(100, due)) + " for the remaining Testnet liquidity requirement.", "error");
+        return;
+      }
+
+      var project = state.project || {};
+      if (!clean(project.id) || !clean(project.project_code)) {
+        throw new Error("PROJECT_ID_AND_CODE_REQUIRED");
+      }
+
+      var payment = window.AlbukhrTestnetLiquidityPayment;
+      if (!payment || typeof payment.createLiquidityPayment !== "function") {
+        throw new Error("PI_SDK_PAYMENT_UNAVAILABLE");
+      }
+
+      state.liquidityPaymentInFlight = true;
+      setLiquidityAvailability();
+
+      setStatus("liquidityStatus", "Opening the Pi Testnet payment flow…");
+
+      var result = await payment.createLiquidityPayment({
+        id: project.id,
+        project_code: project.project_code,
+        network: "testnet"
+      }, amount);
+
+      setStatus(
+        "liquidityStatus",
+        result && result.record && result.record.verification_status === "verified"
+          ? "Liquidity payment completed and verified."
+          : "Liquidity payment completed and recorded. Testnet Admin verification is still required before it counts as verified.",
+        "success"
+      );
+
+      await refresh();
+    } catch (error) {
+      console.error("[ALBUKHR TESTNET PROJECT OWNER LIQUIDITY]", error);
+      setStatus(
+        "liquidityStatus",
+        error && error.message
+          ? error.message
+          : "Unable to complete the Testnet liquidity payment.",
+        "error"
+      );
+    } finally {
+      state.liquidityPaymentInFlight = false;
+      setLiquidityAvailability();
     }
   }
 
@@ -374,9 +503,7 @@
     if (profileButton) profileButton.addEventListener("click", saveProfile);
 
     var addButton = byId("addLiquidityBtn");
-    if (addButton) addButton.addEventListener("click", function () {
-      setStatus("liquidityStatus", "Add Liquidity is waiting for the server-side owner authorization patch on the Pi payment router.", "error");
-    });
+    if (addButton) addButton.addEventListener("click", startLiquidityPayment);
   }
 
   function initialize() {
