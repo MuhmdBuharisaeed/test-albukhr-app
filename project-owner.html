@@ -142,6 +142,31 @@
       <div><strong>Owner access is server-authorized</strong><p>This page becomes available only after the Testnet owner API confirms that your authenticated Testnet identity is bound to this approved project.</p></div>
     </section>
   </div>
+
+  <!-- STEP 13: additive diagnostic; existing owner/payment UI remains intact. -->
+  <section id="step13Panel" class="panel" style="margin-top:24px;">
+    <div class="section-head">
+      <div>
+        <span class="owner-kicker">DIAGNOSTIC</span>
+        <h2>Pi Bridge Step 13</h2>
+      </div>
+      <span class="state-pill">END-TO-END TESTNET</span>
+    </div>
+    <p class="muted">
+      Direct Pi payment flow with the existing ALBUKHR Testnet approval/completion endpoints.
+      This bypasses the ALBUKHR liquidity payment client only for diagnosis.
+    </p>
+    <div class="security-note">
+      <strong>Real Testnet payment</strong>
+      <span>This test can move Testnet Pi when you approve the payment in Pi Wallet. Use the amount shown in the field and continue only when you intend to fund this project. No Mainnet funds are used.</span>
+    </div>
+    <div class="form-grid">
+      <label class="field"><span>Diagnostic Amount (Pi)</span><input id="step13Amount" type="number" min="100" step="0.01" inputmode="decimal" value="100.00" autocomplete="off"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="step13RunBtn" class="button primary" type="button">Run Direct Liquidity Payment</button></div>
+    </div>
+    <p id="step13Status" class="status-text" role="status" aria-live="polite">STEP13_READY</p>
+    <div id="step13Log" style="margin-top:12px;background:#111;color:#eaf8ef;border-radius:16px;padding:16px;min-height:220px;max-height:520px;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;white-space:pre-wrap;word-break:break-word;"></div>
+  </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -150,8 +175,7 @@
 <script src="js/testnet-gateway-auth.js?v=20260923-owner4c"></script>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="js/testnet-liquidity-payment-client.js?v=20260924-owner6-init"></script>
-<script src="js/testnet-liquidity-payment-step10-diagnostic.js?v=20260925-step10"></script>
-
 <script src="js/testnet-project-owner.js?v=20260924-owner5"></script>
+<script src="js/testnet-liquidity-payment-step13-diagnostic.js?v=20260925-step13"></script>
 </body>
 </html>
