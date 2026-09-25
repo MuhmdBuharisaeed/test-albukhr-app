@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f7a3d">
+  <title>Pi Authentication Test • ALBUKHR TESTNET</title>
+</head>
+<body>
+  <main>
+    <h1>Pi Authentication Test</h1>
+    <p id="status">READY</p>
+    <button id="runBtn" type="button">Run Pi Authentication Test</button>
+    <pre id="log" style="white-space:pre-wrap;word-break:break-word;background:#111;color:#eaf8ef;padding:16px;border-radius:12px;min-height:240px;"></pre>
+  </main>
+
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var SDK_VERSION = "2.0";
+      var SANDBOX = false;
+      var AUTH_TIMEOUT_MS = 45000;
+      var start = Date.now();
+      var initialized = false;
+      var running = false;
+
+      var logNode = document.getElementById("log");
+      var statusNode = document.getElementById("status");
+      var button = document.getElementById("runBtn");
+
+      function elapsed() {
+        return (Date.now() - start) + "ms";
+      }
+
+      function clean(value) {
+        return String(value == null ? "" : value).trim();
+      }
+
+      function log(event, detail) {
+        var line = "[" + elapsed() + "] " + event;
+
+        if (detail !== undefined) {
+          try {
+            line += " " + JSON.stringify(detail);
+          } catch (_) {}
+        }
+
+        logNode.textContent +=
+          (logNode.textContent ? "\\n" : "") + line;
+
+        console.log("[ALBUKHR PI PAGE TEST]", event, detail);
+      }
+
+      function status(message) {
+        statusNode.textContent = clean(message);
+      }
+
+      function initPi() {
+        if (initialized) {
+          log("PI_INIT_ALREADY_DONE");
+          return window.Pi;
+        }
+
+        if (!window.Pi) {
+          throw new Error("PI_SDK_UNAVAILABLE");
+        }
+
+        window.Pi.init({
+          version: SDK_VERSION,
+          sandbox: SANDBOX
+        });
+
+        initialized = true;
+
+        log("PI_INIT_OK", {
+          version: SDK_VERSION,
+          sandbox: SANDBOX,
+          piPresent: !!window.Pi,
+          host: window.location.host,
+          origin: window.location.origin,
+          href: window.location.href
+        });
+
+        return window.Pi;
+      }
+
+      async function runTest() {
+        if (running) {
+          return;
+        }
+
+        running = true;
+        button.disabled = true;
+
+        try {
+          log("TEST_START", {
+            host: window.location.host,
+            origin: window.location.origin,
+            href: window.location.href,
+            readyState: document.readyState,
+            visibilityState: document.visibilityState,
+            hidden: document.hidden,
+            piPresent: !!window.Pi,
+            userAgent: navigator.userAgent
+          });
+
+          status("Initializing Pi…");
+
+          initPi();
+
+          log("PI_AUTH_CALLING", {
+            scopes: ["username"],
+            sdkVersion: SDK_VERSION,
+            sandbox: SANDBOX
+          });
+
+          log("PI_RUNTIME_BEFORE_AUTH", {
+            piPresent: !!window.Pi,
+            piType: typeof window.Pi,
+            authenticateType: typeof window.Pi.authenticate,
+            initType: typeof window.Pi.init,
+            host: window.location.host,
+            origin: window.location.origin,
+            href: window.location.href,
+            visibilityState: document.visibilityState,
+            hidden: document.hidden,
+            readyState: document.readyState
+          });
+
+          var authPromise;
+
+          try {
+            authPromise = window.Pi.authenticate(
+              ["username"],
+              function onIncompletePaymentFound(payment) {
+                log("INCOMPLETE_PAYMENT_FOUND", {
+                  paymentPresent: !!payment,
+                  paymentIdPresent: !!(
+                    payment &&
+                    clean(payment.identifier || payment.id)
+                  )
+                });
+              }
+            );
+          } catch (error) {
+            log("PI_AUTH_THROWN", {
+              name: error && error.name,
+              message: error && error.message
+            });
+            throw error;
+          }
+
+          log("PI_AUTH_PROMISE_CREATED", {
+            thenable: !!(
+              authPromise &&
+              typeof authPromise.then === "function"
+            )
+          });
+
+          if (
+            !authPromise ||
+            typeof authPromise.then !== "function"
+          ) {
+            throw new Error("PI_AUTH_PROMISE_INVALID");
+          }
+
+          status("Waiting for Pi authentication…");
+
+          var timeoutPromise = new Promise(function (_, reject) {
+            setTimeout(function () {
+              reject(
+                new Error(
+                  "PI_AUTH_TIMEOUT_" +
+                  AUTH_TIMEOUT_MS +
+                  "MS"
+                )
+              );
+            }, AUTH_TIMEOUT_MS);
+          });
+
+          var result = await Promise.race([
+            authPromise,
+            timeoutPromise
+          ]);
+
+          log("PI_AUTH_SUCCESS", {
+            userPresent: !!(result && result.user),
+            uidPresent: !!(
+              result &&
+              result.user &&
+              clean(result.user.uid)
+            ),
+            usernamePresent: !!(
+              result &&
+              result.user &&
+              clean(result.user.username)
+            ),
+            accessTokenPresent: !!(
+              result &&
+              clean(result.accessToken)
+            )
+          });
+
+          status("PI_AUTH_SUCCESS");
+        } catch (error) {
+          log("PI_AUTH_ERROR", {
+            name: error && error.name,
+            message: error && error.message
+          });
+
+          status(
+            "PI_AUTH_ERROR: " +
+            (
+              error && error.message
+                ? error.message
+                : "UNKNOWN_ERROR"
+            )
+          );
+        } finally {
+          running = false;
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener("click", runTest);
+
+      window.addEventListener("load", function () {
+        log("PAGE_READY", {
+          host: window.location.host,
+          origin: window.location.origin,
+          href: window.location.href,
+          piPresent: !!window.Pi,
+          sdkVersion: SDK_VERSION,
+          sandbox: SANDBOX
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
