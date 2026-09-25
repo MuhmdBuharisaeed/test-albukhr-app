@@ -182,6 +182,21 @@
   }
   }
   async function ensureTestnetSession() {
+
+    log("AUTH_RUNTIME_CHECK", {
+  authPresent: !!window.AlbukhrTestnetAuth,
+  authType: typeof window.AlbukhrTestnetAuth,
+  requireTestnetAuthType:
+    window.AlbukhrTestnetAuth
+      ? typeof window.AlbukhrTestnetAuth.requireTestnetAuth
+      : "undefined",
+  getSessionTokenType:
+    window.AlbukhrTestnetAuth
+      ? typeof window.AlbukhrTestnetAuth.getSessionToken
+      : "undefined",
+  diagnosticSrc: "20260925-step13"
+});
+    
     var auth = window.AlbukhrTestnetAuth;
 
     if (
