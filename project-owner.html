@@ -170,11 +170,20 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="js/core/environment-core.js?v=20260923-owner4c"></script>
 <script src="js/core/supabase-core.js?v=20260923-owner4c"></script>
-<script src="js/testnet-gateway-auth.js?v=20260923-owner4c"></script>
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<script src="js/testnet-gateway-auth.js?v=20260925-gateway1"></script>
+
+<script>
+  console.log("GATEWAY_AUTH_SCRIPT_CHECK", {
+    authPresent: !!window.AlbukhrTestnetAuth,
+    authType: typeof window.AlbukhrTestnetAuth
+  });
+</script>
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <script src="js/testnet-liquidity-payment-step13-diagnostic.js?v=20260925-step13"></script>
 </body>
