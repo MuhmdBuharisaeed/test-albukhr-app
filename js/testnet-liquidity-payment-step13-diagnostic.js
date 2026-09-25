@@ -89,37 +89,40 @@
   }
 
   function initializePi() {
-    checkEnvironment();
+  checkEnvironment();
 
-    if (initialized) {
-      log("PI_INIT_ALREADY_DONE");
-      return window.Pi;
-    }
+  /*
+   * The shared Testnet liquidity payment client owns the Pi SDK
+   * lifecycle on this page and initializes Pi exactly once.
+   *
+   * Step 13 remains a direct diagnostic for Pi.authenticate() and
+   * Pi.createPayment(), but it must never call Pi.init() a second time.
+   */
+  var client = window.AlbukhrTestnetLiquidityPayment;
 
-    if (typeof window.Pi.init !== "function") {
-      throw new Error("PI_INIT_UNAVAILABLE");
-    }
+  if (!client || typeof client.init !== "function") {
+    throw new Error("SHARED_TESTNET_PI_CLIENT_UNAVAILABLE");
+  }
 
-    try {
-      var result = window.Pi.init({
-        version: SDK_VERSION,
-        sandbox: SANDBOX
-      });
-      initialized = true;
-      log("PI_INIT_OK", {
-        version: SDK_VERSION,
-        sandbox: SANDBOX,
-        returnValueType: typeof result
-      });
-      return window.Pi;
-    } catch (error) {
-      log("PI_INIT_ERROR", {
-        name: error && error.name,
-        message: error && error.message
-      });
-      status("PI_INIT_ERROR");
-      throw error;
-    }
+  try {
+    var pi = client.init();
+    initialized = true;
+
+    log("PI_INIT_SHARED_OK", {
+      version: SDK_VERSION,
+      sandbox: SANDBOX,
+      returnValueType: typeof pi
+    });
+
+    return window.Pi;
+  } catch (error) {
+    log("PI_INIT_SHARED_ERROR", {
+      name: error && error.name,
+      message: error && error.message
+    });
+    status("PI_INIT_SHARED_ERROR");
+    throw error;
+  }
   }
 
   async function ensureTestnetSession() {
