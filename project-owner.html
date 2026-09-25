@@ -143,32 +143,43 @@
     </section>
   </div>
 
-  <!-- STEP 13: additive diagnostic; existing owner/payment UI remains intact. -->
+  <!-- STEP 13: diagnostic isolation panel. Existing owner/payment application scripts are intentionally not loaded. -->
   <section id="step13Panel" class="panel" style="margin-top:24px;">
     <div class="section-head">
       <div>
         <span class="owner-kicker">DIAGNOSTIC</span>
         <h2>Pi Bridge Step 13</h2>
       </div>
-      <span class="state-pill">END-TO-END TESTNET</span>
+      <span class="state-pill">AUTH ISOLATION</span>
     </div>
     <p class="muted">
-      Direct Pi payment flow with the existing ALBUKHR Testnet approval/completion endpoints.
-      This bypasses the ALBUKHR liquidity payment client only for diagnosis.
+      Diagnostic isolation of Pi authentication on the Project Owner page.
+      The Testnet gateway session remains loaded, while the owner/payment application
+      clients are intentionally excluded from this test.
     </p>
     <div class="security-note">
-      <strong>Real Testnet payment</strong>
-      <span>This test can move Testnet Pi when you approve the payment in Pi Wallet. Use the amount shown in the field and continue only when you intend to fund this project. No Mainnet funds are used.</span>
+      <strong>Diagnostic only</strong>
+      <span>This isolation test is not the final production payment flow. Do not use it to make a real Testnet payment unless explicitly instructed.</span>
     </div>
     <div class="form-grid">
       <label class="field"><span>Diagnostic Amount (Pi)</span><input id="step13Amount" type="number" min="100" step="0.01" inputmode="decimal" value="100.00" autocomplete="off"></label>
-      <div class="field action-field"><span>&nbsp;</span><button id="step13RunBtn" class="button primary" type="button">Run Direct Liquidity Payment</button></div>
+      <div class="field action-field"><span>&nbsp;</span><button id="step13RunBtn" class="button primary" type="button">Run Authentication Diagnostic</button></div>
     </div>
     <p id="step13Status" class="status-text" role="status" aria-live="polite">STEP13_READY</p>
     <div id="step13Log" style="margin-top:12px;background:#111;color:#eaf8ef;border-radius:16px;padding:16px;min-height:220px;max-height:520px;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;white-space:pre-wrap;word-break:break-word;"></div>
   </section>
 </main>
 
+<!--
+  STEP 13 AUTH ISOLATION RUNTIME
+  Only the environment, Supabase core, Testnet gateway session,
+  Pi SDK and diagnostic are loaded here.
+
+  Intentionally NOT loaded:
+    - js/testnet-project-owner.js
+    - js/testnet-liquidity-payment-client.js
+    - other owner/payment application clients
+-->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="js/core/environment-core.js?v=20260923-owner4c"></script>
@@ -179,7 +190,15 @@
 <script>
   console.log("GATEWAY_AUTH_SCRIPT_CHECK", {
     authPresent: !!window.AlbukhrTestnetAuth,
-    authType: typeof window.AlbukhrTestnetAuth
+    authType: typeof window.AlbukhrTestnetAuth,
+    requireTestnetAuthType:
+      window.AlbukhrTestnetAuth
+        ? typeof window.AlbukhrTestnetAuth.requireTestnetAuth
+        : "undefined",
+    getSessionTokenType:
+      window.AlbukhrTestnetAuth
+        ? typeof window.AlbukhrTestnetAuth.getSessionToken
+        : "undefined"
   });
 </script>
 
