@@ -269,9 +269,8 @@
     var incomplete = null;
 
     var scopes = [
-      "username",
-      "payments"
-    ];
+  "username"
+];
 
     log("PI_AUTH_CALLED", {
       scopes: scopes,
