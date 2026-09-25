@@ -145,49 +145,42 @@
    * Step 13 MUST NOT call window.Pi.init() directly.
    */
   function initializePi() {
-    checkEnvironment();
+  checkEnvironment();
 
-    var client = window.AlbukhrTestnetLiquidityPayment;
+  if (initialized) {
+    log("PI_INIT_DIRECT_ALREADY_DONE");
 
-    if (
-      !client ||
-      typeof client.init !== "function"
-    ) {
-      throw new Error(
-        "SHARED_TESTNET_PI_CLIENT_UNAVAILABLE"
-      );
-    }
-
-    if (initialized) {
-      log("PI_INIT_SHARED_ALREADY_DONE");
-      return window.Pi;
-    }
-
-    try {
-      var pi = client.init();
-
-      initialized = true;
-
-      log("PI_INIT_SHARED_OK", {
-        version: SDK_VERSION,
-        sandbox: SANDBOX,
-        returnValueType: typeof pi,
-        piPresent: !!window.Pi
-      });
-
-      return window.Pi;
-    } catch (error) {
-      log("PI_INIT_SHARED_ERROR", {
-        name: error && error.name,
-        message: error && error.message
-      });
-
-      status("PI_INIT_SHARED_ERROR");
-
-      throw error;
-    }
+    return window.Pi;
   }
 
+  try {
+    window.Pi.init({
+      version: SDK_VERSION,
+      sandbox: SANDBOX
+    });
+
+    initialized = true;
+
+    log("PI_INIT_DIRECT_OK", {
+      version: SDK_VERSION,
+      sandbox: SANDBOX,
+      piPresent: !!window.Pi
+    });
+
+    return window.Pi;
+
+  } catch (error) {
+
+    log("PI_INIT_DIRECT_ERROR", {
+      name: error && error.name,
+      message: error && error.message
+    });
+
+    status("PI_INIT_DIRECT_ERROR");
+
+    throw error;
+  }
+  }
   async function ensureTestnetSession() {
     var auth = window.AlbukhrTestnetAuth;
 
