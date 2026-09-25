@@ -281,12 +281,26 @@
 ];
 
     log("PI_AUTH_CALLED", {
-      scopes: scopes,
-      sdkVersion: SDK_VERSION,
-      sandbox: SANDBOX
-    });
+  scopes: scopes,
+  sdkVersion: SDK_VERSION,
+  sandbox: SANDBOX
+});
 
-    var authenticatePromise;
+log("PI_RUNTIME_BEFORE_AUTH", {
+  piPresent: !!window.Pi,
+  piType: typeof window.Pi,
+  authenticateType: typeof window.Pi.authenticate,
+  initType: typeof window.Pi.init,
+  host: window.location.host,
+  origin: window.location.origin,
+  href: window.location.href,
+  visibilityState: document.visibilityState,
+  hidden: document.hidden,
+  readyState: document.readyState,
+  userAgent: navigator.userAgent
+});
+
+var authenticatePromise;
 
     try {
       authenticatePromise = window.Pi.authenticate(
