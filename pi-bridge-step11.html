@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ALBUKHR Pi Bridge Step 11</title>
+  <style>
+    :root { --green:#0f7a3d; --ink:#183629; --bg:#f4faf6; --card:#fff; --muted:#65766d; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--ink); }
+    .wrap { max-width:760px; margin:0 auto; padding:22px 16px 40px; }
+    .card { background:var(--card); border:1px solid #dcebe2; border-radius:22px; padding:22px; box-shadow:0 8px 28px rgba(15,122,61,.06); }
+    h1 { margin:0 0 8px; font-size:30px; }
+    p { line-height:1.5; color:var(--muted); }
+    .warning { padding:13px 15px; border-radius:14px; background:#fff8df; border:1px solid #eadca8; color:#675a2b; margin:16px 0; }
+    button { width:100%; border:0; border-radius:14px; padding:16px; margin-top:10px; background:var(--green); color:#fff; font-size:16px; font-weight:700; }
+    button:disabled { opacity:.55; }
+    .status { margin-top:16px; padding:14px; border-radius:14px; background:#f7faf8; border:1px solid #e2ece6; font-weight:700; word-break:break-word; }
+    pre { margin:16px 0 0; padding:15px; min-height:220px; background:#111; color:#eee; border-radius:12px; overflow:auto; white-space:pre-wrap; word-break:break-word; font:12px/1.5 monospace; }
+    .small { font-size:13px; }
+  </style>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Pi Bridge Step 11</h1>
+      <p>Isolated diagnostic for the Pi SDK bridge on <b>test.albukhr.com</b>.</p>
+      <div class="warning"><b>Diagnostic only.</b> No payment is created. No access token is displayed or stored. No ALBUKHR backend is called.</div>
+      <div id="status" class="status">STEP11_READY</div>
+      <button id="initBtn">1. Initialize Pi</button>
+      <button id="featuresBtn">2. Check Pi Native Features</button>
+      <button id="usernameBtn">3. Authenticate: username only</button>
+      <button id="paymentsBtn">4. Authenticate: username + payments</button>
+      <pre id="log"></pre>
+      <p class="small">Run the tests in order. If username-only authentication works but payments authentication times out, the failure is specifically associated with the <code>payments</code> scope/bridge.</p>
+    </section>
+  </main>
+  <script src="js/pi-bridge-step11-diagnostic.js?v=20260925-step11"></script>
+</body>
+</html>
