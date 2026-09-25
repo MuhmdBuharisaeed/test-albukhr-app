@@ -1,11 +1,17 @@
-/* ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v2 */
+/* ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v3 */
 (function (window) {
   "use strict";
 
   /*
    * Controlled Testnet liquidity payment client.
+   *
    * Pi access token remains memory-only.
-   * No localStorage/sessionStorage is used for Pi credentials.
+   * No LocalStorage is used for Pi credentials.
+   *
+   * Step 9:
+   * - Initialize the Pi SDK once when this client loads, before any
+   *   Pi SDK method is called.
+   * - Keep the existing owner payment flow and server gates unchanged.
    */
 
   var API_BASE = "https://test-albukhr-api.onrender.com";
@@ -38,32 +44,53 @@
 
   function validateEnvironment() {
     var env = window.ALBukhrEnvironment;
+
     if (!env || !env.isKnown || !env.isTestnet || !env.getNetwork) {
       throw new Error("TESTNET_ENVIRONMENT_UNAVAILABLE");
     }
-    if (!env.isKnown() || !env.isTestnet() || env.getNetwork() !== NETWORK) {
+
+    if (
+      !env.isKnown() ||
+      !env.isTestnet() ||
+      env.getNetwork() !== NETWORK
+    ) {
       throw new Error("INVALID_TESTNET_ENVIRONMENT");
     }
-    if (clean(env.getHostname && env.getHostname()).toLowerCase() !== "test.albukhr.com") {
+
+    if (
+      clean(env.getHostname && env.getHostname()).toLowerCase() !==
+      "test.albukhr.com"
+    ) {
       throw new Error("TESTNET_HOST_REQUIRED");
     }
   }
 
   function requirePiSdk() {
-    if (!window.Pi || typeof window.Pi.init !== "function" || typeof window.Pi.authenticate !== "function" || typeof window.Pi.createPayment !== "function") {
+    if (
+      !window.Pi ||
+      typeof window.Pi.init !== "function" ||
+      typeof window.Pi.authenticate !== "function" ||
+      typeof window.Pi.createPayment !== "function"
+    ) {
       throw new Error("PI_SDK_UNAVAILABLE");
     }
+
     return window.Pi;
   }
 
   function dispatch(name, detail) {
     try {
-      window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+      window.dispatchEvent(
+        new CustomEvent(name, {
+          detail: detail || {}
+        })
+      );
     } catch (_) {}
   }
 
   async function apiRequest(path, body, includePiToken) {
     var sessionToken = getSessionToken();
+
     var headers = {
       "Accept": "application/json",
       "Content-Type": "application/json",
@@ -71,13 +98,21 @@
     };
 
     if (includePiToken) {
-      var piToken = clean(authResult && authResult.accessToken);
-      if (!piToken) throw new Error("PI_ACCESS_TOKEN_REQUIRED");
+      var piToken = clean(
+        authResult && authResult.accessToken
+      );
+
+      if (!piToken) {
+        throw new Error("PI_ACCESS_TOKEN_REQUIRED");
+      }
+
       headers.Authorization = "Bearer " + piToken;
     }
 
     var response = await fetch(
-      API_BASE.replace(/\/+$/, "") + "/liquidity-payment/" + clean(path).replace(/^\/+/, ""),
+      API_BASE.replace(/\/+$/, "") +
+        "/liquidity-payment/" +
+        clean(path).replace(/^\/+/, ""),
       {
         method: "POST",
         headers: headers,
@@ -86,15 +121,20 @@
     );
 
     var data = null;
+
     try {
       data = await response.json();
     } catch (_) {}
 
     if (!response.ok) {
-      var code = clean(data && data.error) || "TESTNET_LIQUIDITY_PAYMENT_ERROR";
+      var code =
+        clean(data && data.error) ||
+        "TESTNET_LIQUIDITY_PAYMENT_ERROR";
+
       var error = new Error(code);
       error.status = response.status;
       error.body = data;
+
       throw error;
     }
 
@@ -104,12 +144,16 @@
   async function recoverIncomplete(payment) {
     if (!payment) return null;
 
-    var identifier = clean(payment.identifier || payment.id);
+    var identifier = clean(
+      payment.identifier || payment.id
+    );
+
     if (!identifier) return null;
 
     try {
       var response = await fetch(
-        API_BASE.replace(/\/+$/, "") + "/liquidity-payment/incomplete",
+        API_BASE.replace(/\/+$/, "") +
+          "/liquidity-payment/incomplete",
         {
           method: "POST",
           headers: {
@@ -119,62 +163,144 @@
           body: JSON.stringify({
             paymentId: identifier,
             identifier: identifier,
-            txid: clean(payment.transaction && payment.transaction.txid) || null
+            txid:
+              clean(
+                payment.transaction &&
+                  payment.transaction.txid
+              ) || null
           })
         }
       );
 
       var result = null;
+
       try {
         result = await response.json();
       } catch (_) {}
 
       if (!response.ok) {
         var error = new Error(
-          clean(result && (result.error || result.message)) ||
-          "TESTNET_LIQUIDITY_RECOVERY_FAILED"
+          clean(
+            result &&
+              (result.error || result.message)
+          ) ||
+            "TESTNET_LIQUIDITY_RECOVERY_FAILED"
         );
+
         error.status = response.status;
         error.body = result;
+
         throw error;
       }
 
-      dispatch("albukhr:testnet-liquidity-payment-recovered", result);
+      dispatch(
+        "albukhr:testnet-liquidity-payment-recovered",
+        result
+      );
+
       return result;
     } catch (error) {
-      console.error("[ALBUKHR TESTNET LIQUIDITY RECOVERY]", error);
-      dispatch("albukhr:testnet-liquidity-payment-recovery-error", { error: error, payment: payment });
+      console.error(
+        "[ALBUKHR TESTNET LIQUIDITY RECOVERY]",
+        error
+      );
+
+      dispatch(
+        "albukhr:testnet-liquidity-payment-recovery-error",
+        {
+          error: error,
+          payment: payment
+        }
+      );
+
+      throw error;
+    }
+  }
+
+  /*
+   * Initialize the Pi SDK exactly once.
+   *
+   * This is intentionally separate from authentication so that
+   * Pi.init() happens on page load, before any future Pi SDK call.
+   */
+  function initializePiSdk() {
+    validateEnvironment();
+
+    var pi = requirePiSdk();
+
+    if (initialized) {
+      return pi;
+    }
+
+    try {
+      pi.init({
+        version: PI_SDK_VERSION,
+        sandbox: PI_SANDBOX
+      });
+
+      initialized = true;
+
+      dispatch(
+        "albukhr:testnet-liquidity-pi-initialized",
+        {
+          version: PI_SDK_VERSION,
+          sandbox: PI_SANDBOX
+        }
+      );
+
+      return pi;
+    } catch (error) {
+      initialized = false;
+
+      dispatch(
+        "albukhr:testnet-liquidity-pi-init-error",
+        {
+          message:
+            clean(error && error.message) ||
+            "PI_INIT_FAILED"
+        }
+      );
+
       throw error;
     }
   }
 
   async function authenticate() {
     validateEnvironment();
-    await getAuth().requireTestnetAuth({ redirectOnFailure: false });
 
-    if (authenticationPromise) return authenticationPromise;
+    /*
+     * The Pi SDK is already initialized on page load. Calling
+     * initializePiSdk() here is idempotent and also provides a
+     * safe retry if initial page-load initialization failed.
+     */
+    var pi = initializePiSdk();
+
+    await getAuth().requireTestnetAuth({
+      redirectOnFailure: false
+    });
+
+    if (authenticationPromise) {
+      return authenticationPromise;
+    }
 
     authenticationPromise = (async function () {
-      var pi = requirePiSdk();
-
-      if (!initialized) {
-        pi.init({
-          version: PI_SDK_VERSION,
-          sandbox: PI_SANDBOX
-        });
-        initialized = true;
-      }
-
       pendingIncompletePayments = [];
 
       var result = await pi.authenticate(
         ["username", "payments"],
         function onIncompletePaymentFound(payment) {
-          if (payment) pendingIncompletePayments.push(payment);
+          if (payment) {
+            pendingIncompletePayments.push(payment);
+          }
         }
       );
 
-      if (!result || !clean(result.accessToken) || !result.user || !clean(result.user.uid)) {
+      if (
+        !result ||
+        !clean(result.accessToken) ||
+        !result.user ||
+        !clean(result.user.uid)
+      ) {
         throw new Error("PI_AUTH_RESULT_INVALID");
       }
 
@@ -182,20 +308,30 @@
         accessToken: result.accessToken,
         user: {
           uid: clean(result.user.uid),
-          username: clean(result.user.username) || null
+          username:
+            clean(result.user.username) || null
         }
       };
 
-      for (var i = 0; i < pendingIncompletePayments.length; i += 1) {
-        await recoverIncomplete(pendingIncompletePayments[i]);
+      for (
+        var i = 0;
+        i < pendingIncompletePayments.length;
+        i += 1
+      ) {
+        await recoverIncomplete(
+          pendingIncompletePayments[i]
+        );
       }
 
       pendingIncompletePayments = [];
 
-      dispatch("albukhr:testnet-liquidity-pi-authenticated", {
-        username: authResult.user.username,
-        uid: authResult.user.uid
-      });
+      dispatch(
+        "albukhr:testnet-liquidity-pi-authenticated",
+        {
+          username: authResult.user.username,
+          uid: authResult.user.uid
+        }
+      );
 
       return {
         user: authResult.user
@@ -209,20 +345,35 @@
     }
   }
 
-  async function createLiquidityPayment(project, amount) {
+  async function createLiquidityPayment(
+    project,
+    amount
+  ) {
     validateEnvironment();
 
     var safeProject = project || {};
     var projectId = clean(safeProject.id);
-    var projectCode = clean(safeProject.project_code);
+    var projectCode = clean(
+      safeProject.project_code
+    );
 
-    if (!projectId) throw new Error("PROJECT_ID_REQUIRED");
-    if (!projectCode) throw new Error("PROJECT_CODE_REQUIRED");
-    if (clean(safeProject.network).toLowerCase() !== NETWORK) {
+    if (!projectId) {
+      throw new Error("PROJECT_ID_REQUIRED");
+    }
+
+    if (!projectCode) {
+      throw new Error("PROJECT_CODE_REQUIRED");
+    }
+
+    if (
+      clean(safeProject.network).toLowerCase() !==
+      NETWORK
+    ) {
       throw new Error("PROJECT_NETWORK_INVALID");
     }
 
     var value = Number(amount);
+
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error("INVALID_LIQUIDITY_AMOUNT");
     }
@@ -230,9 +381,14 @@
     await authenticate();
 
     var pi = requirePiSdk();
-    var memo = "ALBUKHR Testnet liquidity • " + projectCode;
+    var memo =
+      "ALBUKHR Testnet liquidity • " +
+      projectCode;
 
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (
+      resolve,
+      reject
+    ) {
       pi.createPayment(
         {
           amount: value,
@@ -245,57 +401,116 @@
           }
         },
         {
-          onReadyForServerApproval: async function (paymentId) {
-            try {
-              var approved = await apiRequest(
-                "approve",
-                {
-                  paymentId: paymentId,
-                  projectId: projectId,
-                  projectCode: projectCode
-                },
-                true
-              );
+          onReadyForServerApproval:
+            async function (paymentId) {
+              try {
+                var approved =
+                  await apiRequest(
+                    "approve",
+                    {
+                      paymentId: paymentId,
+                      projectId: projectId,
+                      projectCode: projectCode
+                    },
+                    true
+                  );
 
-              dispatch("albukhr:testnet-liquidity-payment-approved", approved);
-            } catch (error) {
-              console.error("[ALBUKHR TESTNET LIQUIDITY APPROVAL]", error);
-              dispatch("albukhr:testnet-liquidity-payment-approval-error", { error: error, paymentId: paymentId });
-              throw error;
-            }
-          },
+                dispatch(
+                  "albukhr:testnet-liquidity-payment-approved",
+                  approved
+                );
+              } catch (error) {
+                console.error(
+                  "[ALBUKHR TESTNET LIQUIDITY APPROVAL]",
+                  error
+                );
 
-          onReadyForServerCompletion: async function (paymentId, txid) {
-            try {
-              var completed = await apiRequest(
-                "complete",
-                {
-                  paymentId: paymentId,
-                  projectId: projectId,
-                  projectCode: projectCode,
-                  txid: txid
-                },
-                true
-              );
+                dispatch(
+                  "albukhr:testnet-liquidity-payment-approval-error",
+                  {
+                    error: error,
+                    paymentId: paymentId
+                  }
+                );
 
-              dispatch("albukhr:testnet-liquidity-payment-completed", completed);
-              resolve(completed);
-            } catch (error) {
-              console.error("[ALBUKHR TESTNET LIQUIDITY COMPLETION]", error);
-              dispatch("albukhr:testnet-liquidity-payment-completion-error", { error: error, paymentId: paymentId, txid: txid });
-              throw error;
-            }
-          },
+                throw error;
+              }
+            },
+
+          onReadyForServerCompletion:
+            async function (paymentId, txid) {
+              try {
+                var completed =
+                  await apiRequest(
+                    "complete",
+                    {
+                      paymentId: paymentId,
+                      projectId: projectId,
+                      projectCode: projectCode,
+                      txid: txid
+                    },
+                    true
+                  );
+
+                dispatch(
+                  "albukhr:testnet-liquidity-payment-completed",
+                  completed
+                );
+
+                resolve(completed);
+              } catch (error) {
+                console.error(
+                  "[ALBUKHR TESTNET LIQUIDITY COMPLETION]",
+                  error
+                );
+
+                dispatch(
+                  "albukhr:testnet-liquidity-payment-completion-error",
+                  {
+                    error: error,
+                    paymentId: paymentId,
+                    txid: txid
+                  }
+                );
+
+                throw error;
+              }
+            },
 
           onCancel: function (paymentId) {
-            dispatch("albukhr:testnet-liquidity-payment-cancelled", { paymentId: paymentId, network: NETWORK });
-            reject(new Error("PI_PAYMENT_CANCELLED"));
+            dispatch(
+              "albukhr:testnet-liquidity-payment-cancelled",
+              {
+                paymentId: paymentId,
+                network: NETWORK
+              }
+            );
+
+            reject(
+              new Error("PI_PAYMENT_CANCELLED")
+            );
           },
 
           onError: function (error, payment) {
-            console.error("[ALBUKHR TESTNET LIQUIDITY PAYMENT]", error, payment || null);
-            dispatch("albukhr:testnet-liquidity-payment-error", { error: error, payment: payment || null });
-            reject(error instanceof Error ? error : new Error("PI_PAYMENT_ERROR"));
+            console.error(
+              "[ALBUKHR TESTNET LIQUIDITY PAYMENT]",
+              error,
+              payment || null
+            );
+
+            dispatch(
+              "albukhr:testnet-liquidity-payment-error",
+              {
+                error: error,
+                payment: payment || null
+              }
+            );
+
+            reject(
+              error instanceof Error
+                ? error
+                : new Error("PI_PAYMENT_ERROR")
+            );
           }
         }
       );
@@ -308,17 +523,39 @@
   }
 
   /*
-   * Compatibility alias:
-   * existing project.html calls addLiquidity().
-   * Keep createLiquidityPayment() unchanged and export both names.
+   * Initialize as soon as this client is loaded.
+   *
+   * The Project Owner / Project HTML pages load pi-sdk.js
+   * immediately before this module, so window.Pi should already
+   * exist here. A failure is logged and left retryable through
+   * initializePiSdk() when the payment flow is actually started.
    */
-  window.AlbukhrTestnetLiquidityPayment = Object.freeze({
-    authenticate: authenticate,
-    createLiquidityPayment: createLiquidityPayment,
-    addLiquidity: createLiquidityPayment,
-    recoverIncomplete: recoverIncomplete,
-    clearInMemoryPiAuth: clearInMemoryPiAuth,
-    network: NETWORK,
-    apiBase: API_BASE
-  });
+  try {
+    initializePiSdk();
+  } catch (error) {
+    console.error(
+      "[ALBUKHR TESTNET LIQUIDITY PI INIT]",
+      error
+    );
+  }
+
+  /*
+   * Compatibility API:
+   * existing project.html calls addLiquidity().
+   *
+   * Existing public methods remain intact.
+   */
+  window.AlbukhrTestnetLiquidityPayment =
+    Object.freeze({
+      init: initializePiSdk,
+      authenticate: authenticate,
+      createLiquidityPayment:
+        createLiquidityPayment,
+      addLiquidity: createLiquidityPayment,
+      recoverIncomplete: recoverIncomplete,
+      clearInMemoryPiAuth:
+        clearInMemoryPiAuth,
+      network: NETWORK,
+      apiBase: API_BASE
+    });
 })(window);
