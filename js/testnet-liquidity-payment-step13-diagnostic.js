@@ -300,6 +300,32 @@ log("PI_RUNTIME_BEFORE_AUTH", {
   userAgent: navigator.userAgent
 });
 
+log("PI_AUTH_DIRECT_TEST_START");
+
+try {
+  var directAuthTest = await window.Pi.authenticate(
+    ["username"],
+    function (payment) {
+      log("PI_DIRECT_TEST_INCOMPLETE", {
+        paymentPresent: !!payment
+      });
+    }
+  );
+
+  log("PI_AUTH_DIRECT_TEST_SUCCESS", {
+    userPresent: !!directAuthTest?.user,
+    uidPresent: !!directAuthTest?.user?.uid,
+    usernamePresent: !!directAuthTest?.user?.username,
+    accessTokenPresent: !!directAuthTest?.accessToken
+  });
+
+} catch (error) {
+  log("PI_AUTH_DIRECT_TEST_ERROR", {
+    name: error && error.name,
+    message: error && error.message
+  });
+}
+  
 var authenticatePromise;
 
     try {
