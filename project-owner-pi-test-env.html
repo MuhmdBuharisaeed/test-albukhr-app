@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f7a3d">
-<title>PROJECT OWNER JS ISOLATION • ALBUKHR TESTNET</title>
+<title>PROJECT OWNER + PAYMENT CLIENT ISOLATION • ALBUKHR TESTNET</title>
 <link rel="stylesheet" href="css/testnet-project-owner.css?v=20260924-owner4d">
 </head>
 <body data-page="project-owner" data-network="testnet">
@@ -149,12 +149,12 @@
         <span class="owner-kicker">DIAGNOSTIC</span>
         <h2>Pi Bridge Step 13</h2>
       </div>
-      <span class="state-pill">PROJECT OWNER JS ISOLATION</span>
+      <span class="state-pill">PROJECT OWNER + PAYMENT CLIENT ISOLATION</span>
     </div>
     <p class="muted">
       Full-DOM authentication isolation of the Project Owner page.
-      The full document/DOM is preserved and the Project Owner application logic is loaded.
-      Only its login redirect is disabled so the diagnostic can continue.
+      The full document/DOM, Project Owner application logic, and real payment client are loaded.
+      The payment client owns Pi SDK initialization; the diagnostic observes that initialization.
     </p>
     <div class="security-note">
       <strong>Diagnostic only</strong>
@@ -450,10 +450,13 @@
 
 </script>
 
+<!-- V5: REAL Testnet liquidity payment client. -->
+<script src="js/testnet-liquidity-payment-client.js?v=20260926-payment-v5"></script>
+
 <script>
 (() => {
   "use strict";
-  const MARKER="PROJECT_OWNER_JS_ISOLATION_20260926_V4", TIMEOUT=45000;
+  const MARKER="PROJECT_OWNER_PAYMENT_ISOLATION_20260926_V5", TIMEOUT=45000;
   const logEl=document.getElementById("step13Log"), statusEl=document.getElementById("step13Status"), runBtn=document.getElementById("step13RunBtn");
   const j=v=>{try{return JSON.stringify(v)}catch{return String(v)}};
   const log=(e,d)=>{const s=`${new Date().toISOString()} | ${e}${d===undefined?"":" | "+j(d)}`;console.log(s);if(logEl){logEl.textContent+=(logEl.textContent?"\n":"")+s;logEl.scrollTop=logEl.scrollHeight;}};
@@ -471,9 +474,15 @@
   }
   async function initPi(){
     if(!window.Pi||typeof window.Pi.init!=="function")throw new Error("Pi SDK unavailable");
-    log("PI_RUNTIME_BEFORE_INIT",{piType:typeof window.Pi,initType:typeof window.Pi.init});
-    await window.Pi.init({version:"2.0",sandbox:false});
-    log("PI_INIT_OK");
+    const paymentClient=window.AlbukhrTestnetLiquidityPayment;
+    log("PI_RUNTIME_AFTER_PAYMENT_CLIENT_LOAD",{
+      piType:typeof window.Pi,
+      initType:typeof window.Pi.init,
+      paymentClientPresent:!!paymentClient,
+      paymentClientInitType:paymentClient?typeof paymentClient.init:"undefined",
+      paymentClientAuthenticateType:paymentClient?typeof paymentClient.authenticate:"undefined"
+    });
+    log("PI_INIT_EXPECTED_FROM_PAYMENT_CLIENT");
   }
   async function authOnce(){
     const scopes=["username"];
@@ -488,13 +497,13 @@
     log("PI_AUTH_OK",{uid_present:true,accessToken_present:true,username:r.user.username||null});
   }
   async function run(){
-    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_JS_V4_RUNNING");
-    log("OWNER_JS_V4_TEST_START",snap()); log("OWNER_JS_V4_UNIQUE_MARKER",MARKER);
-    try{await inspectSession();await initPi();await authOnce();status("OWNER_JS_V4_AUTH_SUCCESS");log("OWNER_JS_V4_TEST_SUCCESS",snap())}
-    catch(e){status("OWNER_JS_V4_AUTH_FAILED_OR_TIMEOUT");log("OWNER_JS_V4_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
+    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_PAYMENT_V5_RUNNING");
+    log("OWNER_PAYMENT_V5_TEST_START",snap()); log("OWNER_PAYMENT_V5_UNIQUE_MARKER",MARKER);
+    try{await inspectSession();await initPi();await authOnce();status("OWNER_PAYMENT_V5_AUTH_SUCCESS");log("OWNER_PAYMENT_V5_TEST_SUCCESS",snap())}
+    catch(e){status("OWNER_PAYMENT_V5_AUTH_FAILED_OR_TIMEOUT");log("OWNER_PAYMENT_V5_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
     finally{if(runBtn)runBtn.disabled=false}
   }
-  log("OWNER_JS_V4_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
+  log("OWNER_PAYMENT_V5_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
 })();
 </script>
 
