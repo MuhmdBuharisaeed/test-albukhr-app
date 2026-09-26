@@ -1,317 +1,382 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f7a3d">
-  <title>Pi Authentication + Environment Test • ALBUKHR TESTNET</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f7a3d">
+<title>FULL DOM AUTH ISOLATION • ALBUKHR TESTNET</title>
+<link rel="stylesheet" href="css/testnet-project-owner.css?v=20260924-owner4d">
 </head>
-<body>
-  <main>
-    <h1>Pi Authentication + Environment Test</h1>
-    <p id="status">READY</p>
-    <button id="runBtn" type="button">Run Test</button>
-    <pre id="log" style="white-space:pre-wrap;word-break:break-word;background:#111;color:#eaf8ef;padding:16px;border-radius:12px;min-height:280px;"></pre>
-  </main>
+<body data-page="project-owner" data-network="testnet">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<header class="owner-header">
+  <a class="brand-link" href="index.html" aria-label="ALBUKHR Testnet Home">ALBUKHR</a>
+  <div class="owner-header-actions">
+    <span class="network-badge">TESTNET</span>
+    <a class="back-link" id="backToProject" href="index.html">Project</a>
+  </div>
+</header>
 
-<script src="js/core/environment-core.js"></script>
-<script src="js/core/supabase-core.js"></script>
+<main class="owner-shell">
+  <section class="owner-hero">
+    <div class="owner-identity">
+      <span class="owner-kicker">PROJECT OWNER</span>
+      <h1 id="ownerTitle">Manage Project</h1>
+      <p id="ownerSubtitle">Verifying project ownership…</p>
+      <div class="owner-pills">
+        <span>TESTNET</span>
+        <span>OWNER ACCESS</span>
+        <span id="ownerUserPill">—</span>
+      </div>
+    </div>
+    <div class="owner-mark" aria-hidden="true">✓</div>
+  </section>
+
+  <section id="ownerError" class="notice error" hidden>
+    <strong id="ownerErrorTitle">Access denied</strong>
+    <p id="ownerErrorText">This project is not assigned to your Testnet identity.</p>
+    <a class="button secondary" href="index.html">Return to Testnet</a>
+  </section>
+
+  <div id="ownerContent" hidden>
+    <section class="project-card">
+      <div class="project-logo-wrap">
+        <img id="ownerProjectLogo" alt="" hidden>
+        <div id="ownerProjectLogoFallback">A</div>
+      </div>
+      <div class="project-copy">
+        <span class="owner-kicker">APPROVED PROJECT</span>
+        <h2 id="projectName">Project</h2>
+        <p id="projectCode">—</p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="ownerProfileTitle">
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">OWNER IDENTITY</span>
+          <h2 id="ownerProfileTitle">My Project Owner Profile</h2>
+        </div>
+        <span id="profileVerificationState" class="state-pill">CHECKING</span>
+      </div>
+
+      <p class="muted">
+        You may update your own contact, profile, and registered Testnet wallet information.
+        Project ownership itself cannot be transferred from this page.
+      </p>
+
+      <div class="form-grid">
+        <label class="field"><span>Pi UID</span><input id="profilePiUid" type="text" readonly></label>
+        <label class="field"><span>Username</span><input id="profileUsername" type="text" readonly></label>
+        <label class="field"><span>Display name</span><input id="profileDisplayName" type="text" maxlength="160" autocomplete="name"></label>
+        <label class="field"><span>Role title</span><input id="profileRoleTitle" type="text" maxlength="160"></label>
+        <label class="field"><span>Organization</span><input id="profileOrganization" type="text" maxlength="200"></label>
+        <label class="field"><span>Contact email</span><input id="profileEmail" type="email" maxlength="254" autocomplete="email"></label>
+        <label class="field"><span>Contact phone</span><input id="profilePhone" type="tel" maxlength="64" autocomplete="tel"></label>
+        <label class="field"><span>Registered wallet</span><input id="profileWallet" type="text" maxlength="256" autocomplete="off"></label>
+        <label class="field field-full">
+          <span>Bio</span>
+          <textarea id="profileBio" maxlength="2000" rows="4"></textarea>
+        </label>
+        <div class="field action-field">
+          <span>&nbsp;</span>
+          <button id="saveOwnerProfileBtn" class="button primary" type="button">Save Profile</button>
+        </div>
+      </div>
+
+      <p id="profileStatus" class="status-text" role="status" aria-live="polite"></p>
+
+      <div class="security-note">
+        <strong>Ownership protection</strong>
+        <span>
+          Your Project Owner identity is bound by the server to the approved project owner record.
+          Changing ownership requires Super Admin action and an audited ownership operation.
+        </span>
+      </div>
+    </section>
+
+    <section class="stats-grid" aria-label="Project owner summary">
+      <article class="stat-card"><span>Owner Balance</span><strong id="ownerBalance">0.00 Pi</strong><small>Available for owner withdrawal</small></article>
+      <article class="stat-card"><span>Required Liquidity</span><strong id="requiredLiquidity">0.00 Pi</strong><small>Testnet treasury requirement</small></article>
+      <article class="stat-card"><span>Verified Liquidity</span><strong id="verifiedLiquidity">0.00 Pi</strong><small id="liquidityCoverage">0% coverage</small></article>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><span class="owner-kicker">LIQUIDITY</span><h2>Add Project Liquidity</h2></div>
+        <span id="treasuryState" class="state-pill">CHECKING</span>
+      </div>
+      <p class="muted">Add Testnet Pi to the approved project treasury. The project, network, owner identity and Pi payment are checked server-side.</p>
+      <div class="form-grid">
+        <label class="field"><span>Amount (Pi)</span><input id="liquidityAmount" type="number" min="100" step="0.01" inputmode="decimal" placeholder="100.00" autocomplete="off"></label>
+        <div class="field action-field"><span>&nbsp;</span><button id="addLiquidityBtn" class="button primary" type="button" disabled>Add Liquidity</button></div>
+      </div>
+      <p id="liquidityStatus" class="status-text" role="status" aria-live="polite"></p>
+      <div class="security-note"><strong>Payment gate</strong><span>The server re-checks Testnet ownership, project identity, treasury readiness and Pi payment metadata before approval and completion.</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><span class="owner-kicker">WITHDRAWAL</span><h2>Project Owner Withdrawal</h2></div>
+        <span class="state-pill">OWNER BALANCE</span>
+      </div>
+      <p class="muted">This withdrawal is separate from investor reward/capital withdrawals. Only your available Project Owner balance can be requested.</p>
+      <div class="form-grid">
+        <label class="field"><span>Amount (Pi)</span><input id="withdrawAmount" type="number" min="0.0000001" step="0.0000001" inputmode="decimal" placeholder="0.00" autocomplete="off"></label>
+        <label class="field"><span>Registered Wallet</span><input id="withdrawWallet" type="text" readonly></label>
+      </div>
+      <button id="requestWithdrawalBtn" class="button secondary" type="button" disabled>Request Owner Withdrawal</button>
+      <p id="withdrawStatus" class="status-text" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><span class="owner-kicker">HISTORY</span><h2>Owner Withdrawals</h2></div>
+        <button id="refreshOwnerBtn" class="small-button" type="button">Refresh</button>
+      </div>
+      <div id="withdrawalHistory" class="history-list"><div class="empty-state">Loading owner activity…</div></div>
+    </section>
+
+    <section class="notice">
+      <div class="notice-icon">i</div>
+      <div><strong>Owner access is server-authorized</strong><p>This page becomes available only after the Testnet owner API confirms that your authenticated Testnet identity is bound to this approved project.</p></div>
+    </section>
+  </div>
+
+  <section id="step13Panel" class="panel" style="margin-top:24px;">
+    <div class="section-head">
+      <div>
+        <span class="owner-kicker">DIAGNOSTIC</span>
+        <h2>Pi Bridge Step 13</h2>
+      </div>
+      <span class="state-pill">FULL DOM AUTH ISOLATION</span>
+    </div>
+    <p class="muted">
+      Full-DOM authentication isolation of the Project Owner page.
+      The document structure and stylesheet are preserved, but the owner/payment
+      application clients are intentionally excluded from this test.
+    </p>
+    <div class="security-note">
+      <strong>Diagnostic only</strong>
+      <span>This test checks whether the complete Project Owner document/DOM affects Pi authentication. It is not the final payment flow.</span>
+    </div>
+    <div class="form-grid">
+      <div class="field action-field">
+        <span>&nbsp;</span>
+        <button id="step13RunBtn" class="button primary" type="button">Run Full-DOM Authentication Test</button>
+      </div>
+    </div>
+    <p id="step13Status" class="status-text" role="status" aria-live="polite">FULL_DOM_READY</p>
+    <div id="step13Log" style="margin-top:12px;background:#111;color:#eaf8ef;border-radius:16px;padding:16px;min-height:260px;max-height:520px;overflow:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,&quot;Liberation Mono&quot;,&quot;Courier New&quot;,monospace;white-space:pre-wrap;word-break:break-word;"></div>
+  </section>
+</main>
+
+<!--
+  FULL-DOM AUTH ISOLATION RUNTIME
+
+  Preserved:
+    - Full project-owner.html DOM/HTML structure
+    - Existing Project Owner stylesheet
+    - environment-core.js
+    - supabase-core.js
+    - testnet-gateway-auth.js
+    - Pi SDK
+
+  Intentionally NOT loaded:
+    - js/testnet-project-owner.js
+    - js/testnet-liquidity-payment-client.js
+    - js/testnet-liquidity-payment-step13-diagnostic.js
+    - other owner/payment application clients
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/core/environment-core.js?v=20260923-owner4c"></script>
+<script src="js/core/supabase-core.js?v=20260923-owner4c"></script>
+
+<script src="js/testnet-gateway-auth.js?v=20260925-gateway1"></script>
+
+<script>
+  console.log("FULL_DOM_GATEWAY_CHECK", {
+    authPresent: !!window.AlbukhrTestnetAuth,
+    authType: typeof window.AlbukhrTestnetAuth,
+    requireTestnetAuthType:
+      window.AlbukhrTestnetAuth
+        ? typeof window.AlbukhrTestnetAuth.requireTestnetAuth
+        : "undefined",
+    getSessionTokenType:
+      window.AlbukhrTestnetAuth
+        ? typeof window.AlbukhrTestnetAuth.getSessionToken
+        : "undefined"
+  });
+</script>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  
-  <script>
-    (function () {
-      "use strict";
 
-      var HOST = "test.albukhr.com";
-      var ORIGIN = "https://test.albukhr.com";
-      var NETWORK = "testnet";
-      var SDK_VERSION = "2.0";
-      var SANDBOX = false;
-      var AUTH_TIMEOUT_MS = 45000;
+<script>
+(() => {
+  "use strict";
 
-      var start = Date.now();
-      var initialized = false;
-      var running = false;
+  const MARKER = "FULL_DOM_AUTH_ISOLATION_20260926_V1";
+  const AUTH_TIMEOUT_MS = 45000;
+  const logEl = document.getElementById("step13Log");
+  const statusEl = document.getElementById("step13Status");
+  const runBtn = document.getElementById("step13RunBtn");
 
-      var logNode = document.getElementById("log");
-      var statusNode = document.getElementById("status");
-      var button = document.getElementById("runBtn");
+  const safeJson = (value) => {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  };
 
-      function elapsed() {
-        return (Date.now() - start) + "ms";
-      }
+  const write = (event, data) => {
+    const line = `${new Date().toISOString()} | ${event}${data === undefined ? "" : " | " + safeJson(data)}`;
+    console.log(line);
+    if (logEl) {
+      logEl.textContent += (logEl.textContent ? "\n" : "") + line;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  };
 
-      function clean(value) {
-        return String(value == null ? "" : value).trim();
-      }
+  const setStatus = (value) => {
+    if (statusEl) statusEl.textContent = value;
+  };
 
-      function log(event, detail) {
-        var line = "[" + elapsed() + "] " + event;
+  const snapshot = () => ({
+    marker: MARKER,
+    readyState: document.readyState,
+    origin: window.location.origin,
+    href: window.location.href,
+    hostname: window.location.hostname,
+    bodyChildren: document.body ? document.body.children.length : 0,
+    forms: document.forms.length,
+    inputs: document.querySelectorAll("input").length,
+    textareas: document.querySelectorAll("textarea").length,
+    buttons: document.querySelectorAll("button").length,
+    links: document.querySelectorAll("a").length,
+    ownerContentPresent: !!document.getElementById("ownerContent"),
+    step13PanelPresent: !!document.getElementById("step13Panel"),
+    gatewayPresent: !!window.AlbukhrTestnetAuth,
+    piPresent: !!window.Pi
+  });
 
-        if (detail !== undefined) {
-          try {
-            line += " " + JSON.stringify(detail);
-          } catch (_) {}
-        }
+  const initializePi = async () => {
+    if (!window.Pi || typeof window.Pi.init !== "function") {
+      throw new Error("Pi SDK unavailable");
+    }
+    write("PI_RUNTIME_BEFORE_INIT", {
+      piType: typeof window.Pi,
+      initType: typeof window.Pi.init
+    });
+    await window.Pi.init({
+      version: "2.0",
+      sandbox: false
+    });
+    write("PI_INIT_OK");
+  };
 
-        logNode.textContent +=
-          (logNode.textContent ? "\n" : "") + line;
+  const ensureTestnetSession = async () => {
+    if (!window.AlbukhrTestnetAuth ||
+        typeof window.AlbukhrTestnetAuth.requireTestnetAuth !== "function") {
+      write("TESTNET_SESSION_SKIP", "gateway unavailable");
+      return null;
+    }
 
-        try {
-          console.log("[ALBUKHR ENV ISOLATION]", event, detail);
-        } catch (_) {}
-      }
+    write("TESTNET_SESSION_CALLING");
+    const session = await window.AlbukhrTestnetAuth.requireTestnetAuth({
+      redirectOnFailure: false
+    });
 
-      function status(message) {
-        statusNode.textContent = clean(message);
-      }
+    if (!session || !session.token) {
+      throw new Error("Testnet session unavailable");
+    }
 
-      function checkEnvironmentCore() {
-        var env = window.ALBukhrEnvironment;
+    write("TESTNET_SESSION_OK", {
+      network: session.network,
+      pi_uid_present: !!session.pi_uid,
+      expires_at: session.expires_at || null
+    });
 
-        log("ENV_CORE_RUNTIME_CHECK", {
-          marker: !!window.__ALBUKHR_ENVIRONMENT_CORE_LOADED__,
-          envPresent: !!env,
-          envType: typeof env,
-          isKnownType: env ? typeof env.isKnown : "undefined",
-          isTestnetType: env ? typeof env.isTestnet : "undefined",
-          getNetworkType: env ? typeof env.getNetwork : "undefined",
-          getHostnameType: env ? typeof env.getHostname : "undefined",
-          host: window.location.host,
-          origin: window.location.origin
-        });
+    return session;
+  };
 
-        if (!env) {
-          throw new Error("ENVIRONMENT_CORE_MISSING");
-        }
+  const authenticatePiExactlyOnce = async () => {
+    const scopes = ["username"];
 
-        if (
-          typeof env.isKnown !== "function" ||
-          typeof env.isTestnet !== "function" ||
-          typeof env.getNetwork !== "function"
-        ) {
-          throw new Error("ENVIRONMENT_CORE_API_INVALID");
-        }
+    write("PI_AUTH_CALLED", {
+      scopes,
+      marker: MARKER
+    });
 
-        var network = clean(env.getNetwork());
-        var known = env.isKnown();
-        var testnet = env.isTestnet();
+    write("PI_RUNTIME_BEFORE_AUTH", {
+      authenticateType: typeof window.Pi.authenticate,
+      piObjectType: typeof window.Pi
+    });
 
-        log("ENV_CORE_RESULT", {
-          known: known,
-          isTestnet: testnet,
-          network: network,
-          hostname:
-            typeof env.getHostname === "function"
-              ? env.getHostname()
-              : null
-        });
+    const authPromise = window.Pi.authenticate(
+      scopes,
+      (payment) => write("INCOMPLETE_PAYMENT_CALLBACK", payment)
+    );
 
-        if (
-          window.location.host !== HOST ||
-          window.location.origin !== ORIGIN
-        ) {
-          throw new Error("TESTNET_HOST_REQUIRED");
-        }
+    write("PI_AUTH_PROMISE_CREATED", {
+      thenable: !!authPromise && typeof authPromise.then === "function"
+    });
 
-        if (!known || !testnet || network !== NETWORK) {
-          throw new Error("INVALID_TESTNET_ENVIRONMENT");
-        }
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`Pi.authenticate timeout after ${AUTH_TIMEOUT_MS}ms`)), AUTH_TIMEOUT_MS);
+    });
 
-        return env;
-      }
+    const result = await Promise.race([authPromise, timeoutPromise]);
 
-      function initPi() {
-        if (!window.Pi) {
-          throw new Error("PI_SDK_UNAVAILABLE");
-        }
+    if (!result || !result.user || !result.user.uid) {
+      throw new Error("Pi authentication returned without user.uid");
+    }
 
-        if (initialized) {
-          log("PI_INIT_ALREADY_DONE");
-          return window.Pi;
-        }
+    if (!result.accessToken) {
+      throw new Error("Pi authentication returned without accessToken");
+    }
 
-        window.Pi.init({
-          version: SDK_VERSION,
-          sandbox: SANDBOX
-        });
+    write("PI_AUTH_OK", {
+      uid_present: true,
+      accessToken_present: true,
+      username: result.user.username || null
+    });
 
-        initialized = true;
+    return result;
+  };
 
-        log("PI_INIT_OK", {
-          version: SDK_VERSION,
-          sandbox: SANDBOX,
-          piPresent: !!window.Pi
-        });
+  const run = async () => {
+    if (runBtn) runBtn.disabled = true;
+    setStatus("FULL_DOM_RUNNING");
+    if (logEl) logEl.textContent = "";
 
-        return window.Pi;
-      }
+    write("FULL_DOM_TEST_START", snapshot());
+    write("FULL_DOM_UNIQUE_MARKER", MARKER);
 
-      async function runTest() {
-        if (running) {
-          return;
-        }
+    try {
+      await ensureTestnetSession();
+      await initializePi();
+      await authenticatePiExactlyOnce();
 
-        running = true;
-        button.disabled = true;
-
-        try {
-          log("TEST_START", {
-            host: window.location.host,
-            origin: window.location.origin,
-            href: window.location.href,
-            readyState: document.readyState,
-            visibilityState: document.visibilityState,
-            hidden: document.hidden,
-            piPresent: !!window.Pi,
-            sdkVersion: SDK_VERSION,
-            sandbox: SANDBOX
-          });
-
-          status("Checking Environment Core…");
-          checkEnvironmentCore();
-
-          status("Initializing Pi…");
-          initPi();
-
-          log("PI_RUNTIME_BEFORE_AUTH", {
-            piPresent: !!window.Pi,
-            piType: typeof window.Pi,
-            authenticateType: typeof window.Pi.authenticate,
-            initType: typeof window.Pi.init,
-            host: window.location.host,
-            origin: window.location.origin,
-            href: window.location.href,
-            visibilityState: document.visibilityState,
-            hidden: document.hidden,
-            readyState: document.readyState
-          });
-
-          log("AUTH_ISOLATION_MARKER_20260926_ENV_V1");
-
-          var authPromise;
-
-          try {
-            authPromise = window.Pi.authenticate(
-              ["username"],
-              function onIncompletePaymentFound(payment) {
-                log("INCOMPLETE_PAYMENT_FOUND", {
-                  paymentPresent: !!payment,
-                  paymentIdPresent: !!(
-                    payment &&
-                    clean(payment.identifier || payment.id)
-                  )
-                });
-              }
-            );
-          } catch (error) {
-            log("PI_AUTH_THROWN", {
-              name: error && error.name,
-              message: error && error.message
-            });
-            throw error;
-          }
-
-          log("PI_AUTH_PROMISE_CREATED", {
-            thenable: !!(
-              authPromise &&
-              typeof authPromise.then === "function"
-            )
-          });
-
-          if (
-            !authPromise ||
-            typeof authPromise.then !== "function"
-          ) {
-            throw new Error("PI_AUTH_PROMISE_INVALID");
-          }
-
-          status("Waiting for Pi authentication…");
-
-          var timeoutPromise = new Promise(function (_, reject) {
-            setTimeout(function () {
-              reject(
-                new Error(
-                  "PI_AUTH_TIMEOUT_" + AUTH_TIMEOUT_MS + "MS"
-                )
-              );
-            }, AUTH_TIMEOUT_MS);
-          });
-
-          var result = await Promise.race([
-            authPromise,
-            timeoutPromise
-          ]);
-
-          log("PI_AUTH_SUCCESS", {
-            userPresent: !!(result && result.user),
-            uidPresent: !!(
-              result &&
-              result.user &&
-              clean(result.user.uid)
-            ),
-            usernamePresent: !!(
-              result &&
-              result.user &&
-              clean(result.user.username)
-            ),
-            accessTokenPresent: !!(
-              result &&
-              clean(result.accessToken)
-            )
-          });
-
-          status("PI_AUTH_SUCCESS");
-        } catch (error) {
-          log("PI_AUTH_ERROR", {
-            name: error && error.name,
-            message: error && error.message
-          });
-
-          status(
-            "TEST_ERROR: " +
-            (
-              error && error.message
-                ? error.message
-                : "UNKNOWN_ERROR"
-            )
-          );
-        } finally {
-          running = false;
-          button.disabled = false;
-        }
-      }
-
-      window.addEventListener("load", function () {
-        log("PAGE_READY", {
-          host: window.location.host,
-          origin: window.location.origin,
-          href: window.location.href,
-          environmentCoreLoaded:
-            !!window.__ALBUKHR_ENVIRONMENT_CORE_LOADED__,
-          environmentPresent: !!window.ALBukhrEnvironment,
-          piPresent: !!window.Pi,
-          sdkVersion: SDK_VERSION,
-          sandbox: SANDBOX
-        });
-
-        try {
-          checkEnvironmentCore();
-        } catch (error) {
-          log("ENV_CORE_BOOT_ERROR", {
-            name: error && error.name,
-            message: error && error.message
-          });
-
-          status("ENV_CORE_BOOT_ERROR");
-        }
+      setStatus("FULL_DOM_AUTH_SUCCESS");
+      write("FULL_DOM_TEST_SUCCESS", snapshot());
+    } catch (error) {
+      setStatus("FULL_DOM_AUTH_FAILED_OR_TIMEOUT");
+      write("FULL_DOM_TEST_FAILURE", {
+        name: error?.name || "Error",
+        message: error?.message || String(error),
+        snapshot: snapshot()
       });
+    } finally {
+      if (runBtn) runBtn.disabled = false;
+    }
+  };
 
-      button.addEventListener("click", runTest);
-    })();
-  </script>
+  write("FULL_DOM_PAGE_READY", snapshot());
+  runBtn?.addEventListener("click", run);
+})();
+</script>
+
 </body>
 </html>
