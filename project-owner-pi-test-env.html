@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f7a3d">
-<title>FULL DOM AUTH ISOLATION • ALBUKHR TESTNET</title>
+<title>PROJECT OWNER JS ISOLATION • ALBUKHR TESTNET</title>
 <link rel="stylesheet" href="css/testnet-project-owner.css?v=20260924-owner4d">
 </head>
 <body data-page="project-owner" data-network="testnet">
@@ -149,16 +149,16 @@
         <span class="owner-kicker">DIAGNOSTIC</span>
         <h2>Pi Bridge Step 13</h2>
       </div>
-      <span class="state-pill">FULL DOM AUTH ISOLATION</span>
+      <span class="state-pill">PROJECT OWNER JS ISOLATION</span>
     </div>
     <p class="muted">
       Full-DOM authentication isolation of the Project Owner page.
-      The document structure and stylesheet are preserved, but the owner/payment
-      application clients are intentionally excluded from this test.
+      The full document/DOM is preserved and the real testnet-project-owner.js
+      application layer is loaded. The Pi payment client remains intentionally excluded.
     </p>
     <div class="security-note">
       <strong>Diagnostic only</strong>
-      <span>This test checks whether the complete Project Owner document/DOM affects Pi authentication. It is not the final payment flow.</span>
+      <span>This test checks whether testnet-project-owner.js affects Pi authentication. The payment client is intentionally absent.</span>
     </div>
     <div class="form-grid">
       <div class="field action-field">
@@ -212,10 +212,13 @@
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<!-- V3: real Project Owner application layer; payment client intentionally absent. -->
+<script src="js/testnet-project-owner.js?v=20260926-owner-js-v3"></script>
+
 <script>
 (() => {
   "use strict";
-  const MARKER="FULL_DOM_AUTH_ISOLATION_20260926_V2", TIMEOUT=45000;
+  const MARKER="PROJECT_OWNER_JS_ISOLATION_20260926_V3", TIMEOUT=45000;
   const logEl=document.getElementById("step13Log"), statusEl=document.getElementById("step13Status"), runBtn=document.getElementById("step13RunBtn");
   const j=v=>{try{return JSON.stringify(v)}catch{return String(v)}};
   const log=(e,d)=>{const s=`${new Date().toISOString()} | ${e}${d===undefined?"":" | "+j(d)}`;console.log(s);if(logEl){logEl.textContent+=(logEl.textContent?"\n":"")+s;logEl.scrollTop=logEl.scrollHeight;}};
@@ -250,13 +253,13 @@
     log("PI_AUTH_OK",{uid_present:true,accessToken_present:true,username:r.user.username||null});
   }
   async function run(){
-    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("FULL_DOM_V2_RUNNING");
-    log("FULL_DOM_TEST_START",snap()); log("FULL_DOM_UNIQUE_MARKER",MARKER);
-    try{await inspectSession();await initPi();await authOnce();status("FULL_DOM_V2_AUTH_SUCCESS");log("FULL_DOM_TEST_SUCCESS",snap())}
-    catch(e){status("FULL_DOM_V2_AUTH_FAILED_OR_TIMEOUT");log("FULL_DOM_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
+    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_JS_V3_RUNNING");
+    log("OWNER_JS_V3_TEST_START",snap()); log("OWNER_JS_V3_UNIQUE_MARKER",MARKER);
+    try{await inspectSession();await initPi();await authOnce();status("OWNER_JS_V3_AUTH_SUCCESS");log("OWNER_JS_V3_TEST_SUCCESS",snap())}
+    catch(e){status("OWNER_JS_V3_AUTH_FAILED_OR_TIMEOUT");log("OWNER_JS_V3_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
     finally{if(runBtn)runBtn.disabled=false}
   }
-  log("FULL_DOM_V2_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
+  log("OWNER_JS_V3_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
 })();
 </script>
 
