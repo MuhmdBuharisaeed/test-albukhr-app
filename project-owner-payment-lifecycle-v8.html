@@ -10,8 +10,13 @@ body{font-family:system-ui;margin:0;background:#f4faf6;color:#17321f}header{back
 <div class="warn"><b>Important:</b> The payment button is manual. It can open a real Pi Testnet payment. Nothing is created automatically.</div></div>
 <div class="p"><h2>1. Load real owner project</h2>
 <label>Project ID / value used by <code>?project=...</code></label>
-<input id="projectId" placeholder="Project ID">
-<button id="load" class="alt">Load Project</button><div id="ps" class="status">V8_READY</div></div>
+<input id="projectId" value="7dd1ee70-8ebe-40c2-b771-33cec0512f22" placeholder="Project ID">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button id="auth" class="alt">Establish Testnet Session</button>
+<button id="load" class="alt">Load Project</button>
+</div>
+<div id="authStatus" class="status">Checking Testnet session…</div>
+<div id="ps" class="status">V8_READY</div></div>
 <div class="p"><h2>2. Start real payment lifecycle</h2>
 <label>Resolved Project ID</label><input id="rid" readonly>
 <label>Project Code</label><input id="code" readonly>
@@ -69,7 +74,27 @@ wrapPi();
 
 async function session(){
  const a=window.AlbukhrTestnetAuth;if(!a||typeof a.requireTestnetAuth!=="function")throw new Error("TESTNET_AUTH_MODULE_UNAVAILABLE");
- const s=await a.requireTestnetAuth({redirectOnFailure:false});if(!s)throw new Error("TESTNET_SESSION_REQUIRED");return s;
+ const s=await a.requireTestnetAuth({redirectOnFailure:false});
+ if(!s)throw new Error("TESTNET_SESSION_REQUIRED");
+ return s;
+}
+async function establishSession(){
+ const a=window.AlbukhrTestnetAuth;if(!a||typeof a.requireTestnetAuth!=="function")throw new Error("TESTNET_AUTH_MODULE_UNAVAILABLE");
+ log("TESTNET_SESSION_BOOTSTRAP_START");
+ const s=await a.requireTestnetAuth({redirectOnFailure:false});
+ if(s){
+  log("TESTNET_SESSION_OK",{username:s.username||null,pi_uid_present:!!s.pi_uid,expires_at:s.expires_at||null});
+  $("authStatus").textContent="Testnet session is active.";
+  return s;
+ }
+ log("TESTNET_SESSION_MISSING",{action:"OPEN_MAINNET_LOGIN"});
+ $("authStatus").textContent="No Testnet session. Open Mainnet Login, authenticate with Pi, then return to this V8 page.";
+ return null;
+}
+function openMainnetLogin(){
+ const url="https://app.albukhr.com/login.html?returnTo=testnet";
+ log("MAINNET_LOGIN_OPEN",{url:url});
+ window.location.href=url;
 }
 async function loadProject(){
  const id=clean($("projectId").value)||(new URLSearchParams(location.search).get("project")||"");
@@ -95,8 +120,18 @@ async function pay(){
   log("PAYMENT_CLIENT_RESOLVED",result);$("payStatus").textContent="Payment flow resolved. See trace.";
  }catch(e){log("PAYMENT_CLIENT_REJECTED",err(e));$("payStatus").textContent="Payment flow ended: "+(e&&e.message||"UNKNOWN_ERROR")}finally{$("pay").disabled=false}
 }
-$("load").onclick=async()=>{try{$("load").disabled=true;await loadProject()}catch(e){log("PROJECT_LOAD_ERROR",err(e));$("ps").textContent="Load failed: "+(e&&e.message||"UNKNOWN_ERROR")}finally{$("load").disabled=false}};
+$("auth").onclick=async()=>{
+ try{
+  const s=await establishSession();
+  if(!s) openMainnetLogin();
+ }catch(e){
+  log("TESTNET_SESSION_BOOTSTRAP_ERROR",err(e));
+  $("authStatus").textContent="Session bootstrap failed: "+(e&&e.message||"UNKNOWN_ERROR");
+ }
+};
+$("load").onclick=async()=>{try{$("load").disabled=true;await loadProject();$("authStatus").textContent="Testnet session verified."}catch(e){log("PROJECT_LOAD_ERROR",err(e));$("ps").textContent="Load failed: "+(e&&e.message||"UNKNOWN_ERROR");if((e&&e.message)==="TESTNET_SESSION_REQUIRED")$("authStatus").textContent="No Testnet session. Tap Establish Testnet Session first."}finally{$("load").disabled=false}};
 $("pay").onclick=pay;
+establishSession().catch(e=>{log("TESTNET_SESSION_BOOTSTRAP_ERROR",err(e));$("authStatus").textContent="Session check failed: "+(e&&e.message||"UNKNOWN_ERROR")});
 window.addEventListener("error",e=>log("WINDOW_ERROR",{message:e.message,source:e.filename,line:e.lineno}));
 window.addEventListener("unhandledrejection",e=>log("UNHANDLED_REJECTION",err(e.reason)));
 log("V8_TRACE_READY");
