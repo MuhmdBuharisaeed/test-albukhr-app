@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALBUKHR TESTNET — Payment Lifecycle V8</title>
+<style>
+body{font-family:system-ui;margin:0;background:#f4faf6;color:#17321f}header{background:#0f7a3d;color:#fff;padding:18px}main{max-width:900px;margin:20px auto;padding:0 16px}.p{background:#fff;padding:18px;margin:14px 0;border-radius:15px;box-shadow:0 3px 16px #0001}input{box-sizing:border-box;width:100%;padding:11px;margin:6px 0 10px;border:1px solid #ccd8cf;border-radius:9px}button{padding:12px 16px;border:0;border-radius:9px;font-weight:700;margin-top:8px}.go{background:#0f7a3d;color:white}.alt{background:#e7f2eb;color:#0f7a3d}button:disabled{opacity:.5}.status{padding:11px;background:#eef5f0;border-radius:9px;margin-top:10px;white-space:pre-wrap}.warn{padding:12px;background:#fff5dc;border-left:4px solid #d99b00;border-radius:8px}.log{background:#101513;color:#e8f6ec;padding:14px;border-radius:10px;min-height:300px;max-height:600px;overflow:auto;font:12px/1.5 monospace;white-space:pre-wrap}
+</style></head><body>
+<header><b>ALBUKHR TESTNET</b> — Pi Payment Lifecycle V8 Diagnostic</header><main>
+<div class="p"><h1>V8 — Real Payment Lifecycle</h1>
+<p>V2–V7 already passed authentication and entry into <code>Pi.createPayment()</code>. This diagnostic traces the lifecycle after that point.</p>
+<div class="warn"><b>Important:</b> The payment button is manual. It can open a real Pi Testnet payment. Nothing is created automatically.</div></div>
+<div class="p"><h2>1. Load real owner project</h2>
+<label>Project ID / value used by <code>?project=...</code></label>
+<input id="projectId" placeholder="Project ID">
+<button id="load" class="alt">Load Project</button><div id="ps" class="status">V8_READY</div></div>
+<div class="p"><h2>2. Start real payment lifecycle</h2>
+<label>Resolved Project ID</label><input id="rid" readonly>
+<label>Project Code</label><input id="code" readonly>
+<label>Amount (Pi)</label><input id="amount" type="number" min="100" step=".01" value="100">
+<button id="pay" class="go" disabled>START REAL PI PAYMENT DIAGNOSTIC</button>
+<div id="payStatus" class="status">Load the project first.</div></div>
+<div class="p"><h2>Lifecycle trace</h2><div id="log" class="log"></div></div>
+</main>
+<script src="js/core/environment-core.js?v=20260926-v8"></script>
+<script src="js/testnet-gateway-auth.js?v=20260926-v8"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id), clean=v=>String(v==null?"":v).trim();
+const logEl=$("log"), OWNER="https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-project-owner";
+function log(e,d){const s=new Date().toISOString()+" | "+e+(d===undefined?"":"\n"+JSON.stringify(d,(k,v)=>/authorization|token|session/i.test(k)?"[REDACTED]":v,2));console.info("[V8]",e,d||"");logEl.textContent+=s+"\n\n";logEl.scrollTop=logEl.scrollHeight}
+function err(e){return {name:e&&e.name,message:e&&e.message,code:e&&e.code,status:e&&e.status,body:e&&e.body}}
+log("V8_BOOT",{host:location.hostname});
+log("ENV",{known:!!window.ALBukhrEnvironment&&window.ALBukhrEnvironment.isKnown(),network:window.ALBukhrEnvironment&&window.ALBukhrEnvironment.getNetwork()});
+
+/* Trace only /approve and /complete; never print credentials. */
+const realFetch=window.fetch.bind(window);
+window.fetch=async function(input,init){
+ const url=typeof input==="string"?input:(input&&input.url)||"";
+ if(!/\/liquidity-payment\/(approve|complete)(?:\?|$)/.test(url)) return realFetch(input,init);
+ const ep=url.split("/liquidity-payment/")[1];
+ log("BACKEND_"+ep.toUpperCase()+"_REQUEST",{method:init&&init.method,url:url,hasAuthorization:!!(init&&init.headers&&(init.headers.Authorization||init.headers.authorization)),hasTestnetSession:!!(init&&init.headers&&(init.headers["X-Testnet-Session"]||init.headers["x-testnet-session"]))});
+ try{
+  const r=await realFetch(input,init), c=r.clone(); let b=null; try{b=await c.json()}catch(_){}
+  log("BACKEND_"+ep.toUpperCase()+"_RESPONSE",{status:r.status,ok:r.ok,body:b}); return r;
+ }catch(e){log("BACKEND_"+ep.toUpperCase()+"_NETWORK_ERROR",err(e));throw e}
+};
+
+/* Wrap createPayment for callback tracing. */
+function wrapPi(){
+ if(!window.Pi||typeof window.Pi.createPayment!=="function")return;
+ if(window.Pi.__v8)return;
+ const original=window.Pi.createPayment.bind(window.Pi);
+ window.Pi.createPayment=function(data,cbs){
+  log("PI_CREATE_PAYMENT_CALLED",{amount:data&&data.amount,memo:data&&data.memo,metadata:data&&data.metadata});
+  cbs=cbs||{};
+  const w={
+   onReadyForServerApproval:function(id){log("PI_CALLBACK_APPROVAL",{paymentId:clean(id)});return cbs.onReadyForServerApproval&&cbs.onReadyForServerApproval.apply(this,arguments)},
+   onReadyForServerCompletion:function(id,txid){log("PI_CALLBACK_COMPLETION",{paymentId:clean(id),txid:clean(txid)});return cbs.onReadyForServerCompletion&&cbs.onReadyForServerCompletion.apply(this,arguments)},
+   onCancel:function(id){log("PI_CALLBACK_CANCEL",{paymentId:clean(id)});return cbs.onCancel&&cbs.onCancel.apply(this,arguments)},
+   onError:function(e,p){log("PI_CALLBACK_ERROR",{error:err(e),payment:p?{identifier:p.identifier||p.id||null,status:p.status||null}:null});return cbs.onError&&cbs.onError.apply(this,arguments)}
+  };
+  const result=original(data,w); log("PI_CREATE_PAYMENT_RETURNED",{type:typeof result}); return result;
+ };
+ try{Object.defineProperty(window.Pi,"__v8",{value:true})}catch(_){window.Pi.__v8=true}
+ log("PI_TRACE_INSTALLED");
+}
+wrapPi();
+
+async function session(){
+ const a=window.AlbukhrTestnetAuth;if(!a||typeof a.requireTestnetAuth!=="function")throw new Error("TESTNET_AUTH_MODULE_UNAVAILABLE");
+ const s=await a.requireTestnetAuth({redirectOnFailure:false});if(!s)throw new Error("TESTNET_SESSION_REQUIRED");return s;
+}
+async function loadProject(){
+ const id=clean($("projectId").value)||(new URLSearchParams(location.search).get("project")||"");
+ $("projectId").value=id;if(!id)throw new Error("PROJECT_ID_REQUIRED");
+ const s=await session();log("TESTNET_SESSION_OK",{username:s.username||null,pi_uid_present:!!s.pi_uid,expires_at:s.expires_at||null});
+ const r=await realFetch(OWNER+"?project_id="+encodeURIComponent(id),{headers:{Accept:"application/json","X-Testnet-Session":s.token}});
+ let b=null;try{b=await r.json()}catch(_){}
+ log("OWNER_PROJECT_RESPONSE",{status:r.status,ok:r.ok,body:b});if(!r.ok)throw Object.assign(new Error(clean(b&&b.error)||("OWNER_HTTP_"+r.status)),{status:r.status,body:b});
+ const p=Array.isArray(b&&b.projects)?b.projects[0]:null;if(!p)throw new Error("PROJECT_OWNER_ACCESS_DENIED");
+ if(!clean(p.id)||!clean(p.project_code))throw new Error("PROJECT_ID_AND_CODE_REQUIRED");
+ $("rid").value=p.id;$("code").value=p.project_code;$("pay").disabled=false;
+ $("ps").textContent="Project loaded: "+(p.name||"Project")+" • "+p.project_code;
+ log("OWNER_PROJECT_READY",{id:p.id,project_code:p.project_code,name:p.name||null,network:p.network||null});
+}
+async function pay(){
+ $("pay").disabled=true;$("payStatus").textContent="Starting real Pi Testnet payment…";log("REAL_PAYMENT_START");
+ try{
+  const c=window.AlbukhrTestnetLiquidityPayment;if(!c||typeof c.createLiquidityPayment!=="function")throw new Error("PI_PAYMENT_CLIENT_UNAVAILABLE");
+  const amount=Number($("amount").value),id=clean($("rid").value),code=clean($("code").value);
+  if(!id||!code)throw new Error("PROJECT_NOT_LOADED");if(!Number.isFinite(amount)||amount<100)throw new Error("AMOUNT_MUST_BE_AT_LEAST_100");
+  log("PAYMENT_CLIENT_CALL",{project_id:id,project_code:code,network:"testnet",amount:amount});
+  const result=await c.createLiquidityPayment({id:id,project_code:code,network:"testnet"},amount);
+  log("PAYMENT_CLIENT_RESOLVED",result);$("payStatus").textContent="Payment flow resolved. See trace.";
+ }catch(e){log("PAYMENT_CLIENT_REJECTED",err(e));$("payStatus").textContent="Payment flow ended: "+(e&&e.message||"UNKNOWN_ERROR")}finally{$("pay").disabled=false}
+}
+$("load").onclick=async()=>{try{$("load").disabled=true;await loadProject()}catch(e){log("PROJECT_LOAD_ERROR",err(e));$("ps").textContent="Load failed: "+(e&&e.message||"UNKNOWN_ERROR")}finally{$("load").disabled=false}};
+$("pay").onclick=pay;
+window.addEventListener("error",e=>log("WINDOW_ERROR",{message:e.message,source:e.filename,line:e.lineno}));
+window.addEventListener("unhandledrejection",e=>log("UNHANDLED_REJECTION",err(e.reason)));
+log("V8_TRACE_READY");
+})();
+</script>
+<script src="js/testnet-liquidity-payment-client.js?v=20260926-v8"></script>
+<script>if(window.__ALBUKHR_V8__){}</script>
+</body></html>
