@@ -453,10 +453,214 @@
 <!-- V5: REAL Testnet liquidity payment client. -->
 <script src="js/testnet-liquidity-payment-client.js?v=20260926-payment-v5"></script>
 
+<!-- V7: controlled createLiquidityPayment() test with Pi.createPayment stubbed. -->
 <script>
 (() => {
   "use strict";
-  const MARKER="PROJECT_OWNER_PAYMENT_CLIENT_AUTH_ISOLATION_20260926_V6", TIMEOUT=45000;
+
+  const MARKER = "PROJECT_OWNER_CREATE_PAYMENT_ISOLATION_20260926_V7";
+  const logEl = document.getElementById("step13Log");
+  const statusEl = document.getElementById("step13Status");
+  const runBtn = document.getElementById("step13RunBtn");
+  const TIMEOUT = 45000;
+
+  const log = (event, data) => {
+    const line = `${new Date().toISOString()} | ${event}${data === undefined ? "" : " | " + JSON.stringify(data)}`;
+    console.log(line);
+    if (logEl) {
+      logEl.textContent += (logEl.textContent ? "\n" : "") + line;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  };
+
+  const status = (value) => {
+    if (statusEl) statusEl.textContent = value;
+  };
+
+  const sessionProbe = async () => {
+    const auth = window.AlbukhrTestnetAuth;
+    if (!auth) {
+      log("TESTNET_SESSION_GATEWAY_ABSENT");
+      return;
+    }
+
+    const result = {};
+
+    try {
+      if (typeof auth.getSessionToken === "function") {
+        const token = await auth.getSessionToken();
+        result.getSessionToken = { available: !!token, type: typeof token };
+      }
+    } catch (e) {
+      result.getSessionToken = { available: false, error: e?.message || String(e) };
+    }
+
+    try {
+      if (typeof auth.requireTestnetAuth === "function") {
+        const session = await auth.requireTestnetAuth({ redirectOnFailure: false });
+        result.requireTestnetAuth = {
+          available: !!session,
+          network: session?.network || null,
+          pi_uid_present: !!session?.pi_uid
+        };
+      }
+    } catch (e) {
+      result.requireTestnetAuth = {
+        available: false,
+        error: e?.message || String(e)
+      };
+    }
+
+    log("TESTNET_SESSION_OBSERVATION", result);
+  };
+
+  const run = async () => {
+    if (runBtn) runBtn.disabled = true;
+    if (logEl) logEl.textContent = "";
+    status("OWNER_CREATE_PAYMENT_V7_RUNNING");
+
+    log("OWNER_CREATE_PAYMENT_V7_TEST_START", {
+      marker: MARKER,
+      readyState: document.readyState,
+      origin: location.origin,
+      href: location.href,
+      paymentClientPresent: !!window.AlbukhrTestnetLiquidityPayment,
+      piPresent: !!window.Pi
+    });
+
+    try {
+      await sessionProbe();
+
+      const client = window.AlbukhrTestnetLiquidityPayment;
+      if (!client || typeof client.createLiquidityPayment !== "function") {
+        throw new Error("PAYMENT_CLIENT_CREATE_UNAVAILABLE");
+      }
+
+      if (!window.Pi || typeof window.Pi.createPayment !== "function") {
+        throw new Error("PI_CREATE_PAYMENT_UNAVAILABLE");
+      }
+
+      /*
+       * CRITICAL:
+       * We stub only Pi.createPayment. No real Pi payment dialog/payment is
+       * created. The real payment client's createLiquidityPayment() remains
+       * untouched, including its real authenticate() call.
+       */
+      const originalCreatePayment = window.Pi.createPayment;
+
+      let stubCalled = false;
+
+      window.Pi.createPayment = function(paymentData, callbacks) {
+        stubCalled = true;
+
+        log("PI_CREATE_PAYMENT_STUB_CALLED", {
+          amount: paymentData?.amount,
+          memo: paymentData?.memo,
+          metadata: paymentData?.metadata || null,
+          callbacks: callbacks ? Object.keys(callbacks) : []
+        });
+
+        /*
+         * Cancel immediately so createLiquidityPayment() exits through its
+         * normal onCancel path. This creates no real payment.
+         */
+        setTimeout(() => {
+          try {
+            callbacks?.onCancel?.("V7_STUB_PAYMENT_ID");
+          } catch (e) {
+            log("PI_CREATE_PAYMENT_STUB_CALLBACK_ERROR", {
+              message: e?.message || String(e)
+            });
+          }
+        }, 50);
+
+        return "V7_STUB_PAYMENT_HANDLE";
+      };
+
+      log("PAYMENT_CLIENT_CREATE_CALLED", {
+        marker: MARKER,
+        project: {
+          id: "V7_DIAGNOSTIC_PROJECT",
+          project_code: "V7_DIAGNOSTIC",
+          network: "testnet"
+        },
+        amount: 100
+      });
+
+      const promise = client.createLiquidityPayment(
+        {
+          id: "V7_DIAGNOSTIC_PROJECT",
+          project_code: "V7_DIAGNOSTIC",
+          network: "testnet"
+        },
+        100
+      );
+
+      log("PAYMENT_CLIENT_CREATE_PROMISE_CREATED", {
+        thenable: !!promise && typeof promise.then === "function"
+      });
+
+      try {
+        await Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`createLiquidityPayment timeout after ${TIMEOUT}ms`)),
+              TIMEOUT
+            )
+          )
+        ]);
+      } catch (error) {
+        log("PAYMENT_CLIENT_CREATE_RESULT", {
+          name: error?.name || "Error",
+          message: error?.message || String(error),
+          expectedStubCancel: true
+        });
+      }
+
+      if (stubCalled) {
+        status("OWNER_CREATE_PAYMENT_V7_STUB_REACHED");
+        log("OWNER_CREATE_PAYMENT_V7_SUCCESS", {
+          marker: MARKER,
+          meaning: "createLiquidityPayment reached Pi.createPayment after authentication; no real payment was created."
+        });
+      } else {
+        throw new Error("PI_CREATE_PAYMENT_STUB_WAS_NOT_REACHED");
+      }
+    } catch (error) {
+      status("OWNER_CREATE_PAYMENT_V7_FAILED");
+      log("OWNER_CREATE_PAYMENT_V7_FAILURE", {
+        name: error?.name || "Error",
+        message: error?.message || String(error)
+      });
+    } finally {
+      /*
+       * Restore the SDK method immediately.
+       */
+      try {
+        if (window.Pi && typeof window.Pi.createPayment === "function") {
+          window.Pi.createPayment = originalCreatePayment;
+        }
+      } catch (_) {}
+
+      if (runBtn) runBtn.disabled = false;
+    }
+  };
+
+  log("OWNER_CREATE_PAYMENT_V7_PAGE_READY", {
+    marker: MARKER,
+    paymentClientPresent: !!window.AlbukhrTestnetLiquidityPayment,
+    piPresent: !!window.Pi
+  });
+
+  runBtn?.addEventListener("click", run);
+})();
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const MARKER="PROJECT_OWNER_CREATE_PAYMENT_ISOLATION_20260926_V7", TIMEOUT=45000;
   const logEl=document.getElementById("step13Log"), statusEl=document.getElementById("step13Status"), runBtn=document.getElementById("step13RunBtn");
   const j=v=>{try{return JSON.stringify(v)}catch{return String(v)}};
   const log=(e,d)=>{const s=`${new Date().toISOString()} | ${e}${d===undefined?"":" | "+j(d)}`;console.log(s);if(logEl){logEl.textContent+=(logEl.textContent?"\n":"")+s;logEl.scrollTop=logEl.scrollHeight;}};
@@ -555,13 +759,13 @@
     return r;
   }
   async function run(){
-    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_PAYMENT_CLIENT_V6_RUNNING");
-    log("OWNER_PAYMENT_CLIENT_V6_TEST_START",snap()); log("OWNER_PAYMENT_CLIENT_V6_UNIQUE_MARKER",MARKER);
-    try{await inspectSession();await initPi();await authViaPaymentClient();status("OWNER_PAYMENT_CLIENT_V6_AUTH_SUCCESS");log("OWNER_PAYMENT_CLIENT_V6_TEST_SUCCESS",snap())}
-    catch(e){status("OWNER_PAYMENT_CLIENT_V6_AUTH_FAILED_OR_TIMEOUT");log("OWNER_PAYMENT_CLIENT_V6_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
+    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_CREATE_PAYMENT_V7_RUNNING");
+    log("OWNER_CREATE_PAYMENT_V7_TEST_START",snap()); log("OWNER_CREATE_PAYMENT_V7_UNIQUE_MARKER",MARKER);
+    try{await inspectSession();await initPi();await authViaPaymentClient();status("OWNER_CREATE_PAYMENT_V7_AUTH_SUCCESS");log("OWNER_CREATE_PAYMENT_V7_TEST_SUCCESS",snap())}
+    catch(e){status("OWNER_CREATE_PAYMENT_V7_AUTH_FAILED_OR_TIMEOUT");log("OWNER_CREATE_PAYMENT_V7_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
     finally{if(runBtn)runBtn.disabled=false}
   }
-  log("OWNER_PAYMENT_CLIENT_V6_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
+  log("OWNER_CREATE_PAYMENT_V7_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
 })();
 </script>
 
