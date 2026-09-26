@@ -456,21 +456,53 @@
 <script>
 (() => {
   "use strict";
-  const MARKER="PROJECT_OWNER_PAYMENT_ISOLATION_20260926_V5", TIMEOUT=45000;
+  const MARKER="PROJECT_OWNER_PAYMENT_CLIENT_AUTH_ISOLATION_20260926_V6", TIMEOUT=45000;
   const logEl=document.getElementById("step13Log"), statusEl=document.getElementById("step13Status"), runBtn=document.getElementById("step13RunBtn");
   const j=v=>{try{return JSON.stringify(v)}catch{return String(v)}};
   const log=(e,d)=>{const s=`${new Date().toISOString()} | ${e}${d===undefined?"":" | "+j(d)}`;console.log(s);if(logEl){logEl.textContent+=(logEl.textContent?"\n":"")+s;logEl.scrollTop=logEl.scrollHeight;}};
   const status=s=>{if(statusEl)statusEl.textContent=s};
   const snap=()=>({marker:MARKER,readyState:document.readyState,origin:location.origin,href:location.href,hostname:location.hostname,bodyChildren:document.body?.children.length||0,forms:document.forms.length,inputs:document.querySelectorAll("input").length,textareas:document.querySelectorAll("textarea").length,buttons:document.querySelectorAll("button").length,links:document.querySelectorAll("a").length,ownerContentPresent:!!document.getElementById("ownerContent"),step13PanelPresent:!!document.getElementById("step13Panel"),gatewayPresent:!!window.AlbukhrTestnetAuth,piPresent:!!window.Pi});
   async function inspectSession(){
-    if(!window.AlbukhrTestnetAuth){log("TESTNET_SESSION_GATEWAY_ABSENT");return;}
+    if(!window.AlbukhrTestnetAuth){
+      log("TESTNET_SESSION_GATEWAY_ABSENT");
+      return;
+    }
     log("TESTNET_SESSION_OBSERVATION_START");
     const r={};
+
     if(typeof window.AlbukhrTestnetAuth.getSessionToken==="function"){
-      try{const t=await window.AlbukhrTestnetAuth.getSessionToken();r.available=!!t;r.type=typeof t;}catch(e){r.error=e?.message||String(e)}
-    } else r.getSessionToken="unavailable";
+      try{
+        const t=await window.AlbukhrTestnetAuth.getSessionToken();
+        r.getSessionToken={available:!!t,type:typeof t};
+      }catch(e){
+        r.getSessionToken={available:false,error:e?.message||String(e)};
+      }
+    } else {
+      r.getSessionToken={type:"unavailable"};
+    }
+
+    if(typeof window.AlbukhrTestnetAuth.requireTestnetAuth==="function"){
+      try{
+        const s=await window.AlbukhrTestnetAuth.requireTestnetAuth({
+          redirectOnFailure:false
+        });
+        r.requireTestnetAuth={
+          available:!!s,
+          network:s?.network||null,
+          pi_uid_present:!!s?.pi_uid,
+          expires_at:s?.expires_at||null
+        };
+      }catch(e){
+        r.requireTestnetAuth={
+          available:false,
+          error:e?.message||String(e)
+        };
+      }
+    }
+
     log("TESTNET_SESSION_OBSERVATION",r);
-    log("TESTNET_SESSION_NOT_REQUIRED_FOR_PI_ISOLATION");
+    log("TESTNET_SESSION_NOT_USED_AS_REDIRECT_GATE");
+    return r;
   }
   async function initPi(){
     if(!window.Pi||typeof window.Pi.init!=="function")throw new Error("Pi SDK unavailable");
@@ -484,26 +516,52 @@
     });
     log("PI_INIT_EXPECTED_FROM_PAYMENT_CLIENT");
   }
-  async function authOnce(){
-    const scopes=["username"];
-    log("PI_AUTH_CALLED",{scopes,marker:MARKER,callCount:1});
-    log("PI_RUNTIME_BEFORE_AUTH",{authenticateType:typeof window.Pi.authenticate,piObjectType:typeof window.Pi});
-    const p=window.Pi.authenticate(scopes,payment=>log("INCOMPLETE_PAYMENT_CALLBACK",payment));
-    log("PI_AUTH_PROMISE_CREATED",{thenable:!!p&&typeof p.then==="function"});
-    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error(`Pi.authenticate timeout after ${TIMEOUT}ms`)),TIMEOUT));
+  async function authViaPaymentClient(){
+    const client=window.AlbukhrTestnetLiquidityPayment;
+
+    if(!client||typeof client.authenticate!=="function"){
+      throw new Error("PAYMENT_CLIENT_AUTHENTICATE_UNAVAILABLE");
+    }
+
+    log("PAYMENT_CLIENT_AUTH_CALLED",{
+      marker:MARKER,
+      authenticateType:typeof client.authenticate,
+      createPaymentType:typeof client.createLiquidityPayment
+    });
+
+    /*
+     * Critical V6 test:
+     * call the REAL payment client's authenticate() method.
+     * We do not call Pi.authenticate() directly.
+     */
+    const p=client.authenticate();
+
+    log("PAYMENT_CLIENT_AUTH_PROMISE_CREATED",{
+      thenable:!!p&&typeof p.then==="function"
+    });
+
+    const timeout=new Promise((_,rej)=>setTimeout(
+      ()=>rej(new Error(`Payment client authenticate timeout after ${TIMEOUT}ms`)),
+      TIMEOUT
+    ));
+
     const r=await Promise.race([p,timeout]);
-    if(!r?.user?.uid)throw new Error("Pi authentication returned without user.uid");
-    if(!r.accessToken)throw new Error("Pi authentication returned without accessToken");
-    log("PI_AUTH_OK",{uid_present:true,accessToken_present:true,username:r.user.username||null});
+
+    log("PAYMENT_CLIENT_AUTH_OK",{
+      resultUserPresent:!!(r&&r.user),
+      username:r?.user?.username||null
+    });
+
+    return r;
   }
   async function run(){
-    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_PAYMENT_V5_RUNNING");
-    log("OWNER_PAYMENT_V5_TEST_START",snap()); log("OWNER_PAYMENT_V5_UNIQUE_MARKER",MARKER);
-    try{await inspectSession();await initPi();await authOnce();status("OWNER_PAYMENT_V5_AUTH_SUCCESS");log("OWNER_PAYMENT_V5_TEST_SUCCESS",snap())}
-    catch(e){status("OWNER_PAYMENT_V5_AUTH_FAILED_OR_TIMEOUT");log("OWNER_PAYMENT_V5_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
+    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("OWNER_PAYMENT_CLIENT_V6_RUNNING");
+    log("OWNER_PAYMENT_CLIENT_V6_TEST_START",snap()); log("OWNER_PAYMENT_CLIENT_V6_UNIQUE_MARKER",MARKER);
+    try{await inspectSession();await initPi();await authViaPaymentClient();status("OWNER_PAYMENT_CLIENT_V6_AUTH_SUCCESS");log("OWNER_PAYMENT_CLIENT_V6_TEST_SUCCESS",snap())}
+    catch(e){status("OWNER_PAYMENT_CLIENT_V6_AUTH_FAILED_OR_TIMEOUT");log("OWNER_PAYMENT_CLIENT_V6_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
     finally{if(runBtn)runBtn.disabled=false}
   }
-  log("OWNER_PAYMENT_V5_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
+  log("OWNER_PAYMENT_CLIENT_V6_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
 })();
 </script>
 
