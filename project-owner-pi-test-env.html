@@ -215,166 +215,48 @@
 <script>
 (() => {
   "use strict";
-
-  const MARKER = "FULL_DOM_AUTH_ISOLATION_20260926_V1";
-  const AUTH_TIMEOUT_MS = 45000;
-  const logEl = document.getElementById("step13Log");
-  const statusEl = document.getElementById("step13Status");
-  const runBtn = document.getElementById("step13RunBtn");
-
-  const safeJson = (value) => {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  };
-
-  const write = (event, data) => {
-    const line = `${new Date().toISOString()} | ${event}${data === undefined ? "" : " | " + safeJson(data)}`;
-    console.log(line);
-    if (logEl) {
-      logEl.textContent += (logEl.textContent ? "\n" : "") + line;
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-  };
-
-  const setStatus = (value) => {
-    if (statusEl) statusEl.textContent = value;
-  };
-
-  const snapshot = () => ({
-    marker: MARKER,
-    readyState: document.readyState,
-    origin: window.location.origin,
-    href: window.location.href,
-    hostname: window.location.hostname,
-    bodyChildren: document.body ? document.body.children.length : 0,
-    forms: document.forms.length,
-    inputs: document.querySelectorAll("input").length,
-    textareas: document.querySelectorAll("textarea").length,
-    buttons: document.querySelectorAll("button").length,
-    links: document.querySelectorAll("a").length,
-    ownerContentPresent: !!document.getElementById("ownerContent"),
-    step13PanelPresent: !!document.getElementById("step13Panel"),
-    gatewayPresent: !!window.AlbukhrTestnetAuth,
-    piPresent: !!window.Pi
-  });
-
-  const initializePi = async () => {
-    if (!window.Pi || typeof window.Pi.init !== "function") {
-      throw new Error("Pi SDK unavailable");
-    }
-    write("PI_RUNTIME_BEFORE_INIT", {
-      piType: typeof window.Pi,
-      initType: typeof window.Pi.init
-    });
-    await window.Pi.init({
-      version: "2.0",
-      sandbox: false
-    });
-    write("PI_INIT_OK");
-  };
-
-  const ensureTestnetSession = async () => {
-    if (!window.AlbukhrTestnetAuth ||
-        typeof window.AlbukhrTestnetAuth.requireTestnetAuth !== "function") {
-      write("TESTNET_SESSION_SKIP", "gateway unavailable");
-      return null;
-    }
-
-    write("TESTNET_SESSION_CALLING");
-    const session = await window.AlbukhrTestnetAuth.requireTestnetAuth({
-      redirectOnFailure: false
-    });
-
-    if (!session || !session.token) {
-      throw new Error("Testnet session unavailable");
-    }
-
-    write("TESTNET_SESSION_OK", {
-      network: session.network,
-      pi_uid_present: !!session.pi_uid,
-      expires_at: session.expires_at || null
-    });
-
-    return session;
-  };
-
-  const authenticatePiExactlyOnce = async () => {
-    const scopes = ["username"];
-
-    write("PI_AUTH_CALLED", {
-      scopes,
-      marker: MARKER
-    });
-
-    write("PI_RUNTIME_BEFORE_AUTH", {
-      authenticateType: typeof window.Pi.authenticate,
-      piObjectType: typeof window.Pi
-    });
-
-    const authPromise = window.Pi.authenticate(
-      scopes,
-      (payment) => write("INCOMPLETE_PAYMENT_CALLBACK", payment)
-    );
-
-    write("PI_AUTH_PROMISE_CREATED", {
-      thenable: !!authPromise && typeof authPromise.then === "function"
-    });
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`Pi.authenticate timeout after ${AUTH_TIMEOUT_MS}ms`)), AUTH_TIMEOUT_MS);
-    });
-
-    const result = await Promise.race([authPromise, timeoutPromise]);
-
-    if (!result || !result.user || !result.user.uid) {
-      throw new Error("Pi authentication returned without user.uid");
-    }
-
-    if (!result.accessToken) {
-      throw new Error("Pi authentication returned without accessToken");
-    }
-
-    write("PI_AUTH_OK", {
-      uid_present: true,
-      accessToken_present: true,
-      username: result.user.username || null
-    });
-
-    return result;
-  };
-
-  const run = async () => {
-    if (runBtn) runBtn.disabled = true;
-    setStatus("FULL_DOM_RUNNING");
-    if (logEl) logEl.textContent = "";
-
-    write("FULL_DOM_TEST_START", snapshot());
-    write("FULL_DOM_UNIQUE_MARKER", MARKER);
-
-    try {
-      await ensureTestnetSession();
-      await initializePi();
-      await authenticatePiExactlyOnce();
-
-      setStatus("FULL_DOM_AUTH_SUCCESS");
-      write("FULL_DOM_TEST_SUCCESS", snapshot());
-    } catch (error) {
-      setStatus("FULL_DOM_AUTH_FAILED_OR_TIMEOUT");
-      write("FULL_DOM_TEST_FAILURE", {
-        name: error?.name || "Error",
-        message: error?.message || String(error),
-        snapshot: snapshot()
-      });
-    } finally {
-      if (runBtn) runBtn.disabled = false;
-    }
-  };
-
-  write("FULL_DOM_PAGE_READY", snapshot());
-  runBtn?.addEventListener("click", run);
+  const MARKER="FULL_DOM_AUTH_ISOLATION_20260926_V2", TIMEOUT=45000;
+  const logEl=document.getElementById("step13Log"), statusEl=document.getElementById("step13Status"), runBtn=document.getElementById("step13RunBtn");
+  const j=v=>{try{return JSON.stringify(v)}catch{return String(v)}};
+  const log=(e,d)=>{const s=`${new Date().toISOString()} | ${e}${d===undefined?"":" | "+j(d)}`;console.log(s);if(logEl){logEl.textContent+=(logEl.textContent?"\n":"")+s;logEl.scrollTop=logEl.scrollHeight;}};
+  const status=s=>{if(statusEl)statusEl.textContent=s};
+  const snap=()=>({marker:MARKER,readyState:document.readyState,origin:location.origin,href:location.href,hostname:location.hostname,bodyChildren:document.body?.children.length||0,forms:document.forms.length,inputs:document.querySelectorAll("input").length,textareas:document.querySelectorAll("textarea").length,buttons:document.querySelectorAll("button").length,links:document.querySelectorAll("a").length,ownerContentPresent:!!document.getElementById("ownerContent"),step13PanelPresent:!!document.getElementById("step13Panel"),gatewayPresent:!!window.AlbukhrTestnetAuth,piPresent:!!window.Pi});
+  async function inspectSession(){
+    if(!window.AlbukhrTestnetAuth){log("TESTNET_SESSION_GATEWAY_ABSENT");return;}
+    log("TESTNET_SESSION_OBSERVATION_START");
+    const r={};
+    if(typeof window.AlbukhrTestnetAuth.getSessionToken==="function"){
+      try{const t=await window.AlbukhrTestnetAuth.getSessionToken();r.available=!!t;r.type=typeof t;}catch(e){r.error=e?.message||String(e)}
+    } else r.getSessionToken="unavailable";
+    log("TESTNET_SESSION_OBSERVATION",r);
+    log("TESTNET_SESSION_NOT_REQUIRED_FOR_PI_ISOLATION");
+  }
+  async function initPi(){
+    if(!window.Pi||typeof window.Pi.init!=="function")throw new Error("Pi SDK unavailable");
+    log("PI_RUNTIME_BEFORE_INIT",{piType:typeof window.Pi,initType:typeof window.Pi.init});
+    await window.Pi.init({version:"2.0",sandbox:false});
+    log("PI_INIT_OK");
+  }
+  async function authOnce(){
+    const scopes=["username"];
+    log("PI_AUTH_CALLED",{scopes,marker:MARKER,callCount:1});
+    log("PI_RUNTIME_BEFORE_AUTH",{authenticateType:typeof window.Pi.authenticate,piObjectType:typeof window.Pi});
+    const p=window.Pi.authenticate(scopes,payment=>log("INCOMPLETE_PAYMENT_CALLBACK",payment));
+    log("PI_AUTH_PROMISE_CREATED",{thenable:!!p&&typeof p.then==="function"});
+    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error(`Pi.authenticate timeout after ${TIMEOUT}ms`)),TIMEOUT));
+    const r=await Promise.race([p,timeout]);
+    if(!r?.user?.uid)throw new Error("Pi authentication returned without user.uid");
+    if(!r.accessToken)throw new Error("Pi authentication returned without accessToken");
+    log("PI_AUTH_OK",{uid_present:true,accessToken_present:true,username:r.user.username||null});
+  }
+  async function run(){
+    if(runBtn)runBtn.disabled=true; if(logEl)logEl.textContent=""; status("FULL_DOM_V2_RUNNING");
+    log("FULL_DOM_TEST_START",snap()); log("FULL_DOM_UNIQUE_MARKER",MARKER);
+    try{await inspectSession();await initPi();await authOnce();status("FULL_DOM_V2_AUTH_SUCCESS");log("FULL_DOM_TEST_SUCCESS",snap())}
+    catch(e){status("FULL_DOM_V2_AUTH_FAILED_OR_TIMEOUT");log("FULL_DOM_TEST_FAILURE",{name:e?.name||"Error",message:e?.message||String(e),snapshot:snap()})}
+    finally{if(runBtn)runBtn.disabled=false}
+  }
+  log("FULL_DOM_V2_PAGE_READY",snap()); runBtn?.addEventListener("click",run);
 })();
 </script>
 
