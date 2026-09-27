@@ -339,9 +339,15 @@
     if (state.liquidityPaymentInFlight) return;
 
     try {
-      await ensureSession();
+    // Session was already established during page load.
+    // Do not await gateway auth inside the Pi payment click.
+    var sessionToken = clean(getAuth().getSessionToken());
 
-      var amountNode = byId("liquidityAmount");
+    if (!sessionToken) {
+        throw new Error("TESTNET_SESSION_REQUIRED");
+    }
+
+    var amountNode = ... byId("liquidityAmount");
       var amount = numberValue(amountNode && amountNode.value);
       var required = numberValue(state.liquidity && state.liquidity.required);
       var verified = numberValue(state.liquidity && state.liquidity.verified);
