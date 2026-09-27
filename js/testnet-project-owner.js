@@ -184,10 +184,15 @@
       !!state.treasury &&
       !!liquidity.treasury_configured;
 
+    /*
+     * `treasury` remains a display/status signal only.
+     * The server is authoritative for treasury readiness.
+     * Do not block the Pi popup merely because the optional
+     * treasury object is absent from the owner payload.
+     */
     var ready =
       ownerBound &&
       ownerVerified &&
-      treasuryReady &&
       due > 0 &&
       liquidityPaymentClientAvailable() &&
       !state.liquidityPaymentInFlight;
@@ -209,12 +214,12 @@
       setStatus("liquidityStatus", "Pi liquidity payment is in progress…");
     } else if (!ownerVerified) {
       setStatus("liquidityStatus", "Owner identity verification is required before liquidity can be added.", "error");
-    } else if (!treasuryReady) {
-      setStatus("liquidityStatus", "The Testnet project treasury is not ready for liquidity.", "error");
     } else if (due <= 0) {
       setStatus("liquidityStatus", "The project liquidity requirement is already satisfied.", "success");
     } else if (!liquidityPaymentClientAvailable()) {
       setStatus("liquidityStatus", "The Testnet Pi payment module is not available on this page.", "error");
+    } else if (!treasuryReady) {
+      setStatus("liquidityStatus", "Owner authorization verified. Treasury readiness will be re-checked securely by the server when the payment is approved.");
     } else {
       setStatus("liquidityStatus", "Owner authorization verified. Minimum remaining liquidity: " + formatPi(due) + ".");
     }
@@ -354,6 +359,27 @@
       var project = state.project || {};
       if (!clean(project.id) || !clean(project.project_code)) {
         throw new Error("PROJECT_ID_AND_CODE_REQUIRED");
+      }
+
+      /*
+       * Defense in depth: even a programmatic invocation must still
+       * come from a bound and verified Testnet Project Owner identity.
+       */
+      var owner = state.owner || {};
+      var profile = state.ownerProfile || {};
+
+      if (
+        !clean(owner.user_id || owner.id) ||
+        !clean(owner.pi_uid)
+      ) {
+        throw new Error("PROJECT_OWNER_IDENTITY_INVALID");
+      }
+
+      if (
+        clean(profile.verification_status).toLowerCase() !==
+        "verified"
+      ) {
+        throw new Error("PROJECT_OWNER_PROFILE_NOT_VERIFIED");
       }
 
       var payment = window.AlbukhrTestnetLiquidityPayment;
