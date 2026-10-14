@@ -1,0 +1,63 @@
+ALBUKHR Testnet U2A Investment Patch Package v2 (Draft)
+Status: Prepared for engineering review only. Not deployed. Not applied to GitHub or Supabase. Do not use with real funds.
+What this package is for
+This is an additive, Testnet-only proposal to enable controlled U2A investment/staking tests for projects with a valid Testnet registry record and active Testnet investment terms. It deliberately keeps investor payments separate from project-liquidity payments.
+The feature is disabled by default. It must not be enabled on Mainnet.
+Package map
+src/testnet-investment-router.js — new Express API router for Testnet terms, Pi U2A approval/completion, incomplete-payment recovery, and settlement through a service-role-only RPC.
+src/testnet-investment-client.js — new project-page controller, reusing the existing Testnet payment client's in-memory Pi auth and payment flow.
+sql/00_preflight_readonly.sql — read-only preflight checks for the existing Testnet schema, terms, triggers, table counts, and routine privileges.
+sql/20261014_testnet_u2a_investment.sql — draft Testnet-only migration; creates a separate investment-payment ledger and settlement RPC, and permits new investment stakes to leave the historical liquidity FK blank while preserving it for existing liquidity-related rows.
+patches/server.js.patch — opt-in mount for the new API router.
+patches/project.html.patch — adds amount/duration controls, Testnet status message, and loads the new controller.
+patches/testnet-liquidity-payment-client.js.patch — adds the investment-payment helper and directs incomplete-payment recovery to the correct route based on metadata.
+tests/static-guard-test.js — static assertions over security boundaries in this proposal; it is not a live integration test.
+tests/acceptance-test-plan.md — required manual/integration cases.
+docs/ROLLBACK.md — non-destructive disable/rollback guidance.
+Files and target repositories
+Testnet API repository
+Repository: MuhmdBuharisaeed/test-albukhr-api, branch main was inspected read-only.
+Copy src/testnet-investment-router.js to the repository root as testnet-investment-router.js because the server patch requires ./testnet-investment-router.
+Apply patches/server.js.patch to root server.js.
+Keep TESTNET_U2A_INVESTMENT_ENABLED unset or false until the isolation/QA gate is passed.
+If and only if an isolated Testnet deployment is approved for QA, configure TESTNET_U2A_INVESTMENT_ENABLED=true and PI_TESTNET_APP_WALLET (the registered Testnet App wallet). Existing PI_API_KEY must refer to the Testnet app environment. Never paste secret values into this repository or documentation.
+Testnet app repository
+Repository: MuhmdBuharisaeed/test-albukhr-app, branch main was inspected read-only.
+Copy src/testnet-investment-client.js to js/testnet-investment-client.js.
+Apply patches/project.html.patch to project.html.
+Apply patches/testnet-liquidity-payment-client.js.patch to js/testnet-liquidity-payment-client.js.
+Do not change the Mainnet app, Mainnet API, or Mainnet Supabase project for this Testnet-only package.
+Testnet Supabase
+Target project: vhvkwvngmrlgyzwemttt only, and preferably a disposable Supabase branch first.
+Inspect current schema/migration history and take a current backup/snapshot using the project's established process.
+Review the draft migration and run it in a disposable Testnet database/branch, not production.
+Verify every table/constraint/RPC and privileges afterwards.
+The migration must not be run on Mainnet. The draft has not been executed against PostgreSQL in this task.
+Environment / payment contract
+The only accepted Pi PaymentDTO environment is Pi Testnet / testnet (case-normalized), direction=user_to_app.
+The PaymentDTO's user_uid, to_address, amount, status, metadata, and transaction verification are verified server-side. Client-submitted values do not authorize settlement.
+The expected recipient is the registered Testnet App wallet. Per-project liquidity treasury logic is intentionally not reused.
+A stake may only be created after the server-side Pi completion response reports developer completion and the transaction is verified. The RPC is the only path to insert the new investment stake and is restricted to service_role.
+Repeated completion/recovery callbacks must return the one original stake for the same payment id.
+The public Testnet project registry currently serves only projects with approved or active status. Investment terms must also be active and must match the project, duration, and term ID.
+Blocking confirmations before enabling
+User provisioning: prove the exact PaymentDTO.user_uid has one matching public.users row with network='testnet'. The RPC fails closed if absent; do not automatically create a user inside settlement.
+Reward formula: confirm that Testnet project_staking_terms.reward_rate follows the proposed reward_amount = amount * reward_rate convention. Do not populate or infer missing reward rates. Only active terms are offered by the client.
+Testnet App wallet: verify the exact registered Testnet App wallet against the Testnet Pi Developer Portal and deployment configuration; missing wallet configuration must keep the gateway disabled.
+Pi Platform contract: verify the returned PaymentDTO/status fields with an isolated Testnet payment. The official Platform API describes U2A as frontend creation followed by server-side approval and completion, and recommends relying on the server completion response rather than client claims.
+Payment recovery: confirm handling of cancelled, pending, approved, completed-but-not-verified, and incomplete payment scenarios.
+Status change during payment: if a project's eligibility changes after server approval, support/recovery policy must be explicitly tested. Current draft fails closed if the project no longer has an eligible status when the request is re-evaluated; do not silently bypass this rule.
+Known limits / non-goals
+This package has not been tested against Pi Testnet or PostgreSQL. Syntax checks only prove the JavaScript parses.
+The SQL is a draft, not a deploy-ready migration. Use disposable database testing and review first.
+Only projects with existing valid active Testnet terms can be tested. Read-only inspection found terms for RAHEEM-25 at 30, 60, and 90 days; this is a time-of-audit observation, not a guarantee it remains unchanged.
+This does not provide Mainnet External investment support and does not modify Mainnet Core/Internal gateways.
+This does not enable Pi payments, project payouts, treasury funding, or app service payments.
+This does not create a Mainnet financial record or asset. Testnet Pi has no Mainnet investment value.
+Do not alter existing Dock Navigation or unrelated authentication, withdrawal, dApp Service, liquidity, or payout logic.
+Validation available in this package
+Run:
+node --check src/testnet-investment-router.js
+node --check src/testnet-investment-client.js
+node tests/static-guard-test.js
+These are offline/static checks only. They are not proof of a successful Pi transaction, PostgreSQL migration, security policy, or production readiness.
