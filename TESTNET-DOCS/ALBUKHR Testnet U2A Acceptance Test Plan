@@ -1,0 +1,57 @@
+ALBUKHR Testnet U2A Acceptance Test Plan
+Prerequisite: Use a disposable Testnet Supabase branch and isolated Testnet app/API deployment. Keep TESTNET_U2A_INVESTMENT_ENABLED=false until environment checks and source review are complete. Use only Pi Testnet amounts. Never run these cases against Mainnet.
+A. Project and term eligibility
+network=testnet, project status approved, allowed type (core, internal, external), and one active term: the terms endpoint returns only that project's active term(s).
+Same project with status active: terms may be returned and test investment may be started.
+Project with draft, rejected, suspended, or any other unsupported status: terms endpoint and payment approval fail before Pi approval.
+Project ID and project code that do not belong to the same row: reject.
+A Mainnet project ID, Mainnet-only project, or network=mainnet metadata: reject; no Mainnet Supabase request or write is allowed.
+Unknown project type: reject.
+No term, inactive term, invalid duration, duplicate active terms for one duration, invalid min stake, or invalid reward rate: reject/keep UI locked.
+Amount below the exact selected term's minimum: reject before payment; server rechecks it after PaymentDTO retrieval.
+Amount equal to or above minimum: continue only if all server-side checks pass; do not invent a max-stake limit absent from the current Testnet terms schema.
+B. PaymentDTO and identity validation
+Missing/expired/revoked Testnet session on terms or approve/complete: reject.
+Missing or invalid Pi access token, or Pi /me returns no UID: reject.
+PaymentDTO network not Pi Testnet/testnet: reject.
+direction other than user_to_app: reject.
+Missing or mismatched user_uid against Pi /me: reject.
+Missing configured Testnet App wallet: gateway must fail at initialization and remain disabled.
+Missing to_address or destination not equal to the configured Testnet App wallet: reject before approval and settlement.
+Payment identifier absent, or PaymentDTO identifier differs from requested ID: reject.
+Metadata action/network/project ID/project code/duration/term ID mismatch: reject.
+Missing matching Testnet public.users row for the verified Pi UID: reject closed; do not provision a user within the settlement RPC.
+Pi payment cancelled: reject and create no stake.
+C. Two-phase payment lifecycle
+Valid pending payment: server inserts one pending investment intent including immutable term snapshot before attempting Pi approval.
+Pi approval request fails: do not create a stake; verify intent remains retryable and no liquidity record is created.
+Pi approval succeeds: reread PaymentDTO from Pi, verify it, and mark the intent approved.
+Client claims success but Pi API says not completed: reject and create no stake.
+Pi reports developer completion but transaction not verified (status.transaction_verified and transaction.verified are false): reject and create no stake.
+Transaction ID missing or mismatched: reject.
+Pi completion succeeds and transaction is verified: exactly one verified payment intent and one Testnet stake are committed atomically.
+Repeat /complete with the same completed payment ID: return the original stake idempotently; do not insert a second stake or double-count funds.
+Call /incomplete without a pre-existing investment intent: reject; do not settle an arbitrary payment from client-supplied metadata.
+Incomplete callback for an existing approved payment: reload PaymentDTO server-to-server, verify it, complete if appropriate, then settle once.
+Reuse a known payment ID with different user, amount, project, term, duration, or recipient: reject.
+Simulate concurrent completion callbacks for the same ID: only one stake/payment settlement exists; other callback returns idempotently or a safe retryable conflict.
+Database/RPC timeout after Pi completion: retry must reconcile the same payment and not create duplicate stakes.
+D. Ledger, rewards, and withdrawals
+New Testnet stake references investment_payment_id; payment_record_id remains NULL for that new U2A stake.
+New stake must not insert into or increment project_liquidity_payments.
+Existing liquidity records and existing stakes' payment_record_id references are unchanged by the migration.
+New stakes preserve the selected Testnet term snapshot: term ID, duration, minimum, reward rate, formula, project/network, and capture time.
+Using the reviewed reward formula, calculate rewards from at least two known amounts and compare with approved expected results. Do not enable if formula semantics disagree.
+Stake appears only in public.stakes with network='testnet', the correct Testnet user, and unlock_at = start_at + duration_days.
+Existing Testnet investor data query returns the new stake for the matching Testnet Pi UID and returns no stake to a different UID.
+Testnet withdrawal endpoints can read the new stake, verify identity, calculate eligibility/fees, and apply existing unlock logic. Do not request a real payout as part of this integration test until payout test procedures are approved.
+Verify no Mainnet table/endpoint is called or modified at any point.
+E. Feature flag / operational controls
+Feature flag unset, empty, false, or any non-true value: API does not mount the new routes; /testnet-investment/terms returns 404.
+Feature flag true but App wallet absent or Pi API key absent: process refuses to start rather than enabling an unverified gateway.
+Feature flag true in explicitly isolated Testnet deployment with verified Testnet configuration: only the new /testnet-investment routes become reachable.
+Existing /liquidity-payment/*, withdrawal, admin, and payout flows pass their prior regression tests without behavior changes.
+Cache busting/versioning causes browsers to load the new client only after the app assets are deployed to Testnet.
+User-facing copy states TESTNET and makes clear this is testing only/no Mainnet investment value.
+Pass criteria
+All applicable cases pass in disposable Testnet integration. Zero duplicate stakes; zero writes to liquidity-payment ledger for an investment payment; zero Mainnet accesses/writes; correct RPC grants (service_role only); existing liquidity/withdrawal regressions remain green. Store sanitized test identifiers and results—never store API keys, access tokens, session tokens, or private keys.
