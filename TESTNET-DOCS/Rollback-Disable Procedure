@@ -1,0 +1,15 @@
+Rollback / Disable Procedure
+This is a non-destructive rollback guide. There is no automated destructive SQL rollback in this draft.
+Immediate containment
+Set TESTNET_U2A_INVESTMENT_ENABLED=false (or remove the variable) in the isolated Testnet API service and restart/redeploy that Testnet service through the normal approved deployment workflow. Confirm /testnet-investment/terms is not mounted and returns 404.
+Do not touch Mainnet environment variables or services; this feature must never have been mounted in Mainnet.
+Stop new Testnet investment testing and preserve sanitized logs plus known payment IDs for reconciliation.
+If a Pi Testnet payment is pending, approved, or completed, reconcile its PaymentDTO from Pi's Platform API before making any ledger changes. Do not delete or reset a record merely to clear an error.
+Source rollback
+On the Testnet app/API feature branch only, revert the three patch files' changes (server.js, project.html, and js/testnet-liquidity-payment-client.js) and remove the added testnet-investment-router.js and js/testnet-investment-client.js from that branch. Preserve the pre-existing liquidity router/client, project page, withdrawals, auth, admin, and payment code. Review the diff before merging or deploying any rollback.
+Database rollback cautions
+The draft migration changes stakes.payment_record_id from NOT NULL to nullable and adds columns/foreign keys/indexes plus a new table/RPC.
+Do not automatically set payment_record_id back to NOT NULL: valid Testnet investment stakes introduced by this feature intentionally leave it NULL and use investment_payment_id. Reverting NOT NULL while such rows exist will fail or would require a documented data migration.
+Do not drop testnet_investment_payments, investment_payment_id, testnet_term_id, contract_snapshot, related constraints, or RPC while any investment payment/stake references exist. That can orphan records and break reconciliation.
+Any eventual database rollback needs a separate reviewed plan. First reconcile all Pi PaymentDTOs and all testnet_investment_payments rows, identify whether any stake or withdrawal references were created, back up the Testnet database, and test the rollback in a disposable branch.
+No database rollback should ever be applied to Mainnet for this Testnet-only feature.
