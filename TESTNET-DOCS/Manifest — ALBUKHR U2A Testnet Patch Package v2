@@ -1,0 +1,46 @@
+Manifest — ALBUKHR U2A Testnet Patch Package v2
+File
+Purpose
+Current status
+src/testnet-investment-router.js
+Testnet-only Express gateway
+Draft; JavaScript syntax check passed
+src/testnet-investment-client.js
+Project page UI/controller
+Draft; JavaScript syntax check passed
+sql/00_preflight_readonly.sql
+Read-only Testnet schema preflight
+Read-only query script; not executed as part of this package creation
+sql/20261014_testnet_u2a_investment.sql
+Tables, stake relations, settlement RPC
+Draft; NOT executed or validated by PostgreSQL
+patches/server.js.patch
+Opt-in API mount
+Unified diff hunk counts validated; not applied to a checkout
+patches/project.html.patch
+Testnet project UI and cache-busting
+Unified diff hunk counts validated; not applied to a checkout
+patches/testnet-liquidity-payment-client.js.patch
+Shared Pi payment-client extension
+Unified diff hunk counts validated; not applied to a checkout
+tests/static-guard-test.js
+Static security-boundary assertions
+Passed
+tests/validate-patch-hunks.py
+Unified-diff line-count checker
+Passed (11 hunks)
+tests/acceptance-test-plan.md
+Manual/integration checklist
+Review/test plan, not executed
+docs/ROLLBACK.md
+Safe disable/rollback steps
+Draft guidance
+docs/SOURCE_BASELINE.md
+Source file baseline hashes and official docs
+Read-only baseline
+Global status
+No GitHub branch, file, pull request, or commit was changed.
+No Supabase table, function, policy, data row, or migration was changed.
+No deployment was started.
+No Testnet or Mainnet Pi payment was created or submitted.
+This bundle is not production-ready until the SQL is tested on a disposable Testnet database and the full acceptance plan passes.
