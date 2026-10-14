@@ -1,0 +1,25 @@
+Read-only Source Baseline Used for Patch Draft
+The patch was drafted after read-only inspection of these current branch sources. The file blob hashes listed here help reviewers detect whether a file changed after the draft was prepared.
+Repository
+Path
+Inspected blob SHA
+MuhmdBuharisaeed/test-albukhr-api
+server.js
+15e43f3115454faa6348f6630044c7d8ace7dbc4
+MuhmdBuharisaeed/test-albukhr-api
+testnet-liquidity-payment-router.js
+cb18b16d2f2e6caf096986e6d908bcdf41bf021b
+MuhmdBuharisaeed/test-albukhr-app
+project.html
+518b0cf1c61e0ab98513f22243b863de2d2735f4
+MuhmdBuharisaeed/test-albukhr-app
+js/testnet-project.js
+8f6208891beaeb98475097d26850d8dfc082ff39
+MuhmdBuharisaeed/test-albukhr-app
+js/testnet-liquidity-payment-client.js
+143bbc234a09aa8813bd604203c4bc9aa8aa46b4
+Before using the patch, fetch the latest branch versions and confirm these paths still match the reviewed baseline. If not, rebase/reconcile manually; do not force-apply the patch.
+Official Pi Platform references reviewed
+Pi Platform API docs: describes backend /me, payment lookup, server-side U2A approval, and server-side completion.
+Pi SDK reference: documents Pi authentication scopes, onIncompletePaymentFound, and client payment callbacks.
+These docs support the payment lifecycle and PaymentDTO contract. They do not replace end-to-end verification against the registered Testnet app configuration.
