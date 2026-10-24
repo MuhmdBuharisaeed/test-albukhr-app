@@ -2,969 +2,457 @@
    ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v4
    =========================================================
 
-   PURPOSE
-   -------
-   Testnet Pi liquidity payment client.
-
    SECURITY MODEL
    --------------
    1. Testnet session authorizes ALBUKHR access.
    2. Pi.authenticate() verifies Pi identity.
    3. Pi access token remains memory-only.
-   4. Pi.createPayment() is called directly from the
-      user click path.
-   5. Backend receives:
-        - X-Testnet-Session
-        - Authorization: Bearer <Pi access token>
+   4. Pi.createPayment() is called from the user click path.
+   5. Backend receives X-Testnet-Session and Pi Bearer token.
 
-   IMPORTANT PAYMENT FLOW
-   ----------------------
-   Page Load
-       ↓
-   Testnet Session
-       ↓
-   Pi.init()
-       ↓
-   Pi.authenticate()
-       ↓
-   Pi access token in memory
-       ↓
-   Add Liquidity enabled
-       ↓
-   User click
-       ↓
-   Pi.createPayment()
-       ↓
-   Pi Payment UI
-
-   NO Pi.authenticate() is performed inside
-   createLiquidityPayment().
-
-   NO LocalStorage is used for Pi credentials.
-   NO sessionStorage is used for Pi credentials.
+   SECURITY NOTE
+   -------------
+   This client never persists Pi credentials. Payment is blocked unless
+   Testnet session and Pi identity have both been verified.
 ========================================================= */
 
 (function (window) {
-
   "use strict";
-
 
   /* =======================================================
      CONFIGURATION
   ======================================================= */
 
-  var API_BASE =
-    "https://test-albukhr-api.onrender.com";
-
-  var NETWORK =
-    "testnet";
-
-  var PI_SDK_VERSION =
-    "2.0";
+  var API_BASE = "https://test-albukhr-api.onrender.com";
+  var NETWORK = "testnet";
+  var PI_SDK_VERSION = "2.0";
 
   /*
-   * ALBUKHR Testnet payment environment.
-   *
-   * The Testnet application itself determines its environment.
-   * Keep this value aligned with the existing Testnet payment
-   * configuration.
+   * This is the Testnet payment client. Sandbox mode is appropriate only
+   * when the corresponding Pi Developer Portal app is configured for
+   * Sandbox/Test-Pi. Keep this aligned with that official app configuration.
    */
-  var PI_SANDBOX =
-    false;
-
+  var PI_SANDBOX = true;
 
   /* =======================================================
      INTERNAL STATE
   ======================================================= */
 
-  var initialized =
-    false;
+  var initialized = false;
+  var initializationPromise = null;
 
-  /*
-   * IMPORTANT:
-   *
-   * Pi access token exists ONLY in JavaScript memory.
-   *
-   * It is NOT written to:
-   * - localStorage
-   * - sessionStorage
-   * - cookies
-   * - URL
-   */
-  var authResult =
-    null;
+  // Pi access token is kept in memory only.
+  var authResult = null;
+  var pendingIncompletePayments = [];
 
-  var pendingIncompletePayments =
-    [];
+  // Prevent duplicate Pi.authenticate() calls.
+  var authenticationPromise = null;
 
-  /*
-   * Prevent duplicate Pi.authenticate() calls.
-   */
-  var authenticationPromise =
-    null;
+  // Share Testnet session validation among concurrent callers.
+  var testnetSessionPromise = null;
 
-   /*
- * Share the Testnet session check between concurrent pre-auth callers.
- */
-var testnetSessionPromise =
-  null;
+  /* =======================================================
+     TIMEOUT HELPER
+  ======================================================= */
+
+  function withAuthTimeout(promise, milliseconds, errorCode) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error(errorCode));
+      }, milliseconds);
+
+      Promise.resolve(promise).then(
+        function (value) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        function (error) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(error);
+        }
+      );
+    });
+  }
 
   /* =======================================================
      UTILITY
   ======================================================= */
 
   function clean(value) {
-
-    return String(
-      value == null
-        ? ""
-        : value
-    ).trim();
-
+    return String(value == null ? "" : value).trim();
   }
-
 
   /* =======================================================
      TESTNET AUTH MODULE
   ======================================================= */
 
   function getAuth() {
+    var auth = window.AlbukhrTestnetAuth;
 
-    var auth =
-      window.AlbukhrTestnetAuth;
-
-    if (
-      !auth ||
-      typeof auth.requireTestnetAuth !==
-        "function"
-    ) {
-
-      throw new Error(
-        "TESTNET_AUTH_MODULE_UNAVAILABLE"
-      );
-
+    if (!auth || typeof auth.requireTestnetAuth !== "function") {
+      throw new Error("TESTNET_AUTH_MODULE_UNAVAILABLE");
     }
 
     return auth;
-
   }
-
 
   /* =======================================================
      TESTNET SESSION TOKEN
   ======================================================= */
 
   function getSessionToken() {
-
-    var auth =
-      getAuth();
-
-    var token =
-      clean(
-        auth.getSessionToken()
-      );
+    var auth = getAuth();
+    var token = clean(auth.getSessionToken());
 
     if (!token) {
-
-      throw new Error(
-        "TESTNET_SESSION_REQUIRED"
-      );
-
+      throw new Error("TESTNET_SESSION_REQUIRED");
     }
 
     return token;
-
   }
-
 
   /* =======================================================
      ENVIRONMENT VALIDATION
   ======================================================= */
 
   function validateEnvironment() {
-
-    var env =
-      window.ALBukhrEnvironment;
+    var env = window.ALBukhrEnvironment;
 
     if (
       !env ||
-      typeof env.isKnown !==
-        "function" ||
-      typeof env.isTestnet !==
-        "function" ||
-      typeof env.getNetwork !==
-        "function"
+      typeof env.isKnown !== "function" ||
+      typeof env.isTestnet !== "function" ||
+      typeof env.getNetwork !== "function"
     ) {
-
-      throw new Error(
-        "TESTNET_ENVIRONMENT_UNAVAILABLE"
-      );
-
+      throw new Error("TESTNET_ENVIRONMENT_UNAVAILABLE");
     }
 
-
-    if (
-      !env.isKnown() ||
-      !env.isTestnet() ||
-      env.getNetwork() !==
-        NETWORK
-    ) {
-
-      throw new Error(
-        "INVALID_TESTNET_ENVIRONMENT"
-      );
-
+    if (!env.isKnown() || !env.isTestnet() || env.getNetwork() !== NETWORK) {
+      throw new Error("INVALID_TESTNET_ENVIRONMENT");
     }
 
+    var hostname = clean(
+      typeof env.getHostname === "function"
+        ? env.getHostname()
+        : window.location.hostname
+    ).toLowerCase();
 
-    var hostname =
-      clean(
-        typeof env.getHostname ===
-          "function"
-          ? env.getHostname()
-          : window.location.hostname
-      ).toLowerCase();
-
-
-    if (
-      hostname !==
-      "test.albukhr.com"
-    ) {
-
-      throw new Error(
-        "TESTNET_HOST_REQUIRED"
-      );
-
+    if (hostname !== "test.albukhr.com") {
+      throw new Error("TESTNET_HOST_REQUIRED");
     }
-
   }
-
 
   /* =======================================================
      PI SDK VALIDATION
   ======================================================= */
 
   function requirePiSdk() {
-
     if (
       !window.Pi ||
-      typeof window.Pi.init !==
-        "function" ||
-      typeof window.Pi.authenticate !==
-        "function" ||
-      typeof window.Pi.createPayment !==
-        "function"
+      typeof window.Pi.init !== "function" ||
+      typeof window.Pi.authenticate !== "function" ||
+      typeof window.Pi.createPayment !== "function"
     ) {
-
-      throw new Error(
-        "PI_SDK_UNAVAILABLE"
-      );
-
+      throw new Error("PI_SDK_UNAVAILABLE");
     }
 
     return window.Pi;
-
   }
-
 
   /* =======================================================
      EVENT DISPATCH
   ======================================================= */
 
-  function dispatch(
-    name,
-    detail
-  ) {
-
+  function dispatch(name, detail) {
     try {
-
-      window.dispatchEvent(
-        new CustomEvent(
-          name,
-          {
-            detail:
-              detail || {}
-          }
-        )
-      );
-
+      window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
     } catch (_) {}
-
   }
-
 
   /* =======================================================
      API REQUEST
   ======================================================= */
 
-  async function apiRequest(
-    path,
-    body,
-    includePiToken
-  ) {
-
-    var sessionToken =
-      getSessionToken();
-
+  async function apiRequest(path, body, includePiToken) {
+    var sessionToken = getSessionToken();
 
     var headers = {
-
-      "Accept":
-        "application/json",
-
-      "Content-Type":
-        "application/json",
-
-      "X-Testnet-Session":
-        sessionToken
-
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Testnet-Session": sessionToken
     };
 
-
-    /*
-     * Server approval/completion requires
-     * the Pi access token.
-     */
     if (includePiToken) {
-
-      var piToken =
-        clean(
-          authResult &&
-          authResult.accessToken
-        );
-
+      var piToken = clean(authResult && authResult.accessToken);
 
       if (!piToken) {
-
-        throw new Error(
-          "PI_ACCESS_TOKEN_REQUIRED"
-        );
-
+        throw new Error("PI_ACCESS_TOKEN_REQUIRED");
       }
 
-
-      headers.Authorization =
-        "Bearer " +
-        piToken;
-
+      headers.Authorization = "Bearer " + piToken;
     }
 
+    var response = await fetch(
+      API_BASE.replace(/\/+$/, "") +
+        "/liquidity-payment/" +
+        clean(path).replace(/^\/+/, ""),
+      {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body || {})
+      }
+    );
 
-    var response =
-      await fetch(
-
-        API_BASE.replace(
-          /\/+$/,
-          ""
-        ) +
-          "/liquidity-payment/" +
-          clean(path).replace(
-            /^\/+/,
-            ""
-          ),
-
-        {
-          method:
-            "POST",
-
-          headers:
-            headers,
-
-          body:
-            JSON.stringify(
-              body || {}
-            )
-        }
-
-      );
-
-
-    var data =
-      null;
-
+    var data = null;
 
     try {
-
-      data =
-        await response.json();
-
+      data = await response.json();
     } catch (_) {}
 
-
     if (!response.ok) {
-
       var code =
-        clean(
-          data &&
-          data.error
-        ) ||
+        clean(data && data.error) ||
         "TESTNET_LIQUIDITY_PAYMENT_ERROR";
 
-
-      var error =
-        new Error(code);
-
-
-      error.status =
-        response.status;
-
-      error.body =
-        data;
-
-
+      var error = new Error(code);
+      error.status = response.status;
+      error.body = data;
       throw error;
-
     }
 
-
     return data;
-
   }
-
 
   /* =======================================================
      INCOMPLETE PAYMENT RECOVERY
   ======================================================= */
 
-  async function recoverIncomplete(
-    payment
-  ) {
+  async function recoverIncomplete(payment) {
+    if (!payment) return null;
 
-    if (!payment) {
-
-      return null;
-
-    }
-
-
-    var identifier =
-      clean(
-        payment.identifier ||
-        payment.id
-      );
-
-
-    if (!identifier) {
-
-      return null;
-
-    }
-
+    var identifier = clean(payment.identifier || payment.id);
+    if (!identifier) return null;
 
     try {
+      var response = await fetch(
+        API_BASE.replace(/\/+$/, "") + "/liquidity-payment/incomplete",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            paymentId: identifier,
+            identifier: identifier,
+            txid: clean(payment.transaction && payment.transaction.txid) || null
+          })
+        }
+      );
 
-      var response =
-        await fetch(
-
-          API_BASE.replace(
-            /\/+$/,
-            ""
-          ) +
-            "/liquidity-payment/incomplete",
-
-          {
-            method:
-              "POST",
-
-            headers: {
-
-              "Accept":
-                "application/json",
-
-              "Content-Type":
-                "application/json"
-
-            },
-
-            body:
-              JSON.stringify({
-
-                paymentId:
-                  identifier,
-
-                identifier:
-                  identifier,
-
-                txid:
-                  clean(
-                    payment.transaction &&
-                    payment.transaction.txid
-                  ) ||
-                  null
-
-              })
-
-          }
-
-        );
-
-
-      var result =
-        null;
-
-
+      var result = null;
       try {
-
-        result =
-          await response.json();
-
+        result = await response.json();
       } catch (_) {}
 
-
       if (!response.ok) {
-
-        var error =
-          new Error(
-
-            clean(
-              result &&
-              (
-                result.error ||
-                result.message
-              )
-            ) ||
+        var error = new Error(
+          clean(result && (result.error || result.message)) ||
             "TESTNET_LIQUIDITY_RECOVERY_FAILED"
-
-          );
-
-
-        error.status =
-          response.status;
-
-        error.body =
-          result;
-
-
+        );
+        error.status = response.status;
+        error.body = result;
         throw error;
-
       }
 
-
-      dispatch(
-
-        "albukhr:testnet-liquidity-payment-recovered",
-
-        result
-
-      );
-
-
+      dispatch("albukhr:testnet-liquidity-payment-recovered", result);
       return result;
-
     } catch (error) {
-
-      console.error(
-
-        "[ALBUKHR TESTNET LIQUIDITY RECOVERY]",
-
-        error
-
-      );
-
-
-      dispatch(
-
-        "albukhr:testnet-liquidity-payment-recovery-error",
-
-        {
-          error:
-            error,
-
-          payment:
-            payment
-        }
-
-      );
-
-
+      console.error("[ALBUKHR TESTNET LIQUIDITY RECOVERY]", error);
+      dispatch("albukhr:testnet-liquidity-payment-recovery-error", {
+        error: error,
+        payment: payment
+      });
       throw error;
-
     }
-
   }
-
 
   /* =======================================================
      PI SDK INITIALIZATION
   ======================================================= */
 
   function initializePiSdk() {
-
     validateEnvironment();
 
+    var pi = requirePiSdk();
 
-    var pi =
-      requirePiSdk();
-
-
-    /*
-     * Do not initialize more than once.
-     */
     if (initialized) {
-
-      return pi;
-
+      return Promise.resolve(pi);
     }
 
+    if (initializationPromise) {
+      return initializationPromise;
+    }
 
-    try {
+    // Share one initialization promise and await Pi.init() before SDK calls.
+    initializationPromise = Promise.resolve()
+      .then(function () {
+        return pi.init({
+          version: PI_SDK_VERSION,
+          sandbox: PI_SANDBOX
+        });
+      })
+      .then(function () {
+        initialized = true;
 
-      pi.init({
+        dispatch("albukhr:testnet-liquidity-pi-initialized", {
+          version: PI_SDK_VERSION,
+          sandbox: PI_SANDBOX
+        });
 
-        version:
-          PI_SDK_VERSION,
+        return pi;
+      })
+      .catch(function (error) {
+        initialized = false;
+        initializationPromise = null;
 
-        sandbox:
-          PI_SANDBOX
+        dispatch("albukhr:testnet-liquidity-pi-init-error", {
+          message: clean(error && error.message) || "PI_INIT_FAILED"
+        });
 
+        throw error;
       });
 
-
-      initialized =
-        true;
-
-
-      dispatch(
-
-        "albukhr:testnet-liquidity-pi-initialized",
-
-        {
-
-          version:
-            PI_SDK_VERSION,
-
-          sandbox:
-            PI_SANDBOX
-
-        }
-
-      );
-
-
-      return pi;
-
-    } catch (error) {
-
-      initialized =
-        false;
-
-
-      dispatch(
-
-        "albukhr:testnet-liquidity-pi-init-error",
-
-        {
-
-          message:
-            clean(
-              error &&
-              error.message
-            ) ||
-            "PI_INIT_FAILED"
-
-        }
-
-      );
-
-
-      throw error;
-
-    }
-
+    return initializationPromise;
   }
-
 
   /* =======================================================
      PI AUTHENTICATION
-  =======================================================
-
-     IMPORTANT:
-
-     This function is NOT called by
-     createLiquidityPayment().
-
-     It is called during page preparation.
-
-     This prevents the payment click from having to wait
-     for Pi.authenticate().
   ======================================================= */
 
   async function authenticate() {
-
     validateEnvironment();
 
+    var pi = await withAuthTimeout(
+      initializePiSdk(),
+      12000,
+      "PI_SDK_INIT_TIMEOUT"
+    );
 
-    /*
-     * Pi SDK must already be initialized.
-     */
-    var pi =
-      initializePiSdk();
+    // Require an existing ALBUKHR Testnet session before Pi auth is accepted.
+    if (!testnetSessionPromise) {
+      testnetSessionPromise = getAuth().requireTestnetAuth({
+        redirectOnFailure: false
+      });
+    }
 
-
-    /*
-     * Testnet session must exist before Pi authentication
-     * is accepted by the ALBUKHR payment flow.
-     */
-    
-/*
- * Share the Testnet session check between the payment client
- * and Project Owner controller during page startup.
- */
-if (!testnetSessionPromise) {
-  testnetSessionPromise =
-    getAuth().requireTestnetAuth({
-      redirectOnFailure: false
-    });
-}
-
-var session;
-
-try {
-  session = await testnetSessionPromise;
-} finally {
-  testnetSessionPromise = null;
-}
+    var session;
+    try {
+      session = await withAuthTimeout(
+        testnetSessionPromise,
+        12000,
+        "TESTNET_SESSION_CHECK_TIMEOUT"
+      );
+    } finally {
+      testnetSessionPromise = null;
+    }
 
     if (!session) {
-
-      throw new Error(
-        "TESTNET_SESSION_REQUIRED"
-      );
-
+      throw new Error("TESTNET_SESSION_REQUIRED");
     }
 
-
-    /*
-     * If another authentication request is already running,
-     * reuse it instead of calling Pi.authenticate() twice.
-     */
     if (authenticationPromise) {
-
       return authenticationPromise;
-
     }
 
-
-    /*
-     * If we already have a valid in-memory Pi auth result,
-     * return it.
-     */
     if (
       authResult &&
-      clean(
-        authResult.accessToken
-      ) &&
+      clean(authResult.accessToken) &&
       authResult.user &&
-      clean(
-        authResult.user.uid
-      )
+      clean(authResult.user.uid)
     ) {
+      return { user: authResult.user };
+    }
 
-      return {
+    authenticationPromise = (async function () {
+      pendingIncompletePayments = [];
 
-        user:
-          authResult.user
+      var result = await withAuthTimeout(
+        pi.authenticate(
+          ["username", "payments"],
+          function onIncompletePaymentFound(payment) {
+            if (payment) pendingIncompletePayments.push(payment);
+          }
+        ),
+        20000,
+        "PI_AUTHENTICATION_TIMEOUT"
+      );
 
+      if (
+        !result ||
+        !clean(result.accessToken) ||
+        !result.user ||
+        !clean(result.user.uid)
+      ) {
+        throw new Error("PI_AUTH_RESULT_INVALID");
+      }
+
+      // MEMORY ONLY: never persist this access token.
+      authResult = {
+        accessToken: result.accessToken,
+        user: {
+          uid: clean(result.user.uid),
+          username: clean(result.user.username) || null
+        }
       };
 
-    }
-
-
-    authenticationPromise =
-      (async function () {
-
-        pendingIncompletePayments =
-          [];
-
-
-        /*
-         * ONLY ONE Pi.authenticate() CALL.
-         */
-        var result =
-          await pi.authenticate(
-
-            [
-              "username",
-              "payments"
-            ],
-
-            function
-              onIncompletePaymentFound(
-                payment
-              ) {
-
-              if (payment) {
-
-                pendingIncompletePayments.push(
-                  payment
-                );
-
-              }
-
-            }
-
-          );
-
-
-        /*
-         * Validate Pi response.
-         */
-        if (
-          !result ||
-          !clean(
-            result.accessToken
-          ) ||
-          !result.user ||
-          !clean(
-            result.user.uid
-          )
-        ) {
-
-          throw new Error(
-            "PI_AUTH_RESULT_INVALID"
-          );
-
-        }
-
-
-        /*
-         * MEMORY ONLY.
-         *
-         * Never persist this object.
-         */
-        authResult = {
-
-          accessToken:
-            result.accessToken,
-
-          user: {
-
-            uid:
-              clean(
-                result.user.uid
-              ),
-
-            username:
-              clean(
-                result.user.username
-              ) ||
-              null
-
-          }
-
-        };
-
-
-        /*
-         * Recover incomplete payments after authentication.
-         */
-        for (
-          var i = 0;
-          i <
-          pendingIncompletePayments.length;
-          i += 1
-        ) {
-
-          try {
-
-            await recoverIncomplete(
-              pendingIncompletePayments[i]
-            );
-
-          } catch (
+      for (var i = 0; i < pendingIncompletePayments.length; i += 1) {
+        try {
+          await recoverIncomplete(pendingIncompletePayments[i]);
+        } catch (recoveryError) {
+          console.error(
+            "[ALBUKHR TESTNET INCOMPLETE PAYMENT RECOVERY]",
             recoveryError
-          ) {
-
-            /*
-             * Recovery failure must not destroy
-             * the newly authenticated Pi session.
-             */
-            console.error(
-
-              "[ALBUKHR TESTNET INCOMPLETE PAYMENT RECOVERY]",
-
-              recoveryError
-
-            );
-
-          }
-
+          );
         }
+      }
 
+      pendingIncompletePayments = [];
 
-        pendingIncompletePayments =
-          [];
+      dispatch("albukhr:testnet-liquidity-pi-authenticated", {
+        username: authResult.user.username,
+        uid: authResult.user.uid
+      });
 
-
-        /*
-         * Notify the Project Owner page that
-         * Pi authentication is ready.
-         */
-        dispatch(
-
-          "albukhr:testnet-liquidity-pi-authenticated",
-
-          {
-
-            username:
-              authResult.user.username,
-
-            uid:
-              authResult.user.uid
-
-          }
-
-        );
-
-
-        return {
-
-          user:
-            authResult.user
-
-        };
-
-      })();
-
+      return { user: authResult.user };
+    })();
 
     try {
-
       return await authenticationPromise;
-
     } finally {
-
-      authenticationPromise =
-        null;
-
+      authenticationPromise = null;
     }
-
   }
-
 
   /* =======================================================
      CHECK PI AUTHENTICATION STATE
   ======================================================= */
 
   function isAuthenticated() {
-
     return !!(
-
       authResult &&
-
-      clean(
-        authResult.accessToken
-      ) &&
-
+      clean(authResult.accessToken) &&
       authResult.user &&
-
-      clean(
-        authResult.user.uid
-      )
-
+      clean(authResult.user.uid)
     );
-
   }
-
 
   /* =======================================================
      GET PI ACCESS TOKEN
@@ -972,608 +460,175 @@ try {
   ======================================================= */
 
   function getPiAccessToken() {
-
-    if (!isAuthenticated()) {
-
-      return "";
-
-    }
-
-    return clean(
-      authResult.accessToken
-    );
-
+    if (!isAuthenticated()) return "";
+    return clean(authResult.accessToken);
   }
-
 
   /* =======================================================
      CREATE LIQUIDITY PAYMENT
-  =======================================================
-
-     CRITICAL:
-
-     There is NO:
-
-         await authenticate();
-
-     inside this function.
-
-     Pi authentication must already be complete before
-     the user presses Add Liquidity.
-
-     Therefore the user click can proceed directly to:
-
-         Pi.createPayment()
-
-     This preserves the payment UI user-gesture chain.
   ======================================================= */
 
-  async function createLiquidityPayment(
-    project,
-    amount
-  ) {
-
+  async function createLiquidityPayment(project, amount) {
     validateEnvironment();
 
+    var safeProject = project || {};
+    var projectId = clean(safeProject.id);
+    var projectCode = clean(safeProject.project_code);
 
-    var safeProject =
-      project || {};
+    if (!projectId) throw new Error("PROJECT_ID_REQUIRED");
+    if (!projectCode) throw new Error("PROJECT_CODE_REQUIRED");
 
-
-    var projectId =
-      clean(
-        safeProject.id
-      );
-
-
-    var projectCode =
-      clean(
-        safeProject.project_code
-      );
-
-
-    if (!projectId) {
-
-      throw new Error(
-        "PROJECT_ID_REQUIRED"
-      );
-
+    if (clean(safeProject.network).toLowerCase() !== NETWORK) {
+      throw new Error("PROJECT_NETWORK_INVALID");
     }
 
-
-    if (!projectCode) {
-
-      throw new Error(
-        "PROJECT_CODE_REQUIRED"
-      );
-
+    var value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error("INVALID_LIQUIDITY_AMOUNT");
     }
 
-
-    if (
-      clean(
-        safeProject.network
-      ).toLowerCase() !==
-      NETWORK
-    ) {
-
-      throw new Error(
-        "PROJECT_NETWORK_INVALID"
-      );
-
-    }
-
-
-    var value =
-      Number(amount);
-
-
-    if (
-      !Number.isFinite(value) ||
-      value <= 0
-    ) {
-
-      throw new Error(
-        "INVALID_LIQUIDITY_AMOUNT"
-      );
-
-    }
-
-
-    /*
-     * CRITICAL:
-     *
-     * Do not authenticate here.
-     *
-     * The Pi identity must already be authenticated.
-     */
+    // Do not authenticate inside the click/payment path.
     if (!isAuthenticated()) {
-
-      throw new Error(
-        "PI_AUTH_REQUIRED_BEFORE_PAYMENT"
-      );
-
+      throw new Error("PI_AUTH_REQUIRED_BEFORE_PAYMENT");
     }
 
+    var pi = requirePiSdk();
+    var memo = "ALBUKHR Testnet liquidity • " + projectCode;
 
-    /*
-     * Require Pi SDK.
-     */
-    var pi =
-      requirePiSdk();
+    return new Promise(function (resolve, reject) {
+      pi.createPayment(
+        {
+          amount: value,
+          memo: memo,
+          metadata: {
+            network: NETWORK,
+            action: "add_liquidity",
+            project_id: projectId,
+            project_code: projectCode
+          }
+        },
+        {
+          onReadyForServerApproval: async function (paymentId) {
+            try {
+              var approved = await apiRequest(
+                "approve",
+                {
+                  paymentId: paymentId,
+                  projectId: projectId,
+                  projectCode: projectCode
+                },
+                true
+              );
 
-
-    /*
-     * Do not call Pi.authenticate() here.
-     *
-     * The next Pi call is createPayment().
-     */
-    var memo =
-      "ALBUKHR Testnet liquidity • " +
-      projectCode;
-
-
-    return new Promise(
-
-      function (
-        resolve,
-        reject
-      ) {
-
-
-        /*
-         * =====================================================
-         * PI PAYMENT UI
-         * =====================================================
-         *
-         * This is intentionally the first Pi SDK operation
-         * after the user's Add Liquidity click.
-         */
-        pi.createPayment(
-
-          {
-
-            amount:
-              value,
-
-            memo:
-              memo,
-
-            metadata: {
-
-              network:
-                NETWORK,
-
-              action:
-                "add_liquidity",
-
-              project_id:
-                projectId,
-
-              project_code:
-                projectCode
-
+              dispatch("albukhr:testnet-liquidity-payment-approved", approved);
+            } catch (error) {
+              console.error("[ALBUKHR TESTNET LIQUIDITY APPROVAL]", error);
+              dispatch("albukhr:testnet-liquidity-payment-approval-error", {
+                error: error,
+                paymentId: paymentId
+              });
+              throw error;
             }
-
           },
 
-
-          {
-
-            /* ===============================================
-               SERVER APPROVAL
-            =============================================== */
-
-            onReadyForServerApproval:
-              async function (
-                paymentId
-              ) {
-
-                try {
-
-                  var approved =
-                    await apiRequest(
-
-                      "approve",
-
-                      {
-
-                        paymentId:
-                          paymentId,
-
-                        projectId:
-                          projectId,
-
-                        projectCode:
-                          projectCode
-
-                      },
-
-                      true
-
-                    );
-
-
-                  dispatch(
-
-                    "albukhr:testnet-liquidity-payment-approved",
-
-                    approved
-
-                  );
-
-                } catch (error) {
-
-                  console.error(
-
-                    "[ALBUKHR TESTNET LIQUIDITY APPROVAL]",
-
-                    error
-
-                  );
-
-
-                  dispatch(
-
-                    "albukhr:testnet-liquidity-payment-approval-error",
-
-                    {
-
-                      error:
-                        error,
-
-                      paymentId:
-                        paymentId
-
-                    }
-
-                  );
-
-
-                  throw error;
-
-                }
-
-              },
-
-
-            /* ===============================================
-               SERVER COMPLETION
-            =============================================== */
-
-            onReadyForServerCompletion:
-              async function (
-                paymentId,
-                txid
-              ) {
-
-                try {
-
-                  var completed =
-                    await apiRequest(
-
-                      "complete",
-
-                      {
-
-                        paymentId:
-                          paymentId,
-
-                        projectId:
-                          projectId,
-
-                        projectCode:
-                          projectCode,
-
-                        txid:
-                          txid
-
-                      },
-
-                      true
-
-                    );
-
-
-                  dispatch(
-
-                    "albukhr:testnet-liquidity-payment-completed",
-
-                    completed
-
-                  );
-
-
-                  resolve(
-                    completed
-                  );
-
-                } catch (error) {
-
-                  console.error(
-
-                    "[ALBUKHR TESTNET LIQUIDITY COMPLETION]",
-
-                    error
-
-                  );
-
-
-                  dispatch(
-
-                    "albukhr:testnet-liquidity-payment-completion-error",
-
-                    {
-
-                      error:
-                        error,
-
-                      paymentId:
-                        paymentId,
-
-                      txid:
-                        txid
-
-                    }
-
-                  );
-
-
-                  throw error;
-
-                }
-
-              },
-
-
-            /* ===============================================
-               USER CANCEL
-            =============================================== */
-
-            onCancel:
-              function (
-                paymentId
-              ) {
-
-                dispatch(
-
-                  "albukhr:testnet-liquidity-payment-cancelled",
-
-                  {
-
-                    paymentId:
-                      paymentId,
-
-                    network:
-                      NETWORK
-
-                  }
-
-                );
-
-
-                reject(
-
-                  new Error(
-                    "PI_PAYMENT_CANCELLED"
-                  )
-
-                );
-
-              },
-
-
-            /* ===============================================
-               PI PAYMENT ERROR
-            =============================================== */
-
-            onError:
-              function (
-                error,
-                payment
-              ) {
-
-                console.error(
-
-                  "[ALBUKHR TESTNET LIQUIDITY PAYMENT]",
-
-                  error,
-
-                  payment || null
-
-                );
-
-
-                dispatch(
-
-                  "albukhr:testnet-liquidity-payment-error",
-
-                  {
-
-                    error:
-                      error,
-
-                    payment:
-                      payment ||
-                      null
-
-                  }
-
-                );
-
-
-                reject(
-
-                  error instanceof Error
-                    ? error
-                    : new Error(
-                        "PI_PAYMENT_ERROR"
-                      )
-
-                );
-
-              }
-
+          onReadyForServerCompletion: async function (paymentId, txid) {
+            try {
+              var completed = await apiRequest(
+                "complete",
+                {
+                  paymentId: paymentId,
+                  projectId: projectId,
+                  projectCode: projectCode,
+                  txid: txid
+                },
+                true
+              );
+
+              dispatch("albukhr:testnet-liquidity-payment-completed", completed);
+              resolve(completed);
+            } catch (error) {
+              console.error("[ALBUKHR TESTNET LIQUIDITY COMPLETION]", error);
+              dispatch("albukhr:testnet-liquidity-payment-completion-error", {
+                error: error,
+                paymentId: paymentId,
+                txid: txid
+              });
+              throw error;
+            }
+          },
+
+          onCancel: function (paymentId) {
+            dispatch("albukhr:testnet-liquidity-payment-cancelled", {
+              paymentId: paymentId,
+              network: NETWORK
+            });
+            reject(new Error("PI_PAYMENT_CANCELLED"));
+          },
+
+          onError: function (error, payment) {
+            console.error("[ALBUKHR TESTNET LIQUIDITY PAYMENT]", error, payment || null);
+            dispatch("albukhr:testnet-liquidity-payment-error", {
+              error: error,
+              payment: payment || null
+            });
+            reject(
+              error instanceof Error ? error : new Error("PI_PAYMENT_ERROR")
+            );
           }
-
-        );
-
-      }
-
-    );
-
+        }
+      );
+    });
   }
-
 
   /* =======================================================
      CLEAR MEMORY-ONLY PI AUTH
   ======================================================= */
 
   function clearInMemoryPiAuth() {
-
-    authResult =
-      null;
-
-    pendingIncompletePayments =
-      [];
-
-    authenticationPromise =
-      null;
-
+    authResult = null;
+    pendingIncompletePayments = [];
+    authenticationPromise = null;
   }
-
 
   /* =======================================================
      INITIAL PAGE-LOAD PI INITIALIZATION
   ======================================================= */
 
-  try {
-
-    initializePiSdk();
-
-  } catch (error) {
-
-    console.error(
-
-      "[ALBUKHR TESTNET LIQUIDITY PI INIT]",
-
-      error
-
-    );
-
-  }
-
+  initializePiSdk().catch(function (error) {
+    console.error("[ALBUKHR TESTNET LIQUIDITY PI INIT]", error);
+  });
 
   /* =======================================================
      PRE-AUTHENTICATION
-  =======================================================
-
-     This starts Pi authentication after the payment client
-     has loaded.
-
-     It does NOT create a payment.
-
-     It only obtains the Pi identity/access token so that
-     the later Add Liquidity click can call Pi.createPayment()
-     directly.
   ======================================================= */
 
-  try {
+  authenticate().catch(function (error) {
+    console.error("[ALBUKHR TESTNET PI PRE-AUTH]", error);
 
-    authenticate().catch(
-
-      function (error) {
-
-        console.error(
-
-          "[ALBUKHR TESTNET PI PRE-AUTH]",
-
-          error
-
-        );
-
-
-        dispatch(
-
-          "albukhr:testnet-liquidity-pi-auth-error",
-
-          {
-
-            message:
-              clean(
-                error &&
-                error.message
-              ) ||
-              "PI_AUTH_FAILED"
-
-          }
-
-        );
-
-      }
-
-    );
-
-  } catch (error) {
-
-    console.error(
-
-      "[ALBUKHR TESTNET PI PRE-AUTH START]",
-
-      error
-
-    );
-
-  }
-
+    dispatch("albukhr:testnet-liquidity-pi-auth-error", {
+      message: clean(error && error.message) || "PI_AUTH_FAILED"
+    });
+  });
 
   /* =======================================================
      PUBLIC API
   ======================================================= */
 
   var api = {
-
-    init:
-      initializePiSdk,
-
-    authenticate:
-      authenticate,
-
-    isAuthenticated:
-      isAuthenticated,
-
-    createLiquidityPayment:
-      createLiquidityPayment,
-
-    addLiquidity:
-      createLiquidityPayment,
-
-    recoverIncomplete:
-      recoverIncomplete,
-
-    clearInMemoryPiAuth:
-      clearInMemoryPiAuth,
-
-    network:
-      NETWORK,
-
-    apiBase:
-      API_BASE
-
+    init: initializePiSdk,
+    authenticate: authenticate,
+    isAuthenticated: isAuthenticated,
+    createLiquidityPayment: createLiquidityPayment,
+    addLiquidity: createLiquidityPayment,
+    recoverIncomplete: recoverIncomplete,
+    clearInMemoryPiAuth: clearInMemoryPiAuth,
+    network: NETWORK,
+    apiBase: API_BASE
   };
 
-
   try {
-
-    Object.freeze(
-      api
-    );
-
+    Object.freeze(api);
   } catch (_) {}
 
-
-  window.AlbukhrTestnetLiquidityPayment =
-    api;
-
-
+  window.AlbukhrTestnetLiquidityPayment = api;
 })(window);
