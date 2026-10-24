@@ -103,6 +103,11 @@
   var authenticationPromise =
     null;
 
+   /*
+ * Share the Testnet session check between concurrent pre-auth callers.
+ */
+var testnetSessionPromise =
+  null;
 
   /* =======================================================
      UTILITY
@@ -700,15 +705,25 @@
      * Testnet session must exist before Pi authentication
      * is accepted by the ALBUKHR payment flow.
      */
-    var session =
-      await getAuth()
-        .requireTestnetAuth({
+    
+/*
+ * Share the Testnet session check between the payment client
+ * and Project Owner controller during page startup.
+ */
+if (!testnetSessionPromise) {
+  testnetSessionPromise =
+    getAuth().requireTestnetAuth({
+      redirectOnFailure: false
+    });
+}
 
-          redirectOnFailure:
-            false
+var session;
 
-        });
-
+try {
+  session = await testnetSessionPromise;
+} finally {
+  testnetSessionPromise = null;
+}
 
     if (!session) {
 
