@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,127 +6,343 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f7a3d">
 <title>Project Owner • ALBUKHR TESTNET</title>
-<link rel="stylesheet" href="css/testnet-project-owner.css?v=20261025-owner-debug1">
+<link rel="stylesheet" href="css/testnet-project-owner.css?v=20261025-owner-profile-collapse1">
 <style>
 #testnetDebugPanel{margin:12px 0;padding:12px 14px;border:1px solid #e8d8a5;border-radius:12px;background:#fff9e8;color:#493d1b;font:14px/1.45 system-ui,sans-serif}
 #testnetDebugPanel strong{display:block;margin-bottom:5px}
 #testnetDebugStatus{overflow-wrap:anywhere}
 #testnetDebugPanel ol{margin:8px 0 0;padding-left:20px}
 #testnetDebugPanel li{margin:4px 0}
+
+/* Owner profile compact layout */
+#ownerProfileDetails[hidden]{display:none!important}
+.owner-profile-summary{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.owner-profile-summary .muted{margin-bottom:0}
+#toggleOwnerProfileBtn{width:100%;min-height:44px}
+#ownerProfileDetails{margin-top:14px}
+@media(min-width:600px){
+  .owner-profile-summary{flex-direction:row;align-items:center;justify-content:space-between}
+  #toggleOwnerProfileBtn{width:auto;min-width:140px}
+}
 </style>
 </head>
 <body data-page="project-owner" data-network="testnet">
 <header class="owner-header">
   <a class="brand-link" href="index.html" aria-label="ALBUKHR Testnet Home">ALBUKHR</a>
-  <div class="owner-header-actions"><span class="network-badge">TESTNET</span><a class="back-link" id="backToProject" href="index.html">Project</a></div>
+  <div class="owner-header-actions">
+    <span class="network-badge">TESTNET</span>
+    <a class="back-link" id="backToProject" href="index.html">Project</a>
+  </div>
 </header>
+
 <main class="owner-shell">
   <div id="testnetDebugPanel" role="status" aria-live="polite">
     <strong>Testnet diagnostics</strong>
     <div id="testnetDebugStatus">Starting safe diagnostics…</div>
-    <ol id="testnetDebugLog"><li>Diagnostic panel loaded. No credentials or payment tokens are displayed.</li></ol>
+    <ol id="testnetDebugLog">
+      <li>Diagnostic panel loaded. No credentials or payment tokens are displayed.</li>
+    </ol>
   </div>
+
   <section class="owner-hero">
-    <div class="owner-identity"><span class="owner-kicker">PROJECT OWNER</span><h1 id="ownerTitle">Manage Project</h1><p id="ownerSubtitle">Verifying project ownership…</p><div class="owner-pills"><span>TESTNET</span><span>OWNER ACCESS</span><span id="ownerUserPill">—</span></div></div>
+    <div class="owner-identity">
+      <span class="owner-kicker">PROJECT OWNER</span>
+      <h1 id="ownerTitle">Manage Project</h1>
+      <p id="ownerSubtitle">Verifying project ownership…</p>
+      <div class="owner-pills">
+        <span>TESTNET</span>
+        <span>OWNER ACCESS</span>
+        <span id="ownerUserPill">—</span>
+      </div>
+    </div>
     <div class="owner-mark" aria-hidden="true">✓</div>
   </section>
-  <section id="ownerError" class="notice error" hidden><strong id="ownerErrorTitle">Access denied</strong><p id="ownerErrorText">This project is not assigned to your Testnet identity.</p><a class="button secondary" href="index.html">Return to Testnet</a></section>
+
+  <section id="ownerError" class="notice error" hidden>
+    <strong id="ownerErrorTitle">Access denied</strong>
+    <p id="ownerErrorText">This project is not assigned to your Testnet identity.</p>
+    <a class="button secondary" href="index.html">Return to Testnet</a>
+  </section>
+
   <div id="ownerContent" hidden>
-    <section class="project-card"><div class="project-logo-wrap"><img id="ownerProjectLogo" alt="" hidden><div id="ownerProjectLogoFallback">A</div></div><div class="project-copy"><span class="owner-kicker">APPROVED PROJECT</span><h2 id="projectName">Project</h2><p id="projectCode">—</p></div></section>
-    <section class="panel" aria-labelledby="ownerProfileTitle">
-      <div class="section-head"><div><span class="owner-kicker">OWNER IDENTITY</span><h2 id="ownerProfileTitle">My Project Owner Profile</h2></div><span id="profileVerificationState" class="state-pill">CHECKING</span></div>
-      <p class="muted">You may update your own contact, profile, and registered Testnet wallet information. Project ownership itself cannot be transferred from this page.</p>
-      <div class="form-grid">
-        <label class="field"><span>Pi UID</span><input id="profilePiUid" type="text" readonly></label><label class="field"><span>Username</span><input id="profileUsername" type="text" readonly></label>
-        <label class="field"><span>Display name</span><input id="profileDisplayName" type="text" maxlength="160" autocomplete="name"></label><label class="field"><span>Role title</span><input id="profileRoleTitle" type="text" maxlength="160"></label>
-        <label class="field"><span>Organization</span><input id="profileOrganization" type="text" maxlength="200"></label><label class="field"><span>Contact email</span><input id="profileEmail" type="email" maxlength="254" autocomplete="email"></label>
-        <label class="field"><span>Contact phone</span><input id="profilePhone" type="tel" maxlength="64" autocomplete="tel"></label><label class="field"><span>Registered wallet</span><input id="profileWallet" type="text" maxlength="256" autocomplete="off"></label>
-        <label class="field field-full"><span>Bio</span><textarea id="profileBio" maxlength="2000" rows="4"></textarea></label><div class="field action-field"><span>&nbsp;</span><button id="saveOwnerProfileBtn" class="button primary" type="button">Save Profile</button></div>
+    <section class="project-card">
+      <div class="project-logo-wrap">
+        <img id="ownerProjectLogo" alt="" hidden>
+        <div id="ownerProjectLogoFallback">A</div>
       </div>
-      <p id="profileStatus" class="status-text" role="status" aria-live="polite"></p>
-      <div class="security-note"><strong>Ownership protection</strong><span>Your Project Owner identity is bound by the server to the approved project owner record. Changing ownership requires Super Admin action and an audited ownership operation.</span></div>
+      <div class="project-copy">
+        <span class="owner-kicker">APPROVED PROJECT</span>
+        <h2 id="projectName">Project</h2>
+        <p id="projectCode">—</p>
+      </div>
     </section>
-    <section class="stats-grid" aria-label="Project owner summary"><article class="stat-card"><span>Owner Balance</span><strong id="ownerBalance">0.00 Pi</strong><small>Available for owner withdrawal</small></article><article class="stat-card"><span>Required Liquidity</span><strong id="requiredLiquidity">0.00 Pi</strong><small>Testnet treasury requirement</small></article><article class="stat-card"><span>Verified Liquidity</span><strong id="verifiedLiquidity">0.00 Pi</strong><small id="liquidityCoverage">0% coverage</small></article></section>
-    <section class="panel"><div class="section-head"><div><span class="owner-kicker">LIQUIDITY</span><h2>Add Project Liquidity</h2></div><span id="treasuryState" class="state-pill">CHECKING</span></div>
-      <p class="muted">Add Testnet Pi to the approved project treasury. The project, network, owner identity and Pi payment are checked server-side.</p>
-      <div class="form-grid"><label class="field"><span>Amount (Pi)</span><input id="liquidityAmount" type="number" min="100" step="0.01" inputmode="decimal" placeholder="100.00" autocomplete="off"></label><div class="field action-field"><span>&nbsp;</span><button id="addLiquidityBtn" class="button primary" type="button" disabled>Add Liquidity</button></div></div>
-      <p id="liquidityStatus" class="status-text" role="status" aria-live="polite"></p><div class="security-note"><strong>Payment gate</strong><span>The server re-checks Testnet ownership, project identity, treasury readiness and Pi payment metadata before approval and completion.</span></div>
+
+    <!-- Owner Profile: collapsed by default -->
+    <section class="panel owner-profile-panel" aria-labelledby="ownerProfileTitle">
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">OWNER IDENTITY</span>
+          <h2 id="ownerProfileTitle">My Project Owner Profile</h2>
+        </div>
+        <span id="profileVerificationState" class="state-pill">CHECKING</span>
+      </div>
+
+      <div class="owner-profile-summary">
+        <p class="muted">
+          You may update your own contact, profile, and registered Testnet
+          wallet information. Project ownership itself cannot be transferred
+          from this page.
+        </p>
+        <button
+          id="toggleOwnerProfileBtn"
+          class="button secondary"
+          type="button"
+          aria-expanded="false"
+          aria-controls="ownerProfileDetails">
+          Edit Profile
+        </button>
+      </div>
+
+      <div id="ownerProfileDetails" hidden>
+        <div class="form-grid">
+          <label class="field">
+            <span>Pi UID</span>
+            <input id="profilePiUid" type="text" readonly>
+          </label>
+          <label class="field">
+            <span>Username</span>
+            <input id="profileUsername" type="text" readonly>
+          </label>
+
+          <label class="field">
+            <span>Display name</span>
+            <input id="profileDisplayName" type="text" maxlength="160" autocomplete="name">
+          </label>
+          <label class="field">
+            <span>Role title</span>
+            <input id="profileRoleTitle" type="text" maxlength="160">
+          </label>
+
+          <label class="field">
+            <span>Organization</span>
+            <input id="profileOrganization" type="text" maxlength="200">
+          </label>
+          <label class="field">
+            <span>Contact email</span>
+            <input id="profileEmail" type="email" maxlength="254" autocomplete="email">
+          </label>
+
+          <label class="field">
+            <span>Contact phone</span>
+            <input id="profilePhone" type="tel" maxlength="64" autocomplete="tel">
+          </label>
+          <label class="field">
+            <span>Registered wallet</span>
+            <input id="profileWallet" type="text" maxlength="256" autocomplete="off">
+          </label>
+
+          <label class="field field-full">
+            <span>Bio</span>
+            <textarea id="profileBio" maxlength="2000" rows="4"></textarea>
+          </label>
+
+          <div class="field action-field">
+            <span>&nbsp;</span>
+            <button id="saveOwnerProfileBtn" class="button primary" type="button">
+              Save Profile
+            </button>
+          </div>
+        </div>
+
+        <p id="profileStatus" class="status-text" role="status" aria-live="polite"></p>
+
+        <div class="security-note">
+          <strong>Ownership protection</strong>
+          <span>Your Project Owner identity is bound by the server to the approved
+          project owner record. Changing ownership requires Super Admin action
+          and an audited ownership operation.</span>
+        </div>
+      </div>
     </section>
-    <section class="panel"><div class="section-head"><div><span class="owner-kicker">WITHDRAWAL</span><h2>Project Owner Withdrawal</h2></div><span class="state-pill">OWNER BALANCE</span></div>
-      <p class="muted">This withdrawal is separate from investor reward/capital withdrawals. Only your available Project Owner balance can be requested.</p>
-      <div class="form-grid"><label class="field"><span>Amount (Pi)</span><input id="withdrawAmount" type="number" min="0.0000001" step="0.0000001" inputmode="decimal" placeholder="0.00" autocomplete="off"></label><label class="field"><span>Registered Wallet</span><input id="withdrawWallet" type="text" readonly></label></div>
-      <button id="requestWithdrawalBtn" class="button secondary" type="button" disabled>Request Owner Withdrawal</button><p id="withdrawStatus" class="status-text" role="status" aria-live="polite"></p>
+
+    <section class="stats-grid" aria-label="Project owner summary">
+      <article class="stat-card">
+        <span>Owner Balance</span>
+        <strong id="ownerBalance">0.00 Pi</strong>
+        <small>Available for owner withdrawal</small>
+      </article>
+      <article class="stat-card">
+        <span>Required Liquidity</span>
+        <strong id="requiredLiquidity">0.00 Pi</strong>
+        <small>Testnet treasury requirement</small>
+      </article>
+      <article class="stat-card">
+        <span>Verified Liquidity</span>
+        <strong id="verifiedLiquidity">0.00 Pi</strong>
+        <small id="liquidityCoverage">0% coverage</small>
+      </article>
     </section>
-    <section class="panel"><div class="section-head"><div><span class="owner-kicker">HISTORY</span><h2>Owner Withdrawals</h2></div><button id="refreshOwnerBtn" class="small-button" type="button">Refresh</button></div><div id="withdrawalHistory" class="history-list"><div class="empty-state">Loading owner activity…</div></div></section>
-    <section class="notice"><div class="notice-icon">i</div><div><strong>Owner access is server-authorized</strong><p>This page becomes available only after the Testnet owner API confirms that your authenticated Testnet identity is bound to this approved project.</p></div></section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">LIQUIDITY</span>
+          <h2>Add Project Liquidity</h2>
+        </div>
+        <span id="treasuryState" class="state-pill">CHECKING</span>
+      </div>
+      <p class="muted">Add Testnet Pi to the approved project treasury. The project,
+      network, owner identity and Pi payment are checked server-side.</p>
+      <div class="form-grid">
+        <label class="field">
+          <span>Amount (Pi)</span>
+          <input id="liquidityAmount" type="number" min="100" step="0.01"
+            inputmode="decimal" placeholder="100.00" autocomplete="off">
+        </label>
+        <div class="field action-field">
+          <span>&nbsp;</span>
+          <button id="addLiquidityBtn" class="button primary" type="button" disabled>
+            Add Liquidity
+          </button>
+        </div>
+      </div>
+      <p id="liquidityStatus" class="status-text" role="status" aria-live="polite"></p>
+      <div class="security-note">
+        <strong>Payment gate</strong>
+        <span>The server re-checks Testnet ownership, project identity, treasury
+        readiness and Pi payment metadata before approval and completion.</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">WITHDRAWAL</span>
+          <h2>Project Owner Withdrawal</h2>
+        </div>
+        <span class="state-pill">OWNER BALANCE</span>
+      </div>
+      <p class="muted">This withdrawal is separate from investor reward/capital
+      withdrawals. Only your available Project Owner balance can be requested.</p>
+      <div class="form-grid">
+        <label class="field">
+          <span>Amount (Pi)</span>
+          <input id="withdrawAmount" type="number" min="0.0000001"
+            step="0.0000001" inputmode="decimal" placeholder="0.00" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Registered Wallet</span>
+          <input id="withdrawWallet" type="text" readonly>
+        </label>
+      </div>
+      <button id="requestWithdrawalBtn" class="button secondary" type="button" disabled>
+        Request Owner Withdrawal
+      </button>
+      <p id="withdrawStatus" class="status-text" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <span class="owner-kicker">HISTORY</span>
+          <h2>Owner Withdrawals</h2>
+        </div>
+        <button id="refreshOwnerBtn" class="small-button" type="button">Refresh</button>
+      </div>
+      <div id="withdrawalHistory" class="history-list">
+        <div class="empty-state">Loading owner activity…</div>
+      </div>
+    </section>
+
+    <section class="notice">
+      <div class="notice-icon">i</div>
+      <div>
+        <strong>Owner access is server-authorized</strong>
+        <p>This page becomes available only after the Testnet owner API confirms
+        that your authenticated Testnet identity is bound to this approved project.</p>
+      </div>
+    </section>
   </div>
 </main>
+
 <script>
 (function(){
+  "use strict";
   var status = document.getElementById("testnetDebugStatus");
   var log = document.getElementById("testnetDebugLog");
+
   function add(message){
     var li = document.createElement("li");
-    li.textContent = new Date().toLocaleTimeString() + " — " + String(message || "Unknown status").slice(0,240);
+    li.textContent = new Date().toLocaleTimeString() + " — " +
+      String(message || "Unknown status").slice(0,240);
     log.insertBefore(li, log.firstChild);
     while(log.children.length > 8) log.removeChild(log.lastChild);
     status.textContent = String(message || "Unknown status").slice(0,240);
   }
+
   window.addEventListener("error", function(e){
     var src = e && e.filename ? String(e.filename).split("/").pop() : "";
-    add("Script error" + (src ? " in " + src : "") + (e && e.message ? ": " + e.message : ""));
+    add("Script error" + (src ? " in " + src : "") +
+      (e && e.message ? ": " + e.message : ""));
   });
+
   window.addEventListener("unhandledrejection", function(e){
     var reason = e && e.reason;
-    add("Unhandled async error: " + (reason && reason.message ? reason.message : "Promise rejected"));
+    add("Unhandled async error: " +
+      (reason && reason.message ? reason.message : "Promise rejected"));
   });
-  window.addEventListener("albukhr:testnet-liquidity-debug", function(e){ add(e.detail && e.detail.message || e.detail && e.detail.stage); });
-  window.addEventListener("albukhr:testnet-liquidity-pi-init-error", function(e){ add("Pi SDK init error: " + (e.detail && e.detail.message || "PI_INIT_FAILED")); });
-  window.addEventListener("albukhr:testnet-liquidity-pi-auth-error", function(e){ add("Pi authentication error: " + (e.detail && e.detail.message || "PI_AUTH_FAILED")); });
-  window.addEventListener("albukhr:testnet-liquidity-pi-initialized", function(){ add("Pi SDK initialized successfully."); });
-  window.addEventListener("albukhr:testnet-liquidity-pi-authenticated", function(){ add("Pi identity authenticated successfully."); });
+
+  window.addEventListener("albukhr:testnet-liquidity-debug", function(e){
+    add(e.detail && e.detail.message || e.detail && e.detail.stage);
+  });
+  window.addEventListener("albukhr:testnet-liquidity-pi-init-error", function(e){
+    add("Pi SDK init error: " + (e.detail && e.detail.message || "PI_INIT_FAILED"));
+  });
+  window.addEventListener("albukhr:testnet-liquidity-pi-auth-error", function(e){
+    add("Pi authentication error: " + (e.detail && e.detail.message || "PI_AUTH_FAILED"));
+  });
+  window.addEventListener("albukhr:testnet-liquidity-pi-initialized", function(){
+    add("Pi SDK initialized successfully.");
+  });
+  window.addEventListener("albukhr:testnet-liquidity-pi-authenticated", function(){
+    add("Pi identity authenticated successfully.");
+  });
 })();
-</script>
-  
-<script>
-(function () {
+
+/* Compact, accessible Owner Profile toggle */
+(function(){
   "use strict";
 
-  function initOwnerProfileToggle() {
-    const button = document.getElementById("toggleOwnerProfileBtn");
-    const details = document.getElementById("ownerProfileDetails");
+  function initOwnerProfileToggle(){
+    var button = document.getElementById("toggleOwnerProfileBtn");
+    var details = document.getElementById("ownerProfileDetails");
 
-    if (!button || !details || button.dataset.ready === "true") {
-      return;
-    }
-
+    if(!button || !details || button.dataset.ready === "true") return;
     button.dataset.ready = "true";
 
-    button.addEventListener("click", function () {
-      const willOpen = details.hidden;
-
+    button.addEventListener("click", function(){
+      var willOpen = details.hidden;
       details.hidden = !willOpen;
       button.setAttribute("aria-expanded", String(willOpen));
       button.textContent = willOpen ? "Close Profile" : "Edit Profile";
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      initOwnerProfileToggle,
-      { once: true }
-    );
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initOwnerProfileToggle, {once:true});
   } else {
     initOwnerProfileToggle();
   }
 })();
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core/environment-core.js?v=20260923-owner4c"></script>
 <script src="js/core/supabase-core.js?v=20260923-owner4c"></script>
 <script src="js/testnet-gateway-auth.js?v=20260925-gateway1"></script>
-<script src="https://sdk.minepi.com/pi-sdk.js" onload="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-ok',message:'Pi SDK script loaded; window.Pi='+(!!window.Pi)+'; Pi.init='+(typeof (window.Pi && window.Pi.init))}}))" onerror="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-error',message:'Pi SDK script failed to load from sdk.minepi.com.'}}))"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"
+  onload="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-ok',message:'Pi SDK script loaded; window.Pi='+(!!window.Pi)+'; Pi.init='+(typeof (window.Pi && window.Pi.init))}}))"
+  onerror="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-error',message:'Pi SDK script failed to load from sdk.minepi.com.'}}))"></script>
 <script src="js/testnet-liquidity-payment-client.js?v=20261025-owner-debug3"></script>
 <script src="js/testnet-project-owner.js?v=20261025-owner-debug2"></script>
 </body>
