@@ -86,6 +86,41 @@
   window.addEventListener("albukhr:testnet-liquidity-pi-authenticated", function(){ add("Pi identity authenticated successfully."); });
 })();
 </script>
+  
+<script>
+(function () {
+  "use strict";
+
+  function initOwnerProfileToggle() {
+    const button = document.getElementById("toggleOwnerProfileBtn");
+    const details = document.getElementById("ownerProfileDetails");
+
+    if (!button || !details || button.dataset.ready === "true") {
+      return;
+    }
+
+    button.dataset.ready = "true";
+
+    button.addEventListener("click", function () {
+      const willOpen = details.hidden;
+
+      details.hidden = !willOpen;
+      button.setAttribute("aria-expanded", String(willOpen));
+      button.textContent = willOpen ? "Close Profile" : "Edit Profile";
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      initOwnerProfileToggle,
+      { once: true }
+    );
+  } else {
+    initOwnerProfileToggle();
+  }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core/environment-core.js?v=20260923-owner4c"></script>
 <script src="js/core/supabase-core.js?v=20260923-owner4c"></script>
