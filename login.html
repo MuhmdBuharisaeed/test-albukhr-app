@@ -2,31 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ALBUKHR Testnet Login</title>
   <meta name="theme-color" content="#0f7a3d">
-  <meta name="description" content="Authenticate directly with Pi for ALBUKHR Testnet access.">
+  <meta name="description"
+        content="Authenticate directly with Pi for ALBUKHR Testnet access.">
   <meta name="color-scheme" content="light">
   <link rel="stylesheet" href="css/testnet.css">
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
+
 <body data-page="testnet-login">
-<header class="header">
-  <strong>ALBUKHR</strong>
-  <span class="env" aria-label="Current environment: Testnet">TESTNET</span>
-</header>
-<main>
-  <section class="hero" aria-labelledby="loginTitle">
-    <p class="eyebrow">DIRECT TESTNET ACCESS</p>
-    <h1 id="loginTitle">Verify with Pi</h1>
-    <p>Authenticate with Pi directly in Testnet. ALBUKHR verifies your Pi access token on the server before issuing a temporary session. Project ownership and payments remain server-authorized.</p>
-    <button id="testnetLoginButton" class="testnet-login-button" type="button" aria-describedby="status">
-      <span class="login-text">Continue with Pi</span><span aria-hidden="true">→</span>
-    </button>
-    <p id="status" class="notice" role="status" aria-live="polite" aria-atomic="true">Ready to authenticate directly with Pi Testnet.</p>
-  </section>
-</main>
-<script src="js/testnet-gateway-auth.js?v=20261025-direct-auth1"></script>
-<script src="js/login.js?v=20261025-direct-auth1"></script>
+  <header class="header">
+    <strong>ALBUKHR</strong>
+    <span class="env" aria-label="Current environment: Testnet">
+      TESTNET
+    </span>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="loginTitle">
+      <p class="eyebrow">DIRECT TESTNET ACCESS</p>
+      <h1 id="loginTitle">Verify with Pi</h1>
+
+      <p>
+        Authenticate with Pi directly in Testnet. ALBUKHR verifies
+        your Pi access token on the server before issuing a temporary
+        session. Project ownership and payments remain server-authorized.
+      </p>
+
+      <button id="testnetLoginButton"
+              class="testnet-login-button"
+              type="button"
+              aria-describedby="status">
+        <span class="login-text">Continue with Pi</span>
+        <span aria-hidden="true">→</span>
+      </button>
+
+      <p id="status"
+         class="notice"
+         role="status"
+         aria-live="polite"
+         aria-atomic="true">
+        Ready to authenticate directly with Pi Testnet.
+      </p>
+    </section>
+  </main>
+
+  <script src="js/login.js?v=20261025-direct-auth1"></script>
 </body>
 </html>
