@@ -85,7 +85,12 @@
      *
      * Tracks whether Pi authentication is currently running.
      */
-    piAuthenticationInFlight: false
+    piAuthenticationInFlight: false,
+
+    /*
+     * Last Pi authentication error, retained for a clear retry message.
+     */
+    piAuthenticationError: null
 
   };
 
@@ -860,13 +865,8 @@
      PI PRE-AUTHENTICATION
   =======================================================
 
-     IMPORTANT:
-
-     This is intentionally performed BEFORE the user
-     clicks Add Liquidity.
-
-     Therefore createLiquidityPayment() does not need
-     to call Pi.authenticate() during the payment click.
+     This remains available for page-load authentication and
+     for retrying authentication from the Add Liquidity click.
   ======================================================= */
 
   async function ensurePiAuthentication() {
@@ -878,8 +878,13 @@
     if (
       !client ||
       typeof client.authenticate !==
+        "function" ||
+      typeof client.isAuthenticated !==
         "function"
     ) {
+
+      state.piAuthenticationError =
+        "PI_SDK_PAYMENT_UNAVAILABLE";
 
       throw new Error(
         "PI_SDK_PAYMENT_UNAVAILABLE"
@@ -888,32 +893,27 @@
     }
 
 
-    if (
-      typeof client.isAuthenticated ===
-        "function" &&
-      client.isAuthenticated()
-    ) {
+    if (client.isAuthenticated()) {
 
-      state.piAuthenticated =
-        true;
+      state.piAuthenticated = true;
+      state.piAuthenticationError = null;
 
       return true;
 
     }
 
 
-    if (
-      state.piAuthenticationInFlight
-    ) {
+    if (state.piAuthenticationInFlight) {
 
       return false;
 
     }
 
 
-    state.piAuthenticationInFlight =
-      true;
+    state.piAuthenticationInFlight = true;
+    state.piAuthenticationError = null;
 
+    setLiquidityAvailability();
 
     try {
 
@@ -922,47 +922,55 @@
         "Verifying Pi identity for Testnet payment…"
       );
 
-
       await client.authenticate();
 
+      if (!client.isAuthenticated()) {
 
-      state.piAuthenticated =
-        true;
+        throw new Error(
+          "PI_AUTH_RESULT_NOT_PERSISTED"
+        );
 
+      }
 
-      setLiquidityAvailability();
-
+      state.piAuthenticated = true;
+      state.piAuthenticationError = null;
 
       return true;
 
     } catch (error) {
 
-      state.piAuthenticated =
-        false;
+      state.piAuthenticated = false;
 
+      state.piAuthenticationError =
+        error && error.message
+          ? error.message
+          : "Pi authentication could not be completed.";
 
       console.error(
         "[ALBUKHR TESTNET PI PRE-AUTH]",
         error
       );
 
-
-      setStatus(
-        "liquidityStatus",
-        error &&
-        error.message
-          ? error.message
-          : "Pi authentication could not be completed.",
-        "error"
-      );
-
-
       return false;
 
     } finally {
 
-      state.piAuthenticationInFlight =
-        false;
+      state.piAuthenticationInFlight = false;
+
+      setLiquidityAvailability();
+
+      if (
+        !state.piAuthenticated &&
+        state.piAuthenticationError
+      ) {
+
+        setStatus(
+          "liquidityStatus",
+          state.piAuthenticationError,
+          "error"
+        );
+
+      }
 
     }
 
@@ -1040,31 +1048,30 @@
       "verified";
 
 
-    /*
-     * 🟢 NEW:
-     *
-     * Pi authentication must already be complete.
-     */
     var piAuthenticated =
       piPaymentAuthenticated();
 
 
     /*
      * Treasury is informational only.
-     *
-     * Server remains authoritative.
+     * The server remains authoritative.
      */
     var treasuryReady =
       !!state.treasury &&
       !!liquidity.treasury_configured;
 
 
+    /*
+     * Safe relaxation:
+     * Pi auth is no longer required just to enable the button.
+     * The click handler authenticates first if necessary.
+     */
     var ready =
       ownerBound &&
       ownerVerified &&
       due > 0 &&
       liquidityPaymentClientAvailable() &&
-      piAuthenticated &&
+      !state.piAuthenticationInFlight &&
       !state.liquidityPaymentInFlight;
 
 
@@ -1080,7 +1087,7 @@
 
     button.title =
       ready
-        ? "Start the server-authorized Testnet liquidity payment."
+        ? "Start Testnet liquidity. Pi identity will be verified if needed."
         : "";
 
 
@@ -1116,22 +1123,22 @@
     }
 
 
-    /* -------------------------------------------------------
-       STATUS
-    ------------------------------------------------------- */
-
-    if (
-      state.liquidityPaymentInFlight
-    ) {
+    if (state.liquidityPaymentInFlight) {
 
       setStatus(
         "liquidityStatus",
         "Pi liquidity payment is in progress…"
       );
 
-    } else if (
-      !ownerVerified
-    ) {
+    } else if (!ownerBound) {
+
+      setStatus(
+        "liquidityStatus",
+        "Testnet Project Owner identity binding is required.",
+        "error"
+      );
+
+    } else if (!ownerVerified) {
 
       setStatus(
         "liquidityStatus",
@@ -1139,9 +1146,7 @@
         "error"
       );
 
-    } else if (
-      due <= 0
-    ) {
+    } else if (due <= 0) {
 
       setStatus(
         "liquidityStatus",
@@ -1149,9 +1154,7 @@
         "success"
       );
 
-    } else if (
-      !liquidityPaymentClientAvailable()
-    ) {
+    } else if (!liquidityPaymentClientAvailable()) {
 
       setStatus(
         "liquidityStatus",
@@ -1159,31 +1162,29 @@
         "error"
       );
 
-    } else if (
-      !piAuthenticated
-    ) {
+    } else if (state.piAuthenticationInFlight) {
 
-      if (
-        state.piAuthenticationInFlight
-      ) {
+      setStatus(
+        "liquidityStatus",
+        "Verifying Pi identity for Testnet payment…"
+      );
 
-        setStatus(
-          "liquidityStatus",
-          "Verifying Pi identity for Testnet payment…"
-        );
+    } else if (!piAuthenticated && state.piAuthenticationError) {
 
-      } else {
+      setStatus(
+        "liquidityStatus",
+        state.piAuthenticationError,
+        "error"
+      );
 
-        setStatus(
-          "liquidityStatus",
-          "Pi authentication is required before Testnet liquidity can be added."
-        );
+    } else if (!piAuthenticated) {
 
-      }
+      setStatus(
+        "liquidityStatus",
+        "Tap Add Liquidity to verify Pi identity. After verification, tap again to open the payment dialog."
+      );
 
-    } else if (
-      !treasuryReady
-    ) {
+    } else if (!treasuryReady) {
 
       setStatus(
         "liquidityStatus",
@@ -1578,19 +1579,9 @@
 
     try {
 
-      /*
-       * 🟢 STEP 1
-       *
-       * Establish Testnet session.
-       */
       await ensureSession();
 
 
-      /*
-       * 🟢 STEP 2
-       *
-       * Resolve project.
-       */
       state.projectId =
         getProjectId();
 
@@ -1604,12 +1595,6 @@
       }
 
 
-      /*
-       * 🟢 STEP 3
-       *
-       * Ask the owner service for the authoritative
-       * project/owner state.
-       */
       var payload =
         await ownerRequest(
 
@@ -1667,9 +1652,6 @@
       );
 
 
-      /*
-       * Render owner state first.
-       */
       renderOwner(
         projects[0],
         payload.owner ||
@@ -1678,23 +1660,19 @@
 
 
       /*
-       * 🟢 STEP 4
-       *
-       * Pi pre-authentication.
-       *
-       * This happens BEFORE the user clicks Add Liquidity.
-       *
-       * createLiquidityPayment() will therefore NOT need
-       * to call Pi.authenticate().
+       * Page-load Pi pre-auth is best-effort. If it fails or stalls,
+       * the Add Liquidity button remains available for a user-triggered
+       * authentication retry (subject to owner and liquidity gates).
        */
-      await ensurePiAuthentication();
+      ensurePiAuthentication().catch(function (error) {
+        state.piAuthenticationError =
+          error && error.message
+            ? error.message
+            : "PI_AUTH_FAILED";
+        setLiquidityAvailability();
+      });
 
 
-      /*
-       * 🟢 STEP 5
-       *
-       * Recalculate button state after Pi authentication.
-       */
       setLiquidityAvailability();
 
 
@@ -1779,15 +1757,13 @@
       );
 
 
-      /*
-       * 🟢 Re-check Pi auth after refresh.
-       */
-      if (
-        piPaymentAuthenticated()
-      ) {
+      if (piPaymentAuthenticated()) {
 
         state.piAuthenticated =
           true;
+
+        state.piAuthenticationError =
+          null;
 
       }
 
@@ -1826,39 +1802,27 @@
 
   /* =======================================================
      START LIQUIDITY PAYMENT
-  =======================================================
-
-     🔴 IMPORTANT
-
-     There is NO:
-
-         await ensureSession()
-
-     here.
-
-     There is NO:
-
-         await payment.authenticate()
-
-     here.
-
-     There is NO:
-
-         await Pi.authenticate()
-
-     here.
-
-     The page has already completed those operations.
-
-     The user click therefore goes directly toward
-     Pi.createPayment().
   ======================================================= */
 
   async function startLiquidityPayment() {
 
-    if (
-      state.liquidityPaymentInFlight
-    ) {
+    if (state.liquidityPaymentInFlight) {
+
+      return;
+
+    }
+
+
+    /*
+     * A click during a page-load authentication attempt must not be lost.
+     * Do not start a second concurrent authenticate call.
+     */
+    if (state.piAuthenticationInFlight) {
+
+      setStatus(
+        "liquidityStatus",
+        "Pi identity verification is still in progress. Please wait."
+      );
 
       return;
 
@@ -1867,13 +1831,9 @@
 
     try {
 
-      /*
-       * 🟢 EXISTING TESTNET SESSION
-       *
-       * Read only.
-       *
-       * No asynchronous gateway authentication.
-       */
+      validateEnvironment();
+
+
       var sessionToken =
         clean(
           getAuth().getSessionToken()
@@ -1889,17 +1849,14 @@
       }
 
 
-      /*
-       * 🟢 PI AUTHENTICATION MUST ALREADY EXIST
-       */
       var payment =
         window.AlbukhrTestnetLiquidityPayment;
 
 
       if (
         !payment ||
-        typeof payment.createLiquidityPayment !==
-          "function"
+        typeof payment.createLiquidityPayment !== "function" ||
+        typeof payment.isAuthenticated !== "function"
       ) {
 
         throw new Error(
@@ -1909,71 +1866,28 @@
       }
 
 
-      if (
-        typeof payment.isAuthenticated ===
-          "function" &&
-        !payment.isAuthenticated()
-      ) {
-
-        throw new Error(
-          "PI_AUTH_REQUIRED_BEFORE_PAYMENT"
-        );
-
-      }
-
-
-      if (
-        !state.piAuthenticated &&
-        typeof payment.isAuthenticated ===
-          "function" &&
-        payment.isAuthenticated()
-      ) {
-
-        state.piAuthenticated =
-          true;
-
-      }
-
-
       /*
-       * Amount.
+       * Validate amount/project/owner before asking for Pi auth.
+       * This avoids opening Pi auth for an invalid payment request.
        */
       var amountNode =
-        byId(
-          "liquidityAmount"
-        );
+        byId("liquidityAmount");
 
 
       var amount =
-        numberValue(
-          amountNode &&
-          amountNode.value
-        );
+        numberValue(amountNode && amountNode.value);
 
 
-      /*
-       * Liquidity requirement.
-       */
       var required =
-        numberValue(
-          state.liquidity &&
-          state.liquidity.required
-        );
+        numberValue(state.liquidity && state.liquidity.required);
 
 
       var verified =
-        numberValue(
-          state.liquidity &&
-          state.liquidity.verified
-        );
+        numberValue(state.liquidity && state.liquidity.verified);
 
 
       var due =
-        Math.max(
-          0,
-          required -
-          verified
-        );
+        Math.max(0, required - verified);
 
 
       if (due <= 0) {
@@ -1984,109 +1898,94 @@
           "success"
         );
 
-
         return;
 
       }
 
 
-      if (
-        amount < 100 ||
-        amount < due
-      ) {
+      if (amount < 100 || amount < due) {
 
         setStatus(
           "liquidityStatus",
-
           "Enter at least " +
-          formatPi(
-            Math.max(
-              100,
-              due
-            )
-          ) +
-          " for the remaining Testnet liquidity requirement.",
-
+            formatPi(Math.max(100, due)) +
+            " for the remaining Testnet liquidity requirement.",
           "error"
-
         );
-
 
         return;
 
       }
 
 
-      /*
-       * Project validation.
-       */
       var project =
-        state.project ||
-        {};
+        state.project || {};
 
 
-      if (
-        !clean(project.id) ||
-        !clean(project.project_code)
-      ) {
+      if (!clean(project.id) || !clean(project.project_code)) {
 
-        throw new Error(
-          "PROJECT_ID_AND_CODE_REQUIRED"
-        );
+        throw new Error("PROJECT_ID_AND_CODE_REQUIRED");
 
       }
 
 
-      /*
-       * 🟢 DEFENSE IN DEPTH
-       *
-       * Programmatic invocation must still belong
-       * to a verified Testnet Project Owner.
-       */
       var owner =
-        state.owner ||
-        {};
+        state.owner || {};
 
 
       var profile =
-        state.ownerProfile ||
-        {};
+        state.ownerProfile || {};
 
 
       if (
-        !clean(
-          owner.user_id ||
-          owner.id
-        ) ||
-        !clean(
-          owner.pi_uid
-        )
+        !clean(owner.user_id || owner.id) ||
+        !clean(owner.pi_uid)
       ) {
 
-        throw new Error(
-          "PROJECT_OWNER_IDENTITY_INVALID"
-        );
+        throw new Error("PROJECT_OWNER_IDENTITY_INVALID");
 
       }
 
 
       if (
-        clean(
-          profile.verification_status
-        ).toLowerCase() !==
-        "verified"
+        clean(profile.verification_status).toLowerCase() !== "verified"
       ) {
 
-        throw new Error(
-          "PROJECT_OWNER_PROFILE_NOT_VERIFIED"
-        );
+        throw new Error("PROJECT_OWNER_PROFILE_NOT_VERIFIED");
 
       }
 
 
       /*
-       * 🟢 PAYMENT IS NOW READY
+       * First click can authenticate, but never starts payment in the same
+       * click. Second click starts createLiquidityPayment() directly.
        */
+      if (!payment.isAuthenticated()) {
+
+        var authenticated =
+          await ensurePiAuthentication();
+
+        if (!authenticated || !payment.isAuthenticated()) {
+
+          return;
+
+        }
+
+        setStatus(
+          "liquidityStatus",
+          "Pi identity verified. Tap Add Liquidity again to open the Pi Testnet payment dialog.",
+          "success"
+        );
+
+        return;
+
+      }
+
+
+      state.piAuthenticated =
+        true;
+
+
       state.liquidityPaymentInFlight =
         true;
 
@@ -2094,17 +1993,6 @@
       setLiquidityAvailability();
 
 
-      /*
-       * IMPORTANT:
-       *
-       * This message is displayed immediately before
-       * createLiquidityPayment().
-       *
-       * createLiquidityPayment() no longer calls
-       * Pi.authenticate().
-       *
-       * It goes directly to Pi.createPayment().
-       */
       setStatus(
         "liquidityStatus",
         "Opening the Pi Testnet payment flow…"
@@ -2112,53 +2000,31 @@
 
 
       /*
-       * 🟢 DIRECT PAYMENT CALL
+       * The payment client still independently enforces Pi auth and
+       * Testnet environment/session/network constraints.
        */
       var result =
         await payment.createLiquidityPayment(
-
           {
-
-            id:
-              project.id,
-
-            project_code:
-              project.project_code,
-
-            network:
-              "testnet"
-
+            id: project.id,
+            project_code: project.project_code,
+            network: "testnet"
           },
-
           amount
-
         );
 
 
-      /*
-       * Payment completed.
-       */
       setStatus(
-
         "liquidityStatus",
-
         result &&
         result.record &&
-        result.record.verification_status ===
-          "verified"
-
+        result.record.verification_status === "verified"
           ? "Liquidity payment completed and verified."
-
           : "Liquidity payment completed and recorded. Testnet Admin verification is still required before it counts as verified.",
-
         "success"
-
       );
 
 
-      /*
-       * Refresh authoritative server state.
-       */
       await refresh();
 
 
@@ -2171,25 +2037,18 @@
 
 
       setStatus(
-
         "liquidityStatus",
-
-        error &&
-        error.message
-
+        error && error.message
           ? error.message
-
           : "Unable to complete the Testnet liquidity payment.",
-
         "error"
-
       );
+
 
     } finally {
 
       state.liquidityPaymentInFlight =
         false;
-
 
       setLiquidityAvailability();
 
@@ -2636,51 +2495,38 @@
 
   /* =======================================================
      PI AUTH EVENT
-  =======================================================
-
-     The payment client dispatches this event after successful
-     Pi authentication.
-
-     This allows the button to become enabled immediately.
   ======================================================= */
 
   function bindPiAuthenticationEvents() {
 
     window.addEventListener(
-
       "albukhr:testnet-liquidity-pi-authenticated",
-
       function () {
 
-        state.piAuthenticated =
-          true;
-
-        state.piAuthenticationInFlight =
-          false;
+        state.piAuthenticated = true;
+        state.piAuthenticationInFlight = false;
+        state.piAuthenticationError = null;
 
         setLiquidityAvailability();
 
       }
-
     );
 
 
     window.addEventListener(
-
       "albukhr:testnet-liquidity-pi-auth-error",
+      function (event) {
 
-      function () {
+        state.piAuthenticated = false;
+        state.piAuthenticationInFlight = false;
 
-        state.piAuthenticated =
-          false;
-
-        state.piAuthenticationInFlight =
-          false;
+        state.piAuthenticationError =
+          clean(event && event.detail && event.detail.message) ||
+          "PI_AUTH_FAILED";
 
         setLiquidityAvailability();
 
       }
-
     );
 
   }
@@ -2764,21 +2610,10 @@
 
   function initialize() {
 
-    /*
-     * 🟢 Register Pi event listeners FIRST.
-     */
     bindPiAuthenticationEvents();
 
-
-    /*
-     * Bind UI controls.
-     */
     bindEvents();
 
-
-    /*
-     * Load owner page.
-     */
     load();
 
   }
