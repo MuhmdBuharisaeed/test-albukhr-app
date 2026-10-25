@@ -406,7 +406,6 @@
       });
     }
 
-    
     var session;
     try {
       session = await withAuthTimeout(
@@ -414,30 +413,13 @@
         12000,
         "TESTNET_SESSION_CHECK_TIMEOUT"
       );
-    } catch (error) {
-      dispatch("albukhr:testnet-liquidity-debug", {
-        stage: "testnet-session-check-error",
-        message: "Testnet session check failed: " +
-          (clean(error && error.message) || "TESTNET_SESSION_CHECK_FAILED")
-      });
-      throw error;
     } finally {
       testnetSessionPromise = null;
     }
 
     if (!session) {
-      dispatch("albukhr:testnet-liquidity-debug", {
-        stage: "testnet-session-missing",
-        message: "Testnet gateway session was not verified; Pi SDK initialization was not started."
-      });
       throw new Error("TESTNET_SESSION_REQUIRED");
     }
-
-    // Diagnostics only: never expose the session token.
-    dispatch("albukhr:testnet-liquidity-debug", {
-      stage: "testnet-session-check-passed",
-      message: "Testnet session check passed; starting Pi SDK initialization."
-    });
 
     // Only after the Testnet gateway session has passed do we initialize Pi.
     var pi = await withAuthTimeout(
@@ -459,35 +441,19 @@
       return { user: authResult.user };
     }
 
-    
     authenticationPromise = (async function () {
       pendingIncompletePayments = [];
 
-      dispatch("albukhr:testnet-liquidity-debug", {
-        stage: "pi-auth-start",
-        message: "Pi SDK initialized; requesting Pi identity authentication."
-      });
-
-      var result;
-      try {
-        result = await withAuthTimeout(
-          pi.authenticate(
-            ["username", "payments"],
-            function onIncompletePaymentFound(payment) {
-              if (payment) pendingIncompletePayments.push(payment);
-            }
-          ),
-          20000,
-          "PI_AUTHENTICATION_TIMEOUT"
-        );
-      } catch (error) {
-        dispatch("albukhr:testnet-liquidity-debug", {
-          stage: "pi-auth-error",
-          message: "Pi identity authentication failed: " +
-            (clean(error && error.message) || "PI_AUTHENTICATION_FAILED")
-        });
-        throw error;
-      }
+      var result = await withAuthTimeout(
+        pi.authenticate(
+          ["username", "payments"],
+          function onIncompletePaymentFound(payment) {
+            if (payment) pendingIncompletePayments.push(payment);
+          }
+        ),
+        20000,
+        "PI_AUTHENTICATION_TIMEOUT"
+      );
 
       if (
         !result ||
@@ -684,6 +650,24 @@
     pendingIncompletePayments = [];
     authenticationPromise = null;
   }
+
+  /* =======================================================
+     PAGE-LOAD PRE-AUTHENTICATION
+     authenticate() validates the short-lived Testnet gateway session first,
+     then initializes Pi SDK and requests Pi identity.
+  ======================================================= */
+
+  /* =======================================================
+     PRE-AUTHENTICATION
+  ======================================================= */
+
+  authenticate().catch(function (error) {
+    console.error("[ALBUKHR TESTNET PI PRE-AUTH]", error);
+
+    dispatch("albukhr:testnet-liquidity-pi-auth-error", {
+      message: clean(error && error.message) || "PI_AUTH_FAILED"
+    });
+  });
 
   /* =======================================================
      PUBLIC API
