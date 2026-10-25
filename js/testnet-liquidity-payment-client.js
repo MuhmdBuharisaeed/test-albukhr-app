@@ -289,7 +289,11 @@
   ======================================================= */
 
   function initializePiSdk() {
-    dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-start", message: "Checking Testnet environment and starting Pi SDK…" });
+    dispatch("albukhr:testnet-liquidity-debug", {
+      stage: "sdk-init-start",
+      message: "Checking Testnet environment and starting Pi SDK…"
+    });
+
     validateEnvironment();
 
     var pi = requirePiSdk();
@@ -302,32 +306,78 @@
       return initializationPromise;
     }
 
-    // Share one initialization promise and await Pi.init() before SDK calls.
-    initializationPromise = Promise.resolve()
-      .then(function () {
-        return pi.init({
-          version: PI_SDK_VERSION,
-          sandbox: PI_SANDBOX
-        });
-      })
-      .then(function () {
+    /*
+     * IMPORTANT:
+     * Timeout the underlying initialization attempt itself. A timeout applied
+     * only by authenticate() leaves initializationPromise pending forever and
+     * causes every retry to wait on the same stale promise.
+     */
+    var attemptPromise;
+    var initTimer = null;
+
+    attemptPromise = new Promise(function (resolve, reject) {
+      var settled = false;
+
+      initTimer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        reject(new Error("PI_SDK_INIT_TIMEOUT"));
+      }, 10000);
+
+      Promise.resolve()
+        .then(function () {
+          return pi.init({
+            version: PI_SDK_VERSION,
+            sandbox: PI_SANDBOX
+          });
+        })
+        .then(
+          function () {
+            if (settled) return;
+            settled = true;
+            clearTimeout(initTimer);
+            resolve(pi);
+          },
+          function (error) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(initTimer);
+            reject(error);
+          }
+        );
+    });
+
+    initializationPromise = attemptPromise
+      .then(function (readyPi) {
         initialized = true;
 
-        dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-ok", message: "Pi SDK initialization completed." });
+        dispatch("albukhr:testnet-liquidity-debug", {
+          stage: "sdk-init-ok",
+          message: "Pi SDK initialization completed."
+        });
+
         dispatch("albukhr:testnet-liquidity-pi-initialized", {
           version: PI_SDK_VERSION,
           sandbox: PI_SANDBOX
         });
 
-        return pi;
+        return readyPi;
       })
       .catch(function (error) {
         initialized = false;
+
+        // Clear the cached promise so a later, deliberate retry can try again.
         initializationPromise = null;
 
-        dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-error", message: clean(error && error.message) || "PI_INIT_FAILED" });
+        var message = clean(error && error.message) || "PI_INIT_FAILED";
+
+        dispatch("albukhr:testnet-liquidity-debug", {
+          stage: "sdk-init-error",
+          message: message
+        });
+
         dispatch("albukhr:testnet-liquidity-pi-init-error", {
-          message: clean(error && error.message) || "PI_INIT_FAILED"
+          message: message
         });
 
         throw error;
