@@ -289,6 +289,7 @@
   ======================================================= */
 
   function initializePiSdk() {
+    dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-start", message: "Checking Testnet environment and starting Pi SDK…" });
     validateEnvironment();
 
     var pi = requirePiSdk();
@@ -312,6 +313,7 @@
       .then(function () {
         initialized = true;
 
+        dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-ok", message: "Pi SDK initialization completed." });
         dispatch("albukhr:testnet-liquidity-pi-initialized", {
           version: PI_SDK_VERSION,
           sandbox: PI_SANDBOX
@@ -323,6 +325,7 @@
         initialized = false;
         initializationPromise = null;
 
+        dispatch("albukhr:testnet-liquidity-debug", { stage: "sdk-init-error", message: clean(error && error.message) || "PI_INIT_FAILED" });
         dispatch("albukhr:testnet-liquidity-pi-init-error", {
           message: clean(error && error.message) || "PI_INIT_FAILED"
         });
@@ -338,6 +341,7 @@
   ======================================================= */
 
   async function authenticate() {
+    dispatch("albukhr:testnet-liquidity-debug", { stage: "auth-start", message: "Checking Testnet session and Pi identity…" });
     validateEnvironment();
 
     var pi = await withAuthTimeout(
@@ -426,6 +430,7 @@
 
       pendingIncompletePayments = [];
 
+      dispatch("albukhr:testnet-liquidity-debug", { stage: "auth-ok", message: "Pi identity authentication completed." });
       dispatch("albukhr:testnet-liquidity-pi-authenticated", {
         username: authResult.user.username,
         uid: authResult.user.uid
@@ -527,7 +532,7 @@
                 error: error,
                 paymentId: paymentId
               });
-              throw error;
+              reject(error instanceof Error ? error : new Error("PI_PAYMENT_APPROVAL_FAILED"));
             }
           },
 
