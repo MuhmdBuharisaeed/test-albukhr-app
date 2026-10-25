@@ -326,6 +326,10 @@
 
       Promise.resolve()
         .then(function () {
+          dispatch("albukhr:testnet-liquidity-debug", {
+            stage: "pi-init-call",
+            message: "Calling Pi.init(); version=" + PI_SDK_VERSION + ", sandbox=" + PI_SANDBOX + "."
+          });
           return pi.init({
             version: PI_SDK_VERSION,
             sandbox: PI_SANDBOX
@@ -394,13 +398,8 @@
     dispatch("albukhr:testnet-liquidity-debug", { stage: "auth-start", message: "Checking Testnet session and Pi identity…" });
     validateEnvironment();
 
-    var pi = await withAuthTimeout(
-      initializePiSdk(),
-      12000,
-      "PI_SDK_INIT_TIMEOUT"
-    );
-
-    // Require an existing ALBUKHR Testnet session before Pi auth is accepted.
+    // Enforce ALBUKHR's Mainnet-approved Testnet gateway session BEFORE
+    // initializing Pi SDK or requesting Pi identity/payment capabilities.
     if (!testnetSessionPromise) {
       testnetSessionPromise = getAuth().requireTestnetAuth({
         redirectOnFailure: false
@@ -421,6 +420,13 @@
     if (!session) {
       throw new Error("TESTNET_SESSION_REQUIRED");
     }
+
+    // Only after the Testnet gateway session has passed do we initialize Pi.
+    var pi = await withAuthTimeout(
+      initializePiSdk(),
+      12000,
+      "PI_SDK_INIT_TIMEOUT"
+    );
 
     if (authenticationPromise) {
       return authenticationPromise;
@@ -646,12 +652,10 @@
   }
 
   /* =======================================================
-     INITIAL PAGE-LOAD PI INITIALIZATION
+     PAGE-LOAD PRE-AUTHENTICATION
+     authenticate() validates the short-lived Testnet gateway session first,
+     then initializes Pi SDK and requests Pi identity.
   ======================================================= */
-
-  initializePiSdk().catch(function (error) {
-    console.error("[ALBUKHR TESTNET LIQUIDITY PI INIT]", error);
-  });
 
   /* =======================================================
      PRE-AUTHENTICATION
