@@ -32,7 +32,7 @@
    * when the corresponding Pi Developer Portal app is configured for
    * Sandbox/Test-Pi. Keep this aligned with that official app configuration.
    */
-  var PI_SANDBOX = true;
+  var PI_SANDBOX = false;
 
   /* =======================================================
      INTERNAL STATE
