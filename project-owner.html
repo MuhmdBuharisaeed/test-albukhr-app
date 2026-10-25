@@ -12,6 +12,19 @@
 #testnetDebugStatus{overflow-wrap:anywhere}
 #testnetDebugPanel ol{margin:8px 0 0;padding-left:20px}
 #testnetDebugPanel li{margin:4px 0}
+
+/* Owner profile is collapsed by default to keep the page compact on mobile. */
+.profile-edit-disclosure{margin-top:14px;border:1px solid #dfe9e3;border-radius:13px;background:#fbfdfc;overflow:hidden}
+.profile-edit-summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:12px 14px;cursor:pointer;color:#0f7a3d;font:800 13px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none;-webkit-tap-highlight-color:transparent}
+.profile-edit-summary::-webkit-details-marker{display:none}
+.profile-edit-summary::after{content:"+";flex:0 0 28px;width:28px;height:28px;display:grid;place-items:center;border:1px solid #cfe5d7;border-radius:50%;background:#e8f6ee;color:#0f7a3d;font-size:19px;font-weight:500}
+.profile-edit-disclosure[open]>.profile-edit-summary::after{content:"−"}
+.profile-edit-summary:focus-visible{outline:3px solid rgba(25,179,107,.25);outline-offset:-3px}
+.profile-edit-summary-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.profile-edit-summary-copy small{color:#68756e;font-size:11px;font-weight:500;line-height:1.4}
+.profile-edit-disclosure>.form-grid{margin-top:0;padding:0 12px 12px}
+.profile-edit-disclosure>.status-text{margin:0 12px 8px}
+.profile-edit-disclosure>.security-note{margin:0 12px 12px}
 </style>
 </head>
 <body data-page="project-owner" data-network="testnet">
@@ -34,16 +47,19 @@
     <section class="project-card"><div class="project-logo-wrap"><img id="ownerProjectLogo" alt="" hidden><div id="ownerProjectLogoFallback">A</div></div><div class="project-copy"><span class="owner-kicker">APPROVED PROJECT</span><h2 id="projectName">Project</h2><p id="projectCode">—</p></div></section>
     <section class="panel" aria-labelledby="ownerProfileTitle">
       <div class="section-head"><div><span class="owner-kicker">OWNER IDENTITY</span><h2 id="ownerProfileTitle">My Project Owner Profile</h2></div><span id="profileVerificationState" class="state-pill">CHECKING</span></div>
-      <p class="muted">You may update your own contact, profile, and registered Testnet wallet information. Project ownership itself cannot be transferred from this page.</p>
-      <div class="form-grid">
-        <label class="field"><span>Pi UID</span><input id="profilePiUid" type="text" readonly></label><label class="field"><span>Username</span><input id="profileUsername" type="text" readonly></label>
-        <label class="field"><span>Display name</span><input id="profileDisplayName" type="text" maxlength="160" autocomplete="name"></label><label class="field"><span>Role title</span><input id="profileRoleTitle" type="text" maxlength="160"></label>
-        <label class="field"><span>Organization</span><input id="profileOrganization" type="text" maxlength="200"></label><label class="field"><span>Contact email</span><input id="profileEmail" type="email" maxlength="254" autocomplete="email"></label>
-        <label class="field"><span>Contact phone</span><input id="profilePhone" type="tel" maxlength="64" autocomplete="tel"></label><label class="field"><span>Registered wallet</span><input id="profileWallet" type="text" maxlength="256" autocomplete="off"></label>
-        <label class="field field-full"><span>Bio</span><textarea id="profileBio" maxlength="2000" rows="4"></textarea></label><div class="field action-field"><span>&nbsp;</span><button id="saveOwnerProfileBtn" class="button primary" type="button">Save Profile</button></div>
-      </div>
-      <p id="profileStatus" class="status-text" role="status" aria-live="polite"></p>
-      <div class="security-note"><strong>Ownership protection</strong><span>Your Project Owner identity is bound by the server to the approved project owner record. Changing ownership requires Super Admin action and an audited ownership operation.</span></div>
+      <p class="muted">Your owner details are kept out of the way to save space. Open Edit Profile only when you need to view or update your contact, profile, or registered Testnet wallet information. Project ownership cannot be transferred from this page.</p>
+      <details class="profile-edit-disclosure" id="ownerProfileEditor">
+        <summary class="profile-edit-summary"><span class="profile-edit-summary-copy"><span>Edit Profile</span><small>Tap to view or update your owner details</small></span></summary>
+        <div class="form-grid">
+          <label class="field"><span>Pi UID</span><input id="profilePiUid" type="text" readonly></label><label class="field"><span>Username</span><input id="profileUsername" type="text" readonly></label>
+          <label class="field"><span>Display name</span><input id="profileDisplayName" type="text" maxlength="160" autocomplete="name"></label><label class="field"><span>Role title</span><input id="profileRoleTitle" type="text" maxlength="160"></label>
+          <label class="field"><span>Organization</span><input id="profileOrganization" type="text" maxlength="200"></label><label class="field"><span>Contact email</span><input id="profileEmail" type="email" maxlength="254" autocomplete="email"></label>
+          <label class="field"><span>Contact phone</span><input id="profilePhone" type="tel" maxlength="64" autocomplete="tel"></label><label class="field"><span>Registered wallet</span><input id="profileWallet" type="text" maxlength="256" autocomplete="off"></label>
+          <label class="field field-full"><span>Bio</span><textarea id="profileBio" maxlength="2000" rows="4"></textarea></label><div class="field action-field"><span>&nbsp;</span><button id="saveOwnerProfileBtn" class="button primary" type="button">Save Profile</button></div>
+        </div>
+        <p id="profileStatus" class="status-text" role="status" aria-live="polite"></p>
+        <div class="security-note"><strong>Ownership protection</strong><span>Your Project Owner identity is bound by the server to the approved project owner record. Changing ownership requires Super Admin action and an audited ownership operation.</span></div>
+      </details>
     </section>
     <section class="stats-grid" aria-label="Project owner summary"><article class="stat-card"><span>Owner Balance</span><strong id="ownerBalance">0.00 Pi</strong><small>Available for owner withdrawal</small></article><article class="stat-card"><span>Required Liquidity</span><strong id="requiredLiquidity">0.00 Pi</strong><small>Testnet treasury requirement</small></article><article class="stat-card"><span>Verified Liquidity</span><strong id="verifiedLiquidity">0.00 Pi</strong><small id="liquidityCoverage">0% coverage</small></article></section>
     <section class="panel"><div class="section-head"><div><span class="owner-kicker">LIQUIDITY</span><h2>Add Project Liquidity</h2></div><span id="treasuryState" class="state-pill">CHECKING</span></div>
