@@ -652,24 +652,6 @@
   }
 
   /* =======================================================
-     PAGE-LOAD PRE-AUTHENTICATION
-     authenticate() validates the short-lived Testnet gateway session first,
-     then initializes Pi SDK and requests Pi identity.
-  ======================================================= */
-
-  /* =======================================================
-     PRE-AUTHENTICATION
-  ======================================================= */
-
-  authenticate().catch(function (error) {
-    console.error("[ALBUKHR TESTNET PI PRE-AUTH]", error);
-
-    dispatch("albukhr:testnet-liquidity-pi-auth-error", {
-      message: clean(error && error.message) || "PI_AUTH_FAILED"
-    });
-  });
-
-  /* =======================================================
      PUBLIC API
   ======================================================= */
 
