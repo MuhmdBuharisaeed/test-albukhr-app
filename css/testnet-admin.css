@@ -430,3 +430,62 @@ td{font-size:11px;color:#34483c}
 }
 
 .admin-identity{margin-top:8px;font-size:11px;color:#64756c}.row-action{display:block;margin-top:8px;border:1px solid #cfe1d7;background:#fff;color:#0f7a3d;border-radius:9px;padding:6px 8px;font-size:10px;font-weight:800}.row-action:hover{background:#f1f8f4}.admin-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.admin-form-grid label{display:grid;gap:6px;color:#476056;font-size:11px;font-weight:800}.admin-form-grid input{width:100%;border:1px solid #d7e6dd;border-radius:10px;padding:10px 11px;background:#fff;color:#173127;font:inherit;font-size:12px}.primary-admin-button{border:0;border-radius:10px;padding:10px 13px;background:#0f7a3d;color:#fff;font-weight:800;cursor:pointer}.primary-admin-button:disabled,.row-action:disabled,.refresh-button:disabled{opacity:.6;cursor:not-allowed}@media(max-width:680px){.admin-form-grid{grid-template-columns:1fr}.row-action{margin-top:6px}}
+
+/* Automatic Testnet liquidity verification queue */
+
+.verification-queue {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.verification-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #e0ece5;
+  border-radius: 12px;
+  background: #fbfefc;
+}
+
+.verification-item-name {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.verification-item-name strong {
+  color: #24392d;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.verification-item-name small {
+  color: #7a877f;
+  font-size: 9px;
+}
+
+.verification-item-meta {
+  color: #839087;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.verification-item-amount {
+  color: #0f7a3d;
+  font-size: 12px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.verification-empty {
+  padding: 12px;
+  border: 1px dashed #dce9e1;
+  border-radius: 12px;
+  background: #fbfefc;
+  color: #718078;
+  font-size: 10px;
+  line-height: 1.5;
+}
