@@ -27,6 +27,98 @@
     }
   }
 
+  function renderVerificationQueue(){
+  var host = el("paymentQueue");
+  var summary = el("verificationQueueSummary");
+
+  if (!host) return;
+
+  host.replaceChildren();
+
+  var pending = [];
+
+  rows.forEach(function(row){
+    var project = row.project || {};
+
+    (Array.isArray(row.payments) ? row.payments : [])
+      .forEach(function(payment){
+
+        if (clean(payment.network).toLowerCase() !== "testnet") return;
+        if (clean(payment.action) !== "add_liquidity") return;
+        if (clean(payment.pi_status).toLowerCase() !== "completed") return;
+        if (clean(payment.verification_status).toLowerCase() !== "pending") return;
+
+        pending.push({
+          projectName: clean(
+            project.name || project.project_code || "Project"
+          ),
+          projectCode: clean(project.project_code || "—"),
+          amount: Number(payment.amount || 0),
+          createdAt: clean(payment.created_at)
+        });
+      });
+  });
+
+  pending.sort(function(a, b){
+    return (Date.parse(a.createdAt) || 0) -
+           (Date.parse(b.createdAt) || 0);
+  });
+
+  if (summary) {
+    summary.textContent = pending.length
+      ? pending.length + " completed Testnet payment(s) awaiting verification."
+      : "No completed, pending Testnet liquidity payments are currently in the queue.";
+  }
+
+  if (!pending.length) {
+    var empty = document.createElement("div");
+    empty.className = "verification-empty";
+    empty.textContent =
+      "No manual UUID entry is required. Refresh to check the latest Testnet records.";
+
+    host.appendChild(empty);
+    return;
+  }
+
+  pending.forEach(function(payment){
+    var card = document.createElement("article");
+    card.className = "verification-item";
+
+    var left = document.createElement("div");
+    left.className = "verification-item-name";
+
+    var name = document.createElement("strong");
+    name.textContent = payment.projectName;
+
+    var code = document.createElement("small");
+    code.textContent = payment.projectCode;
+
+    var meta = document.createElement("span");
+    meta.className = "verification-item-meta";
+
+    var date = payment.createdAt
+      ? new Date(payment.createdAt)
+      : null;
+
+    meta.textContent = "Created: " +
+      (date && !Number.isNaN(date.getTime())
+        ? date.toLocaleString()
+        : "date unavailable");
+
+    left.appendChild(name);
+    left.appendChild(code);
+    left.appendChild(meta);
+
+    var amount = document.createElement("strong");
+    amount.className = "verification-item-amount";
+    amount.textContent = pi(payment.amount);
+
+    card.appendChild(left);
+    card.appendChild(amount);
+    host.appendChild(card);
+  });
+   }
+
   function render(){
     var body=el("projectRows"); if(!body) return;
     body.replaceChildren();
@@ -62,6 +154,8 @@
     el("pendingCount").textContent=String(pending);
     el("verifiedTotal").textContent=pi(total);
     el("emptyState").hidden=rows.length>0;
+
+    renderVerificationQueue();
   }
 
   async function load(){
@@ -121,17 +215,60 @@
   }
 
   async function verifyPayment(){
-    var record=el("paymentRecordId"), reference=el("paymentReference");
-    var id=clean(record&&record.value), ref=clean(reference&&reference.value);
-    if(!id){ status("Enter a liquidity payment record ID.",true); return; }
-    try{
-      el("verifyPaymentButton").disabled=true;
-      status("Verifying liquidity payment record…");
-      await window.AlbukhrTestnetLiquidity.verifyPayment(id,ref);
-      if(record) record.value=""; if(reference) reference.value="";
-      await load();
-    }catch(error){ console.error(error); status("Payment verification failed: "+(error.message||error),true); }
-    finally{ el("verifyPaymentButton").disabled=false; }
+  var button = el("verifyPaymentButton");
+
+  try {
+    button.disabled = true;
+
+    status(
+      "Checking pending Testnet payments against Pi Platform API…"
+    );
+
+    var result =
+      await window.AlbukhrTestnetLiquidity.verifyPayment();
+
+    await load();
+
+    var considered = Number(result && result.considered || 0);
+    var verified = Number(result && result.verified || 0);
+    var pendingCount =
+      Number(result && result.pending_or_failed || 0);
+
+    if (considered === 0) {
+      status(
+        "No completed pending payment records were found. Nothing was changed."
+      );
+    } else if (verified > 0 && pendingCount === 0) {
+      status(
+        "Pi Platform verification succeeded for " +
+        verified + " payment(s); Testnet liquidity was recomputed."
+      );
+    } else if (verified > 0) {
+      status(
+        "Verified " + verified + " payment(s); " +
+        pendingCount +
+        " remain pending because Pi Platform checks did not pass.",
+        true
+      );
+    } else {
+      status(
+        "Checked " + considered +
+        " payment(s); none passed all Pi Platform checks. " +
+        "The records remain pending.",
+        true
+      );
+    }
+  } catch (error) {
+    console.error(error);
+
+    status(
+      "Payment verification failed: " +
+      (error.message || error),
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
   }
 
   async function init(){
