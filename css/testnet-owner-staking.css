@@ -1,0 +1,25 @@
+.owner-staking-panel { margin-top: 18px; }
+.owner-staking-panel h2 { margin: 4px 0; }
+.owner-staking-badge { display:inline-flex; align-items:center; border-radius:99px; padding:5px 10px; background:#edf5ef; color:#22623d; font-weight:700; font-size:.75rem; }
+.owner-staking-intro { color:#526259; line-height:1.5; max-width:850px; }
+.owner-staking-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:8px; margin:16px 0; }
+.owner-staking-summary > div { padding:11px 12px; border:1px solid #e0e9e2; border-radius:10px; background:#f8fbf8; font-size:.9rem; }
+.owner-staking-policy-note { grid-column:1/-1; margin:4px 0; padding:10px 12px; border-radius:9px; background:#fff8e8; color:#6b5127; line-height:1.5; }
+.owner-staking-rows { display:grid; gap:10px; }
+.owner-staking-row { display:grid; grid-template-columns:minmax(120px,1fr) minmax(155px,220px) minmax(90px,120px); align-items:end; gap:12px; padding:14px 0; border-top:1px solid #e6ece8; }
+.owner-staking-term-info { display:flex; flex-direction:column; gap:5px; padding-bottom:9px; }
+.owner-staking-term-info strong { color:#18271d; }
+.owner-staking-term-info span { color:#526259; font-size:.88rem; }
+.owner-staking-rate-field { display:flex; flex-direction:column; gap:6px; }
+.owner-staking-rate-field span { font-size:.88rem; font-weight:650; }
+.owner-staking-rate-field input { width:100%; min-height:42px; border:1px solid #cad7ce; border-radius:9px; padding:9px 10px; font:inherit; background:#fff; color:#17251d; }
+.owner-staking-rate-field input:disabled { background:#f2f4f2; color:#68756d; }
+.owner-staking-save { min-height:42px; white-space:nowrap; }
+.owner-staking-save:disabled { opacity:.52; cursor:not-allowed; }
+.owner-staking-status { min-height:1.4em; margin:12px 0 0; font-size:.92rem; color:#526259; }
+.owner-staking-status[data-state="error"] { color:#a12d2d; }
+@media(max-width:600px) {
+  .owner-staking-row { grid-template-columns:1fr; align-items:stretch; }
+  .owner-staking-term-info { padding-bottom:0; }
+  .owner-staking-save { width:100%; }
+}
