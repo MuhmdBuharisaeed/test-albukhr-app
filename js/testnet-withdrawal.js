@@ -2,7 +2,8 @@
 (function (window, document) {
   "use strict";
 
-  var MIN_RECEIVE = 0.50;
+  var MIN_RECEIVE_CAPITAL = 0.50;
+var MIN_RECEIVE_REWARD = 0.01;
   var FEE_RATE = 0.01;
   var MIN_FEE = 0.01;
   var initialized = false;
@@ -25,6 +26,12 @@
 
   function totalFor(amount) {
     return amount + feeFor(amount);
+  }
+
+  function minReceive(type) {
+  return type === "reward"
+    ? MIN_RECEIVE_REWARD
+    : MIN_RECEIVE_CAPITAL;
   }
 
   function maxReceive(available) {
