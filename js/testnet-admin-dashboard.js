@@ -214,12 +214,13 @@
     }finally{ button.disabled=false; }
   }
 
-  async function verifyPayment(){
+async function verifyPayment() {
   var button = el("verifyPaymentButton");
+  if (!button) return;
+
+  button.disabled = true;
 
   try {
-    button.disabled = true;
-
     status(
       "Checking pending Testnet payments against Pi Platform API…"
     );
@@ -227,49 +228,78 @@
     var result =
       await window.AlbukhrTestnetLiquidity.verifyPayment();
 
-    await load();
+    var results = Array.isArray(result && result.results)
+      ? result.results
+      : [];
 
     var considered = Number(result && result.considered || 0);
     var verified = Number(result && result.verified || 0);
-    var pendingCount =
-      Number(result && result.pending_or_failed || 0);
+    var pendingCount = Number(
+      result && result.pending_or_failed || 0
+    );
+
+    var errors = [];
+
+    results.forEach(function (item) {
+      if (!item || !item.error) return;
+
+      var code = clean(item.error);
+
+      // Nuna error codes kawai, ba sirrikan server ba.
+      if (/^[A-Z0-9_]+$/.test(code) &&
+          errors.indexOf(code) === -1) {
+        errors.push(code);
+      }
+    });
+
+    await load();
 
     if (considered === 0) {
       status(
-        "No completed pending payment records were found. Nothing was changed."
+        "No eligible pending Testnet payments were found. " +
+        "No payment was verified."
       );
-    } else if (verified > 0 && pendingCount === 0) {
-      status(
-        "Pi Platform verification succeeded for " +
-        verified + " payment(s); Testnet liquidity was recomputed."
-      );
+    } else if (pendingCount > 0) {
+      var message =
+        "Checked " + considered + " payment(s). " +
+        verified + " verified; " +
+        pendingCount + " remain pending.";
+
+      if (errors.length) {
+        message += " Error code(s): " +
+          errors.slice(0, 5).join(", ");
+      } else {
+        message +=
+          " The server returned no readable error code.";
+      }
+
+      status(message, true);
     } else if (verified > 0) {
       status(
-        "Verified " + verified + " payment(s); " +
-        pendingCount +
-        " remain pending because Pi Platform checks did not pass.",
-        true
+        "Pi Platform verification succeeded for " +
+        verified + " payment(s). Testnet liquidity was recomputed."
       );
     } else {
       status(
-        "Checked " + considered +
-        " payment(s); none passed all Pi Platform checks. " +
-        "The records remain pending.",
+        "The server returned no successful verifications. " +
+        "Review the verification response before proceeding.",
         true
       );
     }
   } catch (error) {
-    console.error(error);
+    console.error("[ALBUKHR TESTNET VERIFICATION]", error);
+
+    var code = clean(error && error.message);
 
     status(
-      "Payment verification failed: " +
-      (error.message || error),
+      "Payment verification request failed: " +
+      (code || "UNKNOWN_ERROR"),
       true
     );
   } finally {
     button.disabled = false;
   }
-  }
+}
 
   async function init(){
     if(initialized) return; initialized=true;
