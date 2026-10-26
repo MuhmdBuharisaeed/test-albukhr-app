@@ -54,7 +54,42 @@
   </section>
   <section class="panel action-panel" aria-labelledby="paymentVerifyTitle">
     <span class="section-kicker">LIQUIDITY PAYMENT VERIFICATION</span>
-    <h2 id="paymentVerifyTitle">Verify an Existing Payment Record</h2>
+    <section class="panel action-panel"
+         aria-labelledby="paymentVerifyTitle">
+  <span class="section-kicker">
+    LIQUIDITY PAYMENT VERIFICATION
+  </span>
+
+  <h2 id="paymentVerifyTitle">
+    Pending Payment Verification
+  </h2>
+
+  <p>
+    Completed Testnet liquidity payments are discovered
+    directly from Supabase. The server obtains payment
+    identifiers automatically and verifies each payment
+    against Pi Platform API. Payments that remain unchecked
+    for 24 hours are also processed by the scheduled verifier.
+    Payments that fail verification remain pending.
+  </p>
+
+  <div id="verificationQueueSummary"
+       class="page-status"
+       aria-live="polite">
+    Loading pending Testnet payments…
+  </div>
+
+  <div id="paymentQueue"
+       class="verification-queue"
+       aria-live="polite">
+  </div>
+
+  <button id="verifyPaymentButton"
+          class="primary-admin-button"
+          type="button">
+    Verify Pending Payments
+  </button>
+    </section>
     <p>The dashboard can start a Testnet <code>add_liquidity</code> payment when liquidity is still below the threshold. After Pi server-side completion, the payment record remains pending verification until an authorized admin verifies it.</p>
     <div class="admin-form-grid">
       <label>Payment record ID<input id="paymentRecordId" type="text" autocomplete="off" placeholder="UUID"></label>
@@ -75,8 +110,9 @@
 <script src="js/core/environment-core.js?v=20260923-admin-owner1"></script>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="js/testnet-admin-auth.js?v=20260923-admin-owner1"></script>
-<script src="js/testnet-liquidity.js?v=20260923-admin1"></script>
+<script src="js/testnet-liquidity.js?v=20261026-auto-verify1"></script>
 <script src="js/testnet-liquidity-payment.js?v=20260923-admin-owner2"></script>
-<script src="js/testnet-admin-dashboard.js?v=20260923-admin-owner2"></script>
+<script src="js/testnet-liquidity.js?v=20261026-auto-verify1"></script>
+<script src="js/testnet-admin-dashboard.js?v=20261026-auto-verify1"></script>
 </body>
 </html>
