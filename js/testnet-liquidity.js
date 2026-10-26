@@ -85,12 +85,10 @@
     return request("POST", {action:"recompute", project_id:clean(projectId)});
   }
 
-  async function verifyPayment(paymentRecordId, reference){
-    return request("POST", {
-      action: "verify_payment",
-      payment_record_id: clean(paymentRecordId),
-      verification_reference: clean(reference)
-    });
+  async function verifyPayment(){
+  return request("POST", {
+    action: "verify_payment"
+  });
   }
 
   window.AlbukhrTestnetLiquidity = Object.freeze({
