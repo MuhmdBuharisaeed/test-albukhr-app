@@ -1,445 +1,365 @@
-/* ALBUKHR TESTNET STAKING CLIENT v1 — Testnet host only. */
+/* ALBUKHR TESTNET STAKING UI v1. Keeps the Stake button locked unless API policy approves. */
 (function (window, document) {
   "use strict";
+  var project = null;
+  var latestOffers = null;
+  var loading = false;
+  var starting = false;
+  var intentPrepared = false;
+  var intentArmed = false;
+  var modalId = "albukhrTestnetStakeModal";
 
-  var NETWORK = "testnet";
-  var HOST = "test.albukhr.com";
-  var API_BASE = "https://test-albukhr-api.onrender.com/staking";
-  var INVESTOR_API = "https://test-albukhr-api.onrender.com/investor-data";
-  var PI_SDK_URL = "https://sdk.minepi.com/pi-sdk.js";
-  var currentProject = null;
-  var currentTerms = [];
-  var eligible = false;
-  var busy = false;
-  var piInitialized = false;
-  var piInitialization = null;
-  var piAuthResult = null;
-  var piAuthentication = null;
-  var pendingIncompletePayments = [];
-  var modal = null;
-  var notice = null;
-
-  function clean(value) { return String(value == null ? "" : value).trim(); }
-  function numberValue(value) {
-    var n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  }
-  function element(id) { return document.getElementById(id); }
-  function setText(id, value) {
-    var node = element(id);
-    if (node) node.textContent = clean(value);
-  }
-  function formatPi(value) { return numberValue(value).toFixed(2) + " Pi"; }
-
-  function validateEnvironment() {
-    var env = window.ALBukhrEnvironment;
-    if (!env || typeof env.isKnown !== "function" || typeof env.isTestnet !== "function" ||
-        typeof env.getNetwork !== "function") throw new Error("TESTNET_ENVIRONMENT_UNAVAILABLE");
-    if (!env.isKnown() || !env.isTestnet() || env.getNetwork() !== NETWORK) {
-      throw new Error("INVALID_TESTNET_ENVIRONMENT");
-    }
-    var host = typeof env.getHostname === "function" ? clean(env.getHostname()).toLowerCase() :
-      clean(window.location.hostname).toLowerCase();
-    if (host !== HOST) throw new Error("TESTNET_HOST_REQUIRED");
-  }
-
-  function authModule() {
-    var auth = window.AlbukhrTestnetAuth;
-    if (!auth || typeof auth.getSessionToken !== "function") throw new Error("TESTNET_SESSION_REQUIRED");
-    return auth;
-  }
-  function sessionToken() {
-    var token = clean(authModule().getSessionToken());
-    if (!token) throw new Error("TESTNET_SESSION_REQUIRED");
-    return token;
-  }
-
-  async function parseResponse(response) {
-    try { return await response.json(); } catch (_) { return null; }
-  }
-
-  async function apiRequest(path, options) {
-    validateEnvironment();
-    options = options || {};
-    var headers = { Accept: "application/json", "X-Testnet-Session": sessionToken() };
-    if (options.piToken) headers.Authorization = "Bearer " + clean(options.piToken);
-    if (options.body != null) headers["Content-Type"] = "application/json";
-    var response = await fetch(API_BASE.replace(/\/+$/, "") + "/" + clean(path).replace(/^\/+/, ""), {
-      method: clean(options.method || "GET").toUpperCase(),
-      headers: headers,
-      body: options.body == null ? undefined : JSON.stringify(options.body)
-    });
-    var data = await parseResponse(response);
-    if (!response.ok) {
-      var code = clean(data && (data.error || data.message)) || "TESTNET_STAKING_HTTP_" + response.status;
-      var error = new Error(code);
-      error.status = response.status;
-      error.body = data;
-      throw error;
-    }
-    return data;
-  }
-
-  function ensurePiSdkLoaded() {
-    if (window.Pi && typeof window.Pi.authenticate === "function" && typeof window.Pi.createPayment === "function") {
-      return Promise.resolve(window.Pi);
-    }
-    return new Promise(function (resolve, reject) {
-      var existing = document.querySelector('script[data-albukhr-pi-sdk="true"]');
-      var script = existing || document.createElement("script");
-      var settled = false;
-      var timeout = window.setTimeout(function () {
-        if (settled) return;
-        settled = true;
-        reject(new Error("PI_SDK_LOAD_TIMEOUT"));
-      }, 12000);
-      script.onload = function () {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        if (!window.Pi || typeof window.Pi.createPayment !== "function") reject(new Error("PI_SDK_UNAVAILABLE"));
-        else resolve(window.Pi);
-      };
-      script.onerror = function () {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        reject(new Error("PI_SDK_LOAD_FAILED"));
-      };
-      if (!existing) {
-        script.src = PI_SDK_URL;
-        script.async = true;
-        script.dataset.albukhrPiSdk = "true";
-        document.head.appendChild(script);
-      }
-    });
-  }
-
-  async function initializePi() {
-    validateEnvironment();
-    if (piInitialized) return window.Pi;
-    if (piInitialization) return piInitialization;
-    piInitialization = (async function () {
-      var Pi = await ensurePiSdkLoaded();
-      await Promise.resolve(Pi.init({ version: "2.0", sandbox: true }));
-      piInitialized = true;
-      return Pi;
-    })();
-    try { return await piInitialization; }
-    catch (error) { piInitialization = null; throw error; }
-  }
-
-  async function recoverIncomplete(payment) {
-    var identifier = clean(payment && (payment.identifier || payment.id));
-    if (!identifier || !piAuthResult || !piAuthResult.accessToken) return null;
-    return apiRequest("incomplete", {
-      method: "POST",
-      piToken: piAuthResult.accessToken,
-      body: {
-        paymentId: identifier,
-        txid: clean(payment && payment.transaction && payment.transaction.txid) || undefined
-      }
-    });
-  }
-
-  async function authenticatePi() {
-    validateEnvironment();
-    // Validate the gateway session before requesting Pi payment permission.
-    var auth = authModule();
-    if (typeof auth.requireTestnetAuth === "function") {
-      var allowed = await auth.requireTestnetAuth({ redirectOnFailure: false });
-      if (!allowed) throw new Error("TESTNET_SESSION_REQUIRED");
-    }
-    sessionToken();
-    if (piAuthResult && clean(piAuthResult.accessToken) && piAuthResult.user && clean(piAuthResult.user.uid)) {
-      return piAuthResult;
-    }
-    if (piAuthentication) return piAuthentication;
-    piAuthentication = (async function () {
-      var Pi = await initializePi();
-      pendingIncompletePayments = [];
-      var result = await Pi.authenticate(["username", "payments"], function (payment) {
-        if (payment) pendingIncompletePayments.push(payment);
-      });
-      if (!result || !clean(result.accessToken) || !result.user || !clean(result.user.uid)) {
-        throw new Error("PI_AUTH_RESULT_INVALID");
-      }
-      // Pi access token remains in memory only.
-      piAuthResult = {
-        accessToken: clean(result.accessToken),
-        user: { uid: clean(result.user.uid), username: clean(result.user.username) || null }
-      };
-      for (var i = 0; i < pendingIncompletePayments.length; i += 1) {
-        try { await recoverIncomplete(pendingIncompletePayments[i]); }
-        catch (error) { console.warn("[ALBUKHR TESTNET STAKING RECOVERY]", error); }
-      }
-      pendingIncompletePayments = [];
-      return piAuthResult;
-    })();
-    try { return await piAuthentication; }
-    finally { piAuthentication = null; }
-  }
-
-  function ensureStylesAndModal() {
-    if (modal) return;
-    modal = document.createElement("div");
-    modal.id = "testnetStakeModal";
-    modal.className = "tn-stake-modal";
-    modal.hidden = true;
-    modal.innerHTML = [
-      '<div class="tn-stake-dialog" role="dialog" aria-modal="true" aria-labelledby="tnStakeTitle">',
-      '  <button class="tn-stake-close" type="button" aria-label="Close staking dialog">×</button>',
-      '  <div class="tn-stake-kicker">ALBUKHR TESTNET</div>',
-      '  <h2 id="tnStakeTitle">Create a Testnet stake</h2>',
-      '  <p class="tn-stake-intro">Choose the amount of Test-Pi and an available staking term for this approved project.</p>',
-      '  <label for="tnStakeAmount">Stake amount (Pi)</label>',
-      '  <input id="tnStakeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off">',
-      '  <label for="tnStakeDuration">Duration</label>',
-      '  <select id="tnStakeDuration"></select>',
-      '  <div class="tn-stake-estimate" aria-live="polite"><span>Estimated fixed-term reward</span><strong id="tnStakeReward">—</strong><small id="tnStakeRateNote">Displayed rates are the configured Testnet terms.</small></div>',
-      '  <p id="tnStakeFeedback" class="tn-stake-feedback" role="status" aria-live="polite"></p>',
-      '  <div class="tn-stake-actions"><button id="tnStakeCancel" type="button" class="tn-stake-secondary">Cancel</button><button id="tnStakeConfirm" type="button" class="tn-stake-primary">Continue to Pi payment</button></div>',
-      '  <p class="tn-stake-disclaimer">Testnet only. No Mainnet Pi is used. A stake is recorded only after the Pi Platform confirms completion and transaction verification.</p>',
-      '</div>'
-    ].join("");
-    document.body.appendChild(modal);
-    modal.querySelector(".tn-stake-close").addEventListener("click", closeModal);
-    element("tnStakeCancel").addEventListener("click", closeModal);
-    element("tnStakeConfirm").addEventListener("click", submitStake);
-    element("tnStakeAmount").addEventListener("input", updateEstimate);
-    element("tnStakeDuration").addEventListener("change", updateEstimate);
-    modal.addEventListener("click", function (event) { if (event.target === modal) closeModal(); });
-    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && modal && !modal.hidden) closeModal(); });
-  }
-
-  function setFeedback(message, isError) {
-    var node = element("tnStakeFeedback");
+  function clean(v) { return String(v == null ? "" : v).trim(); }
+  function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
+  function money(v) { return num(v).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " Pi"; }
+  function el(id) { return document.getElementById(id); }
+  function setStatus(message, isError) {
+    var node = el("albukhrStakeStatus");
     if (!node) return;
     node.textContent = clean(message);
-    node.classList.toggle("is-error", !!isError);
-    node.classList.toggle("is-success", !isError && !!message);
+    node.dataset.state = isError ? "error" : "normal";
   }
-  function setBusy(value) {
-    busy = !!value;
-    var confirm = element("tnStakeConfirm");
-    if (confirm) { confirm.disabled = busy; confirm.textContent = busy ? "Processing Testnet payment…" : "Continue to Pi payment"; }
-    var amount = element("tnStakeAmount");
-    var duration = element("tnStakeDuration");
-    if (amount) amount.disabled = busy;
-    if (duration) duration.disabled = busy;
+  function setButton(enabled, label) {
+    var button = el("stakeBtn");
+    if (!button) return;
+    button.disabled = !enabled;
+    button.setAttribute("aria-disabled", enabled ? "false" : "true");
+    var small = button.querySelector("small");
+    if (small) small.textContent = label;
   }
-  function selectedTerm() {
-    var select = element("tnStakeDuration");
-    var value = select ? Number(select.value) : 0;
-    for (var i = 0; i < currentTerms.length; i += 1) {
-      if (Number(currentTerms[i].duration_days) === value) return currentTerms[i];
+  function getClient() {
+    var client = window.AlbukhrTestnetStakingPayment;
+    if (!client || typeof client.getOffers !== "function" || typeof client.createStake !== "function") {
+      throw new Error("TESTNET_STAKING_CLIENT_UNAVAILABLE");
     }
-    return null;
+    return client;
   }
-  function updateEstimate() {
+
+  function ensureModal() {
+    var existing = el(modalId);
+    if (existing) return existing;
+    var modal = document.createElement("div");
+    modal.id = modalId;
+    modal.className = "albukhr-stake-modal";
+    modal.hidden = true;
+    modal.innerHTML =
+      '<div class="albukhr-stake-dialog" role="dialog" aria-modal="true" aria-labelledby="albukhrStakeTitle">' +
+        '<button class="albukhr-stake-close" type="button" id="albukhrStakeClose" aria-label="Close">×</button>' +
+        '<div class="section-kicker">ALBUKHR TESTNET STAKING</div>' +
+        '<h2 id="albukhrStakeTitle">Stake in project</h2>' +
+        '<p id="albukhrStakeIntro">Review the terms before confirming your Pi Testnet payment.</p>' +
+        '<label for="albukhrStakeDuration">Duration</label>' +
+        '<select id="albukhrStakeDuration"></select>' +
+        '<label for="albukhrStakeAmount">Stake amount (Pi)</label>' +
+        '<input id="albukhrStakeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Enter Pi amount">' +
+        '<div class="albukhr-stake-summary">' +
+          '<div><span>Reward rate</span><strong id="albukhrStakeRate">—</strong></div>' +
+          '<div><span>Estimated reward</span><strong id="albukhrStakeReward">—</strong></div>' +
+          '<div><span>Reward available</span><strong>After payment is verified</strong></div>' +
+          '<div><span>Capital unlock</span><strong id="albukhrStakeUnlock">—</strong></div>' +
+        '</div>' +
+        '<p class="albukhr-stake-warning">Reward estimates are based on the approved offer. Capital stays locked until the selected duration completes. Do not repeat a payment while an earlier Pi payment is under reconciliation.</p>' +
+        '<p id="albukhrStakeStatus" class="albukhr-stake-status" aria-live="polite"></p>' +
+        '<div class="albukhr-stake-actions"><button type="button" class="action-btn" id="albukhrStakeCancel">Cancel</button><button type="button" class="action-btn primary" id="albukhrStakeConfirm">Reserve reward</button></div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    el("albukhrStakeClose").addEventListener("click", closeModal);
+    el("albukhrStakeCancel").addEventListener("click", closeModal);
+    el("albukhrStakeDuration").addEventListener("change", updatePreview);
+    el("albukhrStakeAmount").addEventListener("input", updatePreview);
+    el("albukhrStakeConfirm").addEventListener("click", submitStake);
+    modal.addEventListener("click", function (event) { if (event.target === modal) closeModal(); });
+    return modal;
+  }
+
+  function selectedTerm() {
+    if (!latestOffers || !Array.isArray(latestOffers.terms)) return null;
+    var days = Number(el("albukhrStakeDuration") && el("albukhrStakeDuration").value);
+    return latestOffers.terms.find(function (term) {
+      return Number(term.duration_days) === days && term.available === true;
+    }) || null;
+  }
+
+  function updatePreview() {
     var term = selectedTerm();
-    var amount = numberValue(element("tnStakeAmount") && element("tnStakeAmount").value);
-    if (!term) { setText("tnStakeReward", "—"); setText("tnStakeRateNote", "No active staking term is available."); return; }
-    var rate = numberValue(term.reward_rate);
-    setText("tnStakeReward", amount > 0 ? formatPi(amount * rate) : formatPi(0));
-    setText("tnStakeRateNote", (rate * 100).toFixed(2) + "% configured reward rate for " + term.duration_days + " days; minimum " + formatPi(term.min_stake) + ".");
+    var amount = num(el("albukhrStakeAmount") && el("albukhrStakeAmount").value);
+    if (!term) {
+      el("albukhrStakeRate").textContent = "—";
+      el("albukhrStakeReward").textContent = "—";
+      el("albukhrStakeUnlock").textContent = "—";
+      el("albukhrStakeConfirm").disabled = true;
+      return;
+    }
+    var reward = Math.round(amount * Number(term.reward_rate) * 1e7) / 1e7;
+    el("albukhrStakeRate").textContent = Number(term.reward_percent).toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "%";
+    el("albukhrStakeReward").textContent = money(reward);
+    el("albukhrStakeUnlock").textContent = Number(term.duration_days) + " days after confirmation";
+    el("albukhrStakeConfirm").disabled = starting || amount < Number(term.min_stake) || !Number.isFinite(amount);
   }
 
-  function openModal() {
-    if (!currentProject || !eligible || busy) return;
-    ensureStylesAndModal();
-    var title = element("tnStakeTitle");
-    if (title) title.textContent = "Stake in " + clean(currentProject.name || currentProject.project_code);
-    var select = element("tnStakeDuration");
-    select.textContent = "";
-    currentTerms.forEach(function (term) {
-      var option = document.createElement("option");
-      option.value = String(term.duration_days);
-      option.textContent = term.duration_days + " days · " + (numberValue(term.reward_rate) * 100).toFixed(2) + "% reward · minimum " + numberValue(term.min_stake) + " Pi";
-      select.appendChild(option);
-    });
-    var amountInput = element("tnStakeAmount");
-    amountInput.value = currentTerms.length ? String(currentTerms[0].min_stake) : "";
-    amountInput.min = currentTerms.length ? String(currentTerms[0].min_stake) : "0.01";
-    setFeedback("");
-    updateEstimate();
-    modal.hidden = false;
-    document.body.classList.add("tn-stake-modal-open");
-    try { amountInput.focus(); } catch (_) {}
-  }
-  function closeModal() {
-    if (busy) return;
-    if (modal) modal.hidden = true;
-    document.body.classList.remove("tn-stake-modal-open");
-  }
-
-  async function createPiPayment(project, amount, term, accessToken) {
-    var Pi = await initializePi();
-    return new Promise(function (resolve, reject) {
-      var settled = false;
-      function fail(error) { if (settled) return; settled = true; reject(error instanceof Error ? error : new Error(clean(error && error.message) || "PI_PAYMENT_FAILED")); }
-      Pi.createPayment({
-        amount: amount,
-        memo: "ALBUKHR Testnet stake · " + clean(project.project_code) + " · " + term.duration_days + " days",
-        metadata: {
-          network: NETWORK,
-          action: "stake",
-          project_id: clean(project.id),
-          project_code: clean(project.project_code),
-          duration_days: Number(term.duration_days)
-        }
-      }, {
-        onReadyForServerApproval: async function (paymentId) {
-          try {
-            await apiRequest("approve", {
-              method: "POST", piToken: accessToken,
-              body: { paymentId: clean(paymentId), projectId: clean(project.id), projectCode: clean(project.project_code) }
-            });
-          } catch (error) { fail(error); }
-        },
-        onReadyForServerCompletion: async function (paymentId, txid) {
-          try {
-            var result = await apiRequest("complete", {
-              method: "POST", piToken: accessToken,
-              body: { paymentId: clean(paymentId), projectId: clean(project.id), projectCode: clean(project.project_code), txid: clean(txid) }
-            });
-            if (settled) return;
-            settled = true;
-            resolve(result);
-          } catch (error) { fail(error); throw error; }
-        },
-        onCancel: function () { fail(new Error("PI_PAYMENT_CANCELLED")); },
-        onError: function (error) { fail(error || new Error("PI_PAYMENT_FAILED")); }
-      });
-    });
-  }
-
-  async function refreshStakeSummary(project) {
+  async function loadOffers(nextProject) {
+    if (!nextProject || !clean(nextProject.id) || !clean(nextProject.project_code)) return;
+    project = nextProject;
+    loading = true;
+    setButton(false, "Checking policy…");
     try {
-      var token = sessionToken();
-      var response = await fetch(INVESTOR_API, {
-        method: "GET", headers: { Accept: "application/json", Authorization: "Bearer " + token }
+      var result = await getClient().getOffers(project);
+      latestOffers = result;
+      var terms = Array.isArray(result.terms) ? result.terms : [];
+      var usable = terms.filter(function (term) { return term.available === true; });
+      setButton(result.can_stake === true && usable.length > 0, result.can_stake === true && usable.length ? "Ready" : "Policy locked");
+      var summary = el("aStakeNote");
+      if (summary) summary.textContent = result.can_stake === true ? "Approved Testnet staking offers available" : "Staking is locked until ALBUKHR policy and reserve checks pass";
+    } catch (error) {
+      latestOffers = null;
+      setButton(false, "Locked");
+      var summary = el("aStakeNote");
+      if (summary) summary.textContent = "Unable to verify Testnet staking policy";
+      console.error("[ALBUKHR TESTNET STAKING OFFERS]", error);
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function openModal() {
+    if (loading || starting || !project) return;
+    setButton(false, "Checking policy…");
+    try {
+      var result = await getClient().getOffers(project);
+      latestOffers = result;
+      var terms = (result.terms || []).filter(function (term) { return term.available === true; });
+      if (result.can_stake !== true || !terms.length) {
+        setButton(false, "Policy locked");
+        alert("This project is not approved for Testnet staking yet.");
+        return;
+      }
+      var pending = getClient().getPendingIntent();
+      if (pending) {
+        intentPrepared = true;
+        intentArmed = pending.payment_armed === true;
+      } else {
+        intentPrepared = false;
+        intentArmed = false;
+      }
+      var modal = ensureModal();
+      el("albukhrStakeTitle").textContent = "Stake • " + clean(project.name || project.project_code);
+      var select = el("albukhrStakeDuration");
+      select.textContent = "";
+      terms.forEach(function (term) {
+        var option = document.createElement("option");
+        option.value = String(term.duration_days);
+        option.textContent = term.duration_days + " days • " + Number(term.reward_percent).toFixed(2) + "% reward • minimum " + money(term.min_stake);
+        select.appendChild(option);
       });
-      var payload = await parseResponse(response);
-      if (!response.ok || !payload || !Array.isArray(payload.stakes)) return;
-      var code = clean(project.project_code).toLowerCase();
-      var projectId = clean(project.id).toLowerCase();
-      var stakes = payload.stakes.filter(function (stake) {
-        return clean(stake.network).toLowerCase() === NETWORK &&
-          (clean(stake.project_code).toLowerCase() === code || clean(stake.project_id).toLowerCase() === projectId);
+      el("albukhrStakeAmount").value = terms[0].min_stake;
+      el("albukhrStakeAmount").min = terms[0].min_stake;
+      el("albukhrStakeAmount").step = "0.01";
+      setStatus("");
+      updatePreview();
+      var pending = getClient().getPendingIntent();
+      if (pending) {
+        if (pending.payment_launched) {
+          el("albukhrStakeConfirm").textContent = "Payment needs reconciliation";
+          el("albukhrStakeConfirm").disabled = true;
+          setModalPaymentArmed(true);
+          setStatus("A Pi payment attempt was already started. Do not reopen a second payment for this intent. Use reconciliation or contact ALBUKHR Testnet admin.", true);
+        } else if (pending.payment_armed) {
+          el("albukhrStakeConfirm").textContent = "Open Pi Testnet Payment";
+          setModalPaymentArmed(true);
+          setStatus("A payment intent is armed but Pi payment has not been launched on this page. Continue only if this is the same uninterrupted session; otherwise ask admin to reconcile.", true);
+        } else {
+          el("albukhrStakeConfirm").textContent = "Authorize Pi payment";
+          setStatus("A reward reservation already exists. Continue this intent or cancel it before preparing another.");
+        }
+      } else {
+        el("albukhrStakeConfirm").textContent = "Reserve reward";
+        setModalPaymentArmed(false);
+      }
+      modal.hidden = false;
+      el("albukhrStakeAmount").focus();
+    } catch (error) {
+      console.error("[ALBUKHR STAKING MODAL]", error);
+      alert("Unable to load approved staking offers. Staking remains locked.");
+    } finally {
+      if (latestOffers && latestOffers.can_stake === true && (latestOffers.terms || []).some(function (t) { return t.available === true; })) {
+        setButton(true, "Ready");
+      } else {
+        setButton(false, "Policy locked");
+      }
+    }
+  }
+
+  function setModalPaymentArmed(armed) {
+    intentArmed = armed === true;
+    var close = el("albukhrStakeClose");
+    var cancel = el("albukhrStakeCancel");
+    if (close) close.disabled = intentArmed || starting;
+    if (cancel) {
+      cancel.disabled = starting;
+      cancel.textContent = intentArmed ? "Payment pending" : "Cancel";
+    }
+  }
+
+  function closeModal() {
+    var client = window.AlbukhrTestnetStakingPayment;
+    if (intentArmed) {
+      setStatus("The payment intent is armed. Do not cancel it or start another stake; continue to Pi payment or ask ALBUKHR Testnet admin to reconcile it.", true);
+      return;
+    }
+    if (intentPrepared && client && typeof client.cancelPreparedStake === "function") {
+      starting = true;
+      setModalPaymentArmed(false);
+      setStatus("Releasing the unused reward reservation safely…");
+      client.cancelPreparedStake().then(function () {
+        intentPrepared = false;
+        starting = false;
+        hideModal();
+      }).catch(function (error) {
+        starting = false;
+        setStatus("The reservation could not be released: " + clean(error && error.message) + ". Keep this page open and ask Testnet admin to reconcile it.", true);
       });
-      var active = stakes.filter(function (stake) { return clean(stake.status).toLowerCase() === "active"; });
-      var totalStake = active.reduce(function (sum, stake) { return sum + numberValue(stake.amount); }, 0);
-      var withdrawals = Array.isArray(payload.withdrawals) ? payload.withdrawals : [];
-      var totalReward = active.reduce(function (sum, stake) {
-        var paidOrPending = withdrawals.filter(function (row) {
-          return clean(row.stake_id) === clean(stake.id) && clean(row.withdrawal_type).toLowerCase() === "reward" &&
-            ["pending", "processing", "approved", "completed"].indexOf(clean(row.status).toLowerCase()) !== -1;
-        }).reduce(function (sub, row) { return sub + numberValue(row.net_amount || row.requested_amount); }, 0);
-        return sum + Math.max(0, numberValue(stake.reward_amount) - paidOrPending);
-      }, 0);
-      setText("aStake", formatPi(totalStake));
-      setText("aStakeNote", active.length + " active Testnet stake" + (active.length === 1 ? "" : "s"));
-      setText("aReward", formatPi(totalReward));
-      setText("aRewardNote", totalReward > 0 ? "Available Testnet reward" : "No available Testnet reward");
-      if (element("aStake")) element("aStake").dataset.liveState = "true";
-      if (element("aStakeNote")) element("aStakeNote").dataset.liveState = "true";
-      if (element("aReward")) element("aReward").dataset.liveState = "true";
-      if (element("aRewardNote")) element("aRewardNote").dataset.liveState = "true";
-    } catch (error) { console.warn("[ALBUKHR TESTNET STAKING REFRESH]", error); }
+      return;
+    }
+    hideModal();
+  }
+
+  function hideModal() {
+    var modal = el(modalId);
+    if (modal) modal.hidden = true;
+    intentPrepared = false;
+    intentArmed = false;
+    starting = false;
+    var confirm = el("albukhrStakeConfirm");
+    if (confirm) {
+      confirm.disabled = false;
+      confirm.textContent = "Reserve reward";
+    }
+    setModalPaymentArmed(false);
   }
 
   async function submitStake() {
-    if (busy || !currentProject || !eligible) return;
+    if (starting || !project) return;
     var term = selectedTerm();
-    var amount = numberValue(element("tnStakeAmount") && element("tnStakeAmount").value);
-    if (!term) { setFeedback("No active staking term is selected.", true); return; }
-    if (!Number.isFinite(amount) || amount < numberValue(term.min_stake)) {
-      setFeedback("Minimum for this duration is " + formatPi(term.min_stake) + ".", true); return;
-    }
-    if (amount > 1000000000) { setFeedback("Amount exceeds the Testnet safety limit.", true); return; }
-    setBusy(true);
-    setFeedback("Checking your Testnet session and authenticating with Pi…");
-    try {
-      var auth = await authenticatePi();
-      setFeedback("Confirm the Testnet payment in Pi Browser. A stake is created only after server verification.");
-      var result = await createPiPayment(currentProject, amount, term, auth.accessToken);
-      setFeedback("Payment verified. Testnet stake recorded successfully.");
-      setText("aStake", "Updating…");
-      await refreshStakeSummary(currentProject);
-      try { window.dispatchEvent(new CustomEvent("albukhr:testnet-stake-completed", { detail: result })); } catch (_) {}
-      window.setTimeout(function () { closeModal(); }, 800);
-    } catch (error) {
-      console.error("[ALBUKHR TESTNET STAKING]", error);
-      var message = clean(error && (error.message || error.error)) || "TESTNET_STAKING_FAILED";
-      if (message === "PI_PAYMENT_CANCELLED") message = "You cancelled the Pi Testnet payment. No stake was created.";
-      else if (message === "TESTNET_SESSION_REQUIRED") message = "Sign in to your ALBUKHR Testnet account before staking.";
-      else if (message === "PI_SDK_UNAVAILABLE" || message === "PI_SDK_LOAD_FAILED") message = "Pi Browser payment SDK is unavailable. Open this page in Pi Browser and retry.";
-      else message = "Staking did not complete: " + message + ". If Pi already processed a payment, do not pay again; support must reconcile that payment first.";
-      setFeedback(message, true);
-    } finally { setBusy(false); }
-  }
-
-  async function loadTerms(project) {
-    currentProject = project;
-    eligible = false;
-    currentTerms = [];
-    var button = element("stakeBtn");
-    if (button) { button.disabled = true; button.setAttribute("aria-disabled", "true"); var small = button.querySelector("small"); if (small) small.textContent = "Checking…"; }
-    if (!project || clean(project.network).toLowerCase() !== NETWORK) {
-      setText("aStakeNote", "Staking is available on approved Testnet projects only.");
+    var amount = num(el("albukhrStakeAmount").value);
+    if (!latestOffers || latestOffers.can_stake !== true || !term || amount < Number(term.min_stake)) {
+      setStatus("The selected offer or amount is not valid under current ALBUKHR policy.", true);
       return;
     }
-    try {
-      validateEnvironment();
-      var auth = authModule();
-      var token = clean(auth.getSessionToken());
-      if (!token) {
-        setText("aStakeNote", "Sign in to ALBUKHR Testnet to enable staking.");
-        if (button) { var smallNoSession = button.querySelector("small"); if (smallNoSession) smallNoSession.textContent = "Sign in required"; }
-        return;
-      }
-      var data = await apiRequest("terms?project_code=" + encodeURIComponent(clean(project.project_code)), { method: "GET" });
-      currentTerms = Array.isArray(data.terms) ? data.terms : [];
-      eligible = data.eligible === true && currentTerms.length > 0;
-      if (button) {
-        button.disabled = !eligible;
-        if (eligible) button.removeAttribute("aria-disabled"); else button.setAttribute("aria-disabled", "true");
-        var small = button.querySelector("small");
-        if (small) small.textContent = eligible ? "Stake now" : "Locked";
-      }
-      if (eligible) {
-        if (!element("aStake") || clean(element("aStake").textContent) === "LOCKED") {
-          setText("aStakeNote", "Available for Testnet staking");
-        }
-      } else {
-        setText("aStakeNote", clean(data.reason) === "TREASURY_NOT_READY" ? "Project liquidity/treasury is not ready for staking." : "No active Testnet staking terms are available.");
-      }
-    } catch (error) {
-      eligible = false;
-      setText("aStakeNote", clean(error && error.message) === "TESTNET_SESSION_REQUIRED" ? "Sign in to ALBUKHR Testnet to enable staking." : "Testnet staking status could not be verified.");
-      if (button) { button.disabled = true; button.setAttribute("aria-disabled", "true"); var smallErr = button.querySelector("small"); if (smallErr) smallErr.textContent = "Locked"; }
-      console.warn("[ALBUKHR TESTNET STAKING TERMS]", error);
-    }
-  }
 
-  function onProjectRendered(event) {
-    var project = event && event.detail && event.detail.project;
-    if (!project) return;
-    loadTerms(project);
+    var client = getClient();
+    starting = true;
+    el("albukhrStakeConfirm").disabled = true;
+    if (!intentPrepared) {
+      setStatus("Verifying Pi identity and reserving the reward before payment…");
+      try {
+        var prepared = await client.prepareStake(project, amount, Number(term.duration_days));
+        if (!prepared || !prepared.success || !prepared.intent || !prepared.intent.id) throw new Error("STAKE_INTENT_CREATE_FAILED");
+        intentPrepared = true;
+        setStatus("Reward reserve secured. Next, authorize this payment attempt; Pi will not open yet.");
+        el("albukhrStakeConfirm").textContent = "Authorize Pi payment";
+      } catch (error) {
+        var message = clean(error && error.message) || "STAKE_INTENT_CREATE_FAILED";
+        setStatus("Staking preparation failed: " + message + ". Do not repeat payment if the reserve status is unclear.", true);
+      } finally {
+        starting = false;
+        if (el("albukhrStakeConfirm")) updatePreview();
+      }
+      return;
+    }
+
+    if (!intentArmed) {
+      setStatus("Authorizing the payment attempt. Once armed, the reward reserve stays locked until Pi confirms completion/cancellation or admin reconciliation.");
+      try {
+        await client.armPreparedStake();
+        intentArmed = true;
+        setStatus("Payment attempt is armed. Tap Open Pi Testnet Payment next. Do not refresh or close this page until payment status is resolved.");
+        el("albukhrStakeConfirm").textContent = "Open Pi Testnet Payment";
+      } catch (error) {
+        setStatus("Unable to arm payment: " + clean(error && error.message) + ". Do not create another stake; reconcile the reserved intent first.", true);
+      } finally {
+        starting = false;
+        setModalPaymentArmed(intentArmed);
+        if (el("albukhrStakeConfirm")) el("albukhrStakeConfirm").disabled = false;
+      }
+      return;
+    }
+
+    var pendingBeforeLaunch = client.getPendingIntent();
+    if (pendingBeforeLaunch && pendingBeforeLaunch.payment_launched) {
+      setStatus("A Pi payment attempt has already started for this intent. Do not launch another payment; reconcile the existing payment first.", true);
+      starting = false;
+      if (el("albukhrStakeConfirm")) el("albukhrStakeConfirm").disabled = true;
+      return;
+    }
+
+    // No await occurs before payPreparedStake(); it calls Pi.createPayment()
+    // synchronously inside this fresh user click as required by the Pi SDK.
+    try {
+      var paymentPromise = client.payPreparedStake();
+      setStatus("Pi Testnet payment opened. Complete or cancel it in the Pi dialog; do not start another payment.");
+      var result = await paymentPromise;
+      if (!result || result.network !== "testnet" || !result.success || !result.stake) {
+        throw new Error("STAKE_CONFIRMATION_NOT_VERIFIED");
+      }
+      intentPrepared = false;
+      intentArmed = false;
+      setStatus("Stake confirmed. Reward is reserved for immediate withdrawal; capital unlocks after " + term.duration_days + " days.");
+      var note = el("aStakeNote");
+      if (note) note.textContent = "Active Testnet stake confirmed";
+      setButton(false, "Stake created");
+      var withdrawal = window.AlbukhrTestnetWithdrawal;
+      if (withdrawal && typeof withdrawal.refresh === "function") await withdrawal.refresh().catch(function () {});
+      await loadOffers(project);
+      dispatch("albukhr:testnet-staking-ui-completed", result);
+      window.setTimeout(hideModal, 2500);
+    } catch (error) {
+      var pendingAfterError = client.getPendingIntent();
+      if (!pendingAfterError) {
+        intentPrepared = false;
+        intentArmed = false;
+      } else {
+        intentPrepared = true;
+        intentArmed = pendingAfterError.payment_armed === true;
+      }
+      var message = clean(error && error.message) || "TESTNET_STAKING_FAILED";
+      if (message.indexOf("INCOMPLETE_PI_PAYMENT_RECONCILIATION_REQUIRED") !== -1 || message.indexOf("RECONCILIATION_REQUIRED") !== -1) {
+        setStatus("Pi payment needs reconciliation. Do not create another payment; keep this page open and contact ALBUKHR Testnet admin.", true);
+      } else if (message.indexOf("STAKING_POLICY_OR_LIQUIDITY") !== -1 || message.indexOf("STAKING_NOT_ENABLED") !== -1) {
+        setStatus("Staking is locked because project policy or liquidity coverage is not approved.", true);
+      } else if (message.indexOf("CANCELLED") !== -1) {
+        intentPrepared = false;
+        intentArmed = false;
+        setStatus("Pi confirmed cancellation. The reward reserve was released after backend verification.", true);
+        window.setTimeout(hideModal, 1500);
+      } else {
+        setStatus("Staking was not confirmed: " + message + ". Do not repeat payment until status is reconciled.", true);
+      }
+    } finally {
+      starting = false;
+      setModalPaymentArmed(intentArmed);
+      if (el("albukhrStakeConfirm") && !intentArmed) updatePreview();
+      if (intentArmed && el("albukhrStakeConfirm")) el("albukhrStakeConfirm").disabled = false;
+      if ((!el(modalId) || el(modalId).hidden) && latestOffers && latestOffers.can_stake === true) {
+        setButton(true, "Ready");
+      }
+    }
   }
 
   function init() {
-    var stakeButton = element("stakeBtn");
-    if (stakeButton) {
-      stakeButton.addEventListener("click", function (event) {
-        event.preventDefault();
+    var button = el("stakeBtn");
+    if (button) {
+      // Ensure a fresh listener can be attached as each project is rendered.
+      button.addEventListener("click", function () {
+        if (button.disabled) return;
         openModal();
       });
     }
-    window.addEventListener("albukhr:testnet-project-rendered", onProjectRendered);
-    // The project engine may already have rendered before this module loads.
-    if (window.ALBukhrTestnetCurrentProject) loadTerms(window.ALBukhrTestnetCurrentProject);
+    window.addEventListener("albukhr:testnet-project-rendered", function (event) {
+      if (event && event.detail && event.detail.project) loadOffers(event.detail.project);
+    });
+    window.addEventListener("albukhr:testnet-withdrawal-completed", function () {
+      if (project) loadOffers(project);
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
