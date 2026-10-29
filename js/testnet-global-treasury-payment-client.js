@@ -295,11 +295,17 @@ async function reconcileOwnerWithdrawal(withdrawalId) {
   function clearPiAuth() { piAuth = null; authPromise = null; pendingIncomplete = []; }
 
   var api = {
-    network: NETWORK, host: HOST, apiBase: API_BASE,
-    authenticate: authenticate, prepareWithdrawal: prepareWithdrawal,
-    assessWithdrawal: assessWithdrawal, prepareOwnerFeePayment: prepareOwnerFeePayment,
-    payFee: payFee, executeWithdrawal: executeWithdrawal, clearPiAuth: clearPiAuth
-  };
+  network: NETWORK, host: HOST, apiBase: API_BASE,
+  authenticate: authenticate,
+  prepareWithdrawal: prepareWithdrawal,
+  assessWithdrawal: assessWithdrawal,
+  prepareOwnerFeePayment: prepareOwnerFeePayment,
+  payFee: payFee,
+  executeWithdrawal: executeWithdrawal,
+  executeOwnerWithdrawal: executeOwnerWithdrawal,
+  reconcileOwnerWithdrawal: reconcileOwnerWithdrawal,
+  clearPiAuth: clearPiAuth
+};
   try { Object.freeze(api); } catch (_) {}
   window.AlbukhrTestnetGlobalTreasury = api;
 })(window);
