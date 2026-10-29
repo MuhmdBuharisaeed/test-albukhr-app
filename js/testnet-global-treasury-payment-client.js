@@ -243,6 +243,55 @@
     emit("albukhr:testnet-global-treasury-withdrawal-executed", result);
     return result;
   }
+
+  async function executeOwnerWithdrawal(withdrawalId) {
+  await authModule().requireTestnetAuth({
+    redirectOnFailure: false,
+  });
+
+  var id = clean(withdrawalId);
+  if (!id) {
+    throw new Error("OWNER_WITHDRAWAL_ID_REQUIRED");
+  }
+
+  var result = await apiRequest(
+    "owner/execute",
+    { withdrawalId: id },
+    false
+  );
+
+  emit(
+    "albukhr:testnet-global-treasury-owner-withdrawal-executed",
+    result
+  );
+
+  return result;
+}
+
+async function reconcileOwnerWithdrawal(withdrawalId) {
+  await authModule().requireTestnetAuth({
+    redirectOnFailure: false,
+  });
+
+  var id = clean(withdrawalId);
+  if (!id) {
+    throw new Error("OWNER_WITHDRAWAL_ID_REQUIRED");
+  }
+
+  var result = await apiRequest(
+    "owner/reconcile",
+    { withdrawalId: id },
+    false
+  );
+
+  emit(
+    "albukhr:testnet-global-treasury-owner-withdrawal-reconciled",
+    result
+  );
+
+  return result;
+}
+
   function clearPiAuth() { piAuth = null; authPromise = null; pendingIncomplete = []; }
 
   var api = {
