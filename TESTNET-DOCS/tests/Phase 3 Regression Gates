@@ -1,0 +1,51 @@
+Phase 3 Regression Gates
+All tests must run against a disposable Testnet environment or controlled Testnet data. Do not use Mainnet writes for test setup.
+Mainnet proof issuer
+Valid Pi access token + canonical Owner of the exact Mainnet Internal project → proof issued.
+Valid Pi token but no Mainnet public.users row → denied.
+Pi token UID does not match the canonical Owner record → denied.
+Project is Core → denied.
+Project is unapproved, suspended, archived, or not Mainnet → denied.
+Browser attempts to supply a forged project UUID, owner UUID or project type → ignored / denied.
+Proof contains no Mainnet users.id or owner_albukhr_user_id.
+Proof expires within 120 seconds and has a distinct audience/purpose.
+Mainnet login issuer v4 still works unchanged.
+Testnet proof endpoint
+No Testnet session / expired / revoked / wrong-network session → denied.
+Testnet session Pi UID hash differs from proof hash → denied.
+Project code/type/source UUID mismatch → denied.
+Missing or stale private mirror provenance → denied.
+Proof with wrong issuer/audience/purpose/network → denied.
+Expired, malformed or tampered proof → denied.
+Replayed proof ID → denied.
+Same proof cannot be transferred to another Testnet user or project.
+Core project cannot obtain eligibility, proof ticket, or submit an application.
+Application and review
+Duplicate open application for one project → denied.
+Browser-supplied applicant user ID / status / reviewer ID / approval flag → ignored or rejected.
+Owner can list only applications belonging to its Testnet user ID.
+Resubmission allowed only for own changes_requested application.
+Admin without valid super_admin Testnet session → denied.
+Admin scoped away from the project → denied.
+Admin sees Owner-submitted fields read-only.
+Admin cannot supply or replace applicant identity.
+Mainnet Owner link changed or project status suspended after submission → approval denied.
+Admin approval updates Testnet projects.owner_user_id, creates the compatible profile and appends history atomically.
+Conflicting Testnet owner binding or owner profile → approval denied; no overwrite.
+Core is rejected again inside SQL even if Edge Function or UI is bypassed.
+Application never updates Mainnet.
+Preservation and financial regression
+RAHEEM-25 owner_user_id, Owner profile, balances, ledger and withdrawal history remain unchanged.
+Existing testnet-project-owner v8 API behavior remains unchanged.
+Existing testnet-project-owner-admin v3 route remains unchanged and is not called by the new feature.
+testnet_identity_link_requests behavior remains unchanged.
+Owner withdrawal create/approve/complete, fee assessment and Horizon verification remain unchanged.
+Seven Core Admin operations remain unchanged.
+Dock Navigation markup and behavior remain unchanged.
+Existing investor/staking/withdrawal APIs remain network-isolated and unchanged.
+Mirror provenance
+Registry sync records exact Mainnet source UUID → Testnet project UUID mapping.
+A project code mapped to a different Mainnet UUID is rejected.
+Mainnet project suspension/removal invalidates the Testnet provenance eligibility.
+Public project registry never exposes provenance, proof tickets, Owner UUIDs or application data.
+Testnet schema tables have RLS and no anon / authenticated direct data permissions.
