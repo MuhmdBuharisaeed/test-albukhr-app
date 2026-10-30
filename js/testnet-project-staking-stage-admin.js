@@ -157,7 +157,12 @@
       projectCell.appendChild(create("span", "stage-project-name", project.name || project.project_code || "Project"));
       projectCell.appendChild(create("span", "stage-project-code", project.project_code || "—"));
       tr.appendChild(projectCell);
-      tr.appendChild(create("td", "", money(project.verified_liquidity)));
+      var liquidityDisplay = project.required_liquidity == null
+  ? money(project.verified_liquidity) + " / Not configured"
+  : money(project.verified_liquidity) + " / " +
+    money(project.required_liquidity);
+
+tr.appendChild(create("td", "", liquidityDisplay));
       tr.appendChild(create("td", "", project.treasury_status || "Not configured"));
       tr.appendChild(create("td", "", stageLabel(project.staking_stage)));
 
