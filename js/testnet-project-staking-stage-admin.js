@@ -144,7 +144,7 @@
     var table = create("table");
     var thead = create("thead");
     var header = create("tr");
-    ["Project", "Verified liquidity", "Treasury", "Current stage", "Assign stage", "Action"].forEach(function (label) {
+    ["Project", "Verified / Required liquidity", "Treasury", "Current stage", "Assign stage", "Action"].forEach(function (label) {
       header.appendChild(create("th", "", label));
     });
     thead.appendChild(header);
