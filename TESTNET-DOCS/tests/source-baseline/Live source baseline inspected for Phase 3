@@ -1,0 +1,60 @@
+Live source baseline inspected for Phase 3
+Supabase deployed Edge Functions
+Environment
+Function
+Version
+SHA-256
+Mainnet
+testnet-auth-issuer
+4
+1c462f1aa8a12679f7f0aab2a4b17dcc168b1a51bc11266af684ef4742b28ad0
+Testnet
+testnet-auth-gateway
+5
+28288de176a8e61c6820b42cc1853ed2ce147e5a8797a9bb949de39ac6a992a3
+Testnet
+testnet-project-registry-sync
+3
+c639f16978330ce890835879446b24fda1d65857e25bd941fa2cef96211437d0
+Testnet
+testnet-project-owner
+8
+b92dcc95789454e07cc21676917ada5f77cfbad40d6f79a9a7105940e8bb173e
+Testnet
+testnet-project-owner-admin
+3
+683483160c87fe31ac23f566c49fb0f95011e1b416a6779d9a7b136f246d79e5
+Testnet
+testnet-admin-gateway
+3
+e2e667b4bea408ba6f6bfc461a62b893bb67e8521771e0fae54a10738834a14
+Testnet frontend files inspected
+File
+Git blob SHA
+project.html
+6145e14a615180e30f405851ffbe5e39d33e7835
+js/testnet-project.js
+8f6208891beaeb98475097d26850d8dfc082ff39
+js/testnet-gateway-auth.js
+c5167098b7ee2cd79057ee3279412ce6e3030b73
+js/testnet-project-owner-bridge.js
+3608bd785f8bac4f3d0b936e0ff8bd0c02232387
+js/login.js
+ece4e26caf179333b05102985e0acd86e363ba07
+js/testnet-api-core.js
+91d5eabacaa1a020b83088377a532de69b93abb1
+js/testnet-admin-auth.js
+11351556d194000426ba8a7e590519a2699f0d42
+Repositories
+Testnet frontend: MuhmdBuharisaeed/test-albukhr-app, main.
+Testnet API: MuhmdBuharisaeed/test-albukhr-api, main.
+Mainnet app repo: MuhmdBuharisaeed/albukhr-app, main.
+No GitHub writes, commits, branches, PRs, Render changes, Edge Function deployments, or SQL writes were performed in this phase.
+Schema facts rechecked
+Mainnet DAN-COS-001 is external, approved; its canonical owner_albukhr_user_id resolves to a Mainnet user whose network='mainnet'.
+Mainnet MAITAGOGO-2457 is internal, approved; its canonical owner_albukhr_user_id resolves to the same Mainnet Owner user.
+Testnet DAN-COS-001 and MAITAGOGO-2457 are approved mirrors with owner_user_id IS NULL.
+Testnet RAHEEM-25 is core and currently has a non-null owner_user_id; this binding is a regression-protected legacy record.
+Testnet public.projects, public.users, public.project_owner_profiles, public.project_owner_history, public.testnet_sessions and public.testnet_admin_sessions have RLS enabled.
+project_owner_profiles has one-row-per-project uniqueness and a verification_status check allowing pending, verified, rejected.
+project_owner_history.action_type permits only assign, change, revoke, verify, reject. Do not add application-specific history actions to this legacy table; keep the new append-only application history separate.
