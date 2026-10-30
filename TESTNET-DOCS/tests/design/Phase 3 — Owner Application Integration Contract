@@ -1,0 +1,270 @@
+Phase 3 — Owner Application Integration Contract
+1. Confirmed system facts
+The current deployed Mainnet testnet-auth-issuer v4:
+Validates the Pi access token through https://api.minepi.com/v2/me.
+Signs the ordinary Testnet login assertion with ALBUKHR_TESTNET_GATEWAY_SECRET.
+Does not create a Supabase client, read Mainnet public.users, inspect public.projects, or prove project ownership.
+Issues a general login assertion, not a project-specific Owner assertion.
+The Testnet testnet-auth-gateway v5:
+Verifies that ordinary login assertion against fixed issuer/audience/network rules.
+Consumes one-use nonces and issues a short-lived Testnet access code/session.
+Is a login/session gateway and must not be repurposed as the Owner application proof endpoint.
+The current Testnet registry sync:
+Reads Mainnet get_public_project_registry('mainnet').
+Its validator preserves each registry project's id in the normalized payload.
+get_public_project_registry returns the Mainnet project UUID (id) but does not return owner_albukhr_user_id or Owner identity.
+apply_mainnet_approved_project_mirror(jsonb) ignores the incoming id and mirrors/upserts by project_code; it stores only Testnet-local project data and registration_source='mainnet-approved-mirror'.
+Therefore registration_source alone is not sufficient proof of which Mainnet row a Testnet project mirrors.
+The existing Testnet Owner API v8:
+Uses X-Testnet-Session, hashes it with SHA-256, and checks testnet_sessions.
+Resolves the Testnet public.users row using pi_uid and network='testnet'.
+Reads Owner projects through projects.owner_user_id.
+Must remain unchanged.
+The current Testnet Owner Admin API v3:
+Uses a separate bearer admin session stored in testnet_admin_sessions.
+Checks network='testnet', expiry, revocation, and roles containing super_admin.
+Enforces scoped_projects.
+Calls the legacy Owner-management RPC. The new application Admin route must be separate and must not call that RPC.
+The Testnet project detail page:
+Loads js/testnet-project.js, js/testnet-gateway-auth.js, js/testnet-api-core.js, and the legacy Owner visibility bridge.
+js/testnet-project.js exposes window.AlbukhrTestnetProject.getProject() and emits albukhr:testnet-project-loaded / albukhr:testnet-project-rendered.
+project.html already loads the Pi SDK.
+Testnet login obtains a Pi access token, sends it to the direct-auth endpoint, then clears it. It is not retained by the project page.
+window.AlbukhrTestnetAuth.getSessionToken() provides the current Testnet session to new frontend modules. Continue using the existing short-lived Testnet session; do not store Pi access tokens.
+2. Canonical Mainnet owner proof — separate issuer
+Create a new Mainnet Edge Function:
+testnet-project-owner-proof-issuer
+Do not modify testnet-auth-issuer v4 or its login contract.
+issue request
+HTTP POST.
+Authorization: Bearer <Pi access token> obtained from a fresh Pi SDK authentication initiated only after the user clicks the Owner application action.
+JSON body: { "action": "issue", "project_code": "<current project code>" }.
+CORS allows only the Testnet application origin https://test.albukhr.com for this browser use. The old login issuer's CORS behavior remains untouched.
+Pi access token is memory-only; never write it to LocalStorage, SessionStorage, a URL, logs, or Testnet database.
+Mainnet server-side checks
+Call Pi /v2/me with the supplied Pi access token.
+Require a non-empty verified uid.
+Use Mainnet SUPABASE_URL plus SUPABASE_SERVICE_ROLE_KEY only in the Edge Function.
+Resolve exactly one public.users row where pi_uid=<verified uid> and network='mainnet'.
+Resolve exactly one Mainnet public.projects row where:
+project_code=<requested code>;
+network='mainnet';
+project_type IN ('internal','external');
+status IN ('approved','active');
+owner_albukhr_user_id=<resolved Mainnet users.id>.
+Do not accept the project UUID, user UUID, owner_albukhr_user_id, or project type supplied by the browser as authority. They are resolved server-side.
+Signed proof claims
+Use a dedicated, independent secret named ALBUKHR_TESTNET_OWNER_PROOF_SECRET, configured on both Mainnet issuer and Testnet verifier. Do not reuse ALBUKHR_TESTNET_GATEWAY_SECRET or the Admin gateway secret.
+Claims:
+Claim
+Value / rule
+iss
+albukhr-mainnet
+aud
+albukhr-testnet-project-owner-proof
+purpose
+project_owner_application
+source_network
+mainnet
+network
+testnet
+source_project_id
+Exact Mainnet projects.id
+project_code
+Exact Mainnet project code
+project_type
+Verified internal or external
+owner_pi_uid_hash
+SHA-256 of verified Pi UID; never the raw UID
+proof_id
+Cryptographically random unique nonce/reference
+iat / exp
+Unix seconds; lifetime at most 120 seconds
+Never include Mainnet users.id or owner_albukhr_user_id in the signed claims or response.
+3. Testnet proof verification and one-time ticket
+Create a separate Testnet Edge Function:
+testnet-project-owner-application
+It authenticates the current applicant using X-Testnet-Session, following the existing testnet-project-owner v8 session pattern.
+Proof verification action
+Request fields:
+action: "verify_owner_proof"
+project_id: Testnet local project UUID
+proof: signed Mainnet assertion
+Server-side checks:
+Validate Testnet session hash, expiry, revocation and network='testnet'.
+Resolve public.users using the session Pi UID plus network='testnet'.
+Verify the HMAC signature using ALBUKHR_TESTNET_OWNER_PROOF_SECRET with constant-time comparison.
+Require exact iss, aud, purpose, source_network, network, iat, exp, and a non-empty proof ID.
+Hash the current Testnet session pi_uid and compare it with owner_pi_uid_hash.
+Resolve the Testnet project by id and network='testnet'.
+Require project_type IN ('internal','external'), status IN ('approved','active'), and exact equality of project code/type with the proof.
+Verify the Testnet project's private mirror provenance maps it to the exact source_project_id in the proof.
+Reject if the Testnet project has a different non-null owner_user_id.
+Consume proof_id once. Replay must fail.
+On success, create a random opaque short-lived application ticket bound server-side to:
+Testnet applicant user ID;
+Testnet project ID;
+Mainnet source project UUID;
+proof ID hash;
+expiry;
+consumed state.
+Return only the opaque ticket ID and safe project/application state. Do not return signed proof claims or Mainnet identity values.
+Why a ticket is required
+The Mainnet proof expires within 120 seconds. A one-time Testnet ticket allows the browser to submit the application form without retaining a reusable Mainnet proof. The ticket must be consumed atomically with the application insert.
+4. Provenance repair — preserve the public registry contract
+Do not add Mainnet Owner identifiers to get_public_project_registry.
+The public Mainnet registry already returns projects.id, which is the source project UUID. Keep it as a project locator; it is not the Owner identity.
+Add a private Testnet provenance table, conceptually:
+private.mainnet_project_mirror_provenance
+Fields:
+testnet_project_id uuid primary key references public.projects(id);
+mainnet_source_project_id uuid not null unique;
+project_code text not null;
+project_type text not null check (project_type IN ('internal','external','core'));
+source_status text not null;
+source_updated_at timestamptz;
+last_verified_at timestamptz not null;
+sync_batch_id uuid not null;
+created_at, updated_at.
+The mirror transaction must:
+validate the incoming source id as a UUID;
+verify project code/type/source state;
+perform the existing Testnet project upsert by code;
+resolve the resulting Testnet project UUID;
+upsert the private provenance row mapping local Testnet project ID to exact Mainnet source project ID;
+reject if a project code is already mapped to a different Mainnet source UUID, or a source UUID is already mapped to a different Testnet project;
+update source status and verification timestamp in the same transaction;
+mark provenance suspended/stale when the source project is removed or suspended.
+Implement this additively in a forward-only migration and the existing registry sync call path, after source comparison. Do not change the current public registry payload by adding Owner identity fields. Do not allow browser roles to read provenance.
+5. Application data model
+Recommended application tables remain Testnet-only and separate from legacy Owner data:
+public.testnet_project_owner_applications
+id uuid primary key;
+project_id uuid not null references public.projects(id);
+network text not null check (network='testnet');
+applicant_testnet_user_id uuid not null references public.users(id);
+mainnet_source_project_id uuid not null (source project UUID is not an Owner UUID);
+mainnet_source_project_code text not null;
+mainnet_source_project_type text not null check (mainnet_source_project_type IN ('internal','external'));
+owner_proof_ticket_id uuid not null;
+status text not null check (status IN ('submitted','changes_requested','resubmitted','approved','rejected','withdrawn'));
+owner_submission jsonb not null;
+submitted_at, reviewed_at, created_at, updated_at;
+reviewed_by uuid null references public.users(id);
+review_note text null;
+approved_testnet_user_id uuid null references public.users(id).
+Partial unique index: one open application per project for statuses submitted, changes_requested, and resubmitted.
+public.testnet_project_owner_application_history
+Append-only transition log:
+id uuid primary key;
+application_id uuid not null references ...;
+project_id uuid not null references public.projects(id);
+network text not null check (network='testnet');
+actor_testnet_user_id uuid null references public.users(id);
+actor_role text not null check (actor_role IN ('owner','admin','system'));
+action text not null check (action IN ('submitted','changes_requested','resubmitted','approved','rejected','withdrawn'));
+from_status, to_status, note, metadata jsonb, created_at.
+Proof ticket storage
+Keep ticket/proof replay records in a service-only table or private table, not a public registry view. Store hashes of proof ID / ticket, not signed claims or raw Pi UID. Enforce unique proof ID and one-time ticket consumption atomically.
+Table grants and RLS
+Enable RLS on every new public-schema table.
+Revoke direct SELECT/INSERT/UPDATE/DELETE from anon and authenticated.
+Grant only the narrow service role permissions needed by the Edge Functions/RPCs.
+Public project registry functions must never join or return applications, proof tickets, provenance or applicant details.
+No browser supplied user IDs, review status, admin identity or Mainnet Owner IDs are trusted.
+6. Resubmission and Admin review
+Owner routes
+testnet-project-owner-application actions:
+eligibility
+verify_owner_proof
+submit
+resubmit
+my_applications
+Every route requires a valid X-Testnet-Session. The applicant user ID is resolved server-side.
+submit accepts only applicant-entered business/team/contact/profile fields plus the opaque ticket. It must ignore or reject browser-supplied applicant_user_id, owner_user_id, mainnet_user_id, status, approval fields and reviewer fields.
+resubmit is allowed only for the same applicant's application in changes_requested; it creates history and preserves prior content in the audit trail.
+Separate Admin route
+Create:
+testnet-project-owner-application-admin
+Do not modify testnet-project-owner-admin v3.
+Admin authentication must follow the existing pattern:
+Authorization: Bearer <Testnet admin session>;
+hash token and resolve testnet_admin_sessions;
+require network='testnet', not expired, not revoked;
+require roles containing super_admin unless a separate authorized role is explicitly approved;
+enforce scoped_projects for list and review actions.
+Actions:
+list_applications
+review_application
+The Admin sees Owner-submitted information read-only. Review decisions are changes_requested, approved, or rejected, each with a reason. Admin cannot type or override Owner identity values.
+7. Mandatory Mainnet revalidation at approval
+A Mainnet Owner proof that was valid at application time may no longer be valid when an Admin reviews the request.
+Therefore, before Testnet approval:
+Testnet Admin endpoint rechecks current Mainnet ownership through a new server-to-server verification action on the Mainnet proof issuer.
+The internal request is authenticated with the dedicated ALBUKHR_TESTNET_OWNER_PROOF_SECRET, a short timestamp window and a request nonce.
+Mainnet re-reads the exact source project, canonical Owner link, project type, status and the source Owner's Pi UID hash.
+Mainnet confirms that the same Pi UID hash remains the canonical owner of that exact source project.
+Testnet then calls its local approval RPC immediately, passing only a signed/opaque, short-lived revalidation result tied to application ID, Testnet project ID, source project ID and applicant user ID.
+The local approval RPC must use row locks and atomically:
+re-check Testnet network, project_type IN ('internal','external'), approved/active status and exact private provenance;
+reject Core at SQL level, irrespective of UI or Edge Function behavior;
+reject another existing projects.owner_user_id;
+consume the application review ticket;
+set projects.owner_user_id to the applicant's Testnet users.id;
+create the project_owner_profiles row only if the profile is absent; reject conflicting existing profile ownership;
+copy only the approved applicant profile/contact fields;
+keep project_owner_profiles.verification_status='pending' unless a separate verification process has approved those profile details;
+write application transition history and mark the application approved in one transaction.
+There is no cross-database transaction spanning Mainnet and Testnet. The remote Mainnet revalidation must therefore be immediately before the Testnet transaction and its result must be short-lived and single-use.
+Do not write owner_albukhr_user_id to Testnet. Do not write anything to Mainnet.
+8. Frontend integration contract
+Target frontend repository: MuhmdBuharisaeed/test-albukhr-app.
+Existing project page script order includes:
+js/testnet-project.js;
+js/testnet-gateway-auth.js;
+js/testnet-api-core.js;
+legacy js/testnet-project-owner-bridge.js.
+Add a separate application module after project and auth modules are available. It should subscribe to albukhr:testnet-project-loaded / albukhr:testnet-project-rendered, or call window.AlbukhrTestnetProject.getProject().
+Project detail UI:
+New Owner application CTA appears only after the server eligibility response succeeds.
+It must be impossible to show or submit for project_type='core'.
+CTA should be inside the existing project page content, not Dock Navigation.
+On click, explain that Pi identity will be re-confirmed; only then call Pi.authenticate.
+Initialize Pi SDK using the same environment settings already used by Testnet login.
+Send the newly returned access token directly to the Mainnet proof issuer in the Authorization header; clear local JS references after the request.
+Send proof to Testnet application endpoint with X-Testnet-Session.
+Use window.AlbukhrTestnetAuth.getSessionToken() for the existing Testnet session.
+Do not store Pi tokens, proof assertions, or new persistent auth state in LocalStorage/SessionStorage/URLs.
+Keep the current temporary Testnet session handling unchanged.
+Owner portal CTA from the existing legacy bridge stays separate and only serves already-bound Owners.
+Admin UI:
+Add a separate application queue page/module and endpoint.
+Do not repurpose project-owner-admin.html or legacy Owner admin JavaScript.
+Collapsed by default; open details only after Admin action.
+No Owner identity input fields.
+Keep Dock Navigation unchanged.
+9. Current project-specific state and expected behavior
+DAN-COS-001: Mainnet external, approved, canonical Mainnet Owner linked. Testnet mirror exists, owner_user_id is currently null. Eligible only after verified mirror provenance is populated.
+MAITAGOGO-2457: Mainnet internal, approved, canonical Mainnet Owner linked. Testnet mirror exists, owner_user_id is currently null. Eligible only after verified mirror provenance is populated.
+RAHEEM-25: Core project with existing Testnet Owner binding. It must never show an application CTA and must remain unchanged.
+All seven Core projects are excluded at UI, Edge Function, application RPC, Admin queue, and approval RPC layers.
+10. Migration and rollout order
+Recover/compare complete current migration and function source baseline; do not replay any migration.
+Add forward-only Testnet migration for private provenance, application/history/ticket tables, indexes, constraints, RLS, grants and narrow RPCs.
+Update mirror transaction to populate private provenance from the already-returned Mainnet source id; run a controlled registry sync and verify exact mappings for DAN-COS-001 and MAITAGOGO-2457.
+Deploy the new Mainnet proof issuer with independent proof secret; do not replace ordinary Mainnet login issuer.
+Deploy the Testnet application proof/owner endpoint and separate Admin endpoint.
+Run API and SQL regression tests while UI is still hidden.
+Add project-detail CTA/form and the separate Admin queue.
+Test all failure cases and financial regression controls.
+Enable the UI only after all server-side gates pass.
+Rollback is feature disable / UI hide plus function rollback to the prior version where safe. Do not delete approved applications, provenance or audit history. Never reverse or rewrite applied migration history.
+11. Critical risks closed by this design
+Login assertions can no longer be mistaken for project-owner authorization.
+Mainnet canonical Owner UUID never leaks into Testnet.
+Browser cannot choose applicant identity, project type, approval state or reviewer identity.
+A valid proof cannot be replayed or moved to another project or Testnet user.
+A mirror with the same project code but a different source UUID is rejected.
+Owner changes or project suspension on Mainnet are detected at approval time.
+Legacy Core Owner Admin route and financial functions are not reused.
+Core projects cannot apply, even if the UI is manipulated.
