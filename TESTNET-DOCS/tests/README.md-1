@@ -1,0 +1,17 @@
+ALBUKHR Testnet Owner Application — Phase 3 Integration Contract
+Status: Read-only source-tracing and implementation contract.
+Prepared: 2026-10-30
+Deployment status: Not deployed. No production database, Edge Function, repository, or Render service was changed.
+This package follows the approved Phase 2 scope. It translates the live Mainnet/Testnet source findings into an exact integration design for the next coding phase.
+Files
+design/PHASE3_INTEGRATION_CONTRACT.md — end-to-end architecture and API contracts.
+source-baseline/LIVE_SOURCE_BASELINE.md — exact deployed and repository files inspected.
+tests/PHASE3_REGRESSION_GATES.md — security, workflow, and financial regression gates.
+Non-negotiable preservation rules
+Do not alter the seven Core project workflow or existing albukhr-admin Core Admin path.
+Do not use or modify the legacy Owner assignment workflow for self-applications.
+Do not modify RAHEEM-25 binding, Owner balances, ledger, withdrawals, payout verification, or identity-link flow.
+Do not modify Dock Navigation.
+Do not send Mainnet users.id / owner_albukhr_user_id to Testnet browser clients or public registry responses.
+Do not write to Mainnet from Testnet application, review, or approval flows.
+Do not deploy or apply migrations before source implementation and regression review.
