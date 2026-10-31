@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f7a3d">
+  <title>Owner Applications • ALBUKHR TESTNET ADMIN</title>
+  <link rel="stylesheet" href="css/testnet-project-owner-applications-admin.css?v=20261030-phase4">
+</head>
+<body>
+  <header class="app-admin-header">
+    <div><span class="app-admin-kicker">ALBUKHR TESTNET</span><h1>Project Owner Applications</h1><p>Review information submitted by project Owners.</p></div>
+    <a href="admin-dashboard.html">Admin Dashboard</a>
+  </header>
+  <main class="app-admin-main">
+    <div id="queueStatus" class="queue-status" role="status" aria-live="polite">Checking Testnet Admin session…</div>
+    <div class="queue-toolbar"><h2>Review queue</h2><button id="refreshQueue" type="button">Refresh</button></div>
+    <div id="applicationQueue" class="application-queue" aria-live="polite"></div>
+  </main>
+  <script src="js/core/environment-core.js?v=20260921-project3"></script>
+  <script src="js/testnet-admin-auth.js?v=20261030-phase4"></script>
+  <script src="js/testnet-project-owner-applications-admin.js?v=20261030-phase4"></script>
+</body>
+</html>
