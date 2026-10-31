@@ -3,10 +3,8 @@
   "use strict";
 
   var API = "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-project-owner-application";
-  var MAINNET_ISSUER = "https://ribpntyqdleytsyktdfb.supabase.co/functions/v1/testnet-project-owner-proof-issuer";
-  var PI_SDK_VERSION = "2.0";
-  var PI_SANDBOX = true;
-  var piInitPromise = null;
+  var MAINNET_LOGIN = "https://app.albukhr.com/login.html";
+  var pendingMainnetProof = captureProofFromHash();
   var eligibilityInFlight = Object.create(null);
   var panel = null;
   var currentProject = null;
@@ -93,48 +91,57 @@
       if (node) node.disabled = busy;
     });
   }
-  async function initializePi() {
-    if (!window.Pi || typeof window.Pi.init !== "function" || typeof window.Pi.authenticate !== "function") throw new Error("PI_SDK_UNAVAILABLE");
-    if (!piInitPromise) {
-      piInitPromise = Promise.resolve(window.Pi.init({ version: PI_SDK_VERSION, sandbox: PI_SANDBOX })).catch(function (error) {
-        piInitPromise = null;
-        throw error;
-      });
-    }
-    await piInitPromise;
-  }
-  async function startVerification() {
-    if (busy || !currentProject) return;
-    setBusy(true);
-    setStatus("Starting a fresh Pi identity verification…");
-    var accessToken = "";
+  function captureProofFromHash() {
     try {
-      await initializePi();
-      var result = await window.Pi.authenticate(["username"], function () { /* No payment flow is initiated here. */ });
-      accessToken = clean(result && result.accessToken);
-      result = null;
-      if (!accessToken) throw new Error("PI_ACCESS_TOKEN_REQUIRED");
-      var response = await fetch(MAINNET_ISSUER, {
-        method: "POST",
-        mode: "cors",
-        credentials: "omit",
-        headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ action: "issue", project_code: currentProject.project_code }),
-        cache: "no-store"
+      var raw = clean(window.location.hash).replace(/^#/, "");
+      if (!raw) return "";
+      var params = new URLSearchParams(raw);
+      var proof = clean(params.get("albukhr_owner_proof"));
+      if (!proof) return "";
+      // Remove the one-time proof from the visible URL/history immediately.
+      try {
+        window.history.replaceState(window.history.state, document.title,
+          window.location.pathname + window.location.search);
+      } catch (_) {}
+      return proof;
+    } catch (_) {
+      return "";
+    }
+  }
+  function startVerification() {
+    if (busy || !currentProject) return;
+    var projectCode = clean(currentProject.project_code).toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9-]{1,63}$/.test(projectCode)) {
+      setStatus("PROJECT_CODE_INVALID", true);
+      return;
+    }
+    setBusy(true);
+    setStatus("Opening Mainnet Pi verification. Use the Pi account that owns this project.");
+    var destination = new URL(MAINNET_LOGIN);
+    destination.searchParams.set("returnTo", "owner-proof");
+    destination.searchParams.set("project_code", projectCode);
+    window.location.assign(destination.toString());
+  }
+  async function processReturnedProof() {
+    if (!pendingMainnetProof || !currentProject || busy) return;
+    var proof = pendingMainnetProof;
+    pendingMainnetProof = "";
+    setBusy(true);
+    setStatus("Mainnet ownership proof received. Testnet is verifying it securely…");
+    try {
+      var verified = await request("verify_owner_proof", {
+        project_id: currentProject.id,
+        proof: proof
       });
-      accessToken = "";
-      var proofResult = await response.json().catch(function () { return null; });
-      if (!response.ok || !proofResult || proofResult.ok !== true || !proofResult.proof) throw new Error(clean(proofResult && proofResult.error) || "MAINNET_OWNER_PROOF_FAILED");
-      var verified = await request("verify_owner_proof", { project_id: currentProject.id, proof: proofResult.proof });
-      proofResult.proof = "";
       currentTicket = clean(verified.ticket);
       if (!currentTicket) throw new Error("OWNER_APPLICATION_TICKET_MISSING");
-      setStatus("Mainnet ownership verified. Complete the form below; your Pi access token was not saved.");
+      setStatus("Mainnet ownership verified. Complete the form below; your Pi access token was never sent to Testnet.");
+      if (byId("ownerApplicationActions")) byId("ownerApplicationActions").hidden = false;
       showForm(existingApplicationId ? existingSubmission : null);
     } catch (error) {
       setStatus(clean(error && error.message) || "OWNER_APPLICATION_VERIFICATION_FAILED", true);
     } finally {
-      accessToken = "";
+      proof = "";
       setBusy(false);
     }
   }
@@ -213,10 +220,14 @@
         byId("ownerApplicationActions").hidden = false;
         byId("ownerApplicationStart").hidden = false;
         byId("ownerApplicationStart").textContent = "Verify again to resubmit changes";
+      } else {
+        pendingMainnetProof = "";
+        return;
       }
-      return;
+    } else {
+      setStatus("This project is eligible for an Owner application. Only the project Owner can submit the information.");
     }
-    setStatus("This project is eligible for an Owner application. Only the project Owner can submit the information.");
+    await processReturnedProof();
   }
   function onProject(event) {
     var project = event && event.detail && event.detail.project;
