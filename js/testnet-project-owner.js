@@ -733,139 +733,159 @@
      RENDER OWNER
   ======================================================= */
 
-  function renderOwner(stateRow, ownerData) {
-    var project = stateRow.project || {};
-    var liquidity = stateRow.liquidity || {};
-    var owner = ownerData || {};
+function renderOwner(stateRow, ownerData) {
+  var project = stateRow.project || {};
+  var liquidity = stateRow.liquidity || {};
+  var owner = ownerData || {};
 
-    var profile =
-      owner.profile ||
-      stateRow.owner_profile ||
-      {};
+  var profile =
+    owner.profile ||
+    stateRow.owner_profile ||
+    {};
 
-    state.project = project;
-    state.treasury = stateRow.treasury || null;
-    state.liquidity = liquidity;
+  state.project = project;
+  state.treasury = stateRow.treasury || null;
+  state.liquidity = liquidity;
 
-    state.ownerBalance =
-      numberValue(stateRow.owner_balance);
+  state.ownerBalance =
+    numberValue(stateRow.owner_balance);
 
-    state.owner = owner;
-    state.ownerProfile = profile;
+  state.owner = owner;
+  state.ownerProfile = profile;
 
-    setText(
-      "ownerTitle",
-      "Manage " + (clean(project.name) || "Project")
-    );
+  setText(
+    "ownerTitle",
+    "Manage " + (clean(project.name) || "Project")
+  );
 
-    setText(
-      "ownerSubtitle",
-      "Owner controls for approved Testnet project " +
-      (clean(project.project_code) || "—")
-    );
+  setText(
+    "ownerSubtitle",
+    "Owner controls for approved Testnet project " +
+    (clean(project.project_code) || "—")
+  );
 
-    setText("projectName", clean(project.name) || "Project");
-    setText("projectCode", clean(project.project_code) || "—");
+  setText(
+    "projectName",
+    clean(project.name) || "Project"
+  );
 
-    setText(
-      "ownerBalance",
-      formatPi(state.ownerBalance)
-    );
+  setText(
+    "projectCode",
+    clean(project.project_code) || "—"
+  );
 
-    setText(
-      "requiredLiquidity",
-      formatPi(liquidity.required)
-    );
+  setText(
+    "ownerBalance",
+    formatPi(state.ownerBalance)
+  );
 
-    setText(
-      "verifiedLiquidity",
-      formatPi(liquidity.verified)
-    );
+  setText(
+    "requiredLiquidity",
+    formatPi(liquidity.required)
+  );
 
-    setText(
-      "liquidityCoverage",
-      numberValue(liquidity.coverage).toFixed(1) +
-      "% coverage"
-    );
+  // Total completed Testnet liquidity payments received.
+  setText(
+    "receivedLiquidity",
+    formatPi(liquidity.received)
+  );
 
-    setText(
-      "treasuryState",
-      liquidity.treasury_configured
-        ? "CONFIGURED"
-        : "NOT CONFIGURED"
-    );
+  setText(
+    "verifiedLiquidity",
+    formatPi(liquidity.verified)
+  );
 
-    setValue("profilePiUid", owner.pi_uid);
-    setValue("profileUsername", owner.username);
+  setText(
+    "liquidityCoverage",
+    numberValue(liquidity.coverage).toFixed(1) +
+    "% coverage"
+  );
 
-    setValue(
-      "profileDisplayName",
-      profile.display_name
-    );
+  setText(
+    "treasuryState",
+    liquidity.treasury_configured
+      ? "CONFIGURED"
+      : "NOT CONFIGURED"
+  );
 
-    setValue(
-      "profileRoleTitle",
-      profile.role_title
-    );
+  setValue(
+    "profilePiUid",
+    owner.pi_uid
+  );
 
-    setValue(
-      "profileOrganization",
-      profile.organization_name
-    );
+  setValue(
+    "profileUsername",
+    owner.username
+  );
 
-    setValue(
-      "profileEmail",
-      profile.contact_email
-    );
+  setValue(
+    "profileDisplayName",
+    profile.display_name
+  );
 
-    setValue(
-      "profilePhone",
-      profile.contact_phone
-    );
+  setValue(
+    "profileRoleTitle",
+    profile.role_title
+  );
 
-    /*
-     * IMPORTANT:
-     * Do not read owner.wallet_address here.
-     * Do not populate withdrawWallet from the shared users record.
-     * The project Owner enters a wallet for each withdrawal request.
-     *
-     * Do not clear the field during refresh either:
-     * preserve the Owner's current input while refreshing the page state.
-     */
+  setValue(
+    "profileOrganization",
+    profile.organization_name
+  );
 
-    setValue(
-      "profileBio",
-      profile.bio
-    );
+  setValue(
+    "profileEmail",
+    profile.contact_email
+  );
 
-    setText(
-      "profileVerificationState",
-      clean(profile.verification_status || "pending").toUpperCase()
-    );
+  setValue(
+    "profilePhone",
+    profile.contact_phone
+  );
 
-    updateWithdrawalAvailability();
-    setLiquidityAvailability();
+  /*
+   * IMPORTANT:
+   * Do not read owner.wallet_address here.
+   * Do not populate withdrawWallet from the shared users record.
+   * The project Owner enters a wallet for each withdrawal request.
+   *
+   * Do not clear the field during refresh either:
+   * preserve the Owner's current input while refreshing the page state.
+   */
 
-    renderLogo(project);
+  setValue(
+    "profileBio",
+    profile.bio
+  );
 
-    renderWithdrawals(
-      stateRow.withdrawals || []
-    );
+  setText(
+    "profileVerificationState",
+    clean(profile.verification_status || "pending").toUpperCase()
+  );
 
-    var back = byId("backToProject");
+  updateWithdrawalAvailability();
+  setLiquidityAvailability();
 
-    if (back && clean(project.id)) {
-      back.href =
-        "project.html?project=" +
-        encodeURIComponent(
-          project.project_code || project.id
-        );
-    }
+  renderLogo(project);
 
-    document.title =
-      (clean(project.name) || "Project Owner") +
-      " • ALBUKHR TESTNET";
+  renderWithdrawals(
+    stateRow.withdrawals || []
+  );
+
+  var back = byId("backToProject");
+
+  if (back && clean(project.id)) {
+    back.href =
+      "project.html?project=" +
+      encodeURIComponent(
+        project.project_code || project.id
+      );
   }
+
+  document.title =
+    (clean(project.name) || "Project Owner") +
+    " • ALBUKHR TESTNET";
+}
 
   /* =======================================================
      ACCESS ERROR
