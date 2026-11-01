@@ -1,3 +1,4 @@
+/* Existing ALBUKHR bridge styles retained. */
 .project-owner-action-wrap{
   margin-top:10px;
 }
@@ -37,27 +38,103 @@
 .project-owner-button:hover{background:#e1f2e8}
 
 /* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE */
+.testnet-owner-control-wrap{
+  position:relative;
+  z-index:10020;
+  display:inline-flex;
+  align-items:center;
+  flex:0 0 auto;
+  max-width:100%;
+}
+
 .testnet-owner-page-button{
+  appearance:none;
+  -webkit-appearance:none;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:32px;
-  padding:7px 10px;
+  gap:6px;
+  min-height:36px;
+  padding:8px 12px;
   border:1px solid #bcdcc9;
-  border-radius:10px;
+  border-radius:11px;
   background:#eaf6ef;
   color:#0f7a3d;
   text-decoration:none;
-  font-size:9px;
+  font-family:inherit;
+  font-size:11px;
   font-weight:900;
-  line-height:1;
+  line-height:1.1;
   white-space:nowrap;
   box-sizing:border-box;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
-.testnet-owner-page-button:hover{
-  background:#e1f2e8;
-}
+.testnet-owner-page-button:hover{background:#e1f2e8}
 .testnet-owner-page-button:focus-visible{
   outline:2px solid #33c17d;
-  outline-offset:2px;
+  outline-offset:3px;
+}
+.testnet-owner-project-menu{
+  position:absolute;
+  top:calc(100% + 9px);
+  right:0;
+  z-index:10030;
+  width:min(330px,calc(100vw - 24px));
+  max-height:min(65vh,440px);
+  overflow:auto;
+  padding:8px;
+  border:1px solid #d7e8dd;
+  border-radius:15px;
+  background:#fff;
+  box-shadow:0 14px 38px rgba(12,55,32,.2);
+  overscroll-behavior:contain;
+}
+.testnet-owner-project-menu[hidden]{display:none!important}
+.testnet-owner-project-menu-heading{
+  padding:9px 11px 10px;
+  color:#718078;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.testnet-owner-project-option{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-height:58px;
+  padding:11px 12px;
+  border:1px solid transparent;
+  border-radius:11px;
+  color:#183329;
+  text-decoration:none;
+  background:#f7fbf8;
+  overflow-wrap:anywhere;
+}
+.testnet-owner-project-option + .testnet-owner-project-option{margin-top:6px}
+.testnet-owner-project-option:hover,
+.testnet-owner-project-option:focus-visible{
+  border-color:#bcdcc9;
+  background:#eaf6ef;
+  outline:none;
+}
+.testnet-owner-project-option-name{
+  color:#075f35;
+  font-size:13px;
+  font-weight:850;
+  line-height:1.35;
+}
+.testnet-owner-project-option-meta{
+  color:#718078;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.35;
+}
+@media(max-width:520px){
+  .testnet-owner-page-button{min-height:36px;padding:8px 10px;font-size:10px}
+  .testnet-owner-project-menu{right:-4px;width:min(300px,calc(100vw - 20px))}
+}
+@media(prefers-reduced-motion:reduce){
+  .testnet-owner-page-button,.testnet-owner-project-option{transition:none!important}
 }
