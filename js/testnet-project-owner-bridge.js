@@ -1,4 +1,7 @@
-/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1.1 */
+/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1.2
+ * Multi-project selector: never silently auto-selects the first project.
+ * Keeps project ownership, authentication, and Dock Navigation unchanged.
+ */
 (function (window, document) {
   "use strict";
 
@@ -7,6 +10,10 @@
 
   var initialized = false;
   var requestInFlight = false;
+  var ownedProjects = [];
+  var controlWrap = null;
+  var trigger = null;
+  var menu = null;
 
   function clean(value) {
     return String(value == null ? "" : value).trim();
@@ -17,301 +24,270 @@
   }
 
   function getHeaderContainer() {
-    /*
-     * index.html / investor.html:
-     *   <div class="header-actions">
-     *
-     * marketplace.html:
-     *   <div aria-label="Testnet marketplace navigation">
-     *
-     * The fallback keeps this additive if a future Testnet header
-     * changes its inner wrapper without changing the header itself.
-     */
+    /* Header-only insertion. The existing ALBUKHR Dock Navigation is untouched. */
     return (
       document.querySelector(".header-actions") ||
-      document.querySelector(
-        'header > div[aria-label*="navigation" i]'
-      ) ||
+      document.querySelector(".owner-header-actions") ||
+      document.querySelector('header > div[aria-label*="navigation" i]') ||
       document.querySelector("header")
     );
   }
 
-  function ensureButton() {
-    var header = getHeaderContainer();
+  function closeMenu(returnFocus) {
+    if (!menu || !trigger) return;
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    if (returnFocus) trigger.focus();
+  }
 
-    if (!header) {
-      return null;
+  function removeMenu() {
+    if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+    menu = null;
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.removeAttribute("aria-haspopup");
+      trigger.removeAttribute("aria-controls");
     }
+  }
 
-    var existing =
-      document.getElementById(
-        "testnetProjectOwnerPageButton"
-      );
+  function projectUrl(project) {
+    var reference = clean(project.project_code) || clean(project.id);
+    return "project-owner.html?project=" + encodeURIComponent(reference);
+  }
 
-    if (existing) {
-      return existing;
-    }
+  function makeMenuItem(project) {
+    var link = document.createElement("a");
+    link.className = "testnet-owner-project-option";
+    link.href = projectUrl(project);
+    link.setAttribute("role", "menuitem");
 
-    var link =
-      document.createElement("a");
+    var name = document.createElement("strong");
+    name.className = "testnet-owner-project-option-name";
+    name.textContent = project.name;
 
-    link.id =
-      "testnetProjectOwnerPageButton";
+    var meta = document.createElement("span");
+    meta.className = "testnet-owner-project-option-meta";
+    meta.textContent = [
+      project.project_code,
+      clean(project.project_type).toUpperCase()
+    ].filter(Boolean).join(" · ");
 
-    link.className =
-      "testnet-owner-page-button";
-
-    link.hidden = true;
-
-    link.href =
-      "project-owner.html";
-
-    link.textContent =
-      "Project Owner";
-
-    link.setAttribute(
-      "aria-label",
-      "Open Project Owner controls"
-    );
-
-    link.setAttribute(
-      "title",
-      "Project Owner"
-    );
-
-    /*
-     * Do not alter Dock Navigation.
-     * Insert only inside the existing page header area.
-     */
-    header.insertBefore(
-      link,
-      header.firstChild
-    );
-
+    link.appendChild(name);
+    link.appendChild(meta);
     return link;
   }
 
-  function normalizeOwnedProjects(payload) {
-    var list =
-      payload &&
-      Array.isArray(payload.projects)
-        ? payload.projects
-        : [];
-
-    return list
-      .map(function (item) {
-        var project =
-          item &&
-          item.project &&
-          typeof item.project === "object"
-            ? item.project
-            : item;
-
-        if (
-          !project ||
-          typeof project !== "object"
-        ) {
-          return null;
-        }
-
-        var id =
-          clean(project.id);
-
-        if (!id) {
-          return null;
-        }
-
-        return {
-          id: id,
-          project_code:
-            clean(project.project_code) ||
-            id,
-          name:
-            clean(project.name) ||
-            "Project"
-        };
-      })
-      .filter(Boolean);
+  function openMenu() {
+    if (!menu || !trigger) return;
+    menu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    var first = menu.querySelector("a[role='menuitem']");
+    if (first) first.focus();
   }
 
-  function chooseProject(projects) {
-    if (!projects.length) {
-      return null;
+  function toggleMenu() {
+    if (!menu) return;
+    if (menu.hidden) openMenu();
+    else closeMenu(false);
+  }
+
+  function handleTriggerClick(event) {
+    event.preventDefault();
+    if (!ownedProjects.length) return;
+
+    if (ownedProjects.length === 1) {
+      window.location.assign(projectUrl(ownedProjects[0]));
+      return;
     }
 
-    /*
-     * Current ownership is normally one project per owner.
-     * If that changes, keep deterministic behavior without
-     * creating an unscoped owner page.
-     */
-    return projects[0];
+    toggleMenu();
+  }
+
+  function ensureControl() {
+    var header = getHeaderContainer();
+    if (!header) return null;
+
+    if (controlWrap && controlWrap.isConnected) return controlWrap;
+
+    controlWrap = document.getElementById("testnetProjectOwnerControl");
+    if (controlWrap) {
+      trigger = controlWrap.querySelector("#testnetProjectOwnerPageButton");
+      menu = controlWrap.querySelector("#testnetOwnerProjectMenu");
+      return controlWrap;
+    }
+
+    controlWrap = document.createElement("div");
+    controlWrap.id = "testnetProjectOwnerControl";
+    controlWrap.className = "testnet-owner-control-wrap";
+
+    trigger = document.createElement("button");
+    trigger.id = "testnetProjectOwnerPageButton";
+    trigger.className = "testnet-owner-page-button";
+    trigger.type = "button";
+    trigger.hidden = true;
+    trigger.textContent = "Project Owner";
+    trigger.setAttribute("aria-label", "Open Project Owner dashboard");
+    trigger.setAttribute("title", "Project Owner");
+    trigger.addEventListener("click", handleTriggerClick);
+
+    controlWrap.appendChild(trigger);
+    header.insertBefore(controlWrap, header.firstChild);
+    return controlWrap;
+  }
+
+  function renderProjectControl(projects) {
+    var wrap = ensureControl();
+    if (!wrap || !trigger) return;
+
+    ownedProjects = projects.slice().sort(function (a, b) {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+
+    if (!ownedProjects.length) {
+      removeMenu();
+      trigger.hidden = true;
+      return;
+    }
+
+    trigger.hidden = false;
+
+    if (ownedProjects.length === 1) {
+      removeMenu();
+      trigger.textContent = "Project Owner";
+      trigger.setAttribute("aria-label", "Open Project Owner dashboard for " + ownedProjects[0].name);
+      trigger.setAttribute("title", ownedProjects[0].name);
+      return;
+    }
+
+    trigger.textContent = "Project Owner (" + ownedProjects.length + ")";
+    trigger.setAttribute("aria-label", "Choose one of " + ownedProjects.length + " Project Owner dashboards");
+    trigger.setAttribute("title", "Choose a project");
+    trigger.setAttribute("aria-haspopup", "menu");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", "testnetOwnerProjectMenu");
+
+    removeMenu();
+    menu = document.createElement("div");
+    menu.id = "testnetOwnerProjectMenu";
+    menu.className = "testnet-owner-project-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", "Choose a Project Owner dashboard");
+    menu.hidden = true;
+
+    var heading = document.createElement("div");
+    heading.className = "testnet-owner-project-menu-heading";
+    heading.textContent = "Choose a project";
+    menu.appendChild(heading);
+
+    ownedProjects.forEach(function (project) {
+      menu.appendChild(makeMenuItem(project));
+    });
+
+    wrap.appendChild(menu);
+  }
+
+  function normalizeOwnedProjects(payload) {
+    var list = payload && Array.isArray(payload.projects) ? payload.projects : [];
+
+    return list.map(function (item) {
+      var project = item && item.project && typeof item.project === "object"
+        ? item.project
+        : item;
+
+      if (!project || typeof project !== "object") return null;
+
+      var id = clean(project.id);
+      if (!id) return null;
+
+      return {
+        id: id,
+        project_code: clean(project.project_code) || id,
+        name: clean(project.name) || clean(project.project_code) || "Project",
+        project_type: clean(project.project_type),
+        status: clean(project.status),
+        network: clean(project.network)
+      };
+    }).filter(Boolean);
   }
 
   async function resolveOwnerAccess() {
-    if (requestInFlight) {
-      return;
-    }
+    if (requestInFlight) return;
 
-    var auth =
-      getAuth();
-
+    var auth = getAuth();
     if (
       !auth ||
-      typeof auth.requireTestnetAuth !==
-        "function" ||
-      typeof auth.getSessionToken !==
-        "function"
-    ) {
-      return;
-    }
+      typeof auth.requireTestnetAuth !== "function" ||
+      typeof auth.getSessionToken !== "function"
+    ) return;
 
     requestInFlight = true;
 
     try {
-      var session =
-        await auth.requireTestnetAuth({
-          redirectOnFailure: false
-        });
+      var session = await auth.requireTestnetAuth({ redirectOnFailure: false });
+      if (!session) return;
 
-      if (!session) {
-        return;
-      }
+      var token = clean(auth.getSessionToken());
+      if (!token) return;
 
-      var token =
-        clean(
-          auth.getSessionToken()
-        );
-
-      if (!token) {
-        return;
-      }
-
-      var response =
-        await fetch(
-          OWNER_API,
-          {
-            method: "GET",
-            headers: {
-              "Accept":
-                "application/json",
-              "X-Testnet-Session":
-                token
-            }
-          }
-        );
+      var response = await fetch(OWNER_API, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Accept": "application/json",
+          "X-Testnet-Session": token
+        }
+      });
 
       if (!response.ok) {
+        renderProjectControl([]);
         return;
       }
 
-      var payload =
-        await response.json();
+      var payload = await response.json();
+      var projects = normalizeOwnedProjects(payload);
+      renderProjectControl(projects);
 
-      var projects =
-        normalizeOwnedProjects(
-          payload
-        );
-
-      var project =
-        chooseProject(
-          projects
-        );
-
-      if (!project) {
-        return;
-      }
-
-      var button =
-        ensureButton();
-
-      if (!button) {
-        return;
-      }
-
-      button.href =
-        "project-owner.html?project=" +
-        encodeURIComponent(
-          project.project_code ||
-          project.id
-        );
-
-      button.textContent =
-        projects.length > 1
-          ? "Project Owner (" +
-            projects.length +
-            ")"
-          : "Project Owner";
-
-      button.setAttribute(
-        "aria-label",
-        projects.length > 1
-          ? "Open Project Owner controls for your first owned project"
-          : "Open Project Owner controls"
-      );
-
-      button.hidden =
-        false;
-
-      window.dispatchEvent(
-        new CustomEvent(
-          "albukhr:testnet-project-owner-page-authorized",
-          {
-            detail: {
-              projects:
-                projects,
-              selectedProject:
-                project
-            }
+      window.dispatchEvent(new CustomEvent(
+        "albukhr:testnet-project-owner-page-authorized",
+        {
+          detail: {
+            projects: projects,
+            selectedProject: projects.length === 1 ? projects[0] : null,
+            requiresProjectSelection: projects.length > 1
           }
-        )
-      );
+        }
+      ));
     } catch (error) {
-      /*
-       * Additive failure behavior:
-       * leave the existing page untouched and keep the
-       * Project Owner control hidden.
-       */
-      console.warn(
-        "[ALBUKHR TESTNET OWNER PAGE BRIDGE]",
-        error
-      );
+      console.warn("[ALBUKHR TESTNET OWNER PAGE BRIDGE]", error);
+      /* Keep any previously rendered owner control; do not expose unauthenticated access. */
     } finally {
-      requestInFlight =
-        false;
+      requestInFlight = false;
     }
+  }
+
+  function handleDocumentClick(event) {
+    if (!controlWrap || !menu || menu.hidden) return;
+    if (!controlWrap.contains(event.target)) closeMenu(false);
+  }
+
+  function handleDocumentKeydown(event) {
+    if (event.key === "Escape" && menu && !menu.hidden) closeMenu(true);
   }
 
   function initialize() {
-    if (initialized) {
-      return;
-    }
-
+    if (initialized) return;
     initialized = true;
 
-    ensureButton();
+    ensureControl();
+    document.addEventListener("click", handleDocumentClick);
+    document.addEventListener("keydown", handleDocumentKeydown);
 
-    window.setTimeout(
-      resolveOwnerAccess,
-      0
-    );
-
-    window.addEventListener(
-      "albukhr:testnet-auth-success",
-      function () {
-        resolveOwnerAccess();
-      }
-    );
+    window.setTimeout(resolveOwnerAccess, 0);
+    window.addEventListener("albukhr:testnet-auth-success", resolveOwnerAccess);
   }
 
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      initialize,
-      { once: true }
-    );
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
   } else {
     initialize();
   }
