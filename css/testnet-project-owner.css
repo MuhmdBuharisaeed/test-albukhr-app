@@ -96,7 +96,11 @@ a{color:inherit}
 }
 .project-copy h2{margin:4px 0;color:#173322;font-size:19px}
 .project-copy p{margin:0;color:var(--muted);font-size:10px}
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
 .stat-card{text-align:center;padding:13px 9px}
 .stat-card span{display:block;color:#737e78;font-size:9px}
 .stat-card strong{display:block;margin-top:5px;color:#21402f;font-size:14px;font-weight:900}
@@ -152,7 +156,8 @@ a{color:inherit}
   .owner-hero{padding:15px}
   .owner-hero h1{font-size:22px}
   .owner-mark{width:50px;height:50px;flex-basis:50px}
-  .stats-grid,.form-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-grid{grid-template-columns:1fr}
   .project-card{padding:13px}
   .panel{padding:13px}
 }
