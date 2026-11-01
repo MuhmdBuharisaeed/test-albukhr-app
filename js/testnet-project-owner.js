@@ -1,39 +1,26 @@
+
 /* =========================================================
- * ALBUKHR TESTNET PROJECT OWNER PAGE v6
+ * ALBUKHR TESTNET PROJECT OWNER PAGE v7
  *
- * Additive owner self-service profile layer.
+ * Owner self-service profile and project wallet separation.
  * Ownership transfer remains Super Admin-only.
  *
- * Liquidity payment flow:
+ * Security:
+ * - Testnet session is required.
+ * - Project ownership is verified server-side.
+ * - Mainnet and Testnet data remain isolated.
+ * - Pi access token remains in memory.
+ * - Project Owner withdrawal wallet is entered per request.
+ * - Global users.wallet_address is never changed by this page.
  *
- *   Testnet Session
- *        ↓
- *   Owner authorization
- *        ↓
- *   Pi SDK initialization
- *        ↓
- *   Pi authentication
- *        ↓
- *   Pi access token (memory only)
- *        ↓
- *   Add Liquidity enabled
- *        ↓
- *   USER CLICK
- *        ↓
- *   Pi.createPayment()
- *
- * IMPORTANT:
- * - Testnet session is still required.
- * - Pi authentication is NOT performed inside the
- *   Add Liquidity click handler.
- * - This preserves the Pi payment user-gesture path.
- * - Ownership/security checks remain in place.
+ * Liquidity:
+ * - Owner identity verification remains mandatory.
+ * - Pi authentication remains separate from payment execution.
+ * - Payment is started only by the user's payment click.
  * ========================================================= */
 
 (function (window, document) {
-
   "use strict";
-
 
   /* =======================================================
      CONFIGURATION
@@ -42,873 +29,494 @@
   var OWNER_API =
     "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-project-owner";
 
+  var STELLAR_G_ADDRESS_PATTERN = /^G[A-Z2-7]{55}$/;
 
   /* =======================================================
      STATE
   ======================================================= */
 
   var state = {
-
     projectId: "",
-
     project: null,
-
     treasury: null,
-
     ownerBalance: 0,
-
     liquidity: null,
-
     session: null,
-
     owner: null,
-
     ownerProfile: null,
 
     withdrawalInFlight: false,
-
     profileSaveInFlight: false,
-
     liquidityPaymentInFlight: false,
-
     ownerLoaded: false,
 
-    /*
-     * 🟢 NEW
-     *
-     * Tracks whether Pi authentication has completed.
-     */
     piAuthenticated: false,
-
-    /*
-     * 🟢 NEW
-     *
-     * Tracks whether Pi authentication is currently running.
-     */
     piAuthenticationInFlight: false,
-
-    /*
-     * Last Pi authentication error, retained for a clear retry message.
-     */
     piAuthenticationError: null
-
   };
-
 
   /* =======================================================
      BASIC UTILITIES
   ======================================================= */
 
   function clean(value) {
-
-    return String(
-      value == null
-        ? ""
-        : value
-    ).trim();
-
+    return String(value == null ? "" : value).trim();
   }
-
 
   function numberValue(value) {
-
-    var n =
-      Number(value);
-
-    return Number.isFinite(n)
-      ? n
-      : 0;
-
+    var n = Number(value);
+    return Number.isFinite(n) ? n : 0;
   }
-
 
   function formatPi(value) {
-
-    return (
-      numberValue(value).toFixed(2) +
-      " Pi"
-    );
-
+    return numberValue(value).toFixed(2) + " Pi";
   }
-
 
   function byId(id) {
-
     return document.getElementById(id);
-
   }
-
 
   function setText(id, value) {
-
-    var node =
-      byId(id);
-
-    if (node) {
-
-      node.textContent =
-        clean(value);
-
-    }
-
+    var node = byId(id);
+    if (node) node.textContent = clean(value);
   }
-
 
   function setValue(id, value) {
-
-    var node =
-      byId(id);
-
-    if (node) {
-
-      node.value =
-        clean(value);
-
-    }
-
+    var node = byId(id);
+    if (node) node.value = clean(value);
   }
-
 
   function setHidden(id, hidden) {
-
-    var node =
-      byId(id);
-
-    if (node) {
-
-      node.hidden =
-        !!hidden;
-
-    }
-
+    var node = byId(id);
+    if (node) node.hidden = !!hidden;
   }
 
+  function setStatus(id, message, type) {
+    var node = byId(id);
+    if (!node) return;
 
-  function setStatus(
-    id,
-    message,
-    type
-  ) {
-
-    var node =
-      byId(id);
-
-    if (!node) {
-
-      return;
-
-    }
-
-
-    node.textContent =
-      clean(message);
-
+    node.textContent = clean(message);
 
     if (type) {
-
-      node.dataset.status =
-        type;
-
+      node.dataset.status = type;
     } else {
-
       delete node.dataset.status;
-
     }
-
   }
 
+  function isValidTestnetWallet(value) {
+    return STELLAR_G_ADDRESS_PATTERN.test(
+      clean(value).toUpperCase()
+    );
+  }
+
+  function getOwnerEnteredWallet() {
+    var input = byId("withdrawWallet");
+
+    return clean(input && input.value).toUpperCase();
+  }
+
+  /*
+   * The withdrawal button depends on:
+   * 1. A positive available Owner balance.
+   * 2. A valid wallet entered by this Owner.
+   * 3. No withdrawal request currently being submitted.
+   *
+   * It does NOT depend on users.wallet_address.
+   */
+  function updateWithdrawalAvailability() {
+    var button = byId("requestWithdrawalBtn");
+
+    if (!button) return;
+
+    var wallet = getOwnerEnteredWallet();
+
+    var validWallet =
+      isValidTestnetWallet(wallet);
+
+    var availableBalance =
+      numberValue(state.ownerBalance);
+
+    var disabled =
+      state.withdrawalInFlight ||
+      availableBalance <= 0 ||
+      !validWallet;
+
+    button.disabled = disabled;
+
+    button.setAttribute(
+      "aria-disabled",
+      String(disabled)
+    );
+
+    button.title =
+      availableBalance <= 0
+        ? "A positive Project Owner balance is required."
+        : !validWallet
+          ? "Enter your own valid Testnet wallet address."
+          : "Submit a Project Owner withdrawal request.";
+  }
 
   /* =======================================================
      PROJECT ID
   ======================================================= */
 
   function getProjectId() {
-
     try {
-
       var params =
-        new URLSearchParams(
-          window.location.search
-        );
+        new URLSearchParams(window.location.search);
 
       return clean(
         params.get("project") ||
         params.get("project_id")
       );
-
     } catch (_) {
-
       return "";
-
     }
-
   }
-
 
   /* =======================================================
      ENVIRONMENT VALIDATION
   ======================================================= */
 
   function validateEnvironment() {
-
-    var env =
-      window.ALBukhrEnvironment;
-
+    var env = window.ALBukhrEnvironment;
 
     if (
       !env ||
-      typeof env.isKnown !==
-        "function" ||
-      typeof env.isTestnet !==
-        "function" ||
-      typeof env.getNetwork !==
-        "function"
+      typeof env.isKnown !== "function" ||
+      typeof env.isTestnet !== "function" ||
+      typeof env.getNetwork !== "function"
     ) {
-
       throw new Error(
         "TESTNET_ENVIRONMENT_UNAVAILABLE"
       );
-
     }
-
 
     if (
       !env.isKnown() ||
       !env.isTestnet() ||
-      env.getNetwork() !==
-        "testnet"
+      env.getNetwork() !== "testnet"
     ) {
-
       throw new Error(
         "INVALID_TESTNET_ENVIRONMENT"
       );
-
     }
 
+    var hostname = clean(
+      typeof env.getHostname === "function"
+        ? env.getHostname()
+        : window.location.hostname
+    ).toLowerCase();
 
-    var hostname =
-      clean(
-        typeof env.getHostname ===
-          "function"
-          ? env.getHostname()
-          : window.location.hostname
-      ).toLowerCase();
-
-
-    if (
-      hostname !==
-      "test.albukhr.com"
-    ) {
-
+    if (hostname !== "test.albukhr.com") {
       throw new Error(
         "TESTNET_HOST_REQUIRED"
       );
-
     }
-
   }
-
 
   /* =======================================================
      TESTNET AUTH
   ======================================================= */
 
   function getAuth() {
-
-    var auth =
-      window.AlbukhrTestnetAuth;
-
+    var auth = window.AlbukhrTestnetAuth;
 
     if (
       !auth ||
-      typeof auth.requireTestnetAuth !==
-        "function" ||
-      typeof auth.getSessionToken !==
-        "function"
+      typeof auth.requireTestnetAuth !== "function" ||
+      typeof auth.getSessionToken !== "function"
     ) {
-
       throw new Error(
         "TESTNET_AUTH_MODULE_UNAVAILABLE"
       );
-
     }
 
-
     return auth;
-
   }
-
 
   /* =======================================================
      ENSURE TESTNET SESSION
   ======================================================= */
 
   async function ensureSession() {
-
     validateEnvironment();
 
-
-    var auth =
-      getAuth();
-
+    var auth = getAuth();
 
     state.session =
       await auth.requireTestnetAuth({
-
-        redirectOnFailure:
-          true
-
+        redirectOnFailure: true
       });
 
-
     if (!state.session) {
-
       throw new Error(
         "TESTNET_SESSION_REQUIRED"
       );
-
     }
 
-
     return state.session;
-
   }
-
 
   /* =======================================================
      OWNER API REQUEST
   ======================================================= */
 
-  async function ownerRequest(
-    method,
-    query,
-    body
-  ) {
-
-    var token =
-      clean(
-        getAuth().getSessionToken()
-      );
-
+  async function ownerRequest(method, query, body) {
+    var token = clean(
+      getAuth().getSessionToken()
+    );
 
     if (!token) {
-
       throw new Error(
         "TESTNET_SESSION_REQUIRED"
       );
-
     }
-
 
     var url =
       OWNER_API +
-      (
-        query
-          ? "?" + query
-          : ""
-      );
-
+      (query ? "?" + query : "");
 
     var options = {
-
-      method:
-        method,
-
+      method: method,
       headers: {
-
-        "Accept":
-          "application/json",
-
-        "X-Testnet-Session":
-          token
-
+        "Accept": "application/json",
+        "X-Testnet-Session": token
       }
-
     };
 
-
     if (body !== undefined) {
-
-      options.headers[
-        "Content-Type"
-      ] =
+      options.headers["Content-Type"] =
         "application/json";
 
-
-      options.body =
-        JSON.stringify(body);
-
+      options.body = JSON.stringify(body);
     }
-
 
     var response;
 
-
     try {
-
-      response =
-        await fetch(
-          url,
-          options
-        );
-
+      response = await fetch(url, options);
     } catch (e) {
+      var networkError = new Error(
+        "PROJECT_OWNER_NETWORK_ERROR"
+      );
 
-      var networkError =
-        new Error(
-          "PROJECT_OWNER_NETWORK_ERROR"
-        );
-
-      networkError.cause =
-        e;
-
+      networkError.cause = e;
       throw networkError;
-
     }
 
-
-    var payload =
-      null;
-
+    var payload = null;
 
     try {
-
-      payload =
-        await response.json();
-
+      payload = await response.json();
     } catch (_) {}
 
-
     if (!response.ok) {
+      var apiError = new Error(
+        clean(payload && payload.error) ||
+        ("PROJECT_OWNER_HTTP_" + response.status)
+      );
 
-      var apiError =
-        new Error(
-
-          clean(
-            payload &&
-            payload.error
-          ) ||
-          (
-            "PROJECT_OWNER_HTTP_" +
-            response.status
-          )
-
-        );
-
-
-      apiError.status =
-        response.status;
-
-      apiError.body =
-        payload;
-
+      apiError.status = response.status;
+      apiError.body = payload;
 
       throw apiError;
-
     }
 
-
     return payload;
-
   }
-
 
   /* =======================================================
      LOGO
   ======================================================= */
 
   function renderLogo(project) {
+    var img = byId("ownerProjectLogo");
+    var fallback = byId("ownerProjectLogoFallback");
 
-    var img =
-      byId(
-        "ownerProjectLogo"
-      );
+    if (!img) return;
 
-    var fallback =
-      byId(
-        "ownerProjectLogoFallback"
-      );
-
-
-    if (!img) {
-
-      return;
-
-    }
-
-
-    var url =
-      clean(
-        project &&
-        project.logo_url
-      );
-
+    var url = clean(project && project.logo_url);
 
     if (!url) {
-
-      img.hidden =
-        true;
-
-      img.removeAttribute(
-        "src"
-      );
-
+      img.hidden = true;
+      img.removeAttribute("src");
 
       if (fallback) {
-
-        fallback.hidden =
-          false;
-
+        fallback.hidden = false;
       }
 
-
       return;
-
     }
 
+    img.hidden = true;
+    img.alt = clean(project.name) + " logo";
 
-    img.hidden =
-      true;
+    img.onload = function () {
+      img.hidden = false;
 
+      if (fallback) {
+        fallback.hidden = true;
+      }
+    };
 
-    img.alt =
-      clean(
-        project.name
-      ) +
-      " logo";
+    img.onerror = function () {
+      img.hidden = true;
+      img.removeAttribute("src");
 
+      if (fallback) {
+        fallback.hidden = false;
+      }
+    };
 
-    img.onload =
-      function () {
-
-        img.hidden =
-          false;
-
-
-        if (fallback) {
-
-          fallback.hidden =
-            true;
-
-        }
-
-      };
-
-
-    img.onerror =
-      function () {
-
-        img.hidden =
-          true;
-
-
-        img.removeAttribute(
-          "src"
-        );
-
-
-        if (fallback) {
-
-          fallback.hidden =
-            false;
-
-        }
-
-      };
-
-
-    img.src =
-      url;
-
+    img.src = url;
   }
-
 
   /* =======================================================
      WITHDRAWAL HISTORY
   ======================================================= */
 
-  function renderWithdrawals(
-    rows
-  ) {
+  function renderWithdrawals(rows) {
+    var container = byId("withdrawalHistory");
 
-    var container =
-      byId(
-        "withdrawalHistory"
-      );
+    if (!container) return;
 
-
-    if (!container) {
-
-      return;
-
-    }
-
-
-    var list =
-      Array.isArray(rows)
-        ? rows
-        : [];
-
+    var list = Array.isArray(rows) ? rows : [];
 
     if (!list.length) {
-
       container.innerHTML =
         '<div class="empty-state">' +
-        'No Project Owner withdrawals yet.' +
-        '</div>';
+        "No Project Owner withdrawals yet." +
+        "</div>";
 
       return;
-
     }
 
-
-    container.innerHTML =
-      list.map(
-
-        function (row) {
-
-          return (
-            '<article class="history-item">' +
-
-              '<div>' +
-
-                '<strong>' +
-                escapeHtml(
-                  clean(
-                    row.status ||
-                    "pending"
-                  ).toUpperCase()
-                ) +
-                '</strong>' +
-
-                '<span>' +
-                escapeHtml(
-                  formatPi(
-                    row.requested_amount
-                  )
-                ) +
-                ' requested</span>' +
-
-              '</div>' +
-
-              '<div class="history-meta">' +
-
-                '<span>Receive: ' +
-                escapeHtml(
-                  formatPi(
-                    row.net_amount
-                  )
-                ) +
-                '</span>' +
-
-                '<span>' +
-                escapeHtml(
-                  formatDate(
-                    row.created_at
-                  )
-                ) +
-                '</span>' +
-
-              '</div>' +
-
-            '</article>'
-          );
-
-        }
-
-      ).join("");
-
+    container.innerHTML = list.map(function (row) {
+      return (
+        '<article class="history-item">' +
+          "<div>" +
+            "<strong>" +
+              escapeHtml(
+                clean(row.status || "pending").toUpperCase()
+              ) +
+            "</strong>" +
+            "<span>" +
+              escapeHtml(formatPi(row.requested_amount)) +
+              " requested</span>" +
+          "</div>" +
+          '<div class="history-meta">' +
+            "<span>Receive: " +
+              escapeHtml(formatPi(row.net_amount)) +
+            "</span>" +
+            "<span>" +
+              escapeHtml(formatDate(row.created_at)) +
+            "</span>" +
+          "</div>" +
+        "</article>"
+      );
+    }).join("");
   }
-
 
   /* =======================================================
      HTML ESCAPE
   ======================================================= */
 
   function escapeHtml(value) {
-
-    return String(
-      value == null
-        ? ""
-        : value
-    )
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
-
 
   /* =======================================================
      DATE
   ======================================================= */
 
   function formatDate(value) {
+    if (!value) return "—";
 
-    if (!value) {
+    var date = new Date(value);
 
+    if (Number.isNaN(date.getTime())) {
       return "—";
-
     }
-
-
-    var date =
-      new Date(value);
-
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-
-      return "—";
-
-    }
-
 
     try {
-
-      return new Intl.DateTimeFormat(
-        "en",
-        {
-
-          year:
-            "numeric",
-
-          month:
-            "short",
-
-          day:
-            "numeric"
-
-        }
-      ).format(date);
-
+      return new Intl.DateTimeFormat("en", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      }).format(date);
     } catch (_) {
-
       return date.toLocaleDateString();
-
     }
-
   }
-
 
   /* =======================================================
      PAYMENT CLIENT CHECK
   ======================================================= */
 
   function liquidityPaymentClientAvailable() {
-
     var client =
       window.AlbukhrTestnetLiquidityPayment;
 
-
     return !!client &&
-      typeof client.createLiquidityPayment ===
-        "function";
-
+      typeof client.createLiquidityPayment === "function";
   }
-
 
   /* =======================================================
      PI AUTHENTICATION CHECK
   ======================================================= */
 
   function piPaymentAuthenticated() {
-
     var client =
       window.AlbukhrTestnetLiquidityPayment;
 
-
-    /*
-     * Prefer the payment client's authoritative
-     * in-memory authentication state.
-     */
     if (
       client &&
-      typeof client.isAuthenticated ===
-        "function"
+      typeof client.isAuthenticated === "function"
     ) {
-
       return client.isAuthenticated();
-
     }
 
-
-    /*
-     * Fallback to local page state.
-     */
     return !!state.piAuthenticated;
-
   }
-
 
   /* =======================================================
      PI PRE-AUTHENTICATION
-  =======================================================
-
-     This remains available for page-load authentication and
-     for retrying authentication from the Add Liquidity click.
   ======================================================= */
 
   async function ensurePiAuthentication() {
-
     var client =
       window.AlbukhrTestnetLiquidityPayment;
 
-
     if (
       !client ||
-      typeof client.authenticate !==
-        "function" ||
-      typeof client.isAuthenticated !==
-        "function"
+      typeof client.authenticate !== "function" ||
+      typeof client.isAuthenticated !== "function"
     ) {
-
       state.piAuthenticationError =
         "PI_SDK_PAYMENT_UNAVAILABLE";
 
       throw new Error(
         "PI_SDK_PAYMENT_UNAVAILABLE"
       );
-
     }
 
-
     if (client.isAuthenticated()) {
-
       state.piAuthenticated = true;
       state.piAuthenticationError = null;
 
       return true;
-
     }
-
 
     if (state.piAuthenticationInFlight) {
-
       return false;
-
     }
-
 
     state.piAuthenticationInFlight = true;
     state.piAuthenticationError = null;
@@ -916,7 +524,6 @@
     setLiquidityAvailability();
 
     try {
-
       setStatus(
         "liquidityStatus",
         "Verifying Pi identity for Testnet payment…"
@@ -925,11 +532,9 @@
       await client.authenticate();
 
       if (!client.isAuthenticated()) {
-
         throw new Error(
           "PI_AUTH_RESULT_NOT_PERSISTED"
         );
-
       }
 
       state.piAuthenticated = true;
@@ -938,7 +543,6 @@
       return true;
 
     } catch (error) {
-
       state.piAuthenticated = false;
 
       state.piAuthenticationError =
@@ -954,7 +558,6 @@
       return false;
 
     } finally {
-
       state.piAuthenticationInFlight = false;
 
       setLiquidityAvailability();
@@ -963,94 +566,49 @@
         !state.piAuthenticated &&
         state.piAuthenticationError
       ) {
-
         setStatus(
           "liquidityStatus",
           state.piAuthenticationError,
           "error"
         );
-
       }
-
     }
-
   }
-
 
   /* =======================================================
      LIQUIDITY BUTTON AVAILABILITY
   ======================================================= */
 
   function setLiquidityAvailability() {
+    var button = byId("addLiquidityBtn");
 
-    var button =
-      byId(
-        "addLiquidityBtn"
-      );
+    if (!button) return;
 
-
-    if (!button) {
-
-      return;
-
-    }
-
-
-    var liquidity =
-      state.liquidity ||
-      {};
-
-
-    var profile =
-      state.ownerProfile ||
-      {};
-
-
-    var owner =
-      state.owner ||
-      {};
-
+    var liquidity = state.liquidity || {};
+    var profile = state.ownerProfile || {};
+    var owner = state.owner || {};
 
     var required =
-      numberValue(
-        liquidity.required
-      );
-
+      numberValue(liquidity.required);
 
     var verified =
-      numberValue(
-        liquidity.verified
-      );
+      numberValue(liquidity.verified);
 
-
-    var due =
-      Math.max(
-        0,
-        required -
-        verified
-      );
-
+    var due = Math.max(
+      0,
+      required - verified
+    );
 
     var ownerBound =
-      !!clean(
-        owner.user_id ||
-        owner.id
-      ) &&
-      !!clean(
-        owner.pi_uid
-      );
-
+      !!clean(owner.user_id || owner.id) &&
+      !!clean(owner.pi_uid);
 
     var ownerVerified =
-      clean(
-        profile.verification_status
-      ).toLowerCase() ===
+      clean(profile.verification_status).toLowerCase() ===
       "verified";
-
 
     var piAuthenticated =
       piPaymentAuthenticated();
-
 
     /*
      * Treasury is informational only.
@@ -1060,11 +618,8 @@
       !!state.treasury &&
       !!liquidity.treasury_configured;
 
-
     /*
-     * Safe relaxation:
-     * Pi auth is no longer required just to enable the button.
-     * The click handler authenticates first if necessary.
+     * Identity verification remains a strict gate.
      */
     var ready =
       ownerBound &&
@@ -1074,64 +629,41 @@
       !state.piAuthenticationInFlight &&
       !state.liquidityPaymentInFlight;
 
-
-    button.disabled =
-      !ready;
-
+    button.disabled = !ready;
 
     button.setAttribute(
       "aria-disabled",
       String(!ready)
     );
 
-
-    button.title =
-      ready
-        ? "Start Testnet liquidity. Pi identity will be verified if needed."
-        : "";
-
+    button.title = ready
+      ? "Start Testnet liquidity. Pi identity will be verified if needed."
+      : "";
 
     var amountNode =
-      byId(
-        "liquidityAmount"
-      );
-
+      byId("liquidityAmount");
 
     if (amountNode) {
-
-      amountNode.min =
-        String(
-          Math.max(
-            100,
-            due
-          )
-        );
-
+      amountNode.min = String(
+        Math.max(100, due)
+      );
 
       if (
         due > 0 &&
-        !clean(
-          amountNode.value
-        )
+        !clean(amountNode.value)
       ) {
-
         amountNode.placeholder =
           due.toFixed(2);
-
       }
-
     }
 
-
     if (state.liquidityPaymentInFlight) {
-
       setStatus(
         "liquidityStatus",
         "Pi liquidity payment is in progress…"
       );
 
     } else if (!ownerBound) {
-
       setStatus(
         "liquidityStatus",
         "Testnet Project Owner identity binding is required.",
@@ -1139,7 +671,9 @@
       );
 
     } else if (!ownerVerified) {
-
+      /*
+       * Do not remove or weaken this identity gate.
+       */
       setStatus(
         "liquidityStatus",
         "Owner identity verification is required before liquidity can be added.",
@@ -1147,7 +681,6 @@
       );
 
     } else if (due <= 0) {
-
       setStatus(
         "liquidityStatus",
         "The project liquidity requirement is already satisfied.",
@@ -1155,7 +688,6 @@
       );
 
     } else if (!liquidityPaymentClientAvailable()) {
-
       setStatus(
         "liquidityStatus",
         "The Testnet Pi payment module is not available on this page.",
@@ -1163,14 +695,12 @@
       );
 
     } else if (state.piAuthenticationInFlight) {
-
       setStatus(
         "liquidityStatus",
         "Verifying Pi identity for Testnet payment…"
       );
 
     } else if (!piAuthenticated && state.piAuthenticationError) {
-
       setStatus(
         "liquidityStatus",
         state.piAuthenticationError,
@@ -1178,162 +708,85 @@
       );
 
     } else if (!piAuthenticated) {
-
       setStatus(
         "liquidityStatus",
         "Tap Add Liquidity to verify Pi identity. After verification, tap again to open the payment dialog."
       );
 
     } else if (!treasuryReady) {
-
       setStatus(
         "liquidityStatus",
         "Owner authorization verified. Treasury readiness will be re-checked securely by the server when the payment is approved."
       );
 
     } else {
-
       setStatus(
         "liquidityStatus",
         "Owner authorization verified. Minimum remaining liquidity: " +
         formatPi(due) +
         "."
       );
-
     }
-
   }
-
 
   /* =======================================================
      RENDER OWNER
   ======================================================= */
 
-  function renderOwner(
-    stateRow,
-    ownerData
-  ) {
-
-    var project =
-      stateRow.project ||
-      {};
-
-
-    var liquidity =
-      stateRow.liquidity ||
-      {};
-
-
-    var owner =
-      ownerData ||
-      {};
-
+  function renderOwner(stateRow, ownerData) {
+    var project = stateRow.project || {};
+    var liquidity = stateRow.liquidity || {};
+    var owner = ownerData || {};
 
     var profile =
       owner.profile ||
       stateRow.owner_profile ||
       {};
 
-
-    state.project =
-      project;
-
-
-    state.treasury =
-      stateRow.treasury ||
-      null;
-
-
-    state.liquidity =
-      liquidity;
-
+    state.project = project;
+    state.treasury = stateRow.treasury || null;
+    state.liquidity = liquidity;
 
     state.ownerBalance =
-      numberValue(
-        stateRow.owner_balance
-      );
+      numberValue(stateRow.owner_balance);
 
-
-    state.owner =
-      owner;
-
-
-    state.ownerProfile =
-      profile;
-
+    state.owner = owner;
+    state.ownerProfile = profile;
 
     setText(
       "ownerTitle",
-      "Manage " +
-      (
-        clean(project.name) ||
-        "Project"
-      )
+      "Manage " + (clean(project.name) || "Project")
     );
-
 
     setText(
       "ownerSubtitle",
       "Owner controls for approved Testnet project " +
-      (
-        clean(
-          project.project_code
-        ) ||
-        "—"
-      )
+      (clean(project.project_code) || "—")
     );
 
-
-    setText(
-      "projectName",
-      clean(
-        project.name
-      ) ||
-      "Project"
-    );
-
-
-    setText(
-      "projectCode",
-      clean(
-        project.project_code
-      ) ||
-      "—"
-    );
-
+    setText("projectName", clean(project.name) || "Project");
+    setText("projectCode", clean(project.project_code) || "—");
 
     setText(
       "ownerBalance",
-      formatPi(
-        state.ownerBalance
-      )
+      formatPi(state.ownerBalance)
     );
-
 
     setText(
       "requiredLiquidity",
-      formatPi(
-        liquidity.required
-      )
+      formatPi(liquidity.required)
     );
-
 
     setText(
       "verifiedLiquidity",
-      formatPi(
-        liquidity.verified
-      )
+      formatPi(liquidity.verified)
     );
-
 
     setText(
       "liquidityCoverage",
-      numberValue(
-        liquidity.coverage
-      ).toFixed(1) +
+      numberValue(liquidity.coverage).toFixed(1) +
       "% coverage"
     );
-
 
     setText(
       "treasuryState",
@@ -1342,434 +795,286 @@
         : "NOT CONFIGURED"
     );
 
-
-    setValue(
-      "profilePiUid",
-      owner.pi_uid
-    );
-
-
-    setValue(
-      "profileUsername",
-      owner.username
-    );
-
+    setValue("profilePiUid", owner.pi_uid);
+    setValue("profileUsername", owner.username);
 
     setValue(
       "profileDisplayName",
       profile.display_name
     );
 
-
     setValue(
       "profileRoleTitle",
       profile.role_title
     );
-
 
     setValue(
       "profileOrganization",
       profile.organization_name
     );
 
-
     setValue(
       "profileEmail",
       profile.contact_email
     );
-
 
     setValue(
       "profilePhone",
       profile.contact_phone
     );
 
-
-    setValue(
-      "profileWallet",
-      owner.wallet_address
-    );
-
+    /*
+     * IMPORTANT:
+     * Do not read owner.wallet_address here.
+     * Do not populate withdrawWallet from the shared users record.
+     * The project Owner enters a wallet for each withdrawal request.
+     *
+     * Do not clear the field during refresh either:
+     * preserve the Owner's current input while refreshing the page state.
+     */
 
     setValue(
       "profileBio",
       profile.bio
     );
 
-
     setText(
       "profileVerificationState",
-      clean(
-        profile.verification_status ||
-        "pending"
-      ).toUpperCase()
+      clean(profile.verification_status || "pending").toUpperCase()
     );
 
-
-    var walletNode =
-      byId(
-        "withdrawWallet"
-      );
-
-
-    if (walletNode) {
-
-      walletNode.value =
-        clean(
-          owner.wallet_address
-        );
-
-    }
-
-
-    var withdrawButton =
-      byId(
-        "requestWithdrawalBtn"
-      );
-
-
-    if (withdrawButton) {
-
-      withdrawButton.disabled =
-        !owner ||
-        !clean(
-          owner.wallet_address
-        ) ||
-        state.ownerBalance <= 0;
-
-    }
-
-
+    updateWithdrawalAvailability();
     setLiquidityAvailability();
 
-
-    renderLogo(
-      project
-    );
-
+    renderLogo(project);
 
     renderWithdrawals(
-      stateRow.withdrawals ||
-      []
+      stateRow.withdrawals || []
     );
 
+    var back = byId("backToProject");
 
-    var back =
-      byId(
-        "backToProject"
-      );
-
-
-    if (
-      back &&
-      clean(project.id)
-    ) {
-
+    if (back && clean(project.id)) {
       back.href =
         "project.html?project=" +
         encodeURIComponent(
-          project.project_code ||
-          project.id
+          project.project_code || project.id
         );
-
     }
 
-
     document.title =
-      (
-        clean(project.name) ||
-        "Project Owner"
-      ) +
+      (clean(project.name) || "Project Owner") +
       " • ALBUKHR TESTNET";
-
   }
-
 
   /* =======================================================
      ACCESS ERROR
   ======================================================= */
 
-  function showAccessError(
-    error
-  ) {
-
+  function showAccessError(error) {
     var code =
-      clean(
-        error &&
-        error.message
-      ) ||
+      clean(error && error.message) ||
       "PROJECT_OWNER_ACCESS_DENIED";
 
+    setHidden("ownerContent", true);
+    setHidden("ownerError", false);
 
-    setHidden(
-      "ownerContent",
-      true
-    );
-
-
-    setHidden(
-      "ownerError",
-      false
-    );
-
-
-    if (
-      code ===
-      "PROJECT_OWNER_NOT_BOUND"
-    ) {
-
+    if (code === "PROJECT_OWNER_NOT_BOUND") {
       setText(
         "ownerErrorTitle",
         "Project Owner access is not assigned"
       );
-
 
       setText(
         "ownerErrorText",
         "Your Testnet identity is authenticated, but this approved project is not currently bound to your account."
       );
 
-
       return;
-
     }
 
-
-    if (
-      code ===
-      "PROJECT_OWNER_ACCESS_DENIED"
-    ) {
-
+    if (code === "PROJECT_OWNER_ACCESS_DENIED") {
       setText(
         "ownerErrorTitle",
         "Owner access denied"
       );
-
 
       setText(
         "ownerErrorText",
         "The Testnet owner service did not authorize this project for your identity."
       );
 
-
       return;
-
     }
-
 
     setText(
       "ownerErrorTitle",
       "Unable to open Project Owner"
     );
 
-
     setText(
       "ownerErrorText",
       code
     );
-
   }
-
 
   /* =======================================================
      LOAD OWNER PAGE
   ======================================================= */
 
   async function load() {
-
     try {
-
       await ensureSession();
 
-
-      state.projectId =
-        getProjectId();
-
+      state.projectId = getProjectId();
 
       if (!state.projectId) {
-
-        throw new Error(
-          "PROJECT_ID_REQUIRED"
-        );
-
+        throw new Error("PROJECT_ID_REQUIRED");
       }
 
+      /*
+       * Start with an empty withdrawal wallet.
+       * Never inherit a wallet from the global user record.
+       */
+      var walletInput = byId("withdrawWallet");
 
-      var payload =
-        await ownerRequest(
+      if (walletInput) {
+        walletInput.value = "";
+        walletInput.autocomplete = "off";
+      }
 
-          "GET",
+      updateWithdrawalAvailability();
 
-          "project_id=" +
-          encodeURIComponent(
-            state.projectId
-          )
-
-        );
-
+      var payload = await ownerRequest(
+        "GET",
+        "project_id=" +
+        encodeURIComponent(state.projectId)
+      );
 
       var projects =
-        Array.isArray(
-          payload &&
-          payload.projects
-        )
+        Array.isArray(payload && payload.projects)
           ? payload.projects
           : [];
 
-
       if (!projects.length) {
-
         throw new Error(
           "PROJECT_OWNER_ACCESS_DENIED"
         );
-
       }
 
+      /*
+       * The server already filters by requested project_id.
+       * Use the returned authorized project, not projects[0]
+       * from an unrelated multi-project list.
+       */
+      var selectedProject = projects.find(function (item) {
+        return (
+          clean(item && item.project && item.project.id) ===
+            state.projectId ||
+          clean(item && item.project_id) === state.projectId ||
+          clean(item && item.project && item.project.project_code) ===
+            state.projectId ||
+          clean(item && item.project_code) === state.projectId
+        );
+      }) || projects[0];
 
-      state.ownerLoaded =
-        true;
-
+      state.ownerLoaded = true;
 
       setText(
         "ownerUserPill",
-        clean(
-          payload.owner &&
-          payload.owner.username
-        ) ||
+        clean(payload.owner && payload.owner.username) ||
         "OWNER"
       );
 
-
-      setHidden(
-        "ownerError",
-        true
-      );
-
-
-      setHidden(
-        "ownerContent",
-        false
-      );
-
+      setHidden("ownerError", true);
+      setHidden("ownerContent", false);
 
       renderOwner(
-        projects[0],
-        payload.owner ||
-        {}
+        selectedProject,
+        payload.owner || {}
       );
 
-
       /*
-       * Page-load Pi pre-auth is best-effort. If it fails or stalls,
-       * the Add Liquidity button remains available for a user-triggered
-       * authentication retry (subject to owner and liquidity gates).
+       * Page-load Pi pre-auth remains best-effort.
+       * The payment click path remains separate.
        */
       ensurePiAuthentication().catch(function (error) {
         state.piAuthenticationError =
           error && error.message
             ? error.message
             : "PI_AUTH_FAILED";
+
         setLiquidityAvailability();
       });
 
-
       setLiquidityAvailability();
-
+      updateWithdrawalAvailability();
 
     } catch (error) {
-
       console.error(
         "[ALBUKHR TESTNET PROJECT OWNER]",
         error
       );
 
-
-      showAccessError(
-        error
-      );
-
+      showAccessError(error);
     }
-
   }
-
 
   /* =======================================================
      REFRESH
   ======================================================= */
 
   async function refresh() {
-
-    if (!state.projectId) {
-
-      return;
-
-    }
-
+    if (!state.projectId) return;
 
     try {
-
-      var payload =
-        await ownerRequest(
-
-          "GET",
-
-          "project_id=" +
-          encodeURIComponent(
-            state.projectId
-          )
-
-        );
-
+      var payload = await ownerRequest(
+        "GET",
+        "project_id=" +
+        encodeURIComponent(state.projectId)
+      );
 
       var projects =
-        Array.isArray(
-          payload &&
-          payload.projects
-        )
+        Array.isArray(payload && payload.projects)
           ? payload.projects
           : [];
 
-
       if (!projects.length) {
-
         throw new Error(
           "PROJECT_OWNER_ACCESS_DENIED"
         );
-
       }
 
-
-      var auth =
-        getAuth();
-
+      var auth = getAuth();
 
       state.session =
-        typeof auth.getSession ===
-          "function"
+        typeof auth.getSession === "function"
           ? auth.getSession()
           : state.session;
 
+      var selectedProject = projects.find(function (item) {
+        return (
+          clean(item && item.project && item.project.id) ===
+            state.projectId ||
+          clean(item && item.project_id) === state.projectId ||
+          clean(item && item.project && item.project.project_code) ===
+            state.projectId ||
+          clean(item && item.project_code) === state.projectId
+        );
+      }) || projects[0];
 
       renderOwner(
-        projects[0],
-        payload.owner ||
-        {}
+        selectedProject,
+        payload.owner || {}
       );
 
-
       if (piPaymentAuthenticated()) {
-
-        state.piAuthenticated =
-          true;
-
-        state.piAuthenticationError =
-          null;
-
+        state.piAuthenticated = true;
+        state.piAuthenticationError = null;
       }
 
-
       setLiquidityAvailability();
-
+      updateWithdrawalAvailability();
 
       setStatus(
         "withdrawStatus",
@@ -1777,121 +1082,88 @@
         "success"
       );
 
-
     } catch (error) {
-
       console.error(
         "[ALBUKHR TESTNET PROJECT OWNER REFRESH]",
         error
       );
 
-
       setStatus(
         "withdrawStatus",
-        error &&
-        error.message
+        error && error.message
           ? error.message
           : "Unable to refresh owner state.",
         "error"
       );
-
     }
-
   }
-
 
   /* =======================================================
      START LIQUIDITY PAYMENT
   ======================================================= */
 
   async function startLiquidityPayment() {
-
-    if (state.liquidityPaymentInFlight) {
-
-      return;
-
-    }
-
+    if (state.liquidityPaymentInFlight) return;
 
     /*
-     * A click during a page-load authentication attempt must not be lost.
-     * Do not start a second concurrent authenticate call.
+     * Do not start a second concurrent Pi authentication.
      */
     if (state.piAuthenticationInFlight) {
-
       setStatus(
         "liquidityStatus",
         "Pi identity verification is still in progress. Please wait."
       );
 
       return;
-
     }
 
-
     try {
-
       validateEnvironment();
 
-
       var sessionToken =
-        clean(
-          getAuth().getSessionToken()
-        );
-
+        clean(getAuth().getSessionToken());
 
       if (!sessionToken) {
-
         throw new Error(
           "TESTNET_SESSION_REQUIRED"
         );
-
       }
-
 
       var payment =
         window.AlbukhrTestnetLiquidityPayment;
-
 
       if (
         !payment ||
         typeof payment.createLiquidityPayment !== "function" ||
         typeof payment.isAuthenticated !== "function"
       ) {
-
         throw new Error(
           "PI_SDK_PAYMENT_UNAVAILABLE"
         );
-
       }
 
-
-      /*
-       * Validate amount/project/owner before asking for Pi auth.
-       * This avoids opening Pi auth for an invalid payment request.
-       */
       var amountNode =
         byId("liquidityAmount");
-
 
       var amount =
         numberValue(amountNode && amountNode.value);
 
-
       var required =
-        numberValue(state.liquidity && state.liquidity.required);
-
+        numberValue(
+          state.liquidity && state.liquidity.required
+        );
 
       var verified =
-        numberValue(state.liquidity && state.liquidity.verified);
+        numberValue(
+          state.liquidity && state.liquidity.verified
+        );
 
-
-      var due =
-        Math.max(0, required - verified);
-
+      var due = Math.max(
+        0,
+        required - verified
+      );
 
       if (due <= 0) {
-
         setStatus(
           "liquidityStatus",
           "The project liquidity requirement is already satisfied.",
@@ -1899,76 +1171,62 @@
         );
 
         return;
-
       }
 
-
       if (amount < 100 || amount < due) {
-
         setStatus(
           "liquidityStatus",
           "Enter at least " +
-            formatPi(Math.max(100, due)) +
-            " for the remaining Testnet liquidity requirement.",
+          formatPi(Math.max(100, due)) +
+          " for the remaining Testnet liquidity requirement.",
           "error"
         );
 
         return;
-
       }
 
+      var project = state.project || {};
 
-      var project =
-        state.project || {};
-
-
-      if (!clean(project.id) || !clean(project.project_code)) {
-
-        throw new Error("PROJECT_ID_AND_CODE_REQUIRED");
-
+      if (
+        !clean(project.id) ||
+        !clean(project.project_code)
+      ) {
+        throw new Error(
+          "PROJECT_ID_AND_CODE_REQUIRED"
+        );
       }
 
-
-      var owner =
-        state.owner || {};
-
-
-      var profile =
-        state.ownerProfile || {};
-
+      var owner = state.owner || {};
+      var profile = state.ownerProfile || {};
 
       if (
         !clean(owner.user_id || owner.id) ||
         !clean(owner.pi_uid)
       ) {
-
-        throw new Error("PROJECT_OWNER_IDENTITY_INVALID");
-
+        throw new Error(
+          "PROJECT_OWNER_IDENTITY_INVALID"
+        );
       }
-
 
       if (
-        clean(profile.verification_status).toLowerCase() !== "verified"
+        clean(profile.verification_status).toLowerCase() !==
+        "verified"
       ) {
-
-        throw new Error("PROJECT_OWNER_PROFILE_NOT_VERIFIED");
-
+        throw new Error(
+          "PROJECT_OWNER_PROFILE_NOT_VERIFIED"
+        );
       }
 
-
       /*
-       * First click can authenticate, but never starts payment in the same
-       * click. Second click starts createLiquidityPayment() directly.
+       * First click can authenticate.
+       * It does not start payment in the same click.
        */
       if (!payment.isAuthenticated()) {
-
         var authenticated =
           await ensurePiAuthentication();
 
         if (!authenticated || !payment.isAuthenticated()) {
-
           return;
-
         }
 
         setStatus(
@@ -1978,30 +1236,21 @@
         );
 
         return;
-
       }
 
-
-      state.piAuthenticated =
-        true;
-
-
-      state.liquidityPaymentInFlight =
-        true;
-
+      state.piAuthenticated = true;
+      state.liquidityPaymentInFlight = true;
 
       setLiquidityAvailability();
-
 
       setStatus(
         "liquidityStatus",
         "Opening the Pi Testnet payment flow…"
       );
 
-
       /*
-       * The payment client still independently enforces Pi auth and
-       * Testnet environment/session/network constraints.
+       * Payment client still independently enforces
+       * Pi auth, Testnet environment and payment constraints.
        */
       var result =
         await payment.createLiquidityPayment(
@@ -2013,7 +1262,6 @@
           amount
         );
 
-
       setStatus(
         "liquidityStatus",
         result &&
@@ -2024,406 +1272,272 @@
         "success"
       );
 
-
       await refresh();
 
-
     } catch (error) {
-
       console.error(
         "[ALBUKHR TESTNET PROJECT OWNER LIQUIDITY]",
         error
       );
 
+      var code =
+        clean(error && error.message);
 
-      setStatus(
-        "liquidityStatus",
-        error && error.message
-          ? error.message
-          : "Unable to complete the Testnet liquidity payment.",
-        "error"
-      );
-
+      if (
+        code === "PROJECT_OWNER_PROFILE_NOT_VERIFIED"
+      ) {
+        setStatus(
+          "liquidityStatus",
+          "Owner identity verification is required before liquidity can be added.",
+          "error"
+        );
+      } else {
+        setStatus(
+          "liquidityStatus",
+          code ||
+          "Unable to complete the Testnet liquidity payment.",
+          "error"
+        );
+      }
 
     } finally {
-
-      state.liquidityPaymentInFlight =
-        false;
-
+      state.liquidityPaymentInFlight = false;
       setLiquidityAvailability();
-
     }
-
   }
-
 
   /* =======================================================
      SAVE OWNER PROFILE
   ======================================================= */
 
   async function saveProfile() {
-
-    if (
-      state.profileSaveInFlight
-    ) {
-
-      return;
-
-    }
-
+    if (state.profileSaveInFlight) return;
 
     var button =
-      byId(
-        "saveOwnerProfileBtn"
-      );
+      byId("saveOwnerProfileBtn");
 
+    /*
+     * This profile form no longer contains a wallet field.
+     * Do not require profileWallet.
+     * Do not update the shared users.wallet_address.
+     */
 
-    var wallet =
-      clean(
-        byId(
-          "profileWallet"
-        ) &&
-        byId(
-          "profileWallet"
-        ).value
-      );
-
-
-    if (!wallet) {
-
-      setStatus(
-        "profileStatus",
-        "A registered Testnet wallet address is required.",
-        "error"
-      );
-
-
-      return;
-
-    }
-
-
-    state.profileSaveInFlight =
-      true;
-
+    state.profileSaveInFlight = true;
 
     if (button) {
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Saving…";
-
+      button.disabled = true;
+      button.textContent = "Saving…";
     }
-
 
     setStatus(
       "profileStatus",
       "Saving your Project Owner profile…"
     );
 
-
     try {
+      var response = await ownerRequest(
+        "POST",
+        null,
+        {
+          action: "update_profile",
+          project_id: state.projectId,
 
-      var response =
-        await ownerRequest(
+          display_name: clean(
+            byId("profileDisplayName") &&
+            byId("profileDisplayName").value
+          ),
 
-          "POST",
+          role_title: clean(
+            byId("profileRoleTitle") &&
+            byId("profileRoleTitle").value
+          ),
 
-          null,
+          organization_name: clean(
+            byId("profileOrganization") &&
+            byId("profileOrganization").value
+          ),
 
-          {
+          contact_email: clean(
+            byId("profileEmail") &&
+            byId("profileEmail").value
+          ),
 
-            action:
-              "update_profile",
+          contact_phone: clean(
+            byId("profilePhone") &&
+            byId("profilePhone").value
+          ),
 
-            project_id:
-              state.projectId,
-
-            wallet_address:
-              wallet,
-
-            display_name:
-              clean(
-                byId(
-                  "profileDisplayName"
-                ) &&
-                byId(
-                  "profileDisplayName"
-                ).value
-              ),
-
-            role_title:
-              clean(
-                byId(
-                  "profileRoleTitle"
-                ) &&
-                byId(
-                  "profileRoleTitle"
-                ).value
-              ),
-
-            organization_name:
-              clean(
-                byId(
-                  "profileOrganization"
-                ) &&
-                byId(
-                  "profileOrganization"
-                ).value
-              ),
-
-            contact_email:
-              clean(
-                byId(
-                  "profileEmail"
-                ) &&
-                byId(
-                  "profileEmail"
-                ).value
-              ),
-
-            contact_phone:
-              clean(
-                byId(
-                  "profilePhone"
-                ) &&
-                byId(
-                  "profilePhone"
-                ).value
-              ),
-
-            bio:
-              clean(
-                byId(
-                  "profileBio"
-                ) &&
-                byId(
-                  "profileBio"
-                ).value
-              )
-
-          }
-
-        );
-
-
-      state.owner =
-        response.owner ||
-        state.owner;
-
-
-      state.ownerProfile =
-        response.profile ||
-        state.ownerProfile;
-
-
-      setStatus(
-
-        "profileStatus",
-
-        response.verification_reset
-
-          ? "Profile saved. Identity-sensitive changes require Super Admin re-verification."
-
-          : "Profile saved successfully.",
-
-        "success"
-
+          bio: clean(
+            byId("profileBio") &&
+            byId("profileBio").value
+          )
+        }
       );
 
+      state.owner =
+        response.owner || state.owner;
+
+      state.ownerProfile =
+        response.profile || state.ownerProfile;
+
+      setStatus(
+        "profileStatus",
+        response.verification_reset
+          ? "Profile saved. Identity-sensitive changes require Super Admin re-verification."
+          : "Profile saved successfully.",
+        "success"
+      );
 
       await refresh();
 
-
     } catch (error) {
-
       console.error(
         "[ALBUKHR TESTNET OWNER PROFILE]",
         error
       );
 
-
       setStatus(
-
         "profileStatus",
-
-        error &&
-        error.message
-
+        error && error.message
           ? error.message
-
           : "Unable to save owner profile.",
-
         "error"
-
       );
 
-
     } finally {
-
-      state.profileSaveInFlight =
-        false;
-
+      state.profileSaveInFlight = false;
 
       if (button) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Save Profile";
-
+        button.disabled = false;
+        button.textContent = "Save Profile";
       }
-
     }
-
   }
-
 
   /* =======================================================
      REQUEST WITHDRAWAL
   ======================================================= */
 
   async function requestWithdrawal() {
-
-    if (
-      state.withdrawalInFlight
-    ) {
-
-      return;
-
-    }
-
+    if (state.withdrawalInFlight) return;
 
     var amountNode =
-      byId(
-        "withdrawAmount"
-      );
-
+      byId("withdrawAmount");
 
     var amount =
-      numberValue(
-        amountNode &&
-        amountNode.value
-      );
+      numberValue(amountNode && amountNode.value);
 
-
-    if (amount <= 0) {
-
+    if (!Number.isFinite(amount) || amount <= 0) {
       setStatus(
         "withdrawStatus",
         "Enter a withdrawal amount greater than zero.",
         "error"
       );
 
-
       return;
-
     }
 
-
-    if (
-      amount >
-      state.ownerBalance
-    ) {
-
+    if (amount > state.ownerBalance) {
       setStatus(
         "withdrawStatus",
         "Requested amount is greater than the available owner balance.",
         "error"
       );
 
-
       return;
-
     }
 
+    /*
+     * Wallet is supplied by this project Owner for this request.
+     * Never inherit it from owner.wallet_address or RAHEEM-25.
+     */
+    var walletNode =
+      byId("withdrawWallet");
 
-    if (
-      !clean(
-        state.owner &&
-        state.owner.wallet_address
-      )
-    ) {
+    var walletAddress =
+      clean(walletNode && walletNode.value).toUpperCase();
 
+    if (!walletAddress) {
       setStatus(
         "withdrawStatus",
-        "A registered Testnet wallet address is required.",
+        "Enter your own Testnet wallet address.",
         "error"
       );
 
+      if (walletNode) walletNode.focus();
+
+      updateWithdrawalAvailability();
 
       return;
-
     }
 
-
-    state.withdrawalInFlight =
-      true;
-
-
-    var button =
-      byId(
-        "requestWithdrawalBtn"
+    if (!isValidTestnetWallet(walletAddress)) {
+      setStatus(
+        "withdrawStatus",
+        "Invalid Testnet wallet address. Enter a valid G-address containing 56 characters.",
+        "error"
       );
 
+      if (walletNode) walletNode.focus();
 
-    if (button) {
+      updateWithdrawalAvailability();
 
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Submitting…";
-
+      return;
     }
 
+    /*
+     * Retain server-side owner binding and available balance checks.
+     */
+    if (
+      !state.projectId ||
+      !state.owner ||
+      !clean(state.owner.user_id || state.owner.id)
+    ) {
+      setStatus(
+        "withdrawStatus",
+        "Project Owner authorization is required before submitting a withdrawal.",
+        "error"
+      );
+
+      return;
+    }
+
+    state.withdrawalInFlight = true;
+
+    var button =
+      byId("requestWithdrawalBtn");
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Submitting…";
+    }
 
     setStatus(
       "withdrawStatus",
       "Submitting Project Owner withdrawal request…"
     );
 
-
     try {
-
-      var response =
-        await ownerRequest(
-
-          "POST",
-
-          null,
-
-          {
-
-            action:
-              "request_withdrawal",
-
-            project_id:
-              state.projectId,
-
-            amount:
-              amount
-
-          }
-
-        );
-
+      var response = await ownerRequest(
+        "POST",
+        null,
+        {
+          action: "request_withdrawal",
+          project_id: state.projectId,
+          amount: amount,
+          wallet_address: walletAddress
+        }
+      );
 
       if (
         !response ||
         !response.withdrawal ||
         !response.withdrawal.id
       ) {
-
         throw new Error(
           "OWNER_WITHDRAWAL_REQUEST_FAILED"
         );
-
       }
-
 
       setStatus(
         "withdrawStatus",
@@ -2431,92 +1545,71 @@
         "success"
       );
 
-
       if (amountNode) {
-
-        amountNode.value =
-          "";
-
+        amountNode.value = "";
       }
 
-
+      /*
+       * Keep the wallet visible for the Owner's next request.
+       * It is not saved to the shared users record.
+       */
       await refresh();
 
-
     } catch (error) {
-
       console.error(
         "[ALBUKHR TESTNET OWNER WITHDRAWAL]",
         error
       );
 
+      var code =
+        clean(error && error.message);
+
+      var message =
+        code === "OWNER_WITHDRAWAL_WALLET_INVALID"
+          ? "The server rejected the wallet address. Check the Testnet wallet and try again."
+          : code === "OWNER_WITHDRAWAL_WALLET_REQUIRED"
+            ? "Enter your own Testnet wallet address."
+            : code === "OWNER_BALANCE_INSUFFICIENT"
+              ? "Your available Project Owner balance is insufficient for this request."
+              : code || "Owner withdrawal request failed.";
 
       setStatus(
-
         "withdrawStatus",
-
-        error &&
-        error.message
-
-          ? error.message
-
-          : "Owner withdrawal request failed.",
-
+        message,
         "error"
-
       );
 
-
     } finally {
-
-      state.withdrawalInFlight =
-        false;
-
+      state.withdrawalInFlight = false;
 
       if (button) {
-
         button.textContent =
           "Request Owner Withdrawal";
-
-
-        button.disabled =
-          !state.owner ||
-          !clean(
-            state.owner.wallet_address
-          ) ||
-          state.ownerBalance <= 0;
-
       }
 
+      updateWithdrawalAvailability();
     }
-
   }
-
 
   /* =======================================================
      PI AUTH EVENT
   ======================================================= */
 
   function bindPiAuthenticationEvents() {
-
     window.addEventListener(
       "albukhr:testnet-liquidity-pi-authenticated",
       function () {
-
         state.piAuthenticated = true;
         state.piAuthenticationInFlight = false;
         state.piAuthenticationError = null;
 
         setLiquidityAvailability();
-
       }
     );
-
 
     window.addEventListener(
       "albukhr:testnet-liquidity-pi-auth-error",
       function (event) {
-
         state.piAuthenticated = false;
         state.piAuthenticationInFlight = false;
 
@@ -2525,123 +1618,121 @@
           "PI_AUTH_FAILED";
 
         setLiquidityAvailability();
-
       }
     );
-
   }
-
 
   /* =======================================================
      BIND UI EVENTS
   ======================================================= */
 
   function bindEvents() {
-
     var refreshButton =
-      byId(
-        "refreshOwnerBtn"
-      );
-
+      byId("refreshOwnerBtn");
 
     if (refreshButton) {
-
       refreshButton.addEventListener(
         "click",
         refresh
       );
-
     }
 
-
     var withdrawalButton =
-      byId(
-        "requestWithdrawalBtn"
-      );
-
+      byId("requestWithdrawalBtn");
 
     if (withdrawalButton) {
-
       withdrawalButton.addEventListener(
         "click",
         requestWithdrawal
       );
-
     }
 
+    /*
+     * Live wallet validation.
+     * Automatically uppercase the address while typing.
+     */
+    var withdrawalWalletInput =
+      byId("withdrawWallet");
 
-    var profileButton =
-      byId(
-        "saveOwnerProfileBtn"
+    if (withdrawalWalletInput) {
+      withdrawalWalletInput.value = "";
+      withdrawalWalletInput.autocomplete = "off";
+
+      withdrawalWalletInput.addEventListener(
+        "input",
+        function () {
+          var value =
+            clean(withdrawalWalletInput.value).toUpperCase();
+
+          if (withdrawalWalletInput.value !== value) {
+            withdrawalWalletInput.value = value;
+          }
+
+          updateWithdrawalAvailability();
+        }
       );
 
+      withdrawalWalletInput.addEventListener(
+        "blur",
+        function () {
+          var value =
+            clean(withdrawalWalletInput.value).toUpperCase();
+
+          if (withdrawalWalletInput.value !== value) {
+            withdrawalWalletInput.value = value;
+          }
+
+          updateWithdrawalAvailability();
+        }
+      );
+    }
+
+    var profileButton =
+      byId("saveOwnerProfileBtn");
 
     if (profileButton) {
-
       profileButton.addEventListener(
         "click",
         saveProfile
       );
-
     }
 
-
     var addButton =
-      byId(
-        "addLiquidityBtn"
-      );
-
+      byId("addLiquidityBtn");
 
     if (addButton) {
-
       addButton.addEventListener(
         "click",
         startLiquidityPayment
       );
-
     }
-
   }
-
 
   /* =======================================================
      INITIALIZE
   ======================================================= */
 
   function initialize() {
-
     bindPiAuthenticationEvents();
-
     bindEvents();
 
+    updateWithdrawalAvailability();
+
     load();
-
   }
-
 
   /* =======================================================
      DOM READY
   ======================================================= */
 
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       initialize,
-      {
-        once:
-          true
-      }
+      { once: true }
     );
-
   } else {
-
     initialize();
-
   }
-
 
 })(window, document);
