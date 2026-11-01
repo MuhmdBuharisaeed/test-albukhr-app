@@ -23,16 +23,87 @@
   function makeField(label,key,value,type){var wrap=document.createElement("label");wrap.className="owner-field";var span=document.createElement("span");span.textContent=label;var input=document.createElement("input");input.type=type||"text";input.name=key;input.dataset.field=key;input.autocomplete="off";input.value=clean(value);wrap.appendChild(span);wrap.appendChild(input);return wrap;}
   function makeButton(text,action,kind,projectId){var b=document.createElement("button");b.type="button";b.className="owner-action-btn "+(kind||"");b.dataset.action=action;b.dataset.projectId=projectId;b.textContent=text;return b;}
   function inputCard(project){
-    var p=profileFor(project.id),u=userFor(project.owner_user_id),hasOwner=!!project.owner_user_id,verified=p&&p.verification_status==="verified";
-    var card=document.createElement("article");card.className="owner-project-card";card.dataset.projectId=project.id;
-    var header=document.createElement("div");header.className="owner-project-head";
-    var title=document.createElement("div");title.className="owner-project-title";var h3=document.createElement("h3");h3.textContent=clean(project.name||project.project_code||"Project");var code=document.createElement("small");code.textContent=clean(project.project_code||"—");title.appendChild(h3);title.appendChild(code);
-    var badge=document.createElement("span");badge.className="owner-status "+(hasOwner?(verified?"verified":"assigned"):"unassigned");badge.textContent=hasOwner?(verified?"OWNER VERIFIED":"OWNER ASSIGNED"):"NO OWNER";header.appendChild(title);header.appendChild(badge);card.appendChild(header);
-    var ownerLine=document.createElement("div");ownerLine.className="owner-current";var currentLabel=document.createElement("span");currentLabel.textContent="Current owner";var currentValue=document.createElement("strong");currentValue.textContent=hasOwner?((p&&(p.display_name||p.contact_email))?(p.display_name||p.contact_email):clean(u&&(u.username||u.pi_uid))||project.owner_user_id):"Unassigned";ownerLine.appendChild(currentLabel);ownerLine.appendChild(currentValue);card.appendChild(ownerLine);
-    var grid=document.createElement("div");grid.className="owner-form-grid";grid.appendChild(makeField("Owner Pi UID","owner_pi_uid",u&&u.pi_uid));grid.appendChild(makeField("Username","owner_username",u&&u.username));grid.appendChild(makeField("Wallet address","owner_wallet_address",u&&u.wallet_address));grid.appendChild(makeField("Display name","display_name",p&&p.display_name));grid.appendChild(makeField("Role title","role_title",p&&p.role_title));grid.appendChild(makeField("Email","contact_email",p&&p.contact_email,"email"));grid.appendChild(makeField("Phone","contact_phone",p&&p.contact_phone,"tel"));grid.appendChild(makeField("Organization","organization_name",p&&p.organization_name));card.appendChild(grid);
-    var actions=document.createElement("div");actions.className="owner-actions";actions.appendChild(makeButton(hasOwner?"Change Owner":"Assign Owner",hasOwner?"change_owner":"assign_owner","primary",project.id));
-    if(hasOwner){actions.appendChild(makeButton("Revoke Owner","revoke_owner","danger",project.id));if(p&&p.verification_status==="pending"){actions.appendChild(makeButton("Verify Owner","verify_owner","success",project.id));actions.appendChild(makeButton("Reject Owner","reject_owner","muted",project.id));}}
-    card.appendChild(actions);if(p){var meta=document.createElement("div");meta.className="owner-meta";meta.textContent="Profile: "+clean(p.verification_status||"pending")+" · "+clean(p.profile_status||"active");card.appendChild(meta);}return card;
+    var p=profileFor(project.id),u=userFor(project.owner_user_id),hasOwner=!!project.owner_user_id;
+    var verification=clean(p&&p.verification_status||"pending").toLowerCase();
+    var card=document.createElement("article");
+    card.className="owner-project-card";
+    card.dataset.projectId=project.id;
+
+    /* Each project starts collapsed. Only the project summary remains visible. */
+    var details=document.createElement("details");
+    details.className="owner-project-fold";
+    var summary=document.createElement("summary");
+    summary.className="owner-project-summary";
+
+    var header=document.createElement("div");
+    header.className="owner-project-head";
+    var title=document.createElement("div");
+    title.className="owner-project-title";
+    var h3=document.createElement("h3");
+    h3.textContent=clean(project.name||project.project_code||"Project");
+    var code=document.createElement("small");
+    code.textContent=clean(project.project_code||"—");
+    title.appendChild(h3);
+    title.appendChild(code);
+
+    var badge=document.createElement("span");
+    badge.className="owner-status "+(hasOwner?(verification==="verified"?"verified":verification==="rejected"?"rejected":"assigned"):"unassigned");
+    badge.textContent=hasOwner?(verification==="verified"?"OWNER VERIFIED":verification==="rejected"?"OWNER REJECTED":"OWNER PENDING"):"NO OWNER";
+    header.appendChild(title);
+    header.appendChild(badge);
+    summary.appendChild(header);
+
+    var ownerLine=document.createElement("div");
+    ownerLine.className="owner-summary-current";
+    var currentLabel=document.createElement("span");
+    currentLabel.textContent="Current owner";
+    var currentValue=document.createElement("strong");
+    currentValue.textContent=hasOwner?((p&&(p.display_name||p.contact_email))?(p.display_name||p.contact_email):clean(u&&(u.username||u.pi_uid))||project.owner_user_id):"Unassigned";
+    ownerLine.appendChild(currentLabel);
+    ownerLine.appendChild(currentValue);
+    summary.appendChild(ownerLine);
+
+    var expandLabel=document.createElement("span");
+    expandLabel.className="owner-expand-label";
+    expandLabel.textContent="View details and actions";
+    summary.appendChild(expandLabel);
+    details.appendChild(summary);
+
+    var content=document.createElement("div");
+    content.className="owner-project-content";
+    var grid=document.createElement("div");
+    grid.className="owner-form-grid";
+    grid.appendChild(makeField("Owner Pi UID","owner_pi_uid",u&&u.pi_uid));
+    grid.appendChild(makeField("Username","owner_username",u&&u.username));
+    grid.appendChild(makeField("Wallet address","owner_wallet_address",u&&u.wallet_address));
+    grid.appendChild(makeField("Display name","display_name",p&&p.display_name));
+    grid.appendChild(makeField("Role title","role_title",p&&p.role_title));
+    grid.appendChild(makeField("Email","contact_email",p&&p.contact_email,"email"));
+    grid.appendChild(makeField("Phone","contact_phone",p&&p.contact_phone,"tel"));
+    grid.appendChild(makeField("Organization","organization_name",p&&p.organization_name));
+    content.appendChild(grid);
+
+    var actions=document.createElement("div");
+    actions.className="owner-actions";
+    actions.appendChild(makeButton(hasOwner?"Change Owner":"Assign Owner",hasOwner?"change_owner":"assign_owner","primary",project.id));
+    if(hasOwner){
+      actions.appendChild(makeButton("Revoke Owner","revoke_owner","danger",project.id));
+      if(p&&verification==="pending"){
+        actions.appendChild(makeButton("Verify Owner","verify_owner","success",project.id));
+        actions.appendChild(makeButton("Reject Owner","reject_owner","muted",project.id));
+      }
+    }
+    content.appendChild(actions);
+
+    if(p){
+      var meta=document.createElement("div");
+      meta.className="owner-meta";
+      meta.textContent="Profile: "+clean(p.verification_status||"pending")+" · "+clean(p.profile_status||"active");
+      content.appendChild(meta);
+    }
+    details.appendChild(content);
+    card.appendChild(details);
+    return card;
   }
   function renderProjects(){var host=el("projectCards");host.replaceChildren();state.projects.forEach(function(p){host.appendChild(inputCard(p));});el("emptyState").hidden=state.projects.length>0;}
   function renderHistory(){var tbody=el("historyRows");tbody.replaceChildren();state.history.forEach(function(row){var tr=document.createElement("tr"),project=state.projects.find(function(p){return String(p.id)===String(row.project_id);});[new Date(row.created_at).toLocaleString(),clean(project&&(project.name||project.project_code))||clean(row.project_id),actionLabel(clean(row.action_type)),nameFromUser(row.previous_owner_user_id),nameFromUser(row.new_owner_user_id),clean(row.reason)].forEach(function(v){var td=document.createElement("td");td.textContent=v||"—";tr.appendChild(td);});tbody.appendChild(tr);});el("historyEmpty").hidden=state.history.length>0;}
