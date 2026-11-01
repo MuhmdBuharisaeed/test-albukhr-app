@@ -21,6 +21,14 @@
 .owner-profile-summary .muted{margin-bottom:0}
 #toggleOwnerProfileBtn{width:100%;min-height:44px}
 #ownerProfileDetails{margin-top:14px}
+
+/* Owner-entered withdrawal wallet */
+#withdrawWallet{
+  width:100%;
+  box-sizing:border-box;
+  text-transform:uppercase;
+}
+
 @media(min-width:600px){
   .owner-profile-summary{flex-direction:row;align-items:center;justify-content:space-between}
   #toggleOwnerProfileBtn{width:auto;min-width:140px}
@@ -90,9 +98,9 @@
 
       <div class="owner-profile-summary">
         <p class="muted">
-          You may update your own contact, profile, and registered Testnet
-          wallet information. Project ownership itself cannot be transferred
-          from this page.
+          You may update your own contact and profile information.
+          Project ownership itself cannot be transferred from this page.
+          Withdrawal wallet addresses are entered separately for each request.
         </p>
         <button
           id="toggleOwnerProfileBtn"
@@ -136,10 +144,6 @@
           <label class="field">
             <span>Contact phone</span>
             <input id="profilePhone" type="tel" maxlength="64" autocomplete="tel">
-          </label>
-          <label class="field">
-            <span>Registered wallet</span>
-            <input id="profileWallet" type="text" maxlength="256" autocomplete="off">
           </label>
 
           <label class="field field-full">
@@ -224,16 +228,29 @@
         <span class="state-pill">OWNER BALANCE</span>
       </div>
       <p class="muted">This withdrawal is separate from investor reward/capital
-      withdrawals. Only your available Project Owner balance can be requested.</p>
+      withdrawals. Only your available Project Owner balance can be requested.
+      Enter your own Testnet Pi wallet address for this withdrawal request.</p>
       <div class="form-grid">
         <label class="field">
           <span>Amount (Pi)</span>
           <input id="withdrawAmount" type="number" min="0.0000001"
             step="0.0000001" inputmode="decimal" placeholder="0.00" autocomplete="off">
         </label>
+
         <label class="field">
-          <span>Registered Wallet</span>
-          <input id="withdrawWallet" type="text" readonly>
+          <span>Registered Wallet (enter your own Testnet wallet)</span>
+          <input
+            id="withdrawWallet"
+            type="text"
+            maxlength="56"
+            inputmode="text"
+            autocapitalize="characters"
+            spellcheck="false"
+            autocomplete="off"
+            required
+            pattern="G[A-Z2-7]{55}"
+            placeholder="Enter your Testnet Pi wallet address"
+          >
         </label>
       </div>
       <button id="requestWithdrawalBtn" class="button secondary" type="button" disabled>
@@ -345,7 +362,7 @@
   onload="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-ok',message:'Pi SDK script loaded; window.Pi='+(!!window.Pi)+'; Pi.init='+(typeof (window.Pi && window.Pi.init))}}))"
   onerror="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-error',message:'Pi SDK script failed to load from sdk.minepi.com.'}}))"></script>
 <script src="js/testnet-liquidity-payment-client.js?v=20261025-owner-debug3"></script>
-<script src="js/testnet-project-owner.js?v=20261025-owner-debug2"></script>
+<script src="js/testnet-project-owner.js?v=20261101-owner-wallet-input1"></script>
 <script src="js/testnet-owner-staking.js?v=20261026-staking1"></script>
 </body>
 </html>
