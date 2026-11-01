@@ -17,7 +17,11 @@
     if (!token) throw new Error("TESTNET_ADMIN_SESSION_REQUIRED");
     var response = await fetch(API, {
       method: method,
-      headers: Object.assign({ Accept: "application/json", Authorization: "Bearer " + token }, body ? { "Content-Type": "application/json" } : {}),
+      headers: Object.assign({
+  Accept: "application/json",
+  apikey: "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT",
+  Authorization: "Bearer " + token
+}, body ? { "Content-Type": "application/json" } : {}),      
       body: body ? JSON.stringify(body) : undefined,
       cache: "no-store"
     });
