@@ -13,7 +13,7 @@
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 
-<body data-page="testnet-login">
+<body data-page="testnet-login" data-network="testnet">
   <header class="header">
     <strong>ALBUKHR</strong>
     <span class="env" aria-label="Current environment: Testnet">
@@ -31,6 +31,18 @@
         your Pi access token on the server before issuing a temporary
         session. Project ownership and payments remain server-authorized.
       </p>
+
+      <div id="ownerLoginNotice" class="notice" role="note" hidden style="display:none">
+        <div>
+          <strong>PROJECT OWNER IDENTITY CHECK</strong>
+          <p>
+            Use this route only when you already own an ALBUKHR Testnet
+            project account and need to link your Pi Sandbox identity.
+            A Super Admin must approve the link. Your canonical ALBUKHR
+            Pi UID will not be changed.
+          </p>
+        </div>
+      </div>
 
       <button id="testnetLoginButton"
               class="testnet-login-button"
@@ -50,6 +62,6 @@
     </section>
   </main>
 
-  <script src="js/login.js?v=20261025-direct-auth1"></script>
+  <script src="js/login.js?v=20261102-owner-intent1"></script>
 </body>
 </html>
