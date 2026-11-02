@@ -24,3 +24,8 @@
   .owner-project-content{padding:13px;}
 }
 @media(prefers-reduced-motion:no-preference){.owner-project-summary::after{transition:background .15s ease,transform .15s ease;}}
+
+.owner-status.identity-unlinked{
+  background:#fff7e6;
+  color:#925f00;
+}
