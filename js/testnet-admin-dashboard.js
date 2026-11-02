@@ -162,8 +162,11 @@
     status("Loading Testnet liquidity status…");
     rows=await window.AlbukhrTestnetLiquidity.load();
     render();
-    status(rows.length ? rows.length+" approved Testnet project"+(rows.length===1?"":"s")+" loaded. Minimum threshold: 100 Pi." : "No approved Testnet projects were returned.");
-    return rows;
+    status(rows.length
+  ? rows.length + " approved Testnet project" +
+    (rows.length === 1 ? "" : "s") +
+    " loaded. Global minimum floor: 100 Pi. Each project has its own target."
+  : "No approved Testnet projects were returned.");    return rows;
   }
 
   async function initializeProject(projectId){
