@@ -26,7 +26,9 @@
   var API_BASE = "https://test-albukhr-api.onrender.com";
   var NETWORK = "testnet";
   var PI_SDK_VERSION = "2.0";
-
+  var OWNER_IDENTITY_URL =
+    "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-direct-auth";
+   
   /*
    * This is the Testnet payment client. Sandbox mode is appropriate only
    * when the corresponding Pi Developer Portal app is configured for
@@ -50,6 +52,7 @@
 
   // Share Testnet session validation among concurrent callers.
   var testnetSessionPromise = null;
+  var ownerIdentityLinkPromise = null;
 
   /* =======================================================
      TIMEOUT HELPER
