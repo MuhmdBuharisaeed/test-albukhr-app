@@ -8,7 +8,7 @@
 <title>ALBUKHR Testnet • Project Ownership</title>
 <link rel="stylesheet" href="css/testnet.css">
 <link rel="stylesheet" href="css/testnet-admin.css">
-<link rel="stylesheet" href="css/testnet-project-owner-admin.css?v=20261101-owner-collapsible1">
+<link rel="stylesheet" href="css/testnet-project-owner-admin.css?v=20261102-identity-links1">
 </head>
 <body data-page="testnet-project-owner-admin" data-network="testnet">
 <header class="admin-header">
@@ -45,6 +45,14 @@
     <article class="summary-card"><span>Unassigned</span><strong id="unassignedCount">0</strong><small>Awaiting owner</small></article>
     <article class="summary-card"><span>Verified Profiles</span><strong id="verifiedCount">0</strong><small>Identity verified</small></article>
   </section>
+  <section class="panel" aria-labelledby="identityLinkTitle">
+    <div class="panel-heading">
+      <div><span class="section-kicker">PI SANDBOX IDENTITY</span><h2 id="identityLinkTitle">Pending Owner Identity Links</h2></div>
+      <button id="refreshIdentityLinkQueue" class="refresh-button" type="button">↻ Refresh</button>
+    </div>
+    <p id="identityLinkStatus" class="page-status" aria-live="polite">Waiting for the Testnet Super Admin session…</p>
+    <div id="identityLinkQueue" class="identity-link-queue" aria-live="polite"></div>
+  </section>
   <section class="panel" aria-labelledby="ownershipTitle">
     <div class="panel-heading">
       <div><span class="section-kicker">OWNERSHIP MANAGEMENT</span><h2 id="ownershipTitle">Core Project Owners</h2></div>
@@ -68,5 +76,6 @@
 <script src="js/core/environment-core.js?v=20260923-owneradmin1"></script>
 <script src="js/testnet-admin-auth.js?v=20260923-owneradmin1"></script>
 <script src="js/testnet-project-owner-admin.js?v=20261101-owner-collapsible1"></script>
+<script src="js/testnet-project-owner-identity-links-admin.js?v=20261102-identity-links1"></script>
 </body>
 </html>
