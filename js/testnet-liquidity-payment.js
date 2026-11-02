@@ -393,16 +393,54 @@
               }
             },
 
-            onCancel: function(paymentId){
-              var error =
-                new Error(
-                  "PI_PAYMENT_CANCELLED"
-                );
-              error.paymentId =
-                paymentId;
-              dispatch("albukhr:testnet-liquidity-payment-cancelled", { paymentId: paymentId, network: NETWORK });
-              done(reject, error);
-            },
+            onCancel: async function(paymentId){
+  try {
+    if (!paymentId) {
+      throw new Error("PAYMENT_ID_REQUIRED");
+    }
+
+    const cancellation = await request(
+      endpointPrefix + "cancel",
+      {
+        method: "POST",
+        sessionToken: sessionToken,
+        adminSessionToken: adminSessionToken,
+        body: JSON.stringify({
+          paymentId: paymentId,
+          projectId: projectId,
+          projectCode: projectCode
+        })
+      }
+    );
+
+    dispatch(
+      "albukhr:testnet-liquidity-payment-cancelled",
+      cancellation
+    );
+
+  } catch (error) {
+    console.error(
+      "[ALBUKHR TESTNET LIQUIDITY CANCELLATION]",
+      error
+    );
+
+    dispatch(
+      "albukhr:testnet-liquidity-payment-cancel-verification-error",
+      {
+        paymentId: paymentId,
+        network: NETWORK,
+        cancellation_confirmed: false,
+        error: error
+      }
+    );
+
+  } finally {
+    done(
+      reject,
+      new Error("PI_PAYMENT_CANCELLED")
+    );
+  }
+},
 
             onError: function(error, payment){
               var e =
