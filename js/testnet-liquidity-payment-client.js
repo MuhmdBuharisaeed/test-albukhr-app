@@ -1,19 +1,23 @@
 /* =========================================================
-   ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v4
+   ALBUKHR TESTNET LIQUIDITY PAYMENT CLIENT v4.1
    =========================================================
 
    SECURITY MODEL
    --------------
    1. Testnet session authorizes ALBUKHR access.
-   2. Pi.authenticate() verifies Pi identity.
+   2. Pi.authenticate() verifies Pi Sandbox identity.
    3. Pi access token remains memory-only.
-   4. Pi.createPayment() is called from the user click path.
-   5. Backend receives X-Testnet-Session and Pi Bearer token.
+   4. Owner Sandbox identity must be server-verified and linked
+      before incomplete-payment recovery or new liquidity payments.
+   5. Pi.createPayment() remains on the synchronous user-click path:
+      the identity check is completed during authentication, not by
+      awaiting a network request inside createLiquidityPayment().
+   6. Backend receives X-Testnet-Session and Pi Bearer token.
 
    SECURITY NOTE
    -------------
    This client never persists Pi credentials. Payment is blocked unless
-   Testnet session and Pi identity have both been verified.
+   Testnet session, Pi identity, and Owner Sandbox identity are verified.
 ========================================================= */
 
 (function (window) {
@@ -28,11 +32,10 @@
   var PI_SDK_VERSION = "2.0";
   var OWNER_IDENTITY_URL =
     "https://vhvkwvngmrlgyzwemttt.supabase.co/functions/v1/testnet-direct-auth";
-   
+
   /*
-   * This is the Testnet payment client. Sandbox mode is appropriate only
-   * when the corresponding Pi Developer Portal app is configured for
-   * Sandbox/Test-Pi. Keep this aligned with that official app configuration.
+   * Keep this aligned with the official Pi Developer Portal app
+   * configuration for the Testnet application.
    */
   var PI_SANDBOX = true;
 
@@ -52,7 +55,16 @@
 
   // Share Testnet session validation among concurrent callers.
   var testnetSessionPromise = null;
+
+  // Share Owner identity verification among concurrent callers.
   var ownerIdentityLinkPromise = null;
+
+  // A successful server response is required before either payment
+  // recovery or a new Pi liquidity payment is allowed.
+  var ownerIdentityLinked = false;
+  var ownerIdentityStatus = "not_checked";
+  var ownerIdentityCanonicalUid = "";
+  var ownerIdentitySandboxUid = "";
 
   /* =======================================================
      TIMEOUT HELPER
@@ -240,6 +252,21 @@
   async function recoverIncomplete(payment) {
     if (!payment) return null;
 
+    // This function is also exposed through the public API.
+    // Enforce the same identity gate here so callers cannot bypass
+    // authenticate() and invoke recovery directly.
+    if (!isAuthenticated()) {
+      throw new Error("PI_AUTH_REQUIRED_BEFORE_RECOVERY");
+    }
+
+    if (
+      !ownerIdentityLinked ||
+      ownerIdentityStatus !== "linked" ||
+      ownerIdentitySandboxUid !== clean(authResult.user.uid)
+    ) {
+      throw new Error("OWNER_IDENTITY_LINK_REQUIRED_BEFORE_RECOVERY");
+    }
+
     var identifier = clean(payment.identifier || payment.id);
     if (!identifier) return null;
 
@@ -310,7 +337,6 @@
     }
 
     /*
-     * IMPORTANT:
      * Timeout the underlying initialization attempt itself. A timeout applied
      * only by authenticate() leaves initializationPromise pending forever and
      * causes every retry to wait on the same stale promise.
@@ -372,8 +398,6 @@
       })
       .catch(function (error) {
         initialized = false;
-
-        // Clear the cached promise so a later, deliberate retry can try again.
         initializationPromise = null;
 
         var message = clean(error && error.message) || "PI_INIT_FAILED";
@@ -392,253 +416,6 @@
 
     return initializationPromise;
   }
-
-  /* =======================================================
-     PI AUTHENTICATION
-  ======================================================= */
-
-async function authenticate() {
-  dispatch("albukhr:testnet-liquidity-debug", {
-    stage: "auth-start",
-    message: "Checking Testnet session and Pi identity…"
-  });
-
-  validateEnvironment();
-
-  // Enforce ALBUKHR's Mainnet-approved Testnet gateway session
-  // BEFORE initializing Pi SDK or requesting Pi capabilities.
-  if (!testnetSessionPromise) {
-    testnetSessionPromise = getAuth().requireTestnetAuth({
-      redirectOnFailure: false
-    });
-  }
-
-  var session;
-
-  try {
-    session = await withAuthTimeout(
-      testnetSessionPromise,
-      12000,
-      "TESTNET_SESSION_CHECK_TIMEOUT"
-    );
-  } finally {
-    testnetSessionPromise = null;
-  }
-
-  if (!session) {
-    throw new Error("TESTNET_SESSION_REQUIRED");
-  }
-
-  // Initialize Pi only after gateway authentication succeeds.
-  var pi = await withAuthTimeout(
-    initializePiSdk(),
-    12000,
-    "PI_SDK_INIT_TIMEOUT"
-  );
-
-  // Avoid duplicate Pi authentication.
-  if (authenticationPromise) {
-    return authenticationPromise;
-  }
-
-  // Recover incomplete payments ONLY after the Owner's
-  // canonical identity and Sandbox identity have been verified.
-  async function verifyOwnerIdentityAndRecover() {
-    var ownerIdentity = null;
-
-    try {
-      ownerIdentity = await ensureOwnerIdentityLink();
-
-    } catch (linkError) {
-      console.error(
-        "[ALBUKHR TESTNET OWNER IDENTITY]",
-        linkError
-      );
-
-      dispatch(
-        "albukhr:testnet-owner-identity-link-error",
-        {
-          message:
-            clean(linkError && linkError.message) ||
-            "OWNER_IDENTITY_LINK_FAILED"
-        }
-      );
-
-      dispatch(
-        "albukhr:testnet-liquidity-debug",
-        {
-          stage: "owner-identity-pending",
-          message:
-            "Owner Sandbox identity is not yet verified. Payment recovery remains locked."
-        }
-      );
-
-      // Authentication remains available.
-      // Payment execution and recovery remain blocked.
-      return {
-        linked: false,
-        recovered: 0
-      };
-    }
-
-    var identityStatus = clean(
-      ownerIdentity &&
-      ownerIdentity.identity_link_status
-    ).toLowerCase();
-
-    if (identityStatus !== "linked") {
-      dispatch(
-        "albukhr:testnet-owner-identity-link",
-        {
-          status: identityStatus || "pending",
-          requestId: clean(
-            ownerIdentity &&
-            ownerIdentity.identity_link_request_id
-          )
-        }
-      );
-
-      dispatch(
-        "albukhr:testnet-liquidity-debug",
-        {
-          stage: "owner-identity-pending",
-          message:
-            "Sandbox identity approval is required before payment recovery."
-        }
-      );
-
-      return {
-        linked: false,
-        recovered: 0
-      };
-    }
-
-    // Only recover incomplete payments after the verified
-    // canonical Owner -> Sandbox UID mapping is confirmed.
-    var recoveredCount = 0;
-
-    for (
-      var i = 0;
-      i < pendingIncompletePayments.length;
-      i += 1
-    ) {
-      try {
-        await recoverIncomplete(
-          pendingIncompletePayments[i]
-        );
-
-        recoveredCount += 1;
-
-      } catch (recoveryError) {
-        console.error(
-          "[ALBUKHR TESTNET INCOMPLETE PAYMENT RECOVERY]",
-          recoveryError
-        );
-      }
-    }
-
-    // Clear the queue only after the identity gate has passed.
-    pendingIncompletePayments = [];
-
-    dispatch(
-      "albukhr:testnet-liquidity-debug",
-      {
-        stage: "owner-identity-linked",
-        message:
-          "Owner Sandbox identity verified. Incomplete payment recovery completed.",
-        recovered: recoveredCount
-      }
-    );
-
-    return {
-      linked: true,
-      recovered: recoveredCount
-    };
-  }
-
-  // If Pi identity is already authenticated, do not skip
-  // the Owner identity verification gate.
-  if (
-    authResult &&
-    clean(authResult.accessToken) &&
-    authResult.user &&
-    clean(authResult.user.uid)
-  ) {
-    await verifyOwnerIdentityAndRecover();
-
-    return {
-      user: authResult.user
-    };
-  }
-
-  authenticationPromise = (async function () {
-    pendingIncompletePayments = [];
-
-    var result = await withAuthTimeout(
-      pi.authenticate(
-        ["username", "payments"],
-        function onIncompletePaymentFound(payment) {
-          if (payment) {
-            pendingIncompletePayments.push(payment);
-          }
-        }
-      ),
-      20000,
-      "PI_AUTHENTICATION_TIMEOUT"
-    );
-
-    if (
-      !result ||
-      !clean(result.accessToken) ||
-      !result.user ||
-      !clean(result.user.uid)
-    ) {
-      throw new Error("PI_AUTH_RESULT_INVALID");
-    }
-
-    // MEMORY ONLY:
-    // Never persist the Pi Sandbox access token.
-    authResult = {
-      accessToken: result.accessToken,
-      user: {
-        uid: clean(result.user.uid),
-        username: clean(result.user.username) || null
-      }
-    };
-
-    // Identity verification MUST happen before recovery.
-    // Pending/rejected requests do not trigger payment recovery.
-    await verifyOwnerIdentityAndRecover();
-
-    dispatch(
-      "albukhr:testnet-liquidity-debug",
-      {
-        stage: "auth-ok",
-        message:
-          "Pi identity authentication completed."
-      }
-    );
-
-    dispatch(
-      "albukhr:testnet-liquidity-pi-authenticated",
-      {
-        username: authResult.user.username,
-        uid: authResult.user.uid
-      }
-    );
-
-    return {
-      user: authResult.user
-    };
-  })();
-
-  try {
-    return await authenticationPromise;
-
-  } finally {
-    authenticationPromise = null;
-  }
-    }
 
   /* =======================================================
      CHECK PI AUTHENTICATION STATE
@@ -663,7 +440,11 @@ async function authenticate() {
     return clean(authResult.accessToken);
   }
 
-   async function ensureOwnerIdentityLink() {
+  /* =======================================================
+     OWNER SANDBOX IDENTITY LINK
+  ======================================================= */
+
+  async function ensureOwnerIdentityLink() {
     validateEnvironment();
 
     if (!isAuthenticated()) {
@@ -675,8 +456,12 @@ async function authenticate() {
     }
 
     ownerIdentityLinkPromise = (async function () {
-      var canonicalSession = getAuth().getSession &&
-        getAuth().getSession();
+      var auth = getAuth();
+
+      // Support either a synchronous session getter or a Promise-returning one.
+      var canonicalSession = typeof auth.getSession === "function"
+        ? await Promise.resolve(auth.getSession())
+        : null;
 
       var canonicalUid = clean(
         canonicalSession && canonicalSession.pi_uid
@@ -690,6 +475,8 @@ async function authenticate() {
       var sessionToken = getSessionToken();
 
       if (!canonicalUid || !sandboxUid || !piToken || !sessionToken) {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "error";
         throw new Error("OWNER_IDENTITY_CREDENTIALS_INCOMPLETE");
       }
 
@@ -718,6 +505,9 @@ async function authenticate() {
       } catch (_) {}
 
       if (!response.ok || !data || data.ok !== true) {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "error";
+
         throw new Error(
           clean(data && data.error) ||
           "OWNER_IDENTITY_LINK_FAILED"
@@ -727,6 +517,11 @@ async function authenticate() {
       var status = clean(data.identity_link_status).toLowerCase();
 
       if (status === "pending") {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "pending";
+        ownerIdentityCanonicalUid = canonicalUid;
+        ownerIdentitySandboxUid = sandboxUid;
+
         dispatch("albukhr:testnet-owner-identity-link", {
           status: "pending",
           requestId: clean(data.identity_link_request_id)
@@ -736,6 +531,11 @@ async function authenticate() {
       }
 
       if (status === "rejected") {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "rejected";
+        ownerIdentityCanonicalUid = canonicalUid;
+        ownerIdentitySandboxUid = sandboxUid;
+
         dispatch("albukhr:testnet-owner-identity-link", {
           status: "rejected"
         });
@@ -744,6 +544,8 @@ async function authenticate() {
       }
 
       if (status !== "linked") {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "error";
         throw new Error("OWNER_IDENTITY_LINK_STATUS_INVALID");
       }
 
@@ -751,8 +553,15 @@ async function authenticate() {
         clean(data.user && data.user.uid) !== canonicalUid ||
         clean(data.user && data.user.testnet_pi_uid) !== sandboxUid
       ) {
+        ownerIdentityLinked = false;
+        ownerIdentityStatus = "error";
         throw new Error("OWNER_IDENTITY_LINK_RESPONSE_MISMATCH");
       }
+
+      ownerIdentityLinked = true;
+      ownerIdentityStatus = "linked";
+      ownerIdentityCanonicalUid = canonicalUid;
+      ownerIdentitySandboxUid = sandboxUid;
 
       dispatch("albukhr:testnet-owner-identity-link", {
         status: "linked"
@@ -766,7 +575,218 @@ async function authenticate() {
     } finally {
       ownerIdentityLinkPromise = null;
     }
-     }
+  }
+
+  /* =======================================================
+     PI AUTHENTICATION
+  ======================================================= */
+
+  async function authenticate() {
+    dispatch("albukhr:testnet-liquidity-debug", {
+      stage: "auth-start",
+      message: "Checking Testnet session and Pi identity…"
+    });
+
+    validateEnvironment();
+
+    // Enforce ALBUKHR's Testnet gateway session before Pi SDK initialization.
+    if (!testnetSessionPromise) {
+      testnetSessionPromise = getAuth().requireTestnetAuth({
+        redirectOnFailure: false
+      });
+    }
+
+    var session;
+
+    try {
+      session = await withAuthTimeout(
+        testnetSessionPromise,
+        12000,
+        "TESTNET_SESSION_CHECK_TIMEOUT"
+      );
+    } finally {
+      testnetSessionPromise = null;
+    }
+
+    if (!session) {
+      throw new Error("TESTNET_SESSION_REQUIRED");
+    }
+
+    // Initialize Pi only after the Testnet gateway session has passed.
+    var pi = await withAuthTimeout(
+      initializePiSdk(),
+      12000,
+      "PI_SDK_INIT_TIMEOUT"
+    );
+
+    // Avoid duplicate Pi authentication.
+    if (authenticationPromise) {
+      return authenticationPromise;
+    }
+
+    async function verifyOwnerIdentityAndRecover() {
+      var ownerIdentity;
+
+      try {
+        ownerIdentity = await ensureOwnerIdentityLink();
+      } catch (linkError) {
+        ownerIdentityLinked = false;
+
+        console.error(
+          "[ALBUKHR TESTNET OWNER IDENTITY]",
+          linkError
+        );
+
+        dispatch("albukhr:testnet-owner-identity-link-error", {
+          message:
+            clean(linkError && linkError.message) ||
+            "OWNER_IDENTITY_LINK_FAILED"
+        });
+
+        dispatch("albukhr:testnet-liquidity-debug", {
+          stage: "owner-identity-pending",
+          message:
+            "Owner Sandbox identity is not verified. Payment and recovery remain locked."
+        });
+
+        // Authentication remains available, but payment/recovery do not.
+        return {
+          linked: false,
+          recovered: 0
+        };
+      }
+
+      var identityStatus = clean(
+        ownerIdentity && ownerIdentity.identity_link_status
+      ).toLowerCase();
+
+      if (identityStatus !== "linked") {
+        dispatch("albukhr:testnet-liquidity-debug", {
+          stage: "owner-identity-pending",
+          message:
+            "Sandbox identity approval is required before payment recovery."
+        });
+
+        return {
+          linked: false,
+          recovered: 0
+        };
+      }
+
+      var recoveredCount = 0;
+
+      for (
+        var i = 0;
+        i < pendingIncompletePayments.length;
+        i += 1
+      ) {
+        try {
+          await recoverIncomplete(pendingIncompletePayments[i]);
+          recoveredCount += 1;
+        } catch (recoveryError) {
+          console.error(
+            "[ALBUKHR TESTNET INCOMPLETE PAYMENT RECOVERY]",
+            recoveryError
+          );
+        }
+      }
+
+      // Clear only after the identity gate has passed.
+      pendingIncompletePayments = [];
+
+      dispatch("albukhr:testnet-liquidity-debug", {
+        stage: "owner-identity-linked",
+        message:
+          "Owner Sandbox identity verified. Incomplete payment recovery checked.",
+        recovered: recoveredCount
+      });
+
+      return {
+        linked: true,
+        recovered: recoveredCount
+      };
+    }
+
+    // Existing Pi authentication may be reused, but identity verification
+    // must still run on every authenticate() call.
+    if (
+      authResult &&
+      clean(authResult.accessToken) &&
+      authResult.user &&
+      clean(authResult.user.uid)
+    ) {
+      await verifyOwnerIdentityAndRecover();
+
+      return {
+        user: authResult.user
+      };
+    }
+
+    authenticationPromise = (async function () {
+      pendingIncompletePayments = [];
+
+      // A new Pi identity authentication invalidates any previous mapping
+      // cached in this browser memory.
+      ownerIdentityLinked = false;
+      ownerIdentityStatus = "not_checked";
+      ownerIdentityCanonicalUid = "";
+      ownerIdentitySandboxUid = "";
+
+      var result = await withAuthTimeout(
+        pi.authenticate(
+          ["username", "payments"],
+          function onIncompletePaymentFound(payment) {
+            if (payment) {
+              pendingIncompletePayments.push(payment);
+            }
+          }
+        ),
+        20000,
+        "PI_AUTHENTICATION_TIMEOUT"
+      );
+
+      if (
+        !result ||
+        !clean(result.accessToken) ||
+        !result.user ||
+        !clean(result.user.uid)
+      ) {
+        throw new Error("PI_AUTH_RESULT_INVALID");
+      }
+
+      // MEMORY ONLY: never persist this access token.
+      authResult = {
+        accessToken: result.accessToken,
+        user: {
+          uid: clean(result.user.uid),
+          username: clean(result.user.username) || null
+        }
+      };
+
+      // Verify the Owner mapping before attempting any recovery.
+      await verifyOwnerIdentityAndRecover();
+
+      dispatch("albukhr:testnet-liquidity-debug", {
+        stage: "auth-ok",
+        message: "Pi identity authentication completed."
+      });
+
+      dispatch("albukhr:testnet-liquidity-pi-authenticated", {
+        username: authResult.user.username,
+        uid: authResult.user.uid
+      });
+
+      return {
+        user: authResult.user
+      };
+    })();
+
+    try {
+      return await authenticationPromise;
+    } finally {
+      authenticationPromise = null;
+    }
+  }
 
   /* =======================================================
      CREATE LIQUIDITY PAYMENT
@@ -791,9 +811,33 @@ async function authenticate() {
       throw new Error("INVALID_LIQUIDITY_AMOUNT");
     }
 
-    // Do not authenticate inside the click/payment path.
+    // Do not authenticate or perform network requests inside the payment
+    // click path. The Owner identity check must already have completed.
     if (!isAuthenticated()) {
       throw new Error("PI_AUTH_REQUIRED_BEFORE_PAYMENT");
+    }
+
+    if (
+      !ownerIdentityLinked ||
+      ownerIdentityStatus !== "linked" ||
+      ownerIdentitySandboxUid !== clean(authResult.user.uid) ||
+      !ownerIdentityCanonicalUid
+    ) {
+      throw new Error("OWNER_IDENTITY_LINK_REQUIRED");
+    }
+
+    // Re-check the current canonical session against the identity mapping
+    // cached in memory. This is synchronous and preserves the click path.
+    var currentSession = getAuth().getSession &&
+      getAuth().getSession();
+
+    if (
+      !currentSession ||
+      clean(currentSession.pi_uid) !== ownerIdentityCanonicalUid
+    ) {
+      ownerIdentityLinked = false;
+      ownerIdentityStatus = "session_changed";
+      throw new Error("OWNER_CANONICAL_SESSION_CHANGED");
     }
 
     var pi = requirePiSdk();
@@ -831,7 +875,11 @@ async function authenticate() {
                 error: error,
                 paymentId: paymentId
               });
-              reject(error instanceof Error ? error : new Error("PI_PAYMENT_APPROVAL_FAILED"));
+              reject(
+                error instanceof Error
+                  ? error
+                  : new Error("PI_PAYMENT_APPROVAL_FAILED")
+              );
             }
           },
 
@@ -870,13 +918,21 @@ async function authenticate() {
           },
 
           onError: function (error, payment) {
-            console.error("[ALBUKHR TESTNET LIQUIDITY PAYMENT]", error, payment || null);
+            console.error(
+              "[ALBUKHR TESTNET LIQUIDITY PAYMENT]",
+              error,
+              payment || null
+            );
+
             dispatch("albukhr:testnet-liquidity-payment-error", {
               error: error,
               payment: payment || null
             });
+
             reject(
-              error instanceof Error ? error : new Error("PI_PAYMENT_ERROR")
+              error instanceof Error
+                ? error
+                : new Error("PI_PAYMENT_ERROR")
             );
           }
         }
@@ -892,16 +948,15 @@ async function authenticate() {
     authResult = null;
     pendingIncompletePayments = [];
     authenticationPromise = null;
+    ownerIdentityLinkPromise = null;
+    ownerIdentityLinked = false;
+    ownerIdentityStatus = "not_checked";
+    ownerIdentityCanonicalUid = "";
+    ownerIdentitySandboxUid = "";
   }
 
   /* =======================================================
      PAGE-LOAD PRE-AUTHENTICATION
-     authenticate() validates the short-lived Testnet gateway session first,
-     then initializes Pi SDK and requests Pi identity.
-  ======================================================= */
-
-  /* =======================================================
-     PRE-AUTHENTICATION
   ======================================================= */
 
   authenticate().catch(function (error) {
