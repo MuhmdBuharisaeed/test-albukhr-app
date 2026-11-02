@@ -179,6 +179,49 @@
     await load();
   }
 
+  async function updateProjectTarget(projectId) {
+  var row = rows.find(function(item) {
+    return String(item.project && item.project.id) ===
+      String(projectId);
+  });
+
+  if (!row) throw new Error("PROJECT_NOT_FOUND");
+  if (!row.treasury) throw new Error("TREASURY_NOT_CONFIGURED");
+
+  var floor = Number(
+    window.AlbukhrTestnetLiquidity.MIN_REQUIRED_LIQUIDITY || 100
+  );
+
+  var verified = Number(row.verified || 0);
+  var current = Math.max(floor, Number(row.required || floor));
+
+  var raw = window.prompt(
+    "Set this project's Testnet liquidity target in Pi. " +
+    "Global minimum: " + floor + " Pi. No fixed upper cap.",
+    String(current)
+  );
+
+  if (raw === null) return;
+
+  var target = Number(String(raw).trim());
+
+  if (!Number.isFinite(target) || target < floor) {
+    throw new Error("PROJECT_LIQUIDITY_TARGET_BELOW_GLOBAL_MINIMUM");
+  }
+
+  if (target < verified) {
+    throw new Error("PROJECT_TARGET_BELOW_VERIFIED_LIQUIDITY");
+  }
+
+  await window.AlbukhrTestnetLiquidity.initialize(
+    projectId,
+    row.treasury.treasury_wallet,
+    target
+  );
+
+  await load();
+  }
+
   async function fundProject(projectId){
     var row=rows.find(function(item){ return String(item.project && item.project.id)===String(projectId); });
     if(!row) throw new Error("PROJECT_NOT_FOUND");
