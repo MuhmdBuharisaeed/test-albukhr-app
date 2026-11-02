@@ -1,5 +1,9 @@
-/* ALBUKHR TESTNET DIRECT LOGIN v1
+/* ALBUKHR TESTNET DIRECT LOGIN v2 — OWNER IDENTITY LINK INTENT
  * Pi access tokens remain memory-only.
+ *
+ * Default sign-in remains the existing general Testnet flow.
+ * The explicit ?purpose=project_owner route asks the backend to create
+ * an Admin-reviewed Sandbox UID link request for an existing project owner.
  */
 (function (window, document) {
   "use strict";
@@ -21,22 +25,49 @@
     return String(value == null ? "" : value).trim();
   }
 
+  function isProjectOwnerLogin() {
+    try {
+      return clean(
+        new URLSearchParams(window.location.search).get("purpose")
+      ).toLowerCase() === "project_owner";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function currentPurpose() {
+    return isProjectOwnerLogin() ? "project_owner" : "general";
+  }
+
   function setStatus(message) {
     var node = el("status");
     if (node) node.textContent = String(message || "");
   }
 
-  function setLoading(loading, label) {
-    var button = el("testnetLoginButton");
-    if (!button) return;
+  function setLoading(loading, label, purpose) {
+    var generalButton = el("testnetLoginButton");
+    var ownerButton = el("testnetOwnerLoginButton");
+    var activeButton = purpose === "project_owner"
+      ? (ownerButton || generalButton)
+      : generalButton;
 
-    button.disabled = !!loading;
-    button.setAttribute("aria-busy", loading ? "true" : "false");
+    [generalButton, ownerButton].forEach(function (button) {
+      if (!button) return;
+      button.disabled = !!loading;
+      button.setAttribute("aria-busy", loading ? "true" : "false");
+    });
 
-    var text = button.querySelector(".login-text");
-    if (text) {
-      text.textContent =
-        label || (loading ? "Verifying Pi…" : "Continue with Pi");
+    if (activeButton) {
+      var text = activeButton.querySelector(".login-text");
+      if (text) {
+        text.textContent = label || (
+          loading
+            ? "Verifying Pi…"
+            : purpose === "project_owner"
+              ? "Continue as Project Owner"
+              : "Continue with Pi"
+        );
+      }
     }
   }
 
@@ -128,15 +159,20 @@
   async function authenticateDirectly() {
     if (busy) return;
 
+    var purpose = currentPurpose();
     busy = true;
-    setLoading(true, "Opening Pi…");
-    setStatus("Initializing Pi SDK in Testnet. Keep this page open.");
+    setLoading(true, "Opening Pi…", purpose);
+    setStatus(
+      purpose === "project_owner"
+        ? "Starting Testnet Project Owner identity verification."
+        : "Initializing Pi SDK in Testnet. Keep this page open."
+    );
 
     try {
       await initializePi();
 
       setStatus("Pi SDK initialized. Requesting Pi identity approval…");
-      setLoading(true, "Verifying Pi…");
+      setLoading(true, "Verifying Pi…", purpose);
 
       var authResult = await withTimeout(
         window.Pi.authenticate(
@@ -160,6 +196,11 @@
         "Pi identity received. ALBUKHR is verifying it with Pi servers…"
       );
 
+      var requestBody = { action: "authenticate" };
+      if (purpose === "project_owner") {
+        requestBody.purpose = "project_owner";
+      }
+
       var response = await fetch(DIRECT_AUTH_URL, {
         method: "POST",
         mode: "cors",
@@ -170,7 +211,7 @@
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
-        body: JSON.stringify({ action: "authenticate" })
+        body: JSON.stringify(requestBody)
       });
 
       // Do not persist the Pi token in browser storage or URLs.
@@ -206,7 +247,11 @@
             "Contact the ALBUKHR Super Admin for manual verification."
           );
 
-          setLoading(false, "Continue with Pi");
+          setLoading(
+            false,
+            purpose === "project_owner" ? "Continue as Project Owner" : "Continue with Pi",
+            purpose
+          );
           return;
         }
 
@@ -226,6 +271,57 @@
         throw new Error("TESTNET_SESSION_INVALID");
       }
 
+      /*
+       * Owner flow: do not save a temporary Sandbox-only session while
+       * the request is pending, rejected, or inconsistent. Save only
+       * after the backend confirms that the Sandbox UID is linked to an
+       * existing canonical ALBUKHR Testnet owner account.
+       */
+      if (purpose === "project_owner") {
+        var linkStatus = clean(payload.identity_link_status).toLowerCase();
+        var requestId = clean(payload.identity_link_request_id);
+
+        if (linkStatus === "pending") {
+          setStatus(
+            "Your Pi Sandbox identity has been verified and the Owner " +
+            "identity-link request is awaiting ALBUKHR Super Admin approval. " +
+            (requestId ? "Reference: " + requestId + ". " : "") +
+            "Your canonical ALBUKHR Pi UID has not been changed. After Admin " +
+            "approval, return to this page and choose Continue as Project Owner again."
+          );
+          setLoading(false, "Continue as Project Owner", purpose);
+          return;
+        }
+
+        if (linkStatus === "rejected") {
+          setStatus(
+            "The Owner identity-link request was rejected. No Owner session " +
+            "was saved. Contact the ALBUKHR Super Admin for the review outcome."
+          );
+          setLoading(false, "Continue as Project Owner", purpose);
+          return;
+        }
+
+        if (linkStatus === "inconsistent") {
+          setStatus(
+            "The identity-link record and account mapping do not agree. " +
+            "No Owner session was saved. Contact the ALBUKHR Super Admin " +
+            "for reconciliation."
+          );
+          setLoading(false, "Continue as Project Owner", purpose);
+          return;
+        }
+
+        if (linkStatus !== "linked") {
+          setStatus(
+            "ALBUKHR did not confirm an approved Owner identity link. " +
+            "No Owner session was saved. Contact the ALBUKHR Super Admin."
+          );
+          setLoading(false, "Continue as Project Owner", purpose);
+          return;
+        }
+      }
+
       try {
         window.sessionStorage.setItem(
           SESSION_KEY,
@@ -236,10 +332,12 @@
       }
 
       setStatus(
-        "Pi identity verified and Testnet session created. Opening Testnet…"
+        purpose === "project_owner"
+          ? "Owner identity link confirmed. Opening Testnet…"
+          : "Pi identity verified and Testnet session created. Opening Testnet…"
       );
 
-      setLoading(true, "Opening Testnet…");
+      setLoading(true, "Opening Testnet…", purpose);
       window.location.replace(safeReturnTo());
 
     } catch (error) {
@@ -248,7 +346,7 @@
         "TESTNET_DIRECT_AUTH_FAILED";
 
       console.warn("[ALBUKHR TESTNET LOGIN]", code);
-      setLoading(false, "Continue with Pi");
+      setLoading(false, "Continue with Pi", purpose);
 
       if (code === "PI_SDK_INIT_TIMEOUT") {
         setStatus(
@@ -276,8 +374,41 @@
   }
 
   function init() {
-    setLoading(false, "Continue with Pi");
-    setStatus("Ready to authenticate directly with Pi Testnet.");
+    var purpose = currentPurpose();
+    var ownerNotice = el("ownerLoginNotice");
+    var title = el("loginTitle");
+
+    if (ownerNotice) {
+      ownerNotice.hidden = purpose !== "project_owner";
+      /* The shared .notice rule sets display:flex; explicitly pair it with
+       * the hidden state so browsers do not accidentally display it. */
+      ownerNotice.style.display = purpose === "project_owner" ? "flex" : "none";
+    }
+    if (title && purpose === "project_owner") {
+      title.textContent = "Verify Project Owner identity";
+    }
+
+    var loginButton = el("testnetLoginButton");
+    if (loginButton) {
+      loginButton.setAttribute(
+        "aria-describedby",
+        purpose === "project_owner" ? "ownerLoginNotice status" : "status"
+      );
+    }
+
+    setLoading(
+      false,
+      purpose === "project_owner"
+        ? "Continue as Project Owner"
+        : "Continue with Pi",
+      purpose
+    );
+
+    setStatus(
+      purpose === "project_owner"
+        ? "Ready to verify your Pi Sandbox identity for an existing ALBUKHR Testnet project-owner account."
+        : "Ready to authenticate directly with Pi Testnet."
+    );
 
     var button = el("testnetLoginButton");
     if (button) {
