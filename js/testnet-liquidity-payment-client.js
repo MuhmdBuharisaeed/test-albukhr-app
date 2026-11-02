@@ -528,6 +528,111 @@
     return clean(authResult.accessToken);
   }
 
+   async function ensureOwnerIdentityLink() {
+    validateEnvironment();
+
+    if (!isAuthenticated()) {
+      throw new Error("PI_AUTH_REQUIRED_BEFORE_OWNER_LINK");
+    }
+
+    if (ownerIdentityLinkPromise) {
+      return ownerIdentityLinkPromise;
+    }
+
+    ownerIdentityLinkPromise = (async function () {
+      var canonicalSession = getAuth().getSession &&
+        getAuth().getSession();
+
+      var canonicalUid = clean(
+        canonicalSession && canonicalSession.pi_uid
+      );
+
+      var sandboxUid = clean(
+        authResult && authResult.user && authResult.user.uid
+      );
+
+      var piToken = getPiAccessToken();
+      var sessionToken = getSessionToken();
+
+      if (!canonicalUid || !sandboxUid || !piToken || !sessionToken) {
+        throw new Error("OWNER_IDENTITY_CREDENTIALS_INCOMPLETE");
+      }
+
+      var response = await fetch(OWNER_IDENTITY_URL, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        redirect: "error",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + piToken,
+          "X-Testnet-Session": sessionToken
+        },
+        body: JSON.stringify({
+          action: "authenticate",
+          purpose: "project_owner"
+        })
+      });
+
+      var data = null;
+
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (!response.ok || !data || data.ok !== true) {
+        throw new Error(
+          clean(data && data.error) ||
+          "OWNER_IDENTITY_LINK_FAILED"
+        );
+      }
+
+      var status = clean(data.identity_link_status).toLowerCase();
+
+      if (status === "pending") {
+        dispatch("albukhr:testnet-owner-identity-link", {
+          status: "pending",
+          requestId: clean(data.identity_link_request_id)
+        });
+
+        return data;
+      }
+
+      if (status === "rejected") {
+        dispatch("albukhr:testnet-owner-identity-link", {
+          status: "rejected"
+        });
+
+        return data;
+      }
+
+      if (status !== "linked") {
+        throw new Error("OWNER_IDENTITY_LINK_STATUS_INVALID");
+      }
+
+      if (
+        clean(data.user && data.user.uid) !== canonicalUid ||
+        clean(data.user && data.user.testnet_pi_uid) !== sandboxUid
+      ) {
+        throw new Error("OWNER_IDENTITY_LINK_RESPONSE_MISMATCH");
+      }
+
+      dispatch("albukhr:testnet-owner-identity-link", {
+        status: "linked"
+      });
+
+      return data;
+    })();
+
+    try {
+      return await ownerIdentityLinkPromise;
+    } finally {
+      ownerIdentityLinkPromise = null;
+    }
+     }
+
   /* =======================================================
      CREATE LIQUIDITY PAYMENT
   ======================================================= */
