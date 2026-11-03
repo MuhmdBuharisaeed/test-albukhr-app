@@ -722,7 +722,7 @@
     } else {
       setStatus(
         "liquidityStatus",
-        "Owner authorization verified. Minimum remaining liquidity: " +
+        "Owner authorization verified. Remaining amount to reach this project's configured Testnet target: " +
         formatPi(due) +
         "."
       );
