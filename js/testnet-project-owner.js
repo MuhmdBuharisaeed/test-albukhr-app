@@ -885,6 +885,22 @@ function renderOwner(stateRow, ownerData) {
   document.title =
     (clean(project.name) || "Project Owner") +
     " • ALBUKHR TESTNET";
+
+  
+  // Notify the owner staking module after project rendering.
+  if (typeof window.CustomEvent === "function") {
+    window.dispatchEvent(
+      new window.CustomEvent(
+        "albukhr:testnet-owner-project-rendered",
+        {
+          detail: {
+            project: project
+          }
+        }
+      )
+    );
+  }
+
 }
 
   /* =======================================================
