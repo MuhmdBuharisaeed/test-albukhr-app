@@ -335,9 +335,9 @@
           content.appendChild(renderCard(project, policies[clean(project.id)]));
         });
       }
-      var pending = projects.filter(function (project) {
+            var pending = projects.filter(function (project) {
         var p = policies[clean(project.id)];
-        return p && p.policy && clean(p.policy.approval_status).toLowerCase() === "pending_review";
+        return p && p.policy && isPendingReview(p.policy.approval_status);
       }).length;
       var missing = projects.filter(function (project) {
         var p = policies[clean(project.id)];
