@@ -1,30 +1,62 @@
 'use strict';
 
-// Static source-contract smoke test. Run from the Testnet app repository root.
-// Reads source only; it makes no network calls and performs no writes.
+// Static source-contract smoke test.
+// Run from the Testnet app repository root.
+// Reads source only; makes no network calls and performs no writes.
+
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
 
-const source = fs.readFileSync('js/testnet-project-staking-risk-admin.js', 'utf8');
+const source = fs.readFileSync(
+  'js/testnet-project-staking-risk-admin.js',
+  'utf8'
+);
+
 assert.match(source, /var NETWORK = "testnet"/);
 assert.match(source, /var HOST = "test\.albukhr\.com"/);
 assert.match(source, /window\.ALBukhrEnvironment/);
 assert.doesNotMatch(source, /window\.AlbukhrEnvironment/);
-assert.match(source, /AUTH\.requireAdmin\(\{ redirectOnFailure: false \}\)/);
+
+assert.match(
+  source,
+  /AUTH\.requireAdmin\(\{ redirectOnFailure: false \}\)/
+);
 assert.match(source, /requireSuperAdmin\(session\)/);
+
 assert.match(source, /\/admin\/project-stages/);
 assert.match(source, /\/admin\/policy"/);
 assert.match(source, /\/admin\/policy\/provision/);
 assert.match(source, /\/admin\/policy\/review/);
+
 assert.match(source, /window\.confirm/);
 assert.match(source, /approval_status/);
+assert.match(source, /function isPendingReview\(status\)/);
+
+// Both database status spellings must be recognized.
+assert.match(source, /value === "pending"/);
+assert.match(source, /value === "pending_review"/);
+
+// Review actions and pending count must use the shared helper.
+assert.match(
+  source,
+  /isPendingReview\(policy\.approval_status\)/
+);
+assert.match(
+  source,
+  /isPendingReview\(p\.policy\.approval_status\)/
+);
+
 assert.match(source, /This panel never enables staking/);
-assert.doesNotMatch(source, /staking_policy_active\s*=\s*true/);
+assert.doesNotMatch(
+  source,
+  /staking_policy_active\s*=\s*true/
+);
 
 console.log(JSON.stringify({
-  checks: 14,
+  checks: 18,
   network: 'testnet',
   role_gate: 'super_admin',
+  pending_statuses: ['pending', 'pending_review'],
   provisioning: 'explicit confirmation; pending only',
   review: 'explicit confirmation; separate action',
   global_staking_enablement: false,
