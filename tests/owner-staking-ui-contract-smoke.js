@@ -13,7 +13,7 @@ assert.match(ownerSource, /albukhr:testnet-owner-project-rendered/);
 assert.match(stakingSource, /albukhr:testnet-owner-project-rendered/);
 assert.match(stakingSource, /request\("offers"/);
 assert.match(stakingSource, /request\("offer-settings"/);
-assert.match(stakingSource, /payload\.can_configure !== true/);
+assert.match(stakingSource, /policyPayload\.can_configure !== true/);
 assert.match(stakingSource, /staking_policy_active/);
 assert.match(stakingSource, /not_provisioned/);
 assert.match(html, /js\/testnet-owner-staking\.js\?v=20261103-staking-v2/);
