@@ -146,7 +146,27 @@
       td.appendChild(bar); td.appendChild(label); tr.appendChild(td);
       td=document.createElement("td");
       var state=document.createElement("span"); state.className="state "+clean(row.code||"pending"); state.textContent=row.ready?"TESTNET READY":(ver>0?"LIQUIDITY PARTIAL":"LIQUIDITY PENDING"); td.appendChild(state);
-      var action=document.createElement("button"); action.type="button"; action.className="row-action"; action.dataset.projectId=clean(project.id); action.dataset.mode=row.treasury?(row.ready?"recompute":"fund"):"initialize"; action.textContent=row.treasury?(row.ready?"Recompute":"Pay "+Math.max(0,req-ver).toFixed(2)+" Pi"):"Initialize 100 Pi"; td.appendChild(action); tr.appendChild(td);
+
+      var action=document.createElement("button");
+      action.type="button";
+      action.className="row-action";
+      action.dataset.projectId=clean(project.id);
+      action.dataset.mode=row.treasury?(row.ready?"recompute":"fund"):"initialize";
+      action.textContent=row.treasury
+        ? (row.ready?"Recompute":"Pay "+Math.max(0,req-ver).toFixed(2)+" Pi")
+        : "Configure Treasury & Target";
+      td.appendChild(action);
+
+      if(row.treasury){
+        var targetAction=document.createElement("button");
+        targetAction.type="button";
+        targetAction.className="row-action";
+        targetAction.dataset.projectId=clean(project.id);
+        targetAction.dataset.mode="target";
+        targetAction.textContent="Set Project Target";
+        td.appendChild(targetAction);
+      }
+      tr.appendChild(td);
       body.appendChild(tr);
     });
     el("approvedCount").textContent=String(rows.length);
@@ -163,10 +183,11 @@
     rows=await window.AlbukhrTestnetLiquidity.load();
     render();
     status(rows.length
-  ? rows.length + " approved Testnet project" +
-    (rows.length === 1 ? "" : "s") +
-    " loaded. Global minimum floor: 100 Pi. Each project has its own target."
-  : "No approved Testnet projects were returned.");    return rows;
+      ? rows.length + " approved Testnet project" +
+        (rows.length === 1 ? "" : "s") +
+        " loaded. Global minimum floor: 100 Pi. Each project has its own target."
+      : "No approved Testnet projects were returned.");
+    return rows;
   }
 
   async function initializeProject(projectId){
@@ -176,53 +197,49 @@
     if(wallet===null) return;
     wallet=clean(wallet);
     if(!wallet) throw new Error("TREASURY_WALLET_REQUIRED");
-    var required=window.prompt("Required Testnet liquidity (minimum 100 Pi)", String(Math.max(100,Number(row.required||100))));
+    var required=window.prompt("Project Testnet liquidity target in Pi (global minimum floor: 100 Pi; no fixed upper cap)", String(Math.max(100,Number(row.required||100))));
     if(required===null) return;
     await window.AlbukhrTestnetLiquidity.initialize(projectId,wallet,required);
     await load();
   }
 
   async function updateProjectTarget(projectId) {
-  var row = rows.find(function(item) {
-    return String(item.project && item.project.id) ===
-      String(projectId);
-  });
+    var row = rows.find(function(item) {
+      return String(item.project && item.project.id) === String(projectId);
+    });
 
-  if (!row) throw new Error("PROJECT_NOT_FOUND");
-  if (!row.treasury) throw new Error("TREASURY_NOT_CONFIGURED");
+    if (!row) throw new Error("PROJECT_NOT_FOUND");
+    if (!row.treasury) throw new Error("TREASURY_NOT_CONFIGURED");
 
-  var floor = Number(
-    window.AlbukhrTestnetLiquidity.MIN_REQUIRED_LIQUIDITY || 100
-  );
+    var floor = Number(
+      window.AlbukhrTestnetLiquidity.MIN_REQUIRED_LIQUIDITY || 100
+    );
+    var verified = Number(row.verified || 0);
+    var current = Math.max(floor, Number(row.required || floor));
 
-  var verified = Number(row.verified || 0);
-  var current = Math.max(floor, Number(row.required || floor));
+    var raw = window.prompt(
+      "Set this project's Testnet liquidity target in Pi. " +
+      "Global minimum: " + floor + " Pi. No fixed upper cap.",
+      String(current)
+    );
 
-  var raw = window.prompt(
-    "Set this project's Testnet liquidity target in Pi. " +
-    "Global minimum: " + floor + " Pi. No fixed upper cap.",
-    String(current)
-  );
+    if (raw === null) return;
 
-  if (raw === null) return;
+    var target = Number(String(raw).trim());
+    if (!Number.isFinite(target) || target < floor) {
+      throw new Error("PROJECT_LIQUIDITY_TARGET_BELOW_GLOBAL_MINIMUM");
+    }
+    if (target < verified) {
+      throw new Error("PROJECT_TARGET_BELOW_VERIFIED_LIQUIDITY");
+    }
 
-  var target = Number(String(raw).trim());
+    await window.AlbukhrTestnetLiquidity.initialize(
+      projectId,
+      row.treasury.treasury_wallet,
+      target
+    );
 
-  if (!Number.isFinite(target) || target < floor) {
-    throw new Error("PROJECT_LIQUIDITY_TARGET_BELOW_GLOBAL_MINIMUM");
-  }
-
-  if (target < verified) {
-    throw new Error("PROJECT_TARGET_BELOW_VERIFIED_LIQUIDITY");
-  }
-
-  await window.AlbukhrTestnetLiquidity.initialize(
-    projectId,
-    row.treasury.treasury_wallet,
-    target
-  );
-
-  await load();
+    await load();
   }
 
   async function fundProject(projectId){
@@ -252,6 +269,7 @@
     button.disabled=true;
     try{
       if(mode==="initialize") await initializeProject(id);
+      else if(mode==="target") await updateProjectTarget(id);
       else if(mode==="fund") await fundProject(id);
       else { await window.AlbukhrTestnetLiquidity.recompute(id); await load(); }
     }catch(error){
