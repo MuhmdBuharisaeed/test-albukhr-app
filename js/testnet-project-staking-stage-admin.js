@@ -243,7 +243,7 @@ tr.appendChild(create("td", "", liquidityDisplay));
   }
 
   function init() {
-    var env = window.AlbukhrEnvironment;
+    var env = window.ALBukhrEnvironment;
     if (!env || typeof env.isTestnet !== "function" || !env.isTestnet()) return;
     loadProjects();
   }
