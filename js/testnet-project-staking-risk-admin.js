@@ -177,6 +177,11 @@
     })[clean(value)] || "Not assigned";
   }
 
+    function isPendingReview(status) {
+    var value = clean(status).toLowerCase();
+    return value === "pending" || value === "pending_review";
+    }
+
   function canProvision(project, result) {
     var policy = result && result.policy;
     return Boolean(
