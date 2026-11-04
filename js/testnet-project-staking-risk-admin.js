@@ -630,29 +630,42 @@
     return card;
   }
 
-  async function perform(project, action, decision) {
+    async function perform(project, action, decision, enablement) {
     busy = true;
 
     setStatus(
-      action === "provision"
+            action === "provision"
         ? "Provisioning pending controls for " + project.project_code + "…"
-        : "Submitting " + decision + " review for " + project.project_code + "…",
+        : action === "enablement"
+          ? (enablement && enablement.enabled
+            ? "Enabling project-level staking for " + project.project_code + "…"
+            : "Disabling project-level staking for " + project.project_code + "…")
+          : "Submitting " + decision + " review for " + project.project_code + "…",
       false
     );
 
     try {
-      if (action === "provision") {
+            if (action === "provision") {
         await api("/admin/policy/provision", {
           projectId: project.id,
           projectCode: project.project_code
         });
+
+      } else if (action === "enablement") {
+        await api("/admin/policy/enablement", {
+          projectId: project.id,
+          projectCode: project.project_code,
+          enabled: enablement && enablement.enabled === true,
+          reason: enablement && enablement.reason
+        });
+
       } else {
         await api("/admin/policy/review", {
           projectId: project.id,
           projectCode: project.project_code,
           decision: decision
         });
-      }
+            }
 
       setStatus(
         "The " + action + " request completed for " +
