@@ -548,6 +548,63 @@
       });
     }
 
+        if (policy && status === "approved") {
+      var currentlyEnabled = policy.staking_enabled === true;
+
+      var enablementButton = create(
+        "button",
+        currentlyEnabled ? "danger" : "",
+        currentlyEnabled
+          ? "Disable project staking"
+          : "Enable project staking"
+      );
+
+      enablementButton.type = "button";
+
+      enablementButton.addEventListener("click", async function () {
+        if (busy) return;
+
+        var desiredEnabled = !currentlyEnabled;
+
+        var reason = window.prompt(
+          "Enter the reason for " +
+          (desiredEnabled ? "enabling" : "disabling") +
+          " project staking for " +
+          clean(project.project_code) +
+          " (10–500 characters):"
+        );
+
+        if (reason === null) return;
+
+        reason = clean(reason);
+
+        if (reason.length < 10 || reason.length > 500) {
+          setStatus(
+            "Enter a reason between 10 and 500 characters.",
+            true
+          );
+          return;
+        }
+
+        var warning = desiredEnabled
+          ? "Enable the project-level staking flag for " +
+            clean(project.project_code) +
+            "? Global Testnet staking remains a separate control."
+          : "Disable new project staking for " +
+            clean(project.project_code) +
+            "? Existing stakes and withdrawal rights will not be changed.";
+
+        if (!window.confirm(warning)) return;
+
+        await perform(project, "enablement", null, {
+          enabled: desiredEnabled,
+          reason: reason
+        });
+      });
+
+      actions.appendChild(enablementButton);
+        }
+
     if (actions.children.length) {
       card.appendChild(actions);
     }
