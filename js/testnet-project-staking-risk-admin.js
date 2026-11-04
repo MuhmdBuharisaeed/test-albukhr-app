@@ -611,11 +611,18 @@
 
     if (policy) {
       /* FIX 5: The review message uses the same normalized status test. */
+            var globalActive =
+        result && result.global_staking_policy_active === true;
+
       var message = status === "approved"
-        ? "Risk controls are approved. Project staking is still disabled until the separate staking enablement process is completed; global Testnet staking remains paused."
+        ? policy.staking_enabled === true
+          ? (globalActive
+            ? "Project-level staking is enabled. Existing global, liquidity, treasury, reward-reserve and coverage checks still apply."
+            : "Project-level staking is enabled, but global Testnet staking remains paused. Investors cannot create stakes until ALBUKHR separately activates the global policy.")
+          : "Risk controls are approved. A Super Admin must separately enable this project's staking flag. Global Testnet staking activation is a different control."
         : isPendingReview(status)
           ? "These controls are pending Super Admin review. Review the displayed values before making a decision."
-          : "This policy is not pending review. No review action is available from this panel.";
+          : "This policy is not approved for project staking enablement.";
 
       card.appendChild(create("p", "risk-warning", message));
     }
