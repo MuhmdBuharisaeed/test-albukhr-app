@@ -100,11 +100,12 @@
   async function api(path, payload) {
     environment();
 
-    var allowedPaths = [
+        var allowedPaths = [
       "/admin/project-stages",
       "/admin/policy",
       "/admin/policy/provision",
-      "/admin/policy/review"
+      "/admin/policy/review",
+      "/admin/policy/enablement"
     ];
 
     if (allowedPaths.indexOf(path) === -1) {
