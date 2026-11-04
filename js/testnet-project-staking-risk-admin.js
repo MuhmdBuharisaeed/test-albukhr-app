@@ -772,7 +772,7 @@
         " approved Testnet projects. " +
         missing + " need risk-control provisioning; " +
         pending +
-        " have controls pending review. This panel never enables staking.",
+                " have controls pending review. Project-level enablement does not override global Testnet activation.",
         false
       );
 
