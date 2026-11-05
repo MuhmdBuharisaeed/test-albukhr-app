@@ -367,9 +367,8 @@
 
     return Boolean(
       result &&
-      result.can_provision === true &&
+            result.can_provision === true &&
       !policy &&
-      clean(project.staking_stage) &&
       clean(project.treasury_status).toLowerCase() === "active" &&
       Number(project.required_liquidity) > 0
     );
