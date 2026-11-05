@@ -1,6 +1,6 @@
 'use strict';
 
-// Static source-contract smoke test. Run from the Testnet app repository root.
+// Static source-contract test. Run from the Testnet app repository root.
 // It reads source only; it makes no network calls and performs no writes.
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
@@ -16,13 +16,17 @@ assert.match(stakingSource, /request\("offer-settings"/);
 assert.match(stakingSource, /policyPayload\.can_configure !== true/);
 assert.match(stakingSource, /staking_policy_active/);
 assert.match(stakingSource, /not_provisioned/);
-assert.match(html, /js\/testnet-owner-staking\.js\?v=20261103-staking-v2/);
+assert.doesNotMatch(stakingSource, /Current staking stage/);
+assert.doesNotMatch(stakingSource, /must assign a staking stage/);
+assert.match(stakingSource, /universal Testnet risk controls/);
+assert.match(html, /js\/testnet-owner-staking\.js\?v=20261104-universal-risk-v1/);
 
 console.log(JSON.stringify({
-  structural_checks: 8,
+  structural_checks: 11,
   project_render_event: true,
   owner_offers_endpoint: true,
   owner_save_endpoint: true,
+  stage_removed_from_owner_requirements: true,
   deployment_cache_bust: true,
   network_calls: false,
   result: 'PASS'
