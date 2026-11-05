@@ -104,8 +104,7 @@
     if (!preview.target_met) notes.push("New staking remains blocked until verified liquidity reaches this project's full configured target.");
     if (!policy.staking_policy_active) notes.push("Global Testnet staking is currently paused by ALBUKHR. You may configure offers, but investors cannot stake.");
         if (policy.approval_status === "not_provisioned") {
-      notes.push("ALBUKHR Admin must assign a staking stage and provision this project's risk controls before you can configure offers.");
-    } else if (policy.approval_status && policy.approval_status !== "approved") {
+      notes.push("ALBUKHR Super Admin must provision and approve this project's universal Testnet risk controls before you can configure offers.");    } else if (policy.approval_status && policy.approval_status !== "approved") {
       notes.push("Project risk controls are awaiting Super Admin review.");
         }
     if (policy.approval_status === "approved" && !policy.staking_enabled) notes.push("Project risk controls are approved but project staking has not been enabled.");
