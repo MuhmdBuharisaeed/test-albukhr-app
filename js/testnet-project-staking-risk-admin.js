@@ -707,7 +707,7 @@
 
       requireSuperAdmin(session);
 
-      var response = await api("/admin/project-stages", {});
+      var response = await api("/admin/risk-projects", {});
       projects = Array.isArray(response.projects) ? response.projects : [];
       policies = Object.create(null);
 
