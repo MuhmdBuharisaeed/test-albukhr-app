@@ -87,7 +87,7 @@
     if (!roles.some(function (role) {
       return clean(role).toLowerCase() === "super_admin";
     })) {
-      throw new Error("TESTNET_STAKING_STAGE_SUPER_ADMIN_REQUIRED");
+      throw new Error("STAKING_POLICY_SUPER_ADMIN_REQUIRED");
     }
   }
 
