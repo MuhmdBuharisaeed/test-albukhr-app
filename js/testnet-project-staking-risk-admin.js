@@ -410,7 +410,11 @@
 
     var grid = create("div", "risk-grid");
 
-    field(grid, "Business stage", stageLabel(project.staking_stage));
+    field(
+  grid,
+  "Universal Testnet risk profile",
+  "50% reserve / 25% deployment / 100 PI maximum active principal"
+);
     field(
       grid,
       "Treasury status",
