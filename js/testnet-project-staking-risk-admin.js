@@ -100,13 +100,13 @@
   async function api(path, payload) {
     environment();
 
-        var allowedPaths = [
-      "/admin/project-stages",
-      "/admin/policy",
-      "/admin/policy/provision",
-      "/admin/policy/review",
-      "/admin/policy/enablement"
-    ];
+      var allowedPaths = [
+  "/admin/risk-projects",
+  "/admin/policy",
+  "/admin/policy/provision",
+  "/admin/policy/review",
+  "/admin/policy/enablement"
+];
 
     if (allowedPaths.indexOf(path) === -1) {
       throw new Error("TESTNET_RISK_ADMIN_API_PATH_NOT_ALLOWED");
