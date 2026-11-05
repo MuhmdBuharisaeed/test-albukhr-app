@@ -475,7 +475,7 @@
         var ok = window.confirm(
           "Create a PENDING Testnet risk-control record for " +
           clean(project.project_code) +
-          " using the current approved stage policy? This does not approve the controls or enable staking."
+        " using the universal Testnet risk policy (50% reserve, 25% deployment, 100 PI cap)? This creates pending controls only and does not enable staking."
         );
 
         if (!ok) return;
