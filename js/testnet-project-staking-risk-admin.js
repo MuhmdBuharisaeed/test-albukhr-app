@@ -362,14 +362,6 @@
     grid.appendChild(box);
   }
 
-  function stageLabel(value) {
-    return ({
-      setup_pre_operation: "Setup / Pre-operation",
-      construction_fit_out: "Construction / Fit-out",
-      operating_expansion: "Operating / Expansion"
-    })[clean(value)] || "Not assigned";
-  }
-
   function canProvision(project, result) {
     var policy = result && result.policy;
 
