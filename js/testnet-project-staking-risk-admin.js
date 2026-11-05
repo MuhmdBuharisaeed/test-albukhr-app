@@ -484,15 +484,7 @@
 
       actions.appendChild(provision);
 
-      if (!project.staking_stage) {
-        card.appendChild(
-          create(
-            "p",
-            "risk-warning",
-            "Assign the correct business lifecycle stage in the Stage Manager before provisioning."
-          )
-        );
-      } else if (
+            if (
         clean(project.treasury_status).toLowerCase() !== "active" ||
         !(Number(project.required_liquidity) > 0)
       ) {
