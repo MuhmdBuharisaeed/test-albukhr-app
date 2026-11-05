@@ -94,8 +94,7 @@
     appendLine(node, "Project operating balance: " + pi(coverage.project_operating_balance));
     appendLine(node, "Reward reserve balance: " + pi(coverage.reward_reserve_balance));
     appendLine(node, "Outstanding principal and reward liability: " + pi(coverage.total_liability));
-    appendLine(node, "Current staking stage: " + (clean(preview.staking_stage) || "Not assigned"));
-
+    
     var note = document.createElement("p");
     note.className = "owner-staking-policy-note";
     var notes = [];
