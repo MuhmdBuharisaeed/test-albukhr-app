@@ -308,7 +308,7 @@
       create(
         "p",
         "risk-note",
-        "Review the stage and treasury first. Provisioning creates pending controls only. A separate Super Admin decision is required; approval does not enable staking."
+      "Testnet uses one universal Testnet risk profile for every Mainnet-approved project. Provisioning creates pending controls only. A separate Super Admin decision is required; approval does not enable staking."
       )
     );
 
