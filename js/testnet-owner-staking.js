@@ -1,6 +1,7 @@
-/* ALBUKHR TESTNET OWNER STAKING OFFERS v2
+/* ALBUKHR TESTNET OWNER STAKING OFFERS v3
  * Project owners configure duration-specific reward rates within ALBUKHR caps.
  * The preview is informational; PostgreSQL remains the final financial gate.
+ * The policy and offer forms stay collapsed until the owner opens them.
  */
 (function (window, document) {
   "use strict";
@@ -9,8 +10,11 @@
   var NETWORK = "testnet";
   var currentProject = null;
   var policyPayload = null;
+  var loadedProjectId = "";
   var busy = false;
   var rootId = "albukhrOwnerStakingPanel";
+  var detailsId = "ownerStakingDetails";
+  var toggleId = "toggleOwnerStakingBtn";
 
   function clean(v) { return String(v == null ? "" : v).trim(); }
   function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
@@ -55,14 +59,37 @@
     panel.className = "panel owner-staking-panel";
     panel.setAttribute("aria-labelledby", "ownerStakingHeading");
     panel.innerHTML =
-      '<div class="section-head"><div><div class="section-kicker">STAKING POLICY</div><h2 id="ownerStakingHeading">Staking offers</h2></div><span class="owner-staking-badge">TESTNET</span></div>' +
-      '<p class="owner-staking-intro">Choose from ALBUKHR-approved durations and set the reward rate your project can support. Each rate is checked against the limit for that exact duration. Existing stakes keep their original terms.</p>' +
-      '<div id="ownerStakingSummary" class="owner-staking-summary" aria-live="polite">Loading policy and reserve status…</div>' +
-      '<div id="ownerStakingRows" class="owner-staking-rows"></div>' +
-      '<p id="ownerStakingStatus" class="owner-staking-status" aria-live="polite"></p>';
+      '<div class="section-head">' +
+        '<div><div class="section-kicker">STAKING POLICY</div><h2 id="ownerStakingHeading">Staking offers</h2></div>' +
+        '<span class="owner-staking-badge">TESTNET</span>' +
+      '</div>' +
+      '<p class="owner-staking-intro">Manage the reward rates your project offers for ALBUKHR-approved staking durations. Existing stakes keep their original terms.</p>' +
+      '<button id="' + toggleId + '" class="button secondary owner-staking-toggle" type="button" aria-expanded="false" aria-controls="' + detailsId + '">Manage Staking Offers</button>' +
+      '<div id="' + detailsId + '" hidden>' +
+        '<p class="owner-staking-intro">Choose from ALBUKHR-approved durations and set the reward rate your project can support. Each rate is checked against the limit for that exact duration.</p>' +
+        '<div id="ownerStakingSummary" class="owner-staking-summary" aria-live="polite">Policy details will load when you open this section.</div>' +
+        '<div id="ownerStakingRows" class="owner-staking-rows"></div>' +
+        '<p id="ownerStakingStatus" class="owner-staking-status" aria-live="polite"></p>' +
+      '</div>';
+
     var main = document.querySelector("main.owner-shell") || document.querySelector("main");
     var before = main && main.querySelector(".notice");
     if (main) main.insertBefore(panel, before || null);
+
+    var toggle = el(toggleId);
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        var details = el(detailsId);
+        if (!details) return;
+        var willOpen = details.hidden;
+        details.hidden = !willOpen;
+        toggle.setAttribute("aria-expanded", String(willOpen));
+        toggle.textContent = willOpen ? "Close Staking Offers" : "Manage Staking Offers";
+        if (willOpen && currentProject && loadedProjectId !== clean(currentProject.id)) {
+          refresh();
+        }
+      });
+    }
     return panel;
   }
 
@@ -94,7 +121,7 @@
     appendLine(node, "Project operating balance: " + pi(coverage.project_operating_balance));
     appendLine(node, "Reward reserve balance: " + pi(coverage.reward_reserve_balance));
     appendLine(node, "Outstanding principal and reward liability: " + pi(coverage.total_liability));
-    
+
     var note = document.createElement("p");
     note.className = "owner-staking-policy-note";
     var notes = [];
@@ -103,10 +130,11 @@
     if (!payload.can_configure) notes.push("Offer changes are locked because the project or ALBUKHR policy is not currently eligible for configuration.");
     if (!preview.target_met) notes.push("New staking remains blocked until verified liquidity reaches this project's full configured target.");
     if (!policy.staking_policy_active) notes.push("Global Testnet staking is currently paused by ALBUKHR. You may configure offers, but investors cannot stake.");
-        if (policy.approval_status === "not_provisioned") {
-      notes.push("ALBUKHR Super Admin must provision and approve this project's universal Testnet risk controls before you can configure offers.");    } else if (policy.approval_status && policy.approval_status !== "approved") {
+    if (policy.approval_status === "not_provisioned") {
+      notes.push("ALBUKHR Super Admin must provision and approve this project's universal Testnet risk controls before you can configure offers.");
+    } else if (policy.approval_status && policy.approval_status !== "approved") {
       notes.push("Project risk controls are awaiting Super Admin review.");
-        }
+    }
     if (policy.approval_status === "approved" && !policy.staking_enabled) notes.push("Project risk controls are approved but project staking has not been enabled.");
     note.textContent = notes.join(" ");
     node.appendChild(note);
@@ -229,6 +257,7 @@
         projectCode: clean(currentProject.project_code)
       });
       policyPayload = payload;
+      loadedProjectId = clean(currentProject.id);
       renderSummary(payload);
       renderOffers(payload);
       setStatus(payload.can_configure
@@ -236,6 +265,7 @@
         : "Offer configuration is locked until the project's configuration requirements are met.");
     } catch (error) {
       policyPayload = null;
+      loadedProjectId = "";
       var summary = el("ownerStakingSummary");
       if (summary) summary.textContent = "Unable to verify the owner session, staking policy, or liquidity coverage.";
       var rows = el("ownerStakingRows");
@@ -288,8 +318,14 @@
     var detail = event && event.detail ? event.detail : {};
     var nextProject = detail.project;
     if (!nextProject || !clean(nextProject.id) || !clean(nextProject.project_code)) return;
+    var nextId = clean(nextProject.id);
+    if (currentProject && clean(currentProject.id) !== nextId) {
+      policyPayload = null;
+      loadedProjectId = "";
+    }
     currentProject = nextProject;
     ensurePanel();
-    refresh();
+    var details = el(detailsId);
+    if (details && !details.hidden && loadedProjectId !== nextId) refresh();
   });
 })(window, document);
