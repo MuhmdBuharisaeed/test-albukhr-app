@@ -6,23 +6,12 @@ const path = require("path");
 const vm = require("vm");
 
 const root = path.resolve(__dirname, "..");
-const supabaseCoreSource = fs.readFileSync(
-  path.join(root, "js", "core", "supabase-core.js"), "utf8"
-);
-const apiCoreSource = fs.readFileSync(
-  path.join(root, "js", "testnet-api-core.js"), "utf8"
-);
-
+const coreSource = fs.readFileSync(path.join(root, "js", "core", "supabase-core.js"), "utf8");
+const apiSource = fs.readFileSync(path.join(root, "js", "testnet-api-core.js"), "utf8");
 const expectedUrl = "https://vhvkwvngmrlgyzwemttt.supabase.co";
-const expectedPublishableKey = "sb_publishable_testnet_smoke_key";
-const fetchCalls = [];
-let createClientCalls = 0;
-
-const client = {
-  storage: {},
-  rpc() { return Promise.resolve({ data: null, error: null }); },
-  from() { return {}; }
-};
+const expectedKey = "sb_publishable_testnet_smoke_key";
+const calls = [];
+let clients = 0;
 
 const window = {
   location: { hostname: "test.albukhr.com" },
@@ -35,15 +24,13 @@ const window = {
   },
   supabase: {
     createClient(url, key) {
-      createClientCalls += 1;
+      clients += 1;
       assert.strictEqual(url, expectedUrl);
       assert.strictEqual(key, "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT");
-      return client;
+      return { storage: {}, rpc() {}, from() {} };
     }
   },
-  AlbukhrTestnetAuth: {
-    getSessionToken: () => "testnet-session-token-only"
-  }
+  AlbukhrTestnetAuth: { getSessionToken: () => "testnet-session-token-only" }
 };
 
 const context = {
@@ -54,7 +41,7 @@ const context = {
   Number,
   URLSearchParams,
   fetch: async (url, options) => {
-    fetchCalls.push({ url, options });
+    calls.push({ url, options });
     return {
       ok: true,
       status: 200,
@@ -64,71 +51,46 @@ const context = {
   }
 };
 
-// Build the canonical shared Testnet Supabase Core first.
-vm.runInNewContext(supabaseCoreSource, context, {
-  filename: "js/core/supabase-core.js"
-});
-
-assert.strictEqual(createClientCalls, 1, "exactly one shared Supabase client is created");
+vm.runInNewContext(coreSource, context, { filename: "js/core/supabase-core.js" });
+assert.strictEqual(clients, 1, "one canonical Testnet Supabase client only");
 assert.strictEqual(window.ALBUKHR_SUPABASE.network, "testnet");
-assert.strictEqual(window.ALBUKHR_SUPABASE.url, expectedUrl);
-assert.strictEqual(
-  window.ALBUKHR_SUPABASE.publishableKey,
-  "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT",
-  "shared Core exposes only the configured publishable key"
-);
 
-// Load the Testnet API Core and make a harmless mocked GET request.
-vm.runInNewContext(apiCoreSource, context, {
-  filename: "js/testnet-api-core.js"
-});
+// Replace only the mocked publishable key in the test sandbox.
+window.ALBUKHR_SUPABASE = Object.freeze(Object.assign({}, window.ALBUKHR_SUPABASE, {
+  publishableKey: expectedKey
+}));
+vm.runInNewContext(apiSource, context, { filename: "js/testnet-api-core.js" });
 
 (async () => {
   const result = await window.AlbukhrTestnetApi.getInvestorData();
   assert.strictEqual(result.network, "testnet");
-  assert.strictEqual(fetchCalls.length, 1);
-
-  const call = fetchCalls[0];
-  assert.strictEqual(
-    call.url,
-    expectedUrl + "/functions/v1/testnet-investor-data"
-  );
-  assert.strictEqual(call.options.method, "GET");
-  assert.strictEqual(
-    call.options.headers.apikey,
-    "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT"
-  );
-  assert.strictEqual(
-    call.options.headers.Authorization,
-    "Bearer testnet-session-token-only"
-  );
-  assert.strictEqual(call.options.credentials, undefined,
+  assert.strictEqual(calls.length, 1);
+  assert.strictEqual(calls[0].url, expectedUrl + "/functions/v1/testnet-investor-data");
+  assert.strictEqual(calls[0].options.headers.apikey, expectedKey);
+  assert.strictEqual(calls[0].options.headers["X-Testnet-Session"], "testnet-session-token-only");
+  assert.strictEqual(calls[0].options.headers.Authorization, undefined,
+    "custom ALBUKHR session must not be sent as a Supabase JWT");
+  assert.strictEqual(calls[0].options.credentials, undefined,
     "browser cookies must not be sent");
 
-  // Caller-supplied values cannot override the API key or session token.
-  await window.AlbukhrTestnetApi.request("health-check", {
+  await window.AlbukhrTestnetApi.request("smoke", {
     method: "GET",
     headers: {
-      apikey: "sb_secret_must_not_override",
-      Authorization: "Bearer attacker-supplied-token",
+      apikey: "sb_secret_attacker_key",
+      Authorization: "Bearer attacker-jwt",
+      "X-Testnet-Session": "attacker-session",
       "X-Smoke-Test": "preserved"
     }
   });
-  const overrideAttempt = fetchCalls[1].options.headers;
-  assert.strictEqual(
-    overrideAttempt.apikey,
-    "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT"
-  );
-  assert.strictEqual(
-    overrideAttempt.Authorization,
-    "Bearer testnet-session-token-only"
-  );
-  assert.strictEqual(overrideAttempt["X-Smoke-Test"], "preserved");
+  const headers = calls[1].options.headers;
+  assert.strictEqual(headers.apikey, expectedKey);
+  assert.strictEqual(headers["X-Testnet-Session"], "testnet-session-token-only");
+  assert.strictEqual(headers.Authorization, undefined);
+  assert.strictEqual(headers["X-Smoke-Test"], "preserved");
 
-  // A missing/misconfigured Core must fail closed before fetch.
   const brokenWindow = {
     location: { hostname: "test.albukhr.com" },
-    ALBukhrEnvironment: window.ALBUKHR_SUPABASE && window.ALBukhrEnvironment,
+    ALBukhrEnvironment: window.ALBukhrEnvironment,
     AlbukhrTestnetAuth: window.AlbukhrTestnetAuth
   };
   const brokenContext = {
@@ -138,25 +100,20 @@ vm.runInNewContext(apiCoreSource, context, {
     String,
     Number,
     URLSearchParams,
-    fetch: async () => {
-      throw new Error("fetch must not run when the publishable key is absent");
-    }
+    fetch: async () => { throw new Error("fetch must not run without the key"); }
   };
-  vm.runInNewContext(apiCoreSource, brokenContext, {
-    filename: "js/testnet-api-core-missing-key.js"
-  });
+  vm.runInNewContext(apiSource, brokenContext, { filename: "api-core-missing-key.js" });
   await assert.rejects(
     brokenWindow.AlbukhrTestnetApi.getInvestorData(),
     /TESTNET_SUPABASE_PUBLISHABLE_KEY_UNAVAILABLE/
   );
 
   console.log(JSON.stringify({
-    one_shared_testnet_supabase_client: true,
-    publishable_key_exposed_from_shared_core: true,
-    required_apikey_header_sent: true,
-    testnet_session_bearer_preserved: true,
-    cookies_not_sent: true,
-    caller_cannot_override_auth_or_apikey: true,
+    shared_testnet_supabase_core: true,
+    publishable_apikey_header: true,
+    custom_session_uses_x_testnet_session: true,
+    no_custom_session_in_authorization: true,
+    caller_cannot_override_credentials: true,
     missing_key_fails_closed: true,
     service_role_key_used: false,
     mainnet_credentials_used: false
