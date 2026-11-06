@@ -1,5 +1,4 @@
-/* ALBUKHR TESTNET API CORE v6 */
-
+/* ALBUKHR TESTNET API CORE v7 — includes required Supabase apikey header */
 (function (window) {
   "use strict";
 
@@ -8,6 +7,7 @@
 
   var TESTNET_HOST = "test.albukhr.com";
   var TESTNET_NETWORK = "testnet";
+  var TESTNET_SUPABASE_URL = "https://vhvkwvngmrlgyzwemttt.supabase.co";
 
   var base = String(
     window.ALBukhrTestnetInvestorApiBase || DEFAULT_BASE
@@ -73,6 +73,26 @@
     return auth;
   }
 
+  /*
+   * Read the public key from the one canonical shared Supabase Core.
+   * Do not create a second Supabase client and never use service_role here.
+   */
+  function getSupabasePublishableKey() {
+    var core = window.ALBUKHR_SUPABASE;
+    var key = clean(core && core.publishableKey);
+
+    if (
+      !core ||
+      core.network !== TESTNET_NETWORK ||
+      core.url !== TESTNET_SUPABASE_URL ||
+      key.indexOf("sb_publishable_") !== 0
+    ) {
+      throw new Error("TESTNET_SUPABASE_PUBLISHABLE_KEY_UNAVAILABLE");
+    }
+
+    return key;
+  }
+
   function buildTarget(path) {
     var cleanPath = clean(path);
 
@@ -85,23 +105,30 @@
 
   function buildHeaders(options, token) {
     var headers = {
-      "Accept": "application/json",
-      "Authorization": "Bearer " + token
+      "Accept": "application/json"
     };
 
     if (
       options &&
-      options.body != null &&
-      !headers["Content-Type"]
+      options.body != null
     ) {
       headers["Content-Type"] = "application/json";
     }
 
+    /* Preserve harmless caller headers, but never allow auth/key override. */
     if (options && options.headers) {
       Object.keys(options.headers).forEach(function (key) {
+        var normalized = clean(key).toLowerCase();
+        if (normalized === "authorization" || normalized === "apikey") {
+          return;
+        }
         headers[key] = options.headers[key];
       });
     }
+
+    /* These two credentials are always set from trusted Testnet sources. */
+    headers["Authorization"] = "Bearer " + token;
+    headers["apikey"] = getSupabasePublishableKey();
 
     return headers;
   }
@@ -176,7 +203,6 @@
     getEnvironment();
 
     var auth = getAuth();
-
     var token = clean(auth.getSessionToken());
 
     if (!token) {
@@ -186,9 +212,7 @@
     }
 
     var target = buildTarget(path);
-
     var method = clean(options.method || "GET").toUpperCase();
-
     var fetchOptions = {
       method: method,
       headers: buildHeaders(options, token)
@@ -198,27 +222,15 @@
       fetchOptions.body = options.body;
     }
 
-    /*
-     * Intentionally no:
-     *
-     * credentials: "include"
-     *
-     * Testnet API authentication is bearer-session based.
-     * No browser cookie is required or trusted here.
-     */
-
+    /* No browser cookies: Testnet API authentication is bearer-session based. */
     var response;
 
     try {
       response = await fetch(target, fetchOptions);
     } catch (networkError) {
-      var error = new Error(
-        "TESTNET_API_NETWORK_ERROR"
-      );
-
+      var error = new Error("TESTNET_API_NETWORK_ERROR");
       error.code = "TESTNET_API_NETWORK_ERROR";
       error.cause = networkError;
-
       throw error;
     }
 
