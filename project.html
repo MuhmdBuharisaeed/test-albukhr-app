@@ -147,7 +147,7 @@
               disabled
               aria-disabled="true">
         <span>Withdraw Rewards</span>
-        <small>Checking…</small>
+        <small>Locked — U2A tests pending</small>
       </button>
 
       <button id="withdrawCapitalBtn"
@@ -156,9 +156,13 @@
               disabled
               aria-disabled="true">
         <span>Withdraw Capital</span>
-        <small>Checking…</small>
+        <small>Locked — U2A tests pending</small>
       </button>
     </div>
+    <p class="withdrawal-testnet-lock-note" role="status">
+      Withdrawals remain locked until the controlled Testnet U2A fee-payment,
+      payout, and reconciliation tests are completed and approved.
+    </p>
   </section>
 
   <section class="panel" data-project-panel="history">
@@ -222,8 +226,8 @@
     <p id="infoDescription">
       Project information is loaded from the Testnet public project
       registry. Mainnet investment remains isolated. Testnet
-      withdrawals use the secure Testnet API and verified Testnet
-      session.
+      withdrawals use the Global Treasury fee assessment and verified
+      Testnet payment flow when the controlled testing stage is enabled.
     </p>
 
     <button id="infoOk"
@@ -241,8 +245,8 @@
 <script src="js/testnet-project.js?v=20260921-project3"></script>
 <script src="js/testnet-gateway-auth.js?v=20260921-project3"></script>
 <script src="js/testnet-api-core.js?v=20260921-project3"></script>
-<script src="js/testnet-withdrawal-api.js?v=20260921-withdraw3"></script>
-<script src="js/testnet-withdrawal.js?v=20260921-withdraw3"></script>
+<script src="js/testnet-global-treasury-payment-client.js?v=20261106-tiered-fee1"></script>
+<script src="js/testnet-withdrawal.js?v=20261106-tiered-fee1"></script>
 <script src="js/testnet-staking-payment-client.js?v=20261026-staking1"></script>
 <script src="js/testnet-staking.js?v=20261026-staking1"></script>
 
