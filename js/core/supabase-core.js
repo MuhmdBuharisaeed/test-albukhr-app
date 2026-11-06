@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET SUPABASE CORE v5 */
+/* ALBUKHR TESTNET SUPABASE CORE v6 */
 (function (window) {
   "use strict";
 
@@ -19,19 +19,12 @@
    * - read/write Mainnet data.
    */
 
-  /*
-   * Prevent duplicate initialization.
-   *
-   * The first successfully initialized client remains the shared
-   * ALBUKHR Supabase client for the current page.
-   */
+  /* Prevent duplicate initialization. */
   if (window.ALBUKHR_SUPABASE) {
     return;
   }
 
-  /*
-   * Environment Core must already be loaded.
-   */
+  /* Environment Core must already be loaded. */
   var env = window.ALBukhrEnvironment;
 
   if (
@@ -46,11 +39,7 @@
     return;
   }
 
-  /*
-   * Testnet-only environment validation.
-   *
-   * There is deliberately no Mainnet fallback here.
-   */
+  /* Testnet-only environment validation; no Mainnet fallback. */
   if (
     !env.isKnown() ||
     !env.isTestnet() ||
@@ -62,38 +51,19 @@
     return;
   }
 
-  /*
-   * Resolve the Testnet Supabase URL from Environment Core.
-   */
+  /* Resolve and pin the canonical Testnet Supabase URL. */
   var supabaseUrl = env.getSupabaseUrl();
-
-  if (!supabaseUrl) {
-    console.error(
-      "[ALBUKHR TESTNET] Testnet Supabase URL is unavailable."
-    );
-    return;
-  }
-
-  /*
-   * The browser must never initialize the Testnet client unless
-   * the configured URL is the canonical Testnet Supabase project.
-   *
-   * This is an additional frontend guard against accidental
-   * configuration drift.
-   */
   var expectedSupabaseUrl =
     "https://vhvkwvngmrlgyzwemttt.supabase.co";
 
-  if (supabaseUrl !== expectedSupabaseUrl) {
+  if (!supabaseUrl || supabaseUrl !== expectedSupabaseUrl) {
     console.error(
       "[ALBUKHR TESTNET] Supabase URL does not match the Testnet project."
     );
     return;
   }
 
-  /*
-   * Validate the Supabase browser SDK.
-   */
+  /* Validate the Supabase browser SDK. */
   if (
     !window.supabase ||
     typeof window.supabase.createClient !== "function"
@@ -105,18 +75,14 @@
   }
 
   /*
-   * ALBUKHR Testnet publishable key.
-   *
-   * This is intentionally a publishable browser key.
-   * Database protection must be enforced through Supabase RLS,
-   * database permissions, and server-side functions.
+   * ALBUKHR Testnet publishable browser key.
+   * This key is public by design. It is NOT a service-role key.
+   * RLS, database grants and server-side authorization remain mandatory.
    */
   var SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_5YNtKXSpO1xvPXbpLTo2Nw_mrxDp1qT";
 
-  /*
-   * Create the single shared Testnet client.
-   */
+  /* Create the single shared Testnet client. */
   var client;
 
   try {
@@ -141,16 +107,15 @@
 
   /*
    * Shared ALBUKHR Testnet Core.
-   *
-   * All Testnet application modules should use this object rather
-   * than creating independent Supabase clients.
+   * publishableKey is intentionally exposed so direct Edge Function
+   * requests can send Supabase's required `apikey` header. It is a
+   * publishable browser key, never a service-role secret.
    */
   var core = {
     client: client,
-
     network: "testnet",
-
     url: supabaseUrl,
+    publishableKey: SUPABASE_PUBLISHABLE_KEY,
 
     rpc: function (name, args) {
       return client.rpc(name, args);
@@ -163,30 +128,16 @@
     storage: client.storage
   };
 
-  /*
-   * Freeze the public Core object.
-   *
-   * The underlying Supabase client remains functional, while the
-   * Core interface itself cannot be replaced or mutated by normal
-   * application scripts.
-   */
+  /* Freeze the public Core interface. */
   try {
     Object.freeze(core);
   } catch (_) {
-    /*
-     * Object.freeze() is defensive only and is not relied upon
-     * for database security.
-     */
+    /* Object.freeze is defensive, not a database security boundary. */
   }
 
-  /*
-   * Publish the canonical shared Testnet Supabase Core.
-   */
   window.ALBUKHR_SUPABASE = core;
 
-  /*
-   * Compatibility accessor used throughout ALBUKHR.
-   */
+  /* Compatibility accessor used throughout ALBUKHR. */
   window.getAlbukhrSupabaseClient = function () {
     return client;
   };
