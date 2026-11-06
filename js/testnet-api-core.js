@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET API CORE v7 — includes required Supabase apikey header */
+/* ALBUKHR TESTNET API CORE v8 — publishable key + X-Testnet-Session */
 (function (window) {
   "use strict";
 
@@ -75,7 +75,7 @@
 
   /*
    * Read the public key from the one canonical shared Supabase Core.
-   * Do not create a second Supabase client and never use service_role here.
+   * Never create a second client and never expose/use service_role here.
    */
   function getSupabasePublishableKey() {
     var core = window.ALBUKHR_SUPABASE;
@@ -108,27 +108,32 @@
       "Accept": "application/json"
     };
 
-    if (
-      options &&
-      options.body != null
-    ) {
+    if (options && options.body != null) {
       headers["Content-Type"] = "application/json";
     }
 
-    /* Preserve harmless caller headers, but never allow auth/key override. */
+    /* Caller-supplied values cannot replace trusted identity credentials. */
     if (options && options.headers) {
       Object.keys(options.headers).forEach(function (key) {
         var normalized = clean(key).toLowerCase();
-        if (normalized === "authorization" || normalized === "apikey") {
+        if (
+          normalized === "authorization" ||
+          normalized === "apikey" ||
+          normalized === "x-testnet-session"
+        ) {
           return;
         }
         headers[key] = options.headers[key];
       });
     }
 
-    /* These two credentials are always set from trusted Testnet sources. */
-    headers["Authorization"] = "Bearer " + token;
+    /*
+     * Supabase Edge Gateway receives the public key in apikey.
+     * ALBUKHR's custom session is NOT a Supabase JWT. Send it through
+     * X-Testnet-Session so the gateway does not try to parse it as JWT.
+     */
     headers["apikey"] = getSupabasePublishableKey();
+    headers["X-Testnet-Session"] = token;
 
     return headers;
   }
@@ -222,7 +227,7 @@
       fetchOptions.body = options.body;
     }
 
-    /* No browser cookies: Testnet API authentication is bearer-session based. */
+    /* No browser cookies: Testnet API auth uses the explicit session header. */
     var response;
 
     try {
