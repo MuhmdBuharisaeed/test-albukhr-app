@@ -1,0 +1,57 @@
+
+name: ALBUKHR Testnet Investor Financial Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'js/testnet-investor-financial-core.js'
+      - 'js/testnet-investor-financial-ui.js'
+      - 'js/testnet-investor.js'
+      - 'tests/testnet-investor-financial-*-smoke.js'
+      - '.github/workflows/testnet-investor-financial-tests.yml'
+
+  pull_request:
+    paths:
+      - 'js/testnet-investor-financial-core.js'
+      - 'js/testnet-investor-financial-ui.js'
+      - 'js/testnet-investor.js'
+      - 'tests/testnet-investor-financial-*-smoke.js'
+      - '.github/workflows/testnet-investor-financial-tests.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-investor-financial-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  financial-smoke-tests:
+    name: Financial core and UI smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/testnet-investor-financial-core.js
+          node --check js/testnet-investor-financial-ui.js
+          node --check js/testnet-investor.js
+
+      - name: Run financial core smoke tests
+        run: node tests/testnet-investor-financial-core-smoke.js
+
+      - name: Run financial UI smoke tests
+        run: node tests/testnet-investor-financial-ui-smoke.js
