@@ -1,0 +1,40 @@
+ALBUKHR Testnet Investor Financial Integrity Hardening v1
+Applied status
+This hardening was applied to the ALBUKHR Testnet Supabase project on 2026-11-07. The current SQL structure was verified after application. The SQL test used in CI is deliberately isolated to temporary tables and is not run against the live Supabase database.
+Do not re-run the original DDL patch against the already-patched Testnet database. The constraint names already exist there. The original DDL/audit bundle is retained in ALBUKHR_TESTNET_FINANCIAL_INTEGRITY_HARDENING_v1.zip from the conversation.
+Database invariants now enforced
+stakes.user_id + pi_uid + network must reference one matching users row.
+stakes.project_id + project_code + network must reference one matching projects row.
+withdrawal_requests.stake_id is NOT NULL.
+A withdrawal's user_id + pi_uid + network must reference one matching user.
+A withdrawal's project_id + project_code + network must reference one matching project.
+A withdrawal's stake_id + pi_uid + project_id + project_code + network must reference the exact parent stake.
+complete_testnet_withdrawal_and_ledger() performs explicit owner/project/network checks and uses an empty search_path.
+Added child-side indexes
+stakes_user_identity_idx
+stakes_project_network_idx
+withdrawal_requests_user_identity_idx
+withdrawal_requests_project_network_idx
+withdrawal_requests_stake_owner_project_idx
+The post-change Supabase Performance Advisor no longer reported these five new foreign keys as unindexed.
+Operational controls
+The settlement function remains SECURITY DEFINER and server-only: anon and authenticated cannot execute it; service_role can.
+Testnet treasury remains active while staking_policy_active remains false.
+Staking, withdrawals and Pi payments remain locked.
+No stake, withdrawal, payment or ledger transaction rows were created or edited by the hardening.
+Test boundaries
+The new GitHub Actions workflow runs:
+Financial Core smoke tests.
+Financial UI smoke tests.
+Static checks that the hardening and post-apply verification contract files contain the expected safeguards.
+A PostgreSQL 16 service test using temporary tables. It accepts a matching withdrawal relationship and rejects owner, project and Mainnet/Testnet mismatches, then rolls back.
+This CI suite does not connect to Supabase and does not claim to execute a real Pi payment or a production settlement. Those remain separate, controlled tests and must not be used to enable live transaction controls.
+Installed constraint identifiers
+users_id_pi_uid_network_key
+projects_id_code_network_key
+stakes_id_owner_project_network_key
+stakes_user_identity_fkey
+stakes_project_network_fkey
+withdrawal_requests_user_identity_fkey
+withdrawal_requests_project_network_fkey
+withdrawal_requests_stake_owner_project_fkey
