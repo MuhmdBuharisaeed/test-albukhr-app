@@ -71,17 +71,17 @@ jobs:
           set -euo pipefail
 
           required_files=(
-            "investor.html"
-            "js/testnet-investor-financial-core.js"
-            "js/testnet-investor-financial-ui.js"
-            "js/testnet-investor.js"
-            "tests/testnet-investor-financial-core-smoke.js"
-            "tests/testnet-investor-financial-ui-smoke.js"
-            "tests/testnet-investor-financial-integrity-contract-smoke.js"
-            "tests/sql/testnet-investor-composite-foreign-key-smoke.sql"
-            "docs/database/testnet-investor-financial-integrity-hardening-v1.md"
-            "docs/database/testnet-investor-financial-integrity-post-apply-verification.sql"
-          )
+  "investor.html"
+  "js/testnet-investor-financial-core.js"
+  "js/testnet-investor-financial-ui.js"
+  "js/testnet-investor.js"
+  "tests/testnet-investor-financial-core-smoke.js"
+  "tests/testnet-investor-financial-ui-smoke.js"
+  "tests/testnet-investor-financial-integrity-contract-smoke.js"
+  "tests/sql/testnet-investor-composite-foreign-key-smoke.sql"
+  "docs/database/ALBUKHR Testnet Investor Financial Integrity Hardening v1"
+  "docs/database/Read-only post-apply verification for ALBUKHR Testnet Investor Financial Integrity Hardening v1."
+)
 
           for file in "${required_files[@]}"; do
             if [ ! -f "$file" ]; then
