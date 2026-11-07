@@ -1,125 +1,120 @@
-/* ALBUKHR TESTNET INVESTOR FINANCIAL BREAKDOWN v1
-   Scoped to the Investor financial overview. Dock Navigation is untouched. */
-
-.financial-overview {
-  margin: 14px 16px 18px;
-  padding: 16px;
-  background: #fff;
-  border: 1px solid #e5ebe8;
-  border-radius: 22px;
-  box-shadow: 0 8px 22px rgba(0,0,0,.045);
+/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1
+ * Read-only portfolio breakdown and per-position pending amounts.
+ * Does not enable payment, staking, or withdrawal controls.
+ */
+.financial-breakdown{
+  margin:18px 20px 24px;
+  padding:18px;
+  border:1px solid var(--border-soft, #e5e9e7);
+  border-radius:22px;
+  background:var(--surface, #fff);
+  box-shadow:0 8px 24px rgba(20,45,30,.05);
 }
-
-.financial-overview-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 13px;
+.financial-breakdown-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
 }
-
-.financial-overview-header h2 {
-  margin: 0;
-  color: #17231d;
-  font-size: 16px;
-  font-weight: 850;
-  line-height: 1.25;
+.financial-breakdown-head h2{
+  margin:0;
+  color:var(--text-primary, #17251c);
+  font-size:18px;
+  font-weight:750;
 }
-
-.financial-overview-header p {
-  margin: 4px 0 0;
-  color: #77817b;
-  font-size: 10px;
-  line-height: 1.45;
+.financial-breakdown-head p{
+  margin:5px 0 0;
+  color:var(--text-muted, #718078);
+  font-size:12px;
 }
-
-.financial-readonly-badge {
-  flex: 0 0 auto;
-  padding: 5px 8px;
-  border: 1px solid #dce9e1;
-  border-radius: 999px;
-  background: #f0f8f3;
-  color: #32734e;
-  font-size: 8px;
-  font-weight: 850;
-  letter-spacing: .06em;
+.financial-status{
+  flex:0 0 auto;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#f1f3f2;
+  color:#53615a;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
 }
-
-.financial-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+.financial-status.is-reconciled{
+  background:#e9f6ee;
+  color:#176b3b;
 }
-
-.financial-metric {
-  min-width: 0;
-  padding: 11px;
-  border: 1px solid #edf1ef;
-  border-radius: 15px;
-  background: #f9fbfa;
+.financial-status.is-review{
+  background:#fff3df;
+  color:#8b5700;
 }
-
-.financial-metric-label {
-  display: block;
-  margin-bottom: 6px;
-  color: #69756e;
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1.3;
+.financial-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
 }
-
-.financial-metric-value {
-  display: block;
-  color: #17231d;
-  font-size: 15px;
-  font-weight: 850;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+.financial-item{
+  min-width:0;
+  padding:13px;
+  border:1px solid var(--border-soft, #e5e9e7);
+  border-radius:15px;
+  background:var(--surface-soft, #f8faf8);
 }
-
-.financial-metric-note {
-  display: block;
-  margin-top: 5px;
-  color: #87918b;
-  font-size: 9px;
-  line-height: 1.35;
+.financial-item span{
+  display:block;
+  min-height:30px;
+  color:var(--text-muted, #718078);
+  font-size:11px;
+  line-height:1.35;
 }
-
-.financial-overview-note {
-  margin: 11px 1px 0;
-  color: #77817b;
-  font-size: 10px;
-  line-height: 1.55;
+.financial-item strong{
+  display:block;
+  margin-top:7px;
+  color:var(--text-primary, #17251c);
+  font-size:15px;
+  font-weight:800;
+  overflow-wrap:anywhere;
 }
-
-.financial-warning {
-  margin-top: 10px;
-  padding: 10px 11px;
-  border: 1px solid #f0df9f;
-  border-radius: 12px;
-  background: #fff8df;
-  color: #725a12;
-  font-size: 10px;
-  line-height: 1.5;
+.financial-item.is-pending strong{color:#8b5700;}
+.financial-item.is-settled strong{color:#176b3b;}
+#financialReconciliationNote{
+  margin:13px 2px 0;
+  color:var(--text-muted, #718078);
+  font-size:11px;
+  line-height:1.5;
 }
-
-.financial-warning[hidden] {
-  display: none !important;
+.investment-values{
+  flex-wrap:wrap;
+  align-items:flex-start;
 }
-
-@media (max-width: 430px) {
-  .financial-overview {
-    margin: 12px;
-    padding: 13px;
-    border-radius: 19px;
-  }
-
-  .financial-metric {
-    padding: 10px;
-    border-radius: 13px;
-  }
-
-  .financial-metric-value {
-    font-size: 14px;
-  }
+.investment-values > div{min-width:90px;}
+.investment-pending-value span{color:var(--text-muted, #8a968f);}
+.investment-pending-value strong{color:#8b5700;}
+.investment-lock-state{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#f1f3f2;
+  color:#57645d;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+@media(max-width:900px){
+  .financial-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:600px){
+  .financial-breakdown{margin:14px 14px 20px;padding:14px;border-radius:19px;}
+  .financial-breakdown-head h2{font-size:16px;}
+  .financial-breakdown-head p{font-size:10px;}
+  .financial-grid{gap:8px;}
+  .financial-item{padding:11px;border-radius:13px;}
+  .financial-item span{font-size:10px;min-height:27px;}
+  .financial-item strong{font-size:13px;}
+}
+@media(max-width:360px){
+  .financial-breakdown{margin-left:10px;margin-right:10px;padding:12px;}
+  .financial-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
+  .financial-item strong{font-size:12px;}
 }
