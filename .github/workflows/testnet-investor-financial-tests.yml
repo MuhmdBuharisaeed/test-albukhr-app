@@ -6,18 +6,24 @@ on:
     branches:
       - main
     paths:
+      - 'investor.html'
       - 'js/testnet-investor-financial-core.js'
       - 'js/testnet-investor-financial-ui.js'
       - 'js/testnet-investor.js'
       - 'tests/testnet-investor-financial-*-smoke.js'
+      - 'tests/sql/testnet-investor-composite-foreign-key-smoke.sql'
+      - 'docs/database/**'
       - '.github/workflows/testnet-investor-financial-tests.yml'
 
   pull_request:
     paths:
+      - 'investor.html'
       - 'js/testnet-investor-financial-core.js'
       - 'js/testnet-investor-financial-ui.js'
       - 'js/testnet-investor.js'
       - 'tests/testnet-investor-financial-*-smoke.js'
+      - 'tests/sql/testnet-investor-composite-foreign-key-smoke.sql'
+      - 'docs/database/**'
       - '.github/workflows/testnet-investor-financial-tests.yml'
 
   workflow_dispatch:
@@ -31,9 +37,24 @@ concurrency:
 
 jobs:
   financial-smoke-tests:
-    name: Financial core and UI smoke tests
+    name: Financial core, UI and database integrity tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout repository
@@ -44,14 +65,106 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Check JavaScript syntax
+      - name: Check required files
+        shell: bash
         run: |
+          set -euo pipefail
+
+          required_files=(
+            "investor.html"
+            "js/testnet-investor-financial-core.js"
+            "js/testnet-investor-financial-ui.js"
+            "js/testnet-investor.js"
+            "tests/testnet-investor-financial-core-smoke.js"
+            "tests/testnet-investor-financial-ui-smoke.js"
+            "tests/testnet-investor-financial-integrity-contract-smoke.js"
+            "tests/sql/testnet-investor-composite-foreign-key-smoke.sql"
+            "docs/database/testnet-investor-financial-integrity-hardening-v1.md"
+            "docs/database/testnet-investor-financial-integrity-post-apply-verification.sql"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Required file missing: $file"
+              exit 1
+            fi
+            echo "FOUND: $file"
+          done
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+
           node --check js/testnet-investor-financial-core.js
           node --check js/testnet-investor-financial-ui.js
           node --check js/testnet-investor.js
+
+          node --check tests/testnet-investor-financial-core-smoke.js
+          node --check tests/testnet-investor-financial-ui-smoke.js
+          node --check tests/testnet-investor-financial-integrity-contract-smoke.js
 
       - name: Run financial core smoke tests
         run: node tests/testnet-investor-financial-core-smoke.js
 
       - name: Run financial UI smoke tests
         run: node tests/testnet-investor-financial-ui-smoke.js
+
+      - name: Run financial integrity contract tests
+        run: node tests/testnet-investor-financial-integrity-contract-smoke.js
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Wait for PostgreSQL 16
+        shell: bash
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 30); do
+            if pg_isready \
+              -h 127.0.0.1 \
+              -p 5432 \
+              -U postgres \
+              -d postgres; then
+              echo "PostgreSQL 16 is ready."
+              exit 0
+            fi
+
+            echo "Waiting for PostgreSQL... attempt $attempt/30"
+            sleep 2
+          done
+
+          echo "::error::PostgreSQL did not become ready."
+          exit 1
+
+      - name: Run PostgreSQL 16 composite foreign-key tests
+        shell: bash
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          psql \
+            -h 127.0.0.1 \
+            -p 5432 \
+            -U postgres \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            -f tests/sql/testnet-investor-composite-foreign-key-smoke.sql
+
+      - name: Report successful completion
+        if: success()
+        run: |
+          echo "ALBUKHR TESTNET FINANCIAL INTEGRITY TESTS PASSED"
+          echo "Financial Core: PASSED"
+          echo "Financial UI: PASSED"
+          echo "Integrity Contract: PASSED"
+          echo "PostgreSQL 16 Foreign Keys: PASSED"
