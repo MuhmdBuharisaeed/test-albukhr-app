@@ -27,11 +27,32 @@
     var small = button.querySelector("small");
     if (small) small.textContent = label;
   }
+
   function getClient() {
     var client = window.AlbukhrTestnetStakingPayment;
-    if (!client || typeof client.getOffers !== "function" || typeof client.createStake !== "function") {
+
+    var requiredMethods = [
+      "getOffers",
+      "prepareStake",
+      "armPreparedStake",
+      "payPreparedStake",
+      "cancelPreparedStake",
+      "getPendingIntent"
+    ];
+
+    if (!client) {
       throw new Error("TESTNET_STAKING_CLIENT_UNAVAILABLE");
     }
+
+    for (var i = 0; i < requiredMethods.length; i += 1) {
+      if (typeof client[requiredMethods[i]] !== "function") {
+        throw new Error(
+          "TESTNET_STAKING_CLIENT_METHOD_UNAVAILABLE: " +
+          requiredMethods[i]
+        );
+      }
+    }
+
     return client;
   }
 
