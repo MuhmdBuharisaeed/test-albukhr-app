@@ -1,126 +1,120 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const financialCore = require("../js/testnet-investor-financial-core.js");
-const financialUi = require("../js/testnet-investor-financial-ui.js");
+const fs = require("node:fs");
+const vm = require("node:vm");
 
-function fakeElement(id) {
-  return {
-    id: id || "",
-    children: [],
-    hidden: false,
-    textContent: "",
-    attributes: {},
-    appendChild(child) { this.children.push(child); return child; },
-    removeChild(child) { this.children = this.children.filter(x => x !== child); },
-    setAttribute(name, value) { this.attributes[name] = String(value); },
-    querySelector() { return null; },
-    querySelectorAll() { return []; },
-    get firstChild() { return this.children.length ? this.children[0] : null; }
-  };
+class Element {
+  constructor(id = "") {
+    this.id = id;
+    this.textContent = "";
+    this.className = "";
+    this.dataset = {};
+    this.children = [];
+    this.attributes = {};
+  }
+  appendChild(child) { this.children.push(child); return child; }
+  querySelector(selector) {
+    if (selector === ".investment-values") return this.values || null;
+    if (selector === "span") return this.span || null;
+    return null;
+  }
+  setAttribute(name, value) { this.attributes[name] = value; }
 }
 
-function makeWindow(api) {
-  const listeners = {};
-  return {
-    AlbukhrTestnetFinancialCore: financialCore,
-    AlbukhrTestnetApi: Object.freeze(api),
-    addEventListener(name, callback) {
-      (listeners[name] || (listeners[name] = [])).push(callback);
-    },
-    dispatch(name, event) {
-      (listeners[name] || []).forEach(callback => callback(event));
-    }
-  };
-}
+const ids = [
+  "financialReconciliationStatus", "financialReconciliationNote",
+  "totalPortfolio", "totalInvest", "totalEarn", "heroPortfolio",
+  "totalProjects", "financialCapitalRemaining", "financialRewardsRemaining",
+  "financialCapitalLocked", "financialCapitalMatured", "financialCapitalPending",
+  "financialRewardsPending", "financialCapitalReturned", "financialRewardsPaid",
+  "investments"
+];
+const nodes = new Map(ids.map(id => [id, new Element(id)]));
+let readyHandler;
+let cards = [];
 
-function makeDocument() {
-  const section = fakeElement("investorFinancialOverview");
-  const grid = fakeElement("investorFinancialMetrics");
-  const warning = fakeElement("investorFinancialWarning");
-  const investments = fakeElement("investments");
-  const nodes = {
-    investorFinancialOverview: section,
-    investorFinancialMetrics: grid,
-    investorFinancialWarning: warning,
-    investments
-  };
-  return {
-    nodes,
-    createElement() { return fakeElement(); },
-    getElementById(id) { return nodes[id] || null; },
-    querySelectorAll() { return []; },
-    querySelector() { return null; }
-  };
-}
+const document = {
+  readyState: "loading",
+  getElementById(id) { return nodes.get(id) || null; },
+  createElement() { return new Element(); },
+  addEventListener(name, callback) { if (name === "DOMContentLoaded") readyHandler = callback; },
+  querySelectorAll(selector) { return selector === "#investments .investment-card" ? cards : []; }
+};
 
-(async function run() {
-  const fixture = {
-    ok: true,
-    network: "testnet",
-    user: { username: "Test Investor", network: "testnet" },
-    summary: {},
-    projects: [],
-    stakes: [{
-      id: "stake-1",
-      project_id: "project-1",
-      project_code: "PROJECT-1",
-      network: "testnet",
-      amount: "100.0000000",
-      reward_amount: "10.0000000",
-      duration_days: 30,
-      reward_rate: "5.0000000",
-      status: "active",
-      unlock_at: "2026-01-01T00:00:00Z",
-      created_at: "2025-12-01T00:00:00Z"
-    }],
-    withdrawals: [{
-      id: "withdrawal-1",
-      stake_id: "stake-1",
-      network: "testnet",
-      withdrawal_type: "capital",
-      requested_amount: "20.0000000",
-      fee_amount: "0.0000000",
-      status: "completed",
-      txid: "test-tx-1"
-    }]
-  };
+const payload = {
+  network: "testnet",
+  stakes: [],
+  withdrawals: [],
+  projects: []
+};
+const summary = {
+  portfolio: "117.25", capital_remaining: "100", rewards_remaining: "17.25",
+  capital_locked: "60", capital_matured: "40", capital_pending_withdrawal: "3",
+  reward_pending_withdrawal: "2", capital_returned: "5", rewards_paid: "1",
+  active_projects: 1, stake_count: 1, reconciled: true, warnings: []
+};
+const position = {
+  id: "stake-1", project_code: "ALPHA", capital_remaining: "100",
+  reward_remaining: "17.25", capital_pending_withdrawal: "3",
+  reward_pending_withdrawal: "2", capital_matured: false,
+  amount: "100", reward_amount: "17.25"
+};
 
-  const window = makeWindow({
-    network: "testnet",
-    baseUrl: "https://test.example.invalid",
-    async getInvestorData() { return fixture; }
-  });
-  const document = makeDocument();
+const card = new Element();
+card.className = "investment-card";
+card.dataset.projectCode = "ALPHA";
+card.values = new Element();
+const originalCapitalBlock = new Element();
+originalCapitalBlock.span = new Element();
+originalCapitalBlock.span.textContent = "Invested";
+const originalRewardBlock = new Element();
+originalRewardBlock.span = new Element();
+originalRewardBlock.span.textContent = "Reward";
+card.values.children = [originalCapitalBlock, originalRewardBlock];
+cards = [card];
 
-  const installed = financialUi.install(window, document);
-  assert.ok(installed);
-  assert.equal(installed.network, "testnet");
+const investor = {
+  boot: async () => payload,
+  renderInvestments(rows) {
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].amount, "100");
+    assert.equal(rows[0].reward_amount, "17.25");
+  }
+};
+const core = {
+  calculate(input) {
+    assert.deepEqual(input.stakes, []);
+    assert.deepEqual(input.withdrawals, []);
+    return { ok: true, network: "testnet", summary, positions: [position], warnings: [] };
+  }
+};
 
-  const payload = await window.AlbukhrTestnetApi.getInvestorData();
-  assert.equal(payload.network, "testnet");
-  assert.equal(payload.summary.portfolio, "90");
-  assert.equal(payload.summary.invested, "80");
-  assert.equal(payload.summary.earnings, "10");
-  assert.equal(payload.stakes[0].amount, "80");
-  assert.equal(payload.stakes[0].reward_amount, "10");
-  assert.equal(payload.stakes[0].original_amount, "100.0000000");
-  assert.equal(installed.getLastCalculation().summary.capital_returned, "20");
+const window = {
+  AlbukhrTestnetInvestor: investor,
+  AlbukhrTestnetFinancialCore: core
+};
+const source = fs.readFileSync(
+  require.resolve("../js/testnet-investor-financial-ui.js"),
+  "utf8"
+);
+vm.runInNewContext(source, { window, document, console, Map, BigInt, Date, Object, String, Number, Array });
+assert.equal(typeof readyHandler, "function");
 
-  window.dispatch("albukhr:testnet-investor-loaded", {
-    detail: { network: "testnet" }
-  });
-
-  assert.equal(document.nodes.investorFinancialMetrics.children.length, 6);
-  assert.equal(document.nodes.investments.attributes["aria-busy"], "false");
-  assert.equal(document.nodes.investorFinancialOverview.hidden, false);
-
-  const mainnetPayload = Object.assign({}, fixture, { network: "mainnet" });
-  assert.throws(() => installed.enrichPayload(mainnetPayload), /INVALID_TESTNET_INVESTOR_NETWORK/);
-
-  window.dispatch("albukhr:testnet-investor-error", { detail: { message: "TESTNET_API_ERROR" } });
-  assert.equal(document.nodes.investorFinancialOverview.hidden, true);
-
+(async () => {
+  await readyHandler();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(nodes.get("totalPortfolio").textContent, "117.25 π");
+  assert.equal(nodes.get("totalInvest").textContent, "100.00 π");
+  assert.equal(nodes.get("totalEarn").textContent, "17.25 π");
+  assert.equal(nodes.get("financialCapitalPending").textContent, "3.00 π");
+  assert.equal(nodes.get("financialReconciliationStatus").textContent, "RECONCILED");
+  assert.equal(card.values.children.length, 5);
+  assert.equal(originalCapitalBlock.span.textContent, "Capital remaining");
+  assert.equal(originalRewardBlock.span.textContent, "Rewards remaining");
+  assert.equal(card.values.children[2].children[1].textContent, "3.00 π");
+  assert.equal(card.values.children[3].children[1].textContent, "2.00 π");
+  assert.equal(nodes.get("investments").attributes["aria-busy"], "false");
   console.log("testnet-investor-financial-ui: all smoke tests passed");
 })().catch(error => {
   console.error(error);
