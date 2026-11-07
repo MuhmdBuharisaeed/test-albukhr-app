@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1
+/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1.1
  * Additive, read-only presentation layer.
  * Reuses the existing Investor controller boot promise and Testnet API response.
  * No direct Supabase access, storage, payment, staking, or withdrawal actions.
@@ -45,7 +45,8 @@
       badge.textContent = state;
       badge.className = "financial-status" +
         (state === "RECONCILED" ? " is-reconciled" :
-          state === "REVIEW REQUIRED" ? " is-review" : "");
+          state === "REVIEW REQUIRED" ? " is-review" :
+            state === "NO ACTIVITY" ? " is-empty" : "");
     }
     if (note && message) note.textContent = message;
   }
@@ -74,10 +75,20 @@
       setText(id, pi(fields[id]));
     });
 
-    if (summary.reconciled === true) {
+    var stakeCount = Number(summary.stake_count || 0);
+    var withdrawalCount =
+      Number(summary.completed_withdrawal_count || 0) +
+      Number(summary.pending_withdrawal_count || 0);
+
+    if (summary.reconciled === true && stakeCount === 0 && withdrawalCount === 0) {
+      setStatus(
+        "NO ACTIVITY",
+        "No Testnet investment or withdrawal records were found for this portfolio. This is an empty portfolio, not a payout reconciliation. All transaction controls remain locked."
+      );
+    } else if (summary.reconciled === true) {
       setStatus(
         "RECONCILED",
-        "Balances are calculated from Testnet stake and withdrawal records. All transaction controls remain locked."
+        "Balances are calculated from the available Testnet stake and withdrawal records. All transaction controls remain locked."
       );
     } else {
       var count = Array.isArray(summary.warnings) ? summary.warnings.length : 0;
