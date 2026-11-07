@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1
+/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1.1
  * Read-only portfolio breakdown and per-position pending amounts.
  * Does not enable payment, staking, or withdrawal controls.
  */
@@ -45,6 +45,10 @@
 .financial-status.is-review{
   background:#fff3df;
   color:#8b5700;
+}
+.financial-status.is-empty{
+  background:#f1f3f2;
+  color:#53615a;
 }
 .financial-grid{
   display:grid;
