@@ -1,0 +1,125 @@
+/* ALBUKHR TESTNET INVESTOR FINANCIAL BREAKDOWN v1
+   Scoped to the Investor financial overview. Dock Navigation is untouched. */
+
+.financial-overview {
+  margin: 14px 16px 18px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e5ebe8;
+  border-radius: 22px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.045);
+}
+
+.financial-overview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.financial-overview-header h2 {
+  margin: 0;
+  color: #17231d;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.financial-overview-header p {
+  margin: 4px 0 0;
+  color: #77817b;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.financial-readonly-badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid #dce9e1;
+  border-radius: 999px;
+  background: #f0f8f3;
+  color: #32734e;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .06em;
+}
+
+.financial-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.financial-metric {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #edf1ef;
+  border-radius: 15px;
+  background: #f9fbfa;
+}
+
+.financial-metric-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #69756e;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.financial-metric-value {
+  display: block;
+  color: #17231d;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.financial-metric-note {
+  display: block;
+  margin-top: 5px;
+  color: #87918b;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.financial-overview-note {
+  margin: 11px 1px 0;
+  color: #77817b;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.financial-warning {
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid #f0df9f;
+  border-radius: 12px;
+  background: #fff8df;
+  color: #725a12;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.financial-warning[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 430px) {
+  .financial-overview {
+    margin: 12px;
+    padding: 13px;
+    border-radius: 19px;
+  }
+
+  .financial-metric {
+    padding: 10px;
+    border-radius: 13px;
+  }
+
+  .financial-metric-value {
+    font-size: 14px;
+  }
+}
