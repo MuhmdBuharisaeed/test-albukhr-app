@@ -1,0 +1,95 @@
+
+name: ALBUKHR Testnet Staking and Auth Regression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'project.html'
+      - 'js/testnet-staking.js'
+      - 'js/testnet-staking-payment-client.js'
+      - 'js/testnet-gateway-auth.js'
+      - 'tests/testnet-staking-client-contract-smoke.js'
+      - 'tests/testnet-auth-singleflight-smoke.js'
+      - '.github/workflows/testnet-staking-auth-regression.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'project.html'
+      - 'js/testnet-staking.js'
+      - 'js/testnet-staking-payment-client.js'
+      - 'js/testnet-gateway-auth.js'
+      - 'tests/testnet-staking-client-contract-smoke.js'
+      - 'tests/testnet-auth-singleflight-smoke.js'
+      - '.github/workflows/testnet-staking-auth-regression.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-staking-auth-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staking-auth-regression:
+    name: Testnet staking client and gateway auth contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required_files=(
+            'project.html'
+            'js/testnet-staking.js'
+            'js/testnet-staking-payment-client.js'
+            'js/testnet-gateway-auth.js'
+            'tests/testnet-staking-client-contract-smoke.js'
+            'tests/testnet-auth-singleflight-smoke.js'
+          )
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Required file missing: $file"
+              exit 1
+            fi
+            echo "FOUND: $file"
+          done
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check js/testnet-staking.js
+          node --check js/testnet-staking-payment-client.js
+          node --check js/testnet-gateway-auth.js
+          node --check tests/testnet-staking-client-contract-smoke.js
+          node --check tests/testnet-auth-singleflight-smoke.js
+
+      - name: Run staking client contract regression
+        run: node tests/testnet-staking-client-contract-smoke.js
+
+      - name: Run gateway single-flight regression
+        run: node tests/testnet-auth-singleflight-smoke.js
+
+      - name: Verify project page cache-busting versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'js/testnet-gateway-auth.js?v=20261107-auth-singleflight2' project.html
+          grep -Fq 'js/testnet-staking.js?v=20261107-client-contract2' project.html
+          echo 'Testnet auth and staking cache-busting versions: PASS'
