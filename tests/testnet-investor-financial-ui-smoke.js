@@ -46,13 +46,20 @@ async function runCase({ summary, positions, expectedStatus, expectedNote }) {
     addEventListener(name, callback) { if (name === "DOMContentLoaded") readyHandler = callback; },
     querySelectorAll(selector) { return selector === "#investments .investment-card" ? cards : []; }
   };
-  const payload = { network: "testnet", stakes: [], withdrawals: [], projects: [] };
+  const payload = {
+    network: "testnet",
+    user: { pi_uid: "pi-user-1", network: "testnet" },
+    stakes: [],
+    withdrawals: [],
+    projects: []
+  };
   const investor = {
     boot: async () => payload,
     renderInvestments(rows) { assert.equal(rows.length, positions.length); }
   };
   const core = {
     calculate(input) {
+      assert.equal(input.piUid, "pi-user-1");
       assert.deepEqual(input.stakes, []);
       assert.deepEqual(input.withdrawals, []);
       return { ok: summary.reconciled, network: "testnet", summary, positions, warnings: summary.warnings || [] };
@@ -101,7 +108,7 @@ async function runCase({ summary, positions, expectedStatus, expectedNote }) {
   assert.equal(empty.get("totalPortfolio").textContent, "0.00 π");
   assert.equal(empty.get("financialCapitalRemaining").textContent, "0.00 π");
 
-  console.log("testnet-investor-financial-ui v1.1: all smoke tests passed");
+  console.log("testnet-investor-financial-ui v1.2: all smoke tests passed");
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
