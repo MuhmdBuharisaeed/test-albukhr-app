@@ -340,7 +340,7 @@
    * ------------------------------------------------------------------
    */
 
-  async function redeem(code) {
+  async function redeemAccessCode(code) {
     var value = clean(code);
 
     if (!value) {
