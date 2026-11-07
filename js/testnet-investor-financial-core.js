@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET INVESTOR FINANCIAL CORE v1
+/* ALBUKHR TESTNET INVESTOR FINANCIAL CORE v1.1
  * Pure, deterministic calculations for the Testnet Investor dashboard.
  * No network, database, storage, payment, or DOM access.
  *
@@ -16,6 +16,9 @@
  * - Missing network fields are accepted only because the caller is the
  *   Testnet-scoped investor endpoint. An explicit non-Testnet network is
  *   excluded and triggers reconciliation review.
+ * - The response identity (piUid), stake owner, and withdrawal owner must agree.
+ * - Withdrawal project ID/code must match its parent stake before any balance
+ *   is changed. Missing or mismatched identities trigger reconciliation review.
  */
 (function (root, factory) {
   "use strict";
@@ -109,6 +112,9 @@
   function calculate(input) {
     input = input || {};
     var warnings = [];
+    var expectedPiUid = clean(input.piUid);
+    if (!expectedPiUid) addWarning(warnings, "INVESTOR_IDENTITY_MISSING");
+
     var asOfMs = parseAsOf(input.asOf);
     var asOf = new Date(asOfMs).toISOString();
     var stakes = asArray(input.stakes, "stakes", warnings);
@@ -134,6 +140,20 @@
       }
       if (stakeMap.has(rowId)) {
         addWarning(warnings, "DUPLICATE_STAKE_ID", rowId);
+        return;
+      }
+
+      var stakePiUid = clean(row.pi_uid);
+      if (!stakePiUid) {
+        addWarning(warnings, "STAKE_OWNER_IDENTITY_MISSING", rowId);
+        return;
+      }
+      if (expectedPiUid && stakePiUid !== expectedPiUid) {
+        addWarning(warnings, "STAKE_OWNER_IDENTITY_MISMATCH", rowId);
+        return;
+      }
+      if (!clean(row.project_id) || !clean(row.project_code)) {
+        addWarning(warnings, "STAKE_PROJECT_IDENTITY_MISSING", rowId);
         return;
       }
 
@@ -218,14 +238,44 @@
         addWarning(warnings, "UNKNOWN_WITHDRAWAL_STATUS", rowId);
         return;
       }
-      if (CLOSED_WITHDRAWAL_STATUSES.indexOf(status) !== -1) return;
-
       var stakeId = clean(row.stake_id);
       var position = stakeMap.get(stakeId);
       if (!position) {
         addWarning(warnings, "WITHDRAWAL_STAKE_NOT_IN_PORTFOLIO", rowId);
         return;
       }
+
+      var withdrawalPiUid = clean(row.pi_uid);
+      var stakePiUidForWithdrawal = clean(position.stake.pi_uid);
+      if (!withdrawalPiUid || !stakePiUidForWithdrawal) {
+        addWarning(warnings, "WITHDRAWAL_OWNER_IDENTITY_MISSING", rowId);
+        return;
+      }
+      if (
+        withdrawalPiUid !== stakePiUidForWithdrawal ||
+        (expectedPiUid && withdrawalPiUid !== expectedPiUid)
+      ) {
+        addWarning(warnings, "WITHDRAWAL_OWNER_IDENTITY_MISMATCH", rowId);
+        return;
+      }
+
+      var withdrawalProjectId = clean(row.project_id);
+      var withdrawalProjectCode = clean(row.project_code);
+      if (!withdrawalProjectId || !withdrawalProjectCode) {
+        addWarning(warnings, "WITHDRAWAL_PROJECT_IDENTITY_MISSING", rowId);
+        return;
+      }
+      if (
+        withdrawalProjectId !== clean(position.stake.project_id) ||
+        withdrawalProjectCode !== clean(position.stake.project_code)
+      ) {
+        addWarning(warnings, "WITHDRAWAL_PROJECT_IDENTITY_MISMATCH", rowId);
+        return;
+      }
+
+      // Closed requests do not affect balances, but their ownership and project
+      // links are still checked so historical integrity errors are not hidden.
+      if (CLOSED_WITHDRAWAL_STATUSES.indexOf(status) !== -1) return;
 
       var requested;
       var fee;
@@ -242,7 +292,6 @@
       if (status === "completed") {
         if (!clean(row.txid)) {
           addWarning(warnings, "COMPLETED_WITHDRAWAL_MISSING_TXID", rowId);
-          // Keep the request reserved, but do not deduct it as settled.
           if (type === "capital") {
             position.capitalPending += requested + fee;
             capitalPendingTotal += requested + fee;
@@ -265,8 +314,6 @@
         return;
       }
 
-      // Pending, processing, and approved requests reserve the full amount
-      // the database uses while checking per-stake availability.
       var reserved = requested + fee;
       if (type === "capital") {
         position.capitalPending += reserved;
