@@ -583,6 +583,41 @@
     return saved;
   }
 
+  
+  /*
+   * Single-flight access-code redemption.
+   *
+   * Concurrent callers using the same code share
+   * one gateway request.
+   */
+  function redeem(code) {
+    var value = clean(code);
+
+    if (redemptionPromise) {
+      if (redemptionCode === value) {
+        return redemptionPromise;
+      }
+
+      var inFlightError = new Error(
+        "A different Testnet access-code redemption is already in progress."
+      );
+
+      inFlightError.code =
+        "TESTNET_ACCESS_CODE_REDEMPTION_IN_PROGRESS";
+
+      return Promise.reject(inFlightError);
+    }
+
+    redemptionCode = value;
+
+    redemptionPromise = redeemAccessCode(value).finally(function () {
+      redemptionPromise = null;
+      redemptionCode = "";
+    });
+
+    return redemptionPromise;
+  }
+
   /*
    * ------------------------------------------------------------------
    * Testnet authentication requirement
