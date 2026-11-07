@@ -55,6 +55,10 @@
     "albukhr_testnet_session_v6";
 
   var session = null;
+  // Share one in-flight redemption across page modules.
+  // One-time access codes must only be redeemed once.
+  var redemptionPromise = null;
+  var redemptionCode = "";
 
   /*
    * ------------------------------------------------------------------
