@@ -39,6 +39,11 @@
   href="css/testnet-investor.css?v=20260920-investor-header1"
 >
 
+<link
+  rel="stylesheet"
+  href="css/testnet-investor-financial.css?v=20261107-financial-ui1"
+>
+
 <link rel="stylesheet" href="css/testnet-project-owner-bridge.css?v=20260923-owner7">
 <link rel="stylesheet" href="css/testnet-admin-bridge.css?v=20260923-admin1">
 </head>
@@ -248,7 +253,7 @@
       </span>
 
       <span class="summary-title">
-        Invested
+        Capital Remaining
       </span>
 
       <strong id="totalInvest">
@@ -271,7 +276,7 @@
       </span>
 
       <span class="summary-title">
-        Earnings
+        Rewards Remaining
       </span>
 
       <strong id="totalEarn">
@@ -307,6 +312,61 @@
 
     </article>
 
+  </section>
+
+  <section
+    class="financial-breakdown"
+    id="investorFinancialBreakdown"
+    aria-labelledby="financialBreakdownTitle"
+    aria-live="polite"
+  >
+    <div class="financial-breakdown-head">
+      <div>
+        <h2 id="financialBreakdownTitle">Financial Breakdown</h2>
+        <p>Read-only reconciliation of your Testnet portfolio</p>
+      </div>
+      <span id="financialReconciliationStatus" class="financial-status">CHECKING</span>
+    </div>
+
+    <div class="financial-grid">
+      <article class="financial-item">
+        <span>Capital remaining</span>
+        <strong id="financialCapitalRemaining">0.00 π</strong>
+      </article>
+      <article class="financial-item">
+        <span>Rewards remaining</span>
+        <strong id="financialRewardsRemaining">0.00 π</strong>
+      </article>
+      <article class="financial-item">
+        <span>Capital locked</span>
+        <strong id="financialCapitalLocked">0.00 π</strong>
+      </article>
+      <article class="financial-item">
+        <span>Capital matured</span>
+        <strong id="financialCapitalMatured">0.00 π</strong>
+      </article>
+      <article class="financial-item is-pending">
+        <span>Capital pending withdrawal</span>
+        <strong id="financialCapitalPending">0.00 π</strong>
+      </article>
+      <article class="financial-item is-pending">
+        <span>Rewards pending withdrawal</span>
+        <strong id="financialRewardsPending">0.00 π</strong>
+      </article>
+      <article class="financial-item is-settled">
+        <span>Capital returned</span>
+        <strong id="financialCapitalReturned">0.00 π</strong>
+      </article>
+      <article class="financial-item is-settled">
+        <span>Rewards paid</span>
+        <strong id="financialRewardsPaid">0.00 π</strong>
+      </article>
+    </div>
+
+    <p id="financialReconciliationNote">
+      Financial totals will appear after the Testnet session is verified.
+      All transaction controls remain locked.
+    </p>
   </section>
 
   <section
@@ -646,6 +706,8 @@
 <script
   src="js/testnet-investor.js?v=20260920-testnet1"
 ></script>
+
+<script src="js/testnet-investor-financial-ui.js?v=20261107-financial-ui1"></script>
 
 <script src="js/testnet-project-owner-bridge.js?v=20260923-owner7"></script>
 <script src="js/testnet-admin-auth.js?v=20260923-admin1"></script>
