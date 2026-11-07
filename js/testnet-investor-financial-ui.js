@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1.1
+/* ALBUKHR TESTNET INVESTOR FINANCIAL UI v1.2
  * Additive, read-only presentation layer.
  * Reuses the existing Investor controller boot promise and Testnet API response.
  * No direct Supabase access, storage, payment, staking, or withdrawal actions.
@@ -105,8 +105,6 @@
     var values = card.querySelector(".investment-values");
     if (!values) return;
 
-    /* Existing card renderer labels the first two figures Invested/Reward.
-     * Relabel them to match the reconciled remaining balances we pass in. */
     if (values.children && values.children[0]) {
       var firstLabel = values.children[0].querySelector("span");
       if (firstLabel) firstLabel.textContent = "Capital remaining";
@@ -147,8 +145,6 @@
 
   function renderPositions(investor, positions, projects) {
     var safePositions = positions.map(function (position) {
-      /* The existing card renderer reads amount/reward_amount.
-       * Give it reconciled balances while preserving the original row fields. */
       return Object.assign({}, position, {
         amount: position.capital_remaining,
         reward_amount: position.reward_remaining
@@ -193,8 +189,6 @@
       return;
     }
 
-    /* The existing controller's DOMContentLoaded handler was registered
-     * before this script. Calling boot here shares its in-flight promise. */
     investor.boot().then(function (payload) {
       if (!payload || payload.network !== NETWORK) {
         setStatus("UNAVAILABLE", "No verified Testnet investor response was available. All transaction controls remain locked.");
@@ -202,6 +196,7 @@
       }
 
       var result = core.calculate({
+        piUid: payload.user && payload.user.pi_uid,
         stakes: payload.stakes,
         withdrawals: payload.withdrawals,
         asOf: new Date().toISOString()
