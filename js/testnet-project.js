@@ -274,7 +274,7 @@
     keepFirst(history, "history");
   }
 
-  function render(project) {
+function render(project) {
     if (!project) {
       notFound();
       return;
@@ -332,31 +332,79 @@
 
     setText("investmentState", "LOCKED");
 
+    /*
+     * Reward summary remains controlled by the authenticated
+     * Testnet investor-data response.
+     */
     var rewardNode = element("aReward");
+
     if (rewardNode && !rewardNode.dataset.liveState) {
       rewardNode.textContent = "CHECKING";
     }
 
     var rewardNote = element("aRewardNote");
+
     if (rewardNote && !rewardNote.dataset.liveState) {
-      rewardNote.textContent = "Checking Testnet reward balance…";
+      rewardNote.textContent =
+        "Checking Testnet reward balance…";
     }
 
+    /*
+     * Withdrawal controls must fail closed.
+     *
+     * The withdrawal module owns actual withdrawal eligibility.
+     * Project rendering must never unlock either withdrawal button.
+     */
     var buttons = getWithdrawalButtons();
 
-    if (buttons.reward && !buttons.reward.dataset.withdrawalOwner) {
-      setButtonState(buttons.reward, true, "Checking…");
+    var withdrawalModule =
+      window.AlbukhrTestnetWithdrawal;
+
+    var withdrawalEnabled = !!(
+      withdrawalModule &&
+      withdrawalModule.enabled === true
+    );
+
+    var withdrawalLabel = withdrawalEnabled
+      ? "Checking eligibility…"
+      : "Locked — U2A tests pending";
+
+    if (
+      buttons.reward &&
+      !buttons.reward.dataset.withdrawalOwner
+    ) {
+      setButtonState(
+        buttons.reward,
+        true,
+        withdrawalLabel
+      );
     }
 
-    if (buttons.capital && !buttons.capital.dataset.withdrawalOwner) {
-      setButtonState(buttons.capital, true, "Checking…");
+    if (
+      buttons.capital &&
+      !buttons.capital.dataset.withdrawalOwner
+    ) {
+      setButtonState(
+        buttons.capital,
+        true,
+        withdrawalLabel
+      );
     }
 
+    /*
+     * Notify dependent Testnet modules that the project
+     * has been rendered.
+     */
     try {
       window.dispatchEvent(
-        new CustomEvent("albukhr:testnet-project-rendered", {
-          detail: { project: project }
-        })
+        new CustomEvent(
+          "albukhr:testnet-project-rendered",
+          {
+            detail: {
+              project: project
+            }
+          }
+        )
       );
     } catch (_) {}
   }
