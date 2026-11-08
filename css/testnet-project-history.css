@@ -1,0 +1,9 @@
+.history-list{display:grid;gap:8px;margin-top:12px}
+.history-item{min-width:0;padding:12px;border:1px solid #dfe9e3;border-radius:12px;background:#fbfdfb}
+.history-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.history-item-title{color:#21402f;font-size:11px;font-weight:900}
+.history-item-status{max-width:48%;overflow:hidden;padding:4px 7px;border-radius:999px;background:#e8f6ee;color:#0f7a3d;font-size:8px;font-weight:900;text-overflow:ellipsis;white-space:nowrap}
+.history-item-status.status-pending,.history-item-status.status-processing,.history-item-status.status-approved{background:#fff8e6;color:#795900}
+.history-item-status.status-rejected,.history-item-status.status-failed,.history-item-status.status-cancelled{background:#fff0ef;color:#a12b22}
+.history-item-description{margin:7px 0 0;color:#4d5d53;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.history-item-date,.history-item-extra,.history-item-reference{display:block;margin:5px 0 0;color:#7b8780;font-size:9px;line-height:1.45;overflow-wrap:anywhere}
