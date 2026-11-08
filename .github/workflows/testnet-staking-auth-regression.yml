@@ -1,4 +1,3 @@
-
 name: ALBUKHR Testnet Staking and Auth Regression
 
 on:
@@ -11,6 +10,7 @@ on:
       - 'js/testnet-staking-payment-client.js'
       - 'js/testnet-gateway-auth.js'
       - 'tests/testnet-staking-client-contract-smoke.js'
+      - 'tests/testnet-staking-recovery-client-smoke.js'
       - 'tests/testnet-auth-singleflight-smoke.js'
       - '.github/workflows/testnet-staking-auth-regression.yml'
 
@@ -23,6 +23,7 @@ on:
       - 'js/testnet-staking-payment-client.js'
       - 'js/testnet-gateway-auth.js'
       - 'tests/testnet-staking-client-contract-smoke.js'
+      - 'tests/testnet-staking-recovery-client-smoke.js'
       - 'tests/testnet-auth-singleflight-smoke.js'
       - '.github/workflows/testnet-staking-auth-regression.yml'
 
@@ -37,7 +38,7 @@ concurrency:
 
 jobs:
   staking-auth-regression:
-    name: Testnet staking client and gateway auth contracts
+    name: Testnet staking client, recovery and auth contracts
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -54,19 +55,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           required_files=(
             'project.html'
             'js/testnet-staking.js'
             'js/testnet-staking-payment-client.js'
             'js/testnet-gateway-auth.js'
             'tests/testnet-staking-client-contract-smoke.js'
+            'tests/testnet-staking-recovery-client-smoke.js'
             'tests/testnet-auth-singleflight-smoke.js'
           )
+
           for file in "${required_files[@]}"; do
             if [ ! -f "$file" ]; then
               echo "::error::Required file missing: $file"
               exit 1
             fi
+
             echo "FOUND: $file"
           done
 
@@ -74,14 +79,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           node --check js/testnet-staking.js
           node --check js/testnet-staking-payment-client.js
           node --check js/testnet-gateway-auth.js
+
           node --check tests/testnet-staking-client-contract-smoke.js
+          node --check tests/testnet-staking-recovery-client-smoke.js
           node --check tests/testnet-auth-singleflight-smoke.js
 
       - name: Run staking client contract regression
         run: node tests/testnet-staking-client-contract-smoke.js
+
+      - name: Run pending stake recovery regression
+        run: node tests/testnet-staking-recovery-client-smoke.js
 
       - name: Run gateway single-flight regression
         run: node tests/testnet-auth-singleflight-smoke.js
@@ -90,6 +101,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           grep -Fq 'js/testnet-gateway-auth.js?v=20261107-auth-singleflight2' project.html
-          grep -Fq 'js/testnet-staking.js?v=20261107-client-contract2' project.html
-          echo 'Testnet auth and staking cache-busting versions: PASS'
+
+          grep -Fq 'js/testnet-staking-payment-client.js?v=20261108-recovery1' project.html
+
+          grep -Fq 'js/testnet-staking.js?v=20261108-recovery1' project.html
+
+          echo 'Testnet auth, staking and recovery cache-busting versions: PASS'
