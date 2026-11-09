@@ -1,0 +1,62 @@
+
+name: ALBUKHR Testnet Project Summary Aggregation Regression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'js/testnet-project.js'
+      - 'project.html'
+      - 'tests/testnet-project-summary-aggregation-smoke.js'
+      - '.github/workflows/testnet-project-summary-aggregation-regression.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'js/testnet-project.js'
+      - 'project.html'
+      - 'tests/testnet-project-summary-aggregation-smoke.js'
+      - '.github/workflows/testnet-project-summary-aggregation-regression.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-project-summary-aggregation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  summary-aggregation-regression:
+    name: Verify multiple Testnet stakes and rewards are aggregated
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f js/testnet-project.js
+          test -f project.html
+          test -f tests/testnet-project-summary-aggregation-smoke.js
+
+      - name: Check JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check js/testnet-project.js
+          node --check tests/testnet-project-summary-aggregation-smoke.js
+
+      - name: Run Testnet project summary aggregation regression
+        run: node tests/testnet-project-summary-aggregation-smoke.js
