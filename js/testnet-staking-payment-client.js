@@ -839,10 +839,85 @@
     payPreparedStake: payPreparedStake,
     cancelPreparedStake: cancelPreparedStake,
     getPendingIntent: getPendingIntent,
-    reconcile: function (paymentId) {
-      return request("reconcile", {
-        paymentId: clean(paymentId)
-      }, true);
+
+    
+    reconcile: async function (paymentId) {
+      var id = clean(paymentId);
+
+      if (!id) {
+        throw new Error("PI_PAYMENT_NOT_FOUND");
+      }
+
+      // Ensure the Testnet session and official Pi identity
+      // are authenticated before contacting the reconciliation API.
+      await authenticate();
+
+      // Pi.authenticate() may already have discovered and reconciled
+      // this payment through onIncompletePaymentFound.
+      var priorRecovery = recoverySummary.find(function (item) {
+        return item &&
+          clean(item.payment_id) === id &&
+          ["finalized", "cancelled"].indexOf(
+            clean(item.outcome)
+          ) !== -1;
+      });
+
+      if (priorRecovery) {
+        if (
+          pendingIntent &&
+          clean(pendingIntent.paymentId) === id
+        ) {
+          pendingIntent = null;
+        }
+
+        return priorRecovery;
+      }
+
+      // Retry the existing payment ID only.
+      // This does not create or launch another Pi payment.
+      var result = await request(
+        "reconcile",
+        {
+          paymentId: id
+        },
+        true
+      );
+
+      var normalized = Object.assign(
+        {
+          payment_id: id
+        },
+        result || {}
+      );
+
+      var matched = false;
+
+      recoverySummary = recoverySummary.map(function (item) {
+        if (item && clean(item.payment_id) === id) {
+          matched = true;
+          return normalized;
+        }
+
+        return item;
+      });
+
+      if (!matched) {
+        recoverySummary.push(normalized);
+      }
+
+      // Clear the in-memory reservation only after the API
+      // confirms that the original payment was finalized or cancelled.
+      if (
+        ["finalized", "cancelled"].indexOf(
+          clean(normalized.outcome)
+        ) !== -1 &&
+        pendingIntent &&
+        clean(pendingIntent.paymentId) === id
+      ) {
+        pendingIntent = null;
+      }
+
+      return normalized;
     }
   });
 })(window);
