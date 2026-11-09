@@ -652,11 +652,15 @@
       return;
     }
 
-    if (pending) {
+        if (pending) {
       intentPrepared = true;
       intentArmed = pending.payment_armed === true;
-      if (pending.payment_launched === true || clean(pending.payment_id)) {
-        renderPendingIntent(pending);
+
+      if (
+        pending.payment_launched === true ||
+        clean(pending.payment_id)
+      ) {
+        await reconcileExistingPayment();
         return;
       }
       if (pending.expired === true) {
