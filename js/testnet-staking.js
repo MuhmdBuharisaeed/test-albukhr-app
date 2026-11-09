@@ -254,16 +254,28 @@
     if (reward) reward.textContent = Number.isFinite(rewardAmount) ? money(rewardAmount) : "—";
     if (unlock) unlock.textContent = pending.duration_days + " days after confirmation";
 
+    
     if (pending.payment_launched === true || clean(pending.payment_id)) {
       if (confirm) {
-        confirm.textContent = "Payment needs reconciliation";
-        confirm.disabled = true;
+        confirm.textContent = "Reconcile existing payment";
+        confirm.disabled =
+          starting || !clean(pending.payment_id);
       }
+
       setModalPaymentArmed(true);
-      setStatus(
-        "This Testnet payment intent was already armed or has a payment ID. A Pi payment may already have opened before the page was refreshed. Do not start another payment; ALBUKHR Testnet admin must reconcile this intent.",
-        true
-      );
+
+      if (clean(pending.payment_id)) {
+        setStatus(
+          "An existing Pi Testnet payment is linked to this staking intent. Tap Reconcile existing payment to verify its official status. Do not start another payment.",
+          true
+        );
+      } else {
+        setStatus(
+          "This payment attempt was armed but no payment ID is recorded yet. The Pi incomplete-payment recovery check is required. Do not start another payment.",
+          true
+        );
+      }
+
       return;
     }
 
