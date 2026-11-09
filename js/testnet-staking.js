@@ -465,6 +465,179 @@
     setModalPaymentArmed(false);
   }
 
+  
+  async function reconcileExistingPayment() {
+    if (starting || !project) return;
+
+    var client = getClient();
+    var pending = client.getPendingIntent();
+
+    if (!pending) {
+      setStatus(
+        "No pending Testnet staking intent was found.",
+        true
+      );
+      return;
+    }
+
+    if (
+      clean(pending.project_id) !== clean(project.id) ||
+      clean(pending.project_code) !== clean(project.project_code)
+    ) {
+      setStatus(
+        "The pending payment does not belong to the currently selected project.",
+        true
+      );
+      return;
+    }
+
+    var paymentId = clean(pending.payment_id);
+
+    if (!paymentId) {
+      setStatus(
+        "The armed payment has no recorded Pi payment ID. Do not create another payment. Testnet admin recovery is required.",
+        true
+      );
+      return;
+    }
+
+    starting = true;
+
+    var confirm = el("albukhrStakeConfirm");
+
+    if (confirm) {
+      confirm.disabled = true;
+      confirm.textContent = "Checking Pi payment…";
+    }
+
+    var finalMessage = "";
+    var finalIsError = false;
+
+    try {
+      setStatus(
+        "Verifying your Testnet session and Pi identity before reconciliation…"
+      );
+
+      await client.authenticate();
+
+      setStatus(
+        "Checking the original Pi Testnet payment. No new payment will be created."
+      );
+
+      var result = await client.reconcile(paymentId);
+
+      if (
+        !result ||
+        result.network !== "testnet"
+      ) {
+        throw new Error(
+          "TESTNET_PAYMENT_RECONCILIATION_INVALID"
+        );
+      }
+
+      var outcome = clean(result.outcome);
+
+      if (outcome === "finalized") {
+        finalMessage =
+          "Payment successfully verified. The original Testnet stake has been finalized.";
+
+        var note = el("aStakeNote");
+
+        if (note) {
+          note.textContent = "Active Testnet stake confirmed";
+        }
+
+        var withdrawal = window.AlbukhrTestnetWithdrawal;
+
+        if (
+          withdrawal &&
+          typeof withdrawal.refresh === "function"
+        ) {
+          await withdrawal.refresh().catch(function () {});
+        }
+
+        await loadOffers(project);
+
+        dispatch(
+          "albukhr:testnet-staking-ui-completed",
+          result
+        );
+
+        window.setTimeout(hideModal, 2000);
+
+      } else if (outcome === "cancelled") {
+        finalMessage =
+          "Pi cancellation was officially verified. The Testnet reservation has been cancelled and its reward reservation released.";
+
+        await loadOffers(project);
+
+        window.setTimeout(hideModal, 2000);
+
+      } else if (outcome === "pending_pi_approval") {
+        finalMessage =
+          "Pi Testnet has not confirmed developer approval yet. The reservation remains locked. Reconcile again later; do not make another payment.";
+
+        finalIsError = true;
+
+      } else if (outcome === "awaiting_transaction") {
+        finalMessage =
+          "Pi approval is not yet supported by a verified transaction ID. The reservation remains locked. Do not make another payment.";
+
+        finalIsError = true;
+
+      } else {
+        finalMessage =
+          "The original payment remains unresolved (" +
+          (outcome || "unknown") +
+          "). No reservation has been released. Testnet admin review is required.";
+
+        finalIsError = true;
+      }
+
+    } catch (error) {
+      finalMessage =
+        "Payment reconciliation could not be completed: " +
+        (
+          clean(error && error.message) ||
+          "UNKNOWN_RECONCILIATION_ERROR"
+        ) +
+        ". Keep the existing reservation locked and do not make another payment.";
+
+      finalIsError = true;
+
+      console.error(
+        "[ALBUKHR TESTNET PAYMENT RECONCILIATION]",
+        error
+      );
+
+    } finally {
+      starting = false;
+
+      var remaining = client.getPendingIntent();
+
+      if (remaining) {
+        intentPrepared = true;
+        intentArmed = remaining.payment_armed === true;
+
+        renderPendingIntent(remaining);
+
+      } else {
+        intentPrepared = false;
+        intentArmed = false;
+
+        setModalPaymentArmed(false);
+
+        if (confirm) {
+          confirm.disabled = true;
+        }
+      }
+
+      if (finalMessage) {
+        setStatus(finalMessage, finalIsError);
+      }
+    }
+  }
+
   async function submitStake() {
     if (starting || !project) return;
 
