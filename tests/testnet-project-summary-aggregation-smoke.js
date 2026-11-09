@@ -164,10 +164,11 @@ async function main() {
 
   payload.withdrawals = [
     {
-      stake_id: "stake-new-15",
-      withdrawal_type: "reward",
-      requested_amount: "0.05",
-      status: "pending"
+  stake_id: "stake-new-15",
+  withdrawal_type: "reward",
+  requested_amount: "0.05",
+  net_amount: "0.04",
+  status: "pending"
     },
     {
       stake_id: "stake-old-10",
