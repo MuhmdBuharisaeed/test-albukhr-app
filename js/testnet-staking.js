@@ -60,13 +60,15 @@
 
   function getClient() {
     var client = window.AlbukhrTestnetStakingPayment;
-    var requiredMethods = [
+        var requiredMethods = [
       "getOffers",
       "prepareStake",
       "armPreparedStake",
       "payPreparedStake",
       "cancelPreparedStake",
-      "getPendingIntent"
+      "getPendingIntent",
+      "authenticate",
+      "reconcile"
     ];
 
     if (!client) throw new Error("TESTNET_STAKING_CLIENT_UNAVAILABLE");
