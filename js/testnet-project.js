@@ -455,54 +455,74 @@ function render(project) {
       return;
     }
 
-    matches.sort(function (a, b) {
-      return (
-        Date.parse(b.created_at || "") -
-        Date.parse(a.created_at || "")
-      );
+    /*
+     * A user may create multiple independent stakes in the same project.
+     * The summary cards must therefore aggregate all matching stake rows;
+     * selecting matches[0] would show only the newest stake and make older
+     * active stakes appear to have been replaced.
+     *
+     * Principal summary: sum active stakes only. Completed stakes are no
+     * longer locked principal, so they do not inflate the active-stake card.
+     * Reward summary: sum each active/completed stake's remaining reward
+     * independently, after accounting for that stake's own withdrawal rows.
+     */
+    var activeStakes = matches.filter(function (stake) {
+      return lower(stake.status) === "active";
     });
 
-    var stake = matches[0];
+    var stakeAmount = activeStakes.reduce(function (sum, stake) {
+      return sum + numberValue(stake.amount);
+    }, 0);
 
-    var stakeAmount = numberValue(stake.amount);
-    var rewardAmount = numberValue(stake.reward_amount);
+    var rewardEligibleStakes = matches.filter(function (stake) {
+      return ["active", "completed"].indexOf(lower(stake.status)) !== -1;
+    });
 
-    var usedReward = withdrawals
-      .filter(function (row) {
-        return (
-          clean(row.stake_id) === clean(stake.id) &&
-          lower(row.withdrawal_type) === "reward" &&
-          [
-            "pending",
-            "processing",
-            "approved",
-            "completed"
-          ].indexOf(lower(row.status)) !== -1
-        );
-      })
-      .reduce(function (sum, row) {
-        return (
-          sum +
-          numberValue(
-            row.net_amount ||
-            row.requested_amount
-          )
-        );
-      }, 0);
+    var availableReward = rewardEligibleStakes.reduce(function (sum, stake) {
+      var usedReward = withdrawals
+        .filter(function (row) {
+          return (
+            clean(row.stake_id) === clean(stake.id) &&
+            lower(row.withdrawal_type) === "reward" &&
+            [
+              "pending",
+              "processing",
+              "approved",
+              "completed"
+            ].indexOf(lower(row.status)) !== -1
+          );
+        })
+        .reduce(function (withdrawn, row) {
+          return (
+            withdrawn +
+            numberValue(
+              row.net_amount ||
+              row.requested_amount
+            )
+          );
+        }, 0);
 
-    var availableReward = Math.max(
-      0,
-      rewardAmount - usedReward
-    );
+      return sum + Math.max(
+        0,
+        numberValue(stake.reward_amount) - usedReward
+      );
+    }, 0);
 
     setText("aStake", formatPi(stakeAmount));
-    setText("aStakeNote", "Active Testnet stake");
+    setText(
+      "aStakeNote",
+      activeStakes.length > 0
+        ? activeStakes.length + " active Testnet stake" +
+          (activeStakes.length === 1 ? "" : "s")
+        : "No active Testnet stake"
+    );
 
     setText("aReward", formatPi(availableReward));
     setText(
       "aRewardNote",
       availableReward > 0
-        ? "Available Testnet reward"
+        ? "Available Testnet reward across " + rewardEligibleStakes.length +
+          " stake" + (rewardEligibleStakes.length === 1 ? "" : "s")
         : "No available Testnet reward"
     );
 
