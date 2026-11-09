@@ -496,9 +496,9 @@ function render(project) {
           return (
             withdrawn +
             numberValue(
-              row.net_amount ||
-              row.requested_amount
-            )
+  row.requested_amount ||
+  row.net_amount
+)
           );
         }, 0);
 
