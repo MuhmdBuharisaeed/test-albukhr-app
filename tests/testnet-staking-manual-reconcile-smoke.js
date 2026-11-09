@@ -20,7 +20,7 @@ const client = fs.readFileSync(
 
 assert.match(
   client,
-  /reconcile:\s*async function\(paymentId\)/,
+  /reconcile:\s*async\s+function\s*\(\s*paymentId\s*\)/,
   "payment client exports asynchronous reconciliation"
 );
 
