@@ -37,7 +37,13 @@
     if (!auth || typeof auth.requireTestnetAuth !== "function" || typeof auth.getSessionToken !== "function") {
       throw new Error("TESTNET_AUTH_MODULE_UNAVAILABLE");
     }
-    var session = await auth.requireTestnetAuth({ redirectOnFailure: false });
+    /*
+     * Revalidate immediately before every owner staking request.
+     * If the 30-minute Testnet session has expired, the gateway starts
+     * the Mainnet handoff and returns the user to this Testnet page.
+     * The financial request is not replayed automatically after login.
+     */
+    var session = await auth.requireTestnetAuth({ redirectOnFailure: true });
     var token = clean(auth.getSessionToken());
     if (!session || !token) throw new Error("TESTNET_SESSION_REQUIRED");
     var response = await fetch(API_BASE + "/staking/owner/" + path, {
