@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1.2
+/* ALBUKHR TESTNET PROJECT OWNER PAGE VISIBILITY BRIDGE v1.3
  * Multi-project selector: never silently auto-selects the first project.
  * Keeps project ownership, authentication, and Dock Navigation unchanged.
  */
@@ -106,7 +106,6 @@
   function ensureControl() {
     var header = getHeaderContainer();
     if (!header) return null;
-
     if (controlWrap && controlWrap.isConnected) return controlWrap;
 
     controlWrap = document.getElementById("testnetProjectOwnerControl");
@@ -150,7 +149,6 @@
     }
 
     trigger.hidden = false;
-
     if (ownedProjects.length === 1) {
       removeMenu();
       trigger.textContent = "Project Owner";
@@ -178,27 +176,21 @@
     heading.className = "testnet-owner-project-menu-heading";
     heading.textContent = "Choose a project";
     menu.appendChild(heading);
-
     ownedProjects.forEach(function (project) {
       menu.appendChild(makeMenuItem(project));
     });
-
     wrap.appendChild(menu);
   }
 
   function normalizeOwnedProjects(payload) {
     var list = payload && Array.isArray(payload.projects) ? payload.projects : [];
-
     return list.map(function (item) {
       var project = item && item.project && typeof item.project === "object"
         ? item.project
         : item;
-
       if (!project || typeof project !== "object") return null;
-
       var id = clean(project.id);
       if (!id) return null;
-
       return {
         id: id,
         project_code: clean(project.project_code) || id,
@@ -212,18 +204,13 @@
 
   async function resolveOwnerAccess() {
     if (requestInFlight) return;
-
     var auth = getAuth();
-    if (
-      !auth ||
-      typeof auth.requireTestnetAuth !== "function" ||
-      typeof auth.getSessionToken !== "function"
-    ) return;
+    if (!auth || typeof auth.requireTestnetAuth !== "function" || typeof auth.getSessionToken !== "function") return;
 
     requestInFlight = true;
-
     try {
-      var session = await auth.requireTestnetAuth({ redirectOnFailure: false });
+      /* No/expired session starts the same safe Mainnet handoff used by the other Testnet pages. */
+      var session = await auth.requireTestnetAuth({ redirectOnFailure: true });
       if (!session) return;
 
       var token = clean(auth.getSessionToken());
@@ -277,11 +264,9 @@
   function initialize() {
     if (initialized) return;
     initialized = true;
-
     ensureControl();
     document.addEventListener("click", handleDocumentClick);
     document.addEventListener("keydown", handleDocumentKeydown);
-
     window.setTimeout(resolveOwnerAccess, 0);
     window.addEventListener("albukhr:testnet-auth-success", resolveOwnerAccess);
   }
