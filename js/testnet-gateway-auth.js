@@ -1,4 +1,4 @@
-/* ALBUKHR TESTNET AUTH GATEWAY v6 */
+/* ALBUKHR TESTNET AUTH GATEWAY v6.1 — SAFE RETURN-PATH RECOVERY */
 (function (window, document) {
   "use strict";
 
@@ -6,31 +6,15 @@
    * ALBUKHR TESTNET AUTH GATEWAY
    *
    * Secure flow:
-   *
-   *   Testnet
-   *      ↓
-   *   Mainnet Pi verification
-   *      ↓
-   *   Mainnet Testnet-Auth Issuer
-   *      ↓
-   *   One-time opaque access code
-   *      ↓
-   *   Testnet Auth Gateway
-   *      ↓
-   *   Short-lived Testnet session
+   *   Testnet -> Mainnet Pi verification -> Mainnet issuer -> one-time
+   *   access code -> Testnet gateway -> short-lived Testnet session.
    *
    * Security rules:
    * - Never send the Mainnet Pi access token to Testnet.
-   * - Never store the Pi access token in browser storage.
-   * - Never put the Pi access token in a URL.
+   * - Never store the Pi access token in browser storage or a URL.
    * - Testnet only accepts the one-time gateway access code.
    * - Gateway requests do not send browser credentials/cookies.
-   * - The Testnet session is temporary browser-session state only.
-   *
-   * NOTE:
-   * sessionStorage is intentionally used only for the temporary
-   * Testnet gateway session. It is NOT used as the application
-   * source of truth and is NOT used for persistent application data.
+   * - Testnet session state remains temporary browser-session state.
    */
 
   var GATEWAY_URL =
@@ -42,29 +26,19 @@
   var TESTNET_HOST =
     "test.albukhr.com";
 
+  var TESTNET_ORIGIN =
+    "https://test.albukhr.com";
+
   var TESTNET_NETWORK =
     "testnet";
 
-  /*
-   * Session storage key.
-   *
-   * This stores only the short-lived Testnet session returned by
-   * the Testnet gateway.
-   */
   var SESSION_KEY =
     "albukhr_testnet_session_v6";
 
   var session = null;
-  // Share one in-flight redemption across page modules.
-  // One-time access codes must only be redeemed once.
   var redemptionPromise = null;
   var redemptionCode = "";
-
-  /*
-   * ------------------------------------------------------------------
-   * Utilities
-   * ------------------------------------------------------------------
-   */
+  var mainnetRedirectStarted = false;
 
   function clean(value) {
     return String(value == null ? "" : value).trim();
@@ -93,6 +67,72 @@
     return currentHost() === TESTNET_HOST;
   }
 
+  /*
+   * Capture only the current Testnet route, never credentials.
+   * The route is later revalidated against the fixed Testnet origin
+   * by the Mainnet handoff module before it is used as a destination.
+   */
+  function safeTestnetReturnPath() {
+    try {
+      var url = new URL(window.location.href);
+      var sensitiveKey = /access.?code|token|secret|password|authorization|assertion|credential/i;
+
+      Array.from(url.searchParams.keys()).forEach(function (key) {
+        if (sensitiveKey.test(key)) {
+          url.searchParams.delete(key);
+        }
+      });
+
+      var hash = url.hash || "";
+      if (sensitiveKey.test(hash)) {
+        hash = "";
+      }
+
+      var path =
+        url.pathname +
+        (url.search ? url.search : "") +
+        hash;
+
+      if (
+        !path ||
+        path.charAt(0) !== "/" ||
+        path.indexOf("//") === 0 ||
+        path.indexOf("\\") !== -1 ||
+        path.length > 2048
+      ) {
+        return "/";
+      }
+
+      var checked = new URL(path, TESTNET_ORIGIN + "/");
+      if (checked.origin !== TESTNET_ORIGIN) {
+        return "/";
+      }
+
+      return checked.pathname +
+        (checked.search ? checked.search : "") +
+        (checked.hash ? checked.hash : "");
+    } catch (_) {
+      return "/";
+    }
+  }
+
+  function buildMainnetLoginUrl() {
+    var destination = new URL(MAINNET_LOGIN);
+    destination.searchParams.set(
+      "testnet_return",
+      safeTestnetReturnPath()
+    );
+    return destination.toString();
+  }
+
+  function redirectToMainnet() {
+    if (mainnetRedirectStarted) return;
+    mainnetRedirectStarted = true;
+    window.location.replace(
+      buildMainnetLoginUrl()
+    );
+  }
+
   function emit(type, detail) {
     var payload = Object.assign(
       {
@@ -102,10 +142,7 @@
       detail || {}
     );
 
-    /*
-     * Do not expose access codes, session tokens or Pi tokens
-     * in diagnostics.
-     */
+    /* Do not expose access codes, session tokens or Pi tokens. */
     try {
       console.info(
         "[ALBUKHR TESTNET AUTH]",
@@ -125,11 +162,9 @@
     } catch (_) {}
   }
 
-  /*
-   * ------------------------------------------------------------------
-   * Session validation
-   * ------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------
+   * Session validation and temporary storage
+   * ------------------------------------------------------------------ */
 
   function normalizeSession(value) {
     if (!isObject(value)) {
@@ -137,21 +172,11 @@
     }
 
     var token = clean(value.token);
+    if (!token) return null;
+    if (value.network !== TESTNET_NETWORK) return null;
 
-    if (!token) {
-      return null;
-    }
-
-    if (value.network !== TESTNET_NETWORK) {
-      return null;
-    }
-
-    /*
-     * If an expiry is supplied, it must still be valid.
-     */
     if (value.expires_at) {
       var expiry = new Date(value.expires_at).getTime();
-
       if (!Number.isFinite(expiry) || expiry <= Date.now()) {
         return null;
       }
@@ -169,7 +194,6 @@
 
   function saveSession(value) {
     var normalized = normalizeSession(value);
-
     if (!normalized) {
       throw new Error(
         "Invalid Testnet session received from gateway."
@@ -182,21 +206,13 @@
       session = normalized;
     }
 
-    /*
-     * sessionStorage is temporary browser-session state only.
-     *
-     * It is deliberately NOT LocalStorage.
-     */
     try {
       sessionStorage.setItem(
         SESSION_KEY,
         JSON.stringify(normalized)
       );
     } catch (_) {
-      /*
-       * The in-memory session remains usable if sessionStorage
-       * is unavailable.
-       */
+      /* The in-memory session remains usable for this page lifecycle. */
     }
 
     return session;
@@ -205,35 +221,26 @@
   function loadSession() {
     if (session) {
       var current = normalizeSession(session);
-
-      if (current) {
-        return current;
-      }
-
+      if (current) return current;
       session = null;
     }
 
     var raw = null;
-
     try {
       raw = sessionStorage.getItem(SESSION_KEY);
     } catch (_) {
       raw = null;
     }
 
-    if (!raw) {
-      return null;
-    }
+    if (!raw) return null;
 
     try {
       var parsed = JSON.parse(raw);
       var normalized = normalizeSession(parsed);
-
       if (!normalized) {
         try {
           sessionStorage.removeItem(SESSION_KEY);
         } catch (_) {}
-
         return null;
       }
 
@@ -242,40 +249,30 @@
       } catch (_) {
         session = normalized;
       }
-
       return session;
     } catch (_) {
       try {
         sessionStorage.removeItem(SESSION_KEY);
       } catch (_) {}
-
       return null;
     }
   }
 
   function clearSession() {
     session = null;
-
     try {
       sessionStorage.removeItem(SESSION_KEY);
     } catch (_) {}
   }
 
-  /*
-   * ------------------------------------------------------------------
-   * Access-code URL cleanup
-   * ------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------
+   * Remove one-time access code after successful redemption
+   * ------------------------------------------------------------------ */
 
   function removeAccessCodeFromUrl() {
     try {
       var url = new URL(window.location.href);
-
       url.searchParams.delete("access_code");
-
-      /*
-       * Preserve every other query parameter and hash.
-       */
       window.history.replaceState(
         {},
         document.title,
@@ -284,42 +281,33 @@
           (url.hash ? url.hash : "")
       );
     } catch (error) {
-      emit(
-        "URL_CLEANUP_FAILED",
-        {
-          message:
-            error && error.message
-              ? error.message
-              : "Could not remove access_code from URL."
-        }
-      );
+      emit("URL_CLEANUP_FAILED", {
+        message:
+          error && error.message
+            ? error.message
+            : "Could not remove access_code from URL."
+      });
     }
   }
 
-  /*
-   * ------------------------------------------------------------------
+  /* ------------------------------------------------------------------
    * Gateway response parsing
-   * ------------------------------------------------------------------
-   */
+   * ------------------------------------------------------------------ */
 
   async function readResponse(response) {
     var raw = "";
-
     try {
       raw = await response.text();
     } catch (error) {
       var readError = new Error(
         "Could not read the Testnet gateway response."
       );
-
       readError.cause = error;
       readError.status = response.status;
-
       throw readError;
     }
 
     var body = null;
-
     if (raw) {
       try {
         body = JSON.parse(raw);
@@ -327,31 +315,19 @@
         body = null;
       }
     }
-
-    return {
-      raw: raw,
-      body: body
-    };
+    return { raw: raw, body: body };
   }
 
-  /*
-   * ------------------------------------------------------------------
+  /* ------------------------------------------------------------------
    * Redeem one-time Testnet access code
-   * ------------------------------------------------------------------
-   */
+   * ------------------------------------------------------------------ */
 
   async function redeemAccessCode(code) {
     var value = clean(code);
-
     if (!value) {
-      emit(
-        "NO_ACCESS_CODE",
-        {
-          message:
-            "No Testnet access code is present."
-        }
-      );
-
+      emit("NO_ACCESS_CODE", {
+        message: "No Testnet access code is present."
+      });
       return null;
     }
 
@@ -359,113 +335,67 @@
       var hostError = new Error(
         "Testnet authentication can only run on test.albukhr.com."
       );
-
-      emit(
-        "INVALID_TESTNET_HOST",
-        {
-          message: hostError.message,
-          host: currentHost()
-        }
-      );
-
+      emit("INVALID_TESTNET_HOST", {
+        message: hostError.message,
+        host: currentHost()
+      });
       throw hostError;
     }
 
-    emit(
-      "REDEEM_START",
-      {
-        message:
-          "Redeeming the one-time Testnet access code.",
-        gateway: GATEWAY_URL
-      }
-    );
+    emit("REDEEM_START", {
+      message: "Redeeming the one-time Testnet access code.",
+      gateway: GATEWAY_URL
+    });
 
     var response;
-
     try {
       /*
-       * IMPORTANT:
-       *
-       * credentials:"include" is intentionally NOT used.
-       *
-       * The gateway uses the access code in the request body and
-       * does not require browser cookies.
-       *
-       * text/plain is retained because it avoids the unnecessary
-       * JSON Content-Type CORS preflight that caused the previous
-       * Pi Browser "Failed to fetch" problem.
-       *
-       * The body itself remains JSON text and is therefore still
-       * compatible with Edge Function req.json().
+       * text/plain avoids an unnecessary JSON Content-Type CORS
+       * preflight in Pi Browser. The body remains JSON text and is
+       * parsed by the Edge Function with req.json().
        */
-      response = await fetch(
-        GATEWAY_URL,
-        {
-          method: "POST",
-          mode: "cors",
-
-          headers: {
-            "Content-Type":
-              "text/plain;charset=UTF-8",
-            "Accept":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            action: "redeem",
-            code: value
-          })
-        }
-      );
+      response = await fetch(GATEWAY_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          action: "redeem",
+          code: value
+        })
+      });
     } catch (error) {
       var fetchError = new Error(
         error && error.message
           ? error.message
           : "Testnet gateway request failed."
       );
-
-      fetchError.code =
-        "GATEWAY_UNREACHABLE";
-
-      emit(
-        "GATEWAY_UNREACHABLE",
-        {
-          message: fetchError.message,
-          gateway: GATEWAY_URL
-        }
-      );
-
+      fetchError.code = "GATEWAY_UNREACHABLE";
+      emit("GATEWAY_UNREACHABLE", {
+        message: fetchError.message,
+        gateway: GATEWAY_URL
+      });
       throw fetchError;
     }
 
     var parsedResponse;
-
     try {
-      parsedResponse =
-        await readResponse(response);
+      parsedResponse = await readResponse(response);
     } catch (error) {
-      emit(
-        "GATEWAY_RESPONSE_READ_FAILED",
-        {
-          status: response.status,
-          message:
-            error && error.message
-              ? error.message
-              : "Could not read gateway response.",
-          gateway: GATEWAY_URL
-        }
-      );
-
+      emit("GATEWAY_RESPONSE_READ_FAILED", {
+        status: response.status,
+        message:
+          error && error.message
+            ? error.message
+            : "Could not read gateway response.",
+        gateway: GATEWAY_URL
+      });
       throw error;
     }
 
     var body = parsedResponse.body;
-    var raw = parsedResponse.raw;
-
-    /*
-     * The gateway must explicitly confirm success and return
-     * a Testnet session.
-     */
     if (
       !response.ok ||
       !body ||
@@ -476,106 +406,55 @@
         clean(body && body.error) ||
         clean(body && body.message) ||
         ("HTTP_" + response.status);
-
-      var gatewayError =
-        new Error(message);
-
-      gatewayError.status =
-        response.status;
-
-      gatewayError.body =
-        body || null;
-
-      gatewayError.code =
-        message;
-
-      emit(
-        "REDEEM_FAILED",
-        {
-          status: response.status,
-          message: message,
-          gateway: GATEWAY_URL
-        }
-      );
-
+      var gatewayError = new Error(message);
+      gatewayError.status = response.status;
+      gatewayError.body = body || null;
+      gatewayError.code = message;
+      emit("REDEEM_FAILED", {
+        status: response.status,
+        message: message,
+        gateway: GATEWAY_URL
+      });
       throw gatewayError;
     }
 
-    /*
-     * Gateway user metadata is informational identity context.
-     * The gateway session token is the actual Testnet session.
-     */
-    var user =
-      isObject(body.user)
-        ? body.user
-        : {};
-
+    var user = isObject(body.user) ? body.user : {};
     var receivedSession = {
       token: clean(body.session),
-
-      expires_at:
-        body.expires_at || null,
-
-      network:
-        TESTNET_NETWORK,
-
-      pi_uid:
-        clean(user.uid) || null,
-
-      username:
-        clean(user.username) || null,
-
-      wallet_address:
-        clean(user.wallet_address) || null
+      expires_at: body.expires_at || null,
+      network: TESTNET_NETWORK,
+      pi_uid: clean(user.uid) || null,
+      username: clean(user.username) || null,
+      wallet_address: clean(user.wallet_address) || null
     };
 
     var saved;
-
     try {
-      saved = saveSession(
-        receivedSession
-      );
+      saved = saveSession(receivedSession);
     } catch (error) {
-      emit(
-        "INVALID_GATEWAY_SESSION",
-        {
-          message:
-            error && error.message
-              ? error.message
-              : "Gateway returned an invalid session."
-        }
-      );
-
+      emit("INVALID_GATEWAY_SESSION", {
+        message:
+          error && error.message
+            ? error.message
+            : "Gateway returned an invalid session."
+      });
       throw error;
     }
 
-    /*
-     * Remove the one-time access code from the browser URL
-     * immediately after successful redemption.
-     */
     removeAccessCodeFromUrl();
 
-    emit(
-      "REDEEM_SUCCESS",
-      {
-        message:
-          "Testnet access code redeemed and Testnet session created.",
-        username:
-          clean(user.username),
-        expires_at:
-          clean(body.expires_at)
-      }
-    );
+    emit("REDEEM_SUCCESS", {
+      message:
+        "Testnet access code redeemed and Testnet session created.",
+      username: clean(user.username),
+      expires_at: clean(body.expires_at)
+    });
 
     try {
       window.dispatchEvent(
         new CustomEvent(
           "albukhr:testnet-auth-success",
-          {
-            detail: {
-              session: saved
-            }
-          }
+          { detail: { session: saved } }
         )
       );
     } catch (_) {}
@@ -583,76 +462,47 @@
     return saved;
   }
 
-  
-  /*
-   * Single-flight access-code redemption.
-   *
-   * Concurrent callers using the same code share
-   * one gateway request.
-   */
+  /* Single-flight access-code redemption. */
   function redeem(code) {
     var value = clean(code);
-
     if (redemptionPromise) {
-      if (redemptionCode === value) {
-        return redemptionPromise;
-      }
-
+      if (redemptionCode === value) return redemptionPromise;
       var inFlightError = new Error(
         "A different Testnet access-code redemption is already in progress."
       );
-
       inFlightError.code =
         "TESTNET_ACCESS_CODE_REDEMPTION_IN_PROGRESS";
-
       return Promise.reject(inFlightError);
     }
 
     redemptionCode = value;
-
     redemptionPromise = redeemAccessCode(value).finally(function () {
       redemptionPromise = null;
       redemptionCode = "";
     });
-
     return redemptionPromise;
   }
 
-  /*
-   * ------------------------------------------------------------------
-   * Testnet authentication requirement
-   * ------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------
+   * Testnet authentication requirement and automatic recovery
+   * ------------------------------------------------------------------ */
 
   async function requireTestnetAuth(options) {
     var opts = options || {};
 
     if (!isTestnetHost()) {
-      emit(
-        "INVALID_TESTNET_HOST",
-        {
-          message:
-            "Testnet authentication is running on an invalid host.",
-          host: currentHost()
-        }
-      );
-
+      emit("INVALID_TESTNET_HOST", {
+        message: "Testnet authentication is running on an invalid host.",
+        host: currentHost()
+      });
       return null;
     }
 
-    /*
-     * First priority:
-     * redeem a newly issued one-time access code.
-     */
     var code = "";
-
     try {
-      code =
-        clean(
-          new URLSearchParams(
-            window.location.search
-          ).get("access_code")
-        );
+      code = clean(
+        new URLSearchParams(window.location.search).get("access_code")
+      );
     } catch (_) {
       code = "";
     }
@@ -662,150 +512,75 @@
         return await redeem(code);
       } catch (error) {
         clearSession();
+        emit("AUTH_REQUIRED_AFTER_REDEEM_FAILURE", {
+          message:
+            error && error.message
+              ? error.message
+              : "Testnet authentication failed."
+        });
 
-        emit(
-          "AUTH_REQUIRED_AFTER_REDEEM_FAILURE",
-          {
-            message:
-              error && error.message
-                ? error.message
-                : "Testnet authentication failed."
-          }
-        );
-
-        if (
-          opts.redirectOnFailure === true
-        ) {
-          window.location.replace(
-            MAINNET_LOGIN
-          );
+        if (opts.redirectOnFailure === true) {
+          redirectToMainnet();
         }
-
         return null;
       }
     }
 
-    /*
-     * Second priority:
-     * use an existing valid short-lived Testnet session.
-     */
     var existing = loadSession();
-
     if (existing) {
-      emit(
-        "SESSION_FOUND",
-        {
-          message:
-            "A valid Testnet session already exists.",
-          username:
-            clean(existing.username),
-          expires_at:
-            clean(existing.expires_at)
-        }
-      );
-
+      emit("SESSION_FOUND", {
+        message: "A valid Testnet session already exists.",
+        username: clean(existing.username),
+        expires_at: clean(existing.expires_at)
+      });
       return existing;
     }
 
-    /*
-     * No access code and no valid session.
-     */
-    emit(
-      "SESSION_REQUIRED",
-      {
-        message:
-          "No Testnet session exists. Start from Mainnet Login to obtain a Testnet access code."
-      }
-    );
+    emit("SESSION_REQUIRED", {
+      message:
+        "No valid Testnet session exists. Starting Mainnet authentication handoff."
+    });
 
-    if (
-      opts.redirectOnFailure === true
-    ) {
-      window.location.replace(
-        MAINNET_LOGIN
-      );
+    if (opts.redirectOnFailure === true) {
+      redirectToMainnet();
     }
 
     return null;
   }
-
-  /*
-   * ------------------------------------------------------------------
-   * Session helpers
-   * ------------------------------------------------------------------
-   */
 
   function getSession() {
     return loadSession();
   }
 
   function getSessionToken() {
-    var current =
-      loadSession();
-
-    return current
-      ? clean(current.token)
-      : "";
+    var current = loadSession();
+    return current ? clean(current.token) : "";
   }
 
   function logout() {
-    /*
-     * The current gateway does not require a server-side logout.
-     * Clearing the temporary browser session is therefore sufficient
-     * for this client-side Testnet auth layer.
-     */
     clearSession();
-
-    emit(
-      "LOGGED_OUT",
-      {
-        message:
-          "Temporary Testnet browser session cleared."
-      }
-    );
+    emit("LOGGED_OUT", {
+      message: "Temporary Testnet browser session cleared."
+    });
   }
-
-  /*
-   * ------------------------------------------------------------------
-   * Public API
-   * ------------------------------------------------------------------
-   */
 
   var api = {
     redeem: redeem,
-
-    requireTestnetAuth:
-      requireTestnetAuth,
-
-    getSession:
-      getSession,
-
-    getSessionToken:
-      getSessionToken,
-
-    logout:
-      logout,
-
-    gatewayUrl:
-      GATEWAY_URL,
-
-    mainnetLogin:
-      MAINNET_LOGIN
+    requireTestnetAuth: requireTestnetAuth,
+    getSession: getSession,
+    getSessionToken: getSessionToken,
+    logout: logout,
+    gatewayUrl: GATEWAY_URL,
+    mainnetLogin: MAINNET_LOGIN
   };
 
   try {
     Object.freeze(api);
   } catch (_) {}
 
-  window.AlbukhrTestnetAuth =
-    api;
+  window.AlbukhrTestnetAuth = api;
 
-  emit(
-    "AUTH_MODULE_READY",
-    {
-      message:
-        "Testnet gateway authentication module loaded."
-    }
-  );
-
+  emit("AUTH_MODULE_READY", {
+    message: "Testnet gateway authentication module loaded."
+  });
 })(window, document);
