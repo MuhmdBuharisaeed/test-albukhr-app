@@ -443,27 +443,25 @@
           }
 
           /*
-           * Do not automatically redirect here.
-           *
-           * login.html is responsible for sending the user to
-           * Mainnet authentication when needed.
+           * Session recovery must begin at the page the user opened.
+           * The auth gateway sends the user to Mainnet only when no
+           * valid Testnet session exists, and carries this safe page
+           * path through the signed handoff back to Testnet.
            */
           var session =
             await window.AlbukhrTestnetAuth
               .requireTestnetAuth({
                 redirectOnFailure:
-                  false
+                  true
               });
 
           if (!session) {
             /*
-             * No authenticated Testnet session.
-             *
-             * This is not a registry error and must not be presented
-             * as one.
+             * Navigation is initiated by the auth gateway. Do not
+             * misreport a missing session as a registry error.
              */
             console.warn(
-              "[ALBUKHR TESTNET] Authentication is not ready."
+              "[ALBUKHR TESTNET] Session recovery is required."
             );
 
             try {
