@@ -318,70 +318,44 @@
      PI SDK INITIALIZATION
   ======================================================= */
 
-  function initializePiSdk() {
+function initializePiSdk() {
+  dispatch("albukhr:testnet-liquidity-debug", {
+    stage: "sdk-init-start",
+    message: "Checking Testnet environment and starting Pi SDK…"
+  });
+
+  validateEnvironment();
+
+  var pi = requirePiSdk();
+
+  if (initialized) {
+    return Promise.resolve(pi);
+  }
+
+  /*
+   * Pi.init() does not expose a documented cancellation method.
+   * A timeout limits the caller's wait only; it cannot cancel the SDK call.
+   * Keep one shared promise until the SDK actually resolves or rejects.
+   */
+  if (!initializationPromise) {
     dispatch("albukhr:testnet-liquidity-debug", {
-      stage: "sdk-init-start",
-      message: "Checking Testnet environment and starting Pi SDK…"
+      stage: "pi-init-call",
+      message:
+        "Calling Pi.init(); version=" +
+        PI_SDK_VERSION +
+        ", sandbox=" +
+        PI_SANDBOX +
+        "."
     });
 
-    validateEnvironment();
-
-    var pi = requirePiSdk();
-
-    if (initialized) {
-      return Promise.resolve(pi);
-    }
-
-    if (initializationPromise) {
-      return initializationPromise;
-    }
-
-    /*
-     * Timeout the underlying initialization attempt itself. A timeout applied
-     * only by authenticate() leaves initializationPromise pending forever and
-     * causes every retry to wait on the same stale promise.
-     */
-    var attemptPromise;
-    var initTimer = null;
-
-    attemptPromise = new Promise(function (resolve, reject) {
-      var settled = false;
-
-      initTimer = setTimeout(function () {
-        if (settled) return;
-        settled = true;
-        reject(new Error("PI_SDK_INIT_TIMEOUT"));
-      }, 10000);
-
-      Promise.resolve()
-        .then(function () {
-          dispatch("albukhr:testnet-liquidity-debug", {
-            stage: "pi-init-call",
-            message: "Calling Pi.init(); version=" + PI_SDK_VERSION + ", sandbox=" + PI_SANDBOX + "."
-          });
-          return pi.init({
-            version: PI_SDK_VERSION,
-            sandbox: PI_SANDBOX
-          });
-        })
-        .then(
-          function () {
-            if (settled) return;
-            settled = true;
-            clearTimeout(initTimer);
-            resolve(pi);
-          },
-          function (error) {
-            if (settled) return;
-            settled = true;
-            clearTimeout(initTimer);
-            reject(error);
-          }
-        );
-    });
-
-    initializationPromise = attemptPromise
-      .then(function (readyPi) {
+    initializationPromise = Promise.resolve()
+      .then(function () {
+        return pi.init({
+          version: PI_SDK_VERSION,
+          sandbox: PI_SANDBOX
+        });
+      })
+      .then(function () {
         initialized = true;
 
         dispatch("albukhr:testnet-liquidity-debug", {
@@ -394,13 +368,18 @@
           sandbox: PI_SANDBOX
         });
 
-        return readyPi;
+        return pi;
       })
       .catch(function (error) {
+        /*
+         * Clear only when Pi.init() itself rejects.
+         * A caller timeout must not reset the pending SDK promise.
+         */
         initialized = false;
         initializationPromise = null;
 
-        var message = clean(error && error.message) || "PI_INIT_FAILED";
+        var message =
+          clean(error && error.message) || "PI_INIT_FAILED";
 
         dispatch("albukhr:testnet-liquidity-debug", {
           stage: "sdk-init-error",
@@ -413,9 +392,33 @@
 
         throw error;
       });
-
-    return initializationPromise;
   }
+
+  return withAuthTimeout(
+    initializationPromise,
+    10000,
+    "PI_SDK_INIT_TIMEOUT"
+  ).catch(function (error) {
+    if (
+      clean(error && error.message) ===
+      "PI_SDK_INIT_TIMEOUT"
+    ) {
+      dispatch("albukhr:testnet-liquidity-debug", {
+        stage: "sdk-init-timeout",
+        message:
+          "Pi SDK initialization is still pending. " +
+          "This page will not start a second Pi.init() call. " +
+          "Reload the Testnet page in Pi Browser before retrying."
+      });
+
+      dispatch("albukhr:testnet-liquidity-pi-init-error", {
+        message: "PI_SDK_INIT_TIMEOUT"
+      });
+    }
+
+    throw error;
+  });
+}
 
   /* =======================================================
      CHECK PI AUTHENTICATION STATE
