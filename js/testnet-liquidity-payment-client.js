@@ -827,18 +827,37 @@
     }
 
     // Re-check the current canonical session against the identity mapping
-    // cached in memory. This is synchronous and preserves the click path.
-    var currentSession = getAuth().getSession &&
-      getAuth().getSession();
+// cached in memory. This remains synchronous so Pi.createPayment stays
+// on the original user-click path.
+var auth = getAuth();
+var currentSession =
+  auth && typeof auth.getSession === "function"
+    ? auth.getSession()
+    : null;
 
-    if (
-      !currentSession ||
-      clean(currentSession.pi_uid) !== ownerIdentityCanonicalUid
-    ) {
-      ownerIdentityLinked = false;
-      ownerIdentityStatus = "session_changed";
-      throw new Error("OWNER_CANONICAL_SESSION_CHANGED");
+if (!currentSession) {
+  ownerIdentityLinked = false;
+  ownerIdentityStatus = "session_expired";
+
+  // Start the established Mainnet recovery path before any new Pi payment
+  // is created. Do not await it here and never replay a payment after login.
+  try {
+    var recovery = auth.requireTestnetAuth({
+      redirectOnFailure: true
+    });
+    if (recovery && typeof recovery.catch === "function") {
+      recovery.catch(function () {});
     }
+  } catch (_) {}
+
+  throw new Error("TESTNET_SESSION_RECOVERY_REQUIRED");
+}
+
+if (clean(currentSession.pi_uid) !== ownerIdentityCanonicalUid) {
+  ownerIdentityLinked = false;
+  ownerIdentityStatus = "session_changed";
+  throw new Error("OWNER_CANONICAL_SESSION_CHANGED");
+}
 
     var pi = requirePiSdk();
     var memo = "ALBUKHR Testnet liquidity • " + projectCode;
