@@ -616,11 +616,7 @@ function initializePiSdk() {
     }
 
     // Initialize Pi only after the Testnet gateway session has passed.
-    var pi = await withAuthTimeout(
-      initializePiSdk(),
-      12000,
-      "PI_SDK_INIT_TIMEOUT"
-    );
+    var pi = await initializePiSdk();
 
     // Avoid duplicate Pi authentication.
     if (authenticationPromise) {
