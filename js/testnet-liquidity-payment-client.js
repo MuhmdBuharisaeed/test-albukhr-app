@@ -591,9 +591,9 @@
 
     // Enforce ALBUKHR's Testnet gateway session before Pi SDK initialization.
     if (!testnetSessionPromise) {
-      testnetSessionPromise = getAuth().requireTestnetAuth({
-        redirectOnFailure: false
-      });
+  testnetSessionPromise = getAuth().requireTestnetAuth({
+    redirectOnFailure: true
+  });
     }
 
     var session;
