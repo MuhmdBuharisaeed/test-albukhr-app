@@ -16,6 +16,7 @@
   var PI_SANDBOX = true;
   var busy = false;
   var piInitPromise = null;
+  var piInitReady = false;
 
   function el(id) {
     return document.getElementById(id);
@@ -96,31 +97,45 @@
   }
 
   function initializePi() {
-    if (piInitPromise) return piInitPromise;
+    if (piInitReady) return Promise.resolve(true);
 
-    if (
-      !window.Pi ||
-      typeof window.Pi.init !== "function" ||
-      typeof window.Pi.authenticate !== "function"
-    ) {
-      return Promise.reject(new Error("PI_SDK_UNAVAILABLE"));
+    if (!piInitPromise) {
+      if (
+        !window.Pi ||
+        typeof window.Pi.init !== "function" ||
+        typeof window.Pi.authenticate !== "function"
+      ) {
+        return Promise.reject(new Error("PI_SDK_UNAVAILABLE"));
+      }
+
+      /*
+       * Keep the original Pi.init promise until the SDK itself settles.
+       * withTimeout() only limits this caller's wait; it cannot cancel Pi.init().
+       * If the wait expires, another click in this page must share the same
+       * pending promise instead of starting a second Pi.init() call.
+       */
+      piInitPromise = Promise.resolve()
+        .then(function () {
+          return window.Pi.init({
+            version: SDK_VERSION,
+            sandbox: PI_SANDBOX
+          });
+        })
+        .then(function () {
+          piInitReady = true;
+          return true;
+        }, function (error) {
+          piInitReady = false;
+          piInitPromise = null;
+          throw error;
+        });
     }
 
-    piInitPromise = withTimeout(
-      Promise.resolve().then(function () {
-        return window.Pi.init({
-          version: SDK_VERSION,
-          sandbox: PI_SANDBOX
-        });
-      }),
+    return withTimeout(
+      piInitPromise,
       12000,
       "PI_SDK_INIT_TIMEOUT"
-    ).catch(function (error) {
-      piInitPromise = null;
-      throw error;
-    });
-
-    return piInitPromise;
+    );
   }
 
   function safeReturnTo() {
@@ -350,8 +365,9 @@
 
       if (code === "PI_SDK_INIT_TIMEOUT") {
         setStatus(
-          "Pi SDK initialization timed out. Open Testnet directly " +
-          "in Pi Browser and retry. No payment was started."
+          "Pi SDK initialization timed out and may still be running in this tab. " +
+          "Reload the Testnet page inside Pi Browser before retrying. " +
+          "No payment was started."
         );
       } else if (code === "PI_AUTHENTICATION_TIMEOUT") {
         setStatus(
