@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -171,29 +170,29 @@
     </section>
 
     <section class="stats-grid" aria-label="Project owner summary">
-  <article class="stat-card">
-    <span>Owner Balance</span>
-    <strong id="ownerBalance">0.00 Pi</strong>
-    <small>Available for owner withdrawal</small>
-  </article>
+      <article class="stat-card">
+        <span>Owner Balance</span>
+        <strong id="ownerBalance">0.00 Pi</strong>
+        <small>Available for owner withdrawal</small>
+      </article>
 
-  <article class="stat-card">
-  <span>Project Liquidity Target</span>
-  <strong id="requiredLiquidity">0.00 Pi</strong>
-  <small>Each project has its own Testnet target; 100 Pi is the global minimum floor.</small>
-  </article>
+      <article class="stat-card">
+        <span>Project Liquidity Target</span>
+        <strong id="requiredLiquidity">0.00 Pi</strong>
+        <small>Each project has its own Testnet target; 100 Pi is the global minimum floor.</small>
+      </article>
 
-  <article class="stat-card">
-    <span>Received Liquidity</span>
-    <strong id="receivedLiquidity">0.00 Pi</strong>
-    <small>Completed Testnet payments</small>
-  </article>
+      <article class="stat-card">
+        <span>Received Liquidity</span>
+        <strong id="receivedLiquidity">0.00 Pi</strong>
+        <small>Completed Testnet payments</small>
+      </article>
 
-  <article class="stat-card">
-    <span>Verified Liquidity</span>
-    <strong id="verifiedLiquidity">0.00 Pi</strong>
-    <small id="liquidityCoverage">0% coverage</small>
-  </article>
+      <article class="stat-card">
+        <span>Verified Liquidity</span>
+        <strong id="verifiedLiquidity">0.00 Pi</strong>
+        <small id="liquidityCoverage">0% coverage</small>
+      </article>
     </section>
 
     <section class="panel">
@@ -365,12 +364,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/core/environment-core.js?v=20260923-owner4c"></script>
 <script src="js/core/supabase-core.js?v=20260923-owner4c"></script>
-<script src="js/testnet-gateway-auth.js?v=20260925-gateway1"></script>
+<script src="js/testnet-gateway-auth.js?v=20261110-session-recovery1"></script>
 <script src="https://sdk.minepi.com/pi-sdk.js"
   onload="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-ok',message:'Pi SDK script loaded; window.Pi='+(!!window.Pi)+'; Pi.init='+(typeof (window.Pi && window.Pi.init))}}))"
   onerror="window.dispatchEvent(new CustomEvent('albukhr:testnet-liquidity-debug',{detail:{stage:'sdk-script-load-error',message:'Pi SDK script failed to load from sdk.minepi.com.'}}))"></script>
-<script src="js/testnet-liquidity-payment-client.js?v=20261025-owner-debug3"></script>
-<script src="js/testnet-project-owner.js?v=20261101-owner-liquidity-summary1"></script>
-<script src="js/testnet-owner-staking.js?v=20261106-staking-collapse1"></script>
+<script src="js/testnet-liquidity-payment-client.js?v=20261110-session-recovery1"></script>
+<script src="js/testnet-project-owner.js?v=20261110-session-recovery1"></script>
+<script src="js/testnet-owner-staking.js?v=20261110-session-recovery1"></script>
 </body>
 </html>
