@@ -264,9 +264,18 @@
   ======================================================= */
 
   async function ownerRequest(method, query, body) {
-    var token = clean(
-      getAuth().getSessionToken()
-    );
+  /*
+   * Revalidate the temporary Testnet session before every owner API call.
+   * If it has expired, ensureSession() starts the safe Mainnet handoff and
+   * the handoff returns the user to this same Project Owner route.
+   * The owner operation is deliberately not replayed after authentication;
+   * the user must explicitly retry it after returning.
+   */
+  await ensureSession();
+
+  var token = clean(
+    getAuth().getSessionToken()
+  );
 
     if (!token) {
       throw new Error(
