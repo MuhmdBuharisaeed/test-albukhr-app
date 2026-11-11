@@ -1,0 +1,580 @@
+/*
+ * ALBUKHR TESTNET ADMIN DASHBOARD — PRESENTATION LAYER
+ * Scope: admin-dashboard.html only.
+ *
+ * This file changes layout, spacing, readability and responsive behaviour.
+ * It does not hide administrative modules or alter their actions.
+ * Existing JavaScript, IDs, authorization gates and API contracts remain intact.
+ */
+
+body[data-page="testnet-admin-dashboard"] {
+  --admin-ux-ink: #173226;
+  --admin-ux-muted: #65766d;
+  --admin-ux-line: #dce9e1;
+  --admin-ux-soft: #f5faf7;
+  --admin-ux-shadow: 0 8px 24px rgba(15, 72, 42, .055);
+  color: var(--admin-ux-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-header {
+  min-height: 66px;
+  padding: 10px clamp(14px, 3vw, 28px);
+  border-bottom-color: var(--admin-ux-line);
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-brand-main {
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-brand-sub {
+  font-size: 9px;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+body[data-page="testnet-admin-dashboard"] .environment-badge {
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 10px;
+}
+
+body[data-page="testnet-admin-dashboard"] .back-link {
+  min-height: 40px;
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-main {
+  width: min(1380px, 100%);
+  padding: clamp(16px, 2.5vw, 30px) clamp(12px, 2.4vw, 26px) 76px;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(175px, 205px);
+  gap: 22px;
+  margin-bottom: 16px;
+  padding: clamp(19px, 3vw, 30px);
+  border-color: var(--admin-ux-line);
+  box-shadow: var(--admin-ux-shadow);
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-hero h1 {
+  font-size: clamp(26px, 3.5vw, 36px);
+  letter-spacing: -.45px;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-hero p {
+  max-width: 760px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-identity {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .hero-threshold {
+  min-width: 0;
+  padding: 17px;
+  border-color: var(--admin-ux-line);
+  background: #fff;
+}
+
+body[data-page="testnet-admin-dashboard"] .hero-threshold span,
+body[data-page="testnet-admin-dashboard"] .hero-threshold small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-admin-dashboard"] .hero-threshold strong {
+  font-size: clamp(26px, 3vw, 32px);
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-page="testnet-admin-dashboard"] .security-notice {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+body[data-page="testnet-admin-dashboard"] .security-notice strong {
+  font-size: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .security-notice p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+body[data-page="testnet-admin-dashboard"] .summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+body[data-page="testnet-admin-dashboard"] .summary-card {
+  min-width: 0;
+  min-height: 112px;
+  padding: 16px;
+  border-color: var(--admin-ux-line);
+  border-radius: 15px;
+  box-shadow: var(--admin-ux-shadow);
+}
+
+body[data-page="testnet-admin-dashboard"] .summary-card span {
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .45px;
+}
+
+body[data-page="testnet-admin-dashboard"] .summary-card strong {
+  margin: 8px 0 5px;
+  font-size: clamp(20px, 2.3vw, 26px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-page="testnet-admin-dashboard"] .summary-card small {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+body[data-page="testnet-admin-dashboard"] .admin-main > .panel {
+  min-width: 0;
+  margin-top: 16px;
+  padding: clamp(16px, 2vw, 22px);
+  border-color: var(--admin-ux-line);
+  border-radius: 16px;
+  box-shadow: var(--admin-ux-shadow);
+}
+
+body[data-page="testnet-admin-dashboard"] .panel-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .panel-heading > div:first-child {
+  min-width: 0;
+}
+
+body[data-page="testnet-admin-dashboard"] .panel-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+body[data-page="testnet-admin-dashboard"] .panel h2 {
+  font-size: clamp(18px, 2.2vw, 22px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-admin-dashboard"] .section-kicker {
+  line-height: 1.4;
+}
+
+body[data-page="testnet-admin-dashboard"] .refresh-button,
+body[data-page="testnet-admin-dashboard"] .primary-admin-button {
+  min-height: 42px;
+  padding: 10px 13px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+body[data-page="testnet-admin-dashboard"] .page-status {
+  min-height: 20px;
+  margin: 12px 0;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--admin-ux-muted);
+  background: var(--admin-ux-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-admin-dashboard"] .page-status.error {
+  border-color: #efcecb;
+  color: #922d27;
+  background: #fff5f4;
+}
+
+body[data-page="testnet-admin-dashboard"] .table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid #e7efe9;
+  border-radius: 12px;
+  background: #fff;
+}
+
+body[data-page="testnet-admin-dashboard"] table {
+  width: 100%;
+  min-width: 790px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body[data-page="testnet-admin-dashboard"] th,
+body[data-page="testnet-admin-dashboard"] td {
+  padding: 13px 11px;
+  border-top: 1px solid #edf3ef;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-admin-dashboard"] th {
+  background: #f7fbf8;
+  font-size: 10px;
+}
+
+body[data-page="testnet-admin-dashboard"] td {
+  font-size: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .project-name strong {
+  font-size: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .project-name small,
+body[data-page="testnet-admin-dashboard"] .coverage-label {
+  font-size: 10px;
+}
+
+body[data-page="testnet-admin-dashboard"] .row-action {
+  min-height: 38px;
+  margin: 5px 6px 2px 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+body[data-page="testnet-admin-dashboard"] .state {
+  padding: 6px 8px;
+  font-size: 9px;
+}
+
+body[data-page="testnet-admin-dashboard"] .empty-state {
+  margin-top: 12px;
+  padding: 22px 14px;
+}
+
+body[data-page="testnet-admin-dashboard"] .empty-state strong {
+  font-size: 13px;
+}
+
+body[data-page="testnet-admin-dashboard"] .empty-state p {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Pending payment verification remains visible and fully operable. */
+body[data-page="testnet-admin-dashboard"] .payment-verification-panel > p {
+  max-width: 900px;
+  margin: 14px 0;
+  color: var(--admin-ux-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-queue {
+  gap: 10px;
+  margin: 14px 0;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-item {
+  min-width: 0;
+  padding: 13px 14px;
+  border-color: var(--admin-ux-line);
+  border-radius: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-item-name strong {
+  font-size: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-item-name small,
+body[data-page="testnet-admin-dashboard"] .verification-item-meta {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-item-amount {
+  font-size: 13px;
+}
+
+body[data-page="testnet-admin-dashboard"] .verification-empty {
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Existing JavaScript-injected Stage Manager, Risk and Global Controls.
+   Specific page + element selectors take precedence without changing JS. */
+body[data-page="testnet-admin-dashboard"] .admin-main > #albukhrTestnetStakingStageManager,
+body[data-page="testnet-admin-dashboard"] .admin-main > #albukhrTestnetStakingRiskControls,
+body[data-page="testnet-admin-dashboard"] .admin-main > #albukhrTestnetGlobalTransactionControls {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 16px 0 0;
+  padding: clamp(16px, 2vw, 22px);
+  border: 1px solid var(--admin-ux-line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--admin-ux-ink);
+  box-shadow: var(--admin-ux-shadow);
+}
+
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingStageManager table {
+  width: 100%;
+  min-width: 720px;
+}
+
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingStageManager .stage-manager-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls .risk-grid,
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls .global-control-grid {
+  min-width: 0;
+}
+
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingStageManager button,
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls button,
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls button {
+  min-height: 42px;
+  line-height: 1.35;
+}
+
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingStageManager .stage-manager-status,
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls .risk-status,
+body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls .global-control-status {
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+
+/* Rules remain last in the dashboard's module sequence. */
+body[data-page="testnet-admin-dashboard"] .admin-main > .rules-panel {
+  margin-top: 18px;
+}
+
+body[data-page="testnet-admin-dashboard"] .rules-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+}
+
+body[data-page="testnet-admin-dashboard"] .rules-grid article {
+  min-width: 0;
+  padding: 14px;
+  border-color: var(--admin-ux-line);
+  border-radius: 12px;
+}
+
+body[data-page="testnet-admin-dashboard"] .rules-grid article strong {
+  font-size: 10px;
+}
+
+body[data-page="testnet-admin-dashboard"] .rules-grid article p {
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* Keyboard accessibility: do not alter disabled state or click behaviour. */
+body[data-page="testnet-admin-dashboard"] a:focus-visible,
+body[data-page="testnet-admin-dashboard"] button:focus-visible,
+body[data-page="testnet-admin-dashboard"] select:focus-visible,
+body[data-page="testnet-admin-dashboard"] input:focus-visible,
+body[data-page="testnet-admin-dashboard"] textarea:focus-visible {
+  outline: 3px solid rgba(15, 122, 61, .28);
+  outline-offset: 3px;
+}
+
+body[data-page="testnet-admin-dashboard"] button:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px) {
+  body[data-page="testnet-admin-dashboard"] .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-page="testnet-admin-dashboard"] .rules-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  body[data-page="testnet-admin-dashboard"] .admin-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-admin-dashboard"] .hero-threshold {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .panel-heading {
+    align-items: flex-start;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .panel-heading-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls .risk-actions,
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls .global-control-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls .risk-actions button,
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls .global-control-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  body[data-page="testnet-admin-dashboard"] .admin-header {
+    gap: 9px;
+    padding: 10px 12px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .admin-header-actions {
+    gap: 7px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .environment-badge {
+    display: inline-flex;
+    min-height: 31px;
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .back-link {
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .admin-main {
+    padding: 14px 10px 52px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .admin-hero,
+  body[data-page="testnet-admin-dashboard"] .admin-main > .panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .summary-grid {
+    gap: 8px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .summary-card {
+    min-height: 104px;
+    padding: 11px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .summary-card span {
+    font-size: 9px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .summary-card strong {
+    font-size: 19px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .summary-card small {
+    font-size: 10px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .security-notice {
+    padding: 12px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .security-notice p,
+  body[data-page="testnet-admin-dashboard"] .payment-verification-panel > p {
+    font-size: 12px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .panel-heading-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-admin-dashboard"] .panel-heading-actions .refresh-button,
+  body[data-page="testnet-admin-dashboard"] .panel-heading > .refresh-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .verification-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .primary-admin-button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .rules-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingStageManager,
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetStakingRiskControls,
+  body[data-page="testnet-admin-dashboard"] #albukhrTestnetGlobalTransactionControls {
+    padding: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  body[data-page="testnet-admin-dashboard"] .admin-brand-main {
+    font-size: 16px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .admin-brand-sub {
+    font-size: 8px;
+    letter-spacing: .9px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .environment-badge {
+    padding: 5px 6px;
+    font-size: 8px;
+  }
+
+  body[data-page="testnet-admin-dashboard"] .back-link {
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="testnet-admin-dashboard"] *,
+  body[data-page="testnet-admin-dashboard"] *::before,
+  body[data-page="testnet-admin-dashboard"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
