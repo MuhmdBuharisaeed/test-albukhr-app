@@ -8,6 +8,7 @@
 <title>ALBUKHR Testnet • Liquidity Control Center</title>
 <link rel="stylesheet" href="css/testnet.css">
 <link rel="stylesheet" href="css/testnet-admin.css">
+<link rel="stylesheet" href="css/testnet-admin-dashboard-ux.css?v=20261111-admin-uiux1">
 </head>
 <body data-page="testnet-admin-dashboard" data-network="testnet">
 <header class="admin-header">
@@ -19,50 +20,103 @@
     <button id="logoutButton" class="back-link" type="button">Sign out</button>
   </div>
 </header>
+
 <main class="admin-main">
-  <section class="admin-hero">
+  <section class="admin-hero" aria-labelledby="adminDashboardTitle">
     <div>
       <span class="section-kicker">TESTNET LIQUIDITY CONTROL CENTER</span>
-      <h1>Project Liquidity</h1>
+      <h1 id="adminDashboardTitle">Project Liquidity</h1>
       <p>Manage Testnet liquidity readiness for approved projects before staking and reward testing are enabled.</p>
       <p class="admin-identity">Admin: <b id="adminEmail">—</b> · Roles: <b id="adminRoles">—</b></p>
     </div>
     <div class="hero-threshold">
-  <span>Global Minimum Floor</span>
-  <strong>100 Pi</strong>
-  <small>Project targets may be higher</small>
+      <span>Global Minimum Floor</span>
+      <strong>100 Pi</strong>
+      <small>Project targets may be higher</small>
     </div>
   </section>
+
   <section class="security-notice" aria-label="Security boundary">
     <div class="notice-mark" aria-hidden="true">!</div>
-    <div><strong>Testnet only</strong><p>Administrative actions run against the Testnet Supabase project. No Mainnet investment or transaction records are read or changed by this page.</p></div>
+    <div>
+      <strong>Testnet only</strong>
+      <p>Administrative actions run against the Testnet Supabase project. No Mainnet investment or transaction records are read or changed by this page.</p>
+    </div>
   </section>
+
   <section class="summary-grid" aria-label="Liquidity summary">
-    <article class="summary-card"><span>Approved Projects</span><strong id="approvedCount">0</strong><small>Testnet registry</small></article>
-    <article class="summary-card"><span>Testnet Ready</span><strong id="readyCount">0</strong><small>Threshold met</small></article>
-    <article class="summary-card"><span>Liquidity Pending</span><strong id="pendingCount">0</strong><small>Below project target</small></article>
-    <article class="summary-card"><span>Total Verified</span><strong id="verifiedTotal">0.00 Pi</strong><small>Across Testnet projects</small></article>
+    <article class="summary-card">
+      <span>Approved Projects</span>
+      <strong id="approvedCount">0</strong>
+      <small>Testnet registry</small>
+    </article>
+    <article class="summary-card">
+      <span>Testnet Ready</span>
+      <strong id="readyCount">0</strong>
+      <small>Threshold met</small>
+    </article>
+    <article class="summary-card">
+      <span>Liquidity Pending</span>
+      <strong id="pendingCount">0</strong>
+      <small>Below project target</small>
+    </article>
+    <article class="summary-card">
+      <span>Total Verified</span>
+      <strong id="verifiedTotal">0.00 Pi</strong>
+      <small>Across Testnet projects</small>
+    </article>
   </section>
-  <section class="panel" aria-labelledby="ownershipTitle">
+
+  <section class="panel ownership-panel" aria-labelledby="ownershipTitle">
     <div class="panel-heading">
-      <div><span class="section-kicker">PROJECT OWNERSHIP</span><h2 id="ownershipTitle">Project Ownership &amp; Team Identity</h2></div>
-      <a id="ownershipManagementLink" class="refresh-button" href="project-owner-admin.html" hidden>Manage Ownership</a>
-      <a id="ownerApplicationsReviewLink" class="refresh-button" href="project-owner-applications-admin.html" hidden>Review Owner Applications</a>
+      <div>
+        <span class="section-kicker">PROJECT OWNERSHIP</span>
+        <h2 id="ownershipTitle">Project Ownership &amp; Team Identity</h2>
+      </div>
+      <div class="panel-heading-actions">
+        <a id="ownershipManagementLink" class="refresh-button" href="project-owner-admin.html" hidden>Manage Ownership</a>
+        <a id="ownerApplicationsReviewLink" class="refresh-button" href="project-owner-applications-admin.html" hidden>Review Owner Applications</a>
+      </div>
     </div>
     <p id="ownershipStatus" class="page-status">Ownership management is available to authorized Super Admins.</p>
   </section>
-  <section class="panel" aria-labelledby="projectLiquidityTitle">
-    <div class="panel-heading"><div><span class="section-kicker">PROJECT READINESS</span><h2 id="projectLiquidityTitle">Approved Project Liquidity</h2></div><button id="refreshButton" class="refresh-button" type="button">↻ Refresh</button></div>
-    <p id="pageStatus" class="page-status" aria-live="polite">Authenticating Testnet administrator…</p>
-    <div class="table-wrap"><table><thead><tr><th>Project</th><th>Project Target</th><th>Verified</th><th>Coverage</th><th>Readiness / Action</th></tr></thead><tbody id="projectRows"></tbody></table></div>
-    <div id="emptyState" class="empty-state" hidden><strong>No approved Testnet projects</strong><p>The Testnet registry returned no approved projects.</p></div>
-  </section>
-  <section class="panel action-panel" aria-labelledby="paymentVerifyTitle">
-    <span class="section-kicker">LIQUIDITY PAYMENT VERIFICATION</span>
 
-      <section class="panel action-panel" aria-labelledby="paymentVerifyTitle">
-    <span class="section-kicker"></span>
-    <h2 id="paymentVerifyTitle">Pending Payment Verification</h2>
+  <section class="panel liquidity-panel" aria-labelledby="projectLiquidityTitle">
+    <div class="panel-heading">
+      <div>
+        <span class="section-kicker">PROJECT READINESS</span>
+        <h2 id="projectLiquidityTitle">Approved Project Liquidity</h2>
+      </div>
+      <button id="refreshButton" class="refresh-button" type="button">↻ Refresh</button>
+    </div>
+    <p id="pageStatus" class="page-status" aria-live="polite">Authenticating Testnet administrator…</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Project Target</th>
+            <th>Verified</th>
+            <th>Coverage</th>
+            <th>Readiness / Action</th>
+          </tr>
+        </thead>
+        <tbody id="projectRows"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty-state" hidden>
+      <strong>No approved Testnet projects</strong>
+      <p>The Testnet registry returned no approved projects.</p>
+    </div>
+  </section>
+
+  <section class="panel action-panel payment-verification-panel" aria-labelledby="paymentVerifyTitle">
+    <div class="panel-heading">
+      <div>
+        <span class="section-kicker">LIQUIDITY PAYMENT VERIFICATION</span>
+        <h2 id="paymentVerifyTitle">Pending Payment Verification</h2>
+      </div>
+    </div>
 
     <p>
       Completed Testnet liquidity payments are discovered from
@@ -92,18 +146,32 @@
     >
       Verify Pending Payments
     </button>
-      </section>
-    
+  </section>
+
   <section class="panel rules-panel" aria-labelledby="rulesTitle">
-    <span class="section-kicker">TESTNET RULES</span><h2 id="rulesTitle">Liquidity Readiness Rules</h2>
+    <div class="panel-heading">
+      <div>
+        <span class="section-kicker">TESTNET RULES</span>
+        <h2 id="rulesTitle">Liquidity Readiness Rules</h2>
+      </div>
+    </div>
     <div class="rules-grid">
-      <article><strong>01</strong><p>Only projects with <b>approved</b> status participate in Testnet testing.</p></article>
       <article>
-  <strong>02</strong>
-  <p>100 PI is the global minimum floor, not a fixed project target or maximum. Each project may set a higher Testnet target according to its testing plan.</p>
+        <strong>01</strong>
+        <p>Only projects with <b>approved</b> status participate in Testnet testing.</p>
       </article>
-      <article><strong>03</strong><p>Testnet-ready means verified liquidity is at least the configured threshold.</p></article>
-      <article><strong>04</strong><p><b>active</b> remains the Mainnet transaction state; Testnet does not require active.</p></article>
+      <article>
+        <strong>02</strong>
+        <p>100 PI is the global minimum floor, not a fixed project target or maximum. Each project may set a higher Testnet target according to its testing plan.</p>
+      </article>
+      <article>
+        <strong>03</strong>
+        <p>Testnet-ready means verified liquidity is at least the configured threshold.</p>
+      </article>
+      <article>
+        <strong>04</strong>
+        <p><b>active</b> remains the Mainnet transaction state; Testnet does not require active.</p>
+      </article>
     </div>
   </section>
 </main>
