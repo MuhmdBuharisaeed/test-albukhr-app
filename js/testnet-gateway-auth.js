@@ -1,18 +1,23 @@
-/* ALBUKHR TESTNET AUTH GATEWAY v6.1 — SAFE RETURN-PATH RECOVERY */
+/* ALBUKHR TESTNET AUTH GATEWAY v6.2 — DIRECT TESTNET LOGIN + OPTIONAL MAINNET HANDOFF */
 (function (window, document) {
   "use strict";
 
   /*
    * ALBUKHR TESTNET AUTH GATEWAY
    *
-   * Secure flow:
-   *   Testnet -> Mainnet Pi verification -> Mainnet issuer -> one-time
-   *   access code -> Testnet gateway -> short-lived Testnet session.
+   * Direct flow (default):
+   *   Testnet page -> same-origin Testnet login -> Pi Sandbox verification
+   *   -> testnet-direct-auth -> short-lived Testnet session.
+   *
+   * Optional Mainnet handoff:
+   *   Mainnet login -> Mainnet issuer -> one-time access code
+   *   -> Testnet gateway -> short-lived Testnet session.
    *
    * Security rules:
    * - Never send the Mainnet Pi access token to Testnet.
    * - Never store the Pi access token in browser storage or a URL.
-   * - Testnet only accepts the one-time gateway access code.
+   * - Testnet only accepts the one-time gateway access code for the
+   *   optional Mainnet handoff; direct sign-in uses the Testnet Sandbox token.
    * - Gateway requests do not send browser credentials/cookies.
    * - Testnet session state remains temporary browser-session state.
    */
@@ -32,13 +37,16 @@
   var TESTNET_NETWORK =
     "testnet";
 
+  var TESTNET_LOGIN_PATH =
+    "/login.html";
+
   var SESSION_KEY =
     "albukhr_testnet_session_v6";
 
   var session = null;
   var redemptionPromise = null;
   var redemptionCode = "";
-  var mainnetRedirectStarted = false;
+  var testnetLoginRedirectStarted = false;
 
   function clean(value) {
     return String(value == null ? "" : value).trim();
@@ -69,8 +77,8 @@
 
   /*
    * Capture only the current Testnet route, never credentials.
-   * The route is later revalidated against the fixed Testnet origin
-   * by the Mainnet handoff module before it is used as a destination.
+   * The route is validated against the fixed Testnet origin before it is
+   * added to the same-origin direct Testnet login URL.
    */
   function safeTestnetReturnPath() {
     try {
@@ -125,11 +133,27 @@
     return destination.toString();
   }
 
-  function redirectToMainnet() {
-    if (mainnetRedirectStarted) return;
-    mainnetRedirectStarted = true;
+  /*
+   * Default recovery is local to Testnet. This keeps Testnet fully usable
+   * without requiring the user to authenticate on Mainnet first.
+   */
+  function buildTestnetLoginUrl() {
+    var destination = new URL(
+      TESTNET_LOGIN_PATH,
+      TESTNET_ORIGIN + "/"
+    );
+    destination.searchParams.set(
+      "returnTo",
+      safeTestnetReturnPath()
+    );
+    return destination.toString();
+  }
+
+  function redirectToTestnetLogin() {
+    if (testnetLoginRedirectStarted) return;
+    testnetLoginRedirectStarted = true;
     window.location.replace(
-      buildMainnetLoginUrl()
+      buildTestnetLoginUrl()
     );
   }
 
@@ -319,7 +343,7 @@
   }
 
   /* ------------------------------------------------------------------
-   * Redeem one-time Testnet access code
+   * Redeem one-time Testnet access code (optional Mainnet handoff)
    * ------------------------------------------------------------------ */
 
   async function redeemAccessCode(code) {
@@ -520,7 +544,7 @@
         });
 
         if (opts.redirectOnFailure === true) {
-          redirectToMainnet();
+          redirectToTestnetLogin();
         }
         return null;
       }
@@ -538,11 +562,11 @@
 
     emit("SESSION_REQUIRED", {
       message:
-        "No valid Testnet session exists. Starting Mainnet authentication handoff."
+        "No valid Testnet session exists. Starting direct Testnet Pi Sandbox authentication."
     });
 
     if (opts.redirectOnFailure === true) {
-      redirectToMainnet();
+      redirectToTestnetLogin();
     }
 
     return null;
@@ -571,7 +595,8 @@
     getSessionToken: getSessionToken,
     logout: logout,
     gatewayUrl: GATEWAY_URL,
-    mainnetLogin: MAINNET_LOGIN
+    mainnetLogin: MAINNET_LOGIN,
+    buildTestnetLoginUrl: buildTestnetLoginUrl
   };
 
   try {
