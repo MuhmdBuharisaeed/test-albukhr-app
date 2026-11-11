@@ -2,66 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ALBUKHR Testnet Login</title>
   <meta name="theme-color" content="#0f7a3d">
-  <meta name="description"
-        content="Authenticate directly with Pi for ALBUKHR Testnet access.">
+  <meta name="description" content="Sign in to ALBUKHR Testnet with Pi.">
   <meta name="color-scheme" content="light">
   <link rel="stylesheet" href="css/testnet.css">
+  <link rel="stylesheet" href="css/testnet-user-experience.css?v=20261111-uiux1">
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
-
 <body data-page="testnet-login" data-network="testnet">
   <header class="header">
     <strong>ALBUKHR</strong>
-    <span class="env" aria-label="Current environment: Testnet">
-      TESTNET
-    </span>
+    <span class="env" aria-label="Current environment: Testnet">TESTNET</span>
   </header>
-
   <main>
     <section class="hero" aria-labelledby="loginTitle">
-      <p class="eyebrow">DIRECT TESTNET ACCESS</p>
-      <h1 id="loginTitle">Verify with Pi</h1>
-
-      <p>
-        Authenticate with Pi directly in Testnet. ALBUKHR verifies
-        your Pi access token on the server before issuing a temporary
-        session. Project ownership and payments remain server-authorized.
-      </p>
+      <p class="eyebrow">TESTNET SIGN IN</p>
+      <h1 id="loginTitle">Sign in with Pi</h1>
+      <p>Use your Pi account to open ALBUKHR Testnet.</p>
 
       <div id="ownerLoginNotice" class="notice" role="note" hidden style="display:none">
         <div>
-          <strong>PROJECT OWNER IDENTITY CHECK</strong>
-          <p>
-            Use this route only when you already own an ALBUKHR Testnet
-            project account and need to link your Pi Sandbox identity.
-            A Super Admin must approve the link. Your canonical ALBUKHR
-            Pi UID will not be changed.
-          </p>
+          <strong>Project Owner account</strong>
+          <p>Already have a Testnet project? Use this page to link your Pi Sandbox account. A Super Admin must approve the link.</p>
         </div>
       </div>
 
-      <button id="testnetLoginButton"
-              class="testnet-login-button"
-              type="button"
-              aria-describedby="status">
+      <button id="testnetLoginButton" class="testnet-login-button"
+              type="button" aria-describedby="status">
         <span class="login-text">Continue with Pi</span>
         <span aria-hidden="true">→</span>
       </button>
 
-      <p id="status"
-         class="notice"
-         role="status"
-         aria-live="polite"
-         aria-atomic="true">
-        Ready to authenticate directly with Pi Testnet.
+      <p id="status" class="notice login-status" role="status"
+         aria-live="polite" aria-atomic="true">
+        Ready. Tap Continue with Pi.
       </p>
     </section>
   </main>
-
   <script src="js/login.js?v=20261110-pi-init-singleflight1"></script>
 </body>
 </html>
