@@ -1,0 +1,320 @@
+/* ALBUKHR TESTNET — simple user experience layer
+   Additive page styling only. No navigation, API, payment or state logic. */
+:root {
+  --ux-green: #0f7a3d;
+  --ux-green-dark: #075f35;
+  --ux-green-soft: #eaf6ef;
+  --ux-ink: #173226;
+  --ux-muted: #66766d;
+  --ux-line: #dce9e1;
+  --ux-shadow: 0 12px 30px rgba(15, 72, 42, .08);
+}
+
+body[data-page="home"],
+body[data-page="marketplace"],
+body[data-page="testnet-login"] {
+  color: var(--ux-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body[data-page="home"] .welcome-bar {
+  display: none;
+}
+
+body[data-page="home"] .header-status {
+  display: none;
+}
+
+body[data-page="home"] .registry-status:not([data-status="empty"]):not([data-status="error"]) {
+  display: none;
+}
+
+body[data-page="home"] .testnet-banner {
+  width: min(870px, calc(100% - 28px));
+  margin: 12px auto 0;
+  border: 1px solid #f0dfb0;
+  border-radius: 14px;
+}
+
+body[data-page="home"] .testnet-main {
+  padding-top: 14px;
+}
+
+body[data-page="home"] .network-badge {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 10px;
+}
+
+body[data-page="home"] .hero-card {
+  border-color: var(--ux-line);
+  box-shadow: var(--ux-shadow);
+}
+
+body[data-page="home"] .hero-copy h1 {
+  color: var(--ux-ink);
+  line-height: 1.12;
+}
+
+body[data-page="home"] .hero-copy p,
+body[data-page="home"] .investor-copy p,
+body[data-page="home"] .testnet-notice p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body[data-page="home"] .hero-pills span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+}
+
+body[data-page="home"] .stat-card {
+  padding: 14px 12px;
+  border-color: var(--ux-line);
+  border-radius: 15px;
+}
+
+body[data-page="home"] .stat-card span {
+  color: var(--ux-muted);
+  font-size: 11px;
+}
+
+body[data-page="home"] .stat-card strong {
+  font-size: 16px;
+}
+
+body[data-page="home"] .stat-card small {
+  color: var(--ux-muted);
+  font-size: 10px;
+}
+
+body[data-page="home"] .investor-section {
+  border-color: var(--ux-line);
+  box-shadow: var(--ux-shadow);
+}
+
+body[data-page="home"] .investor-action {
+  min-height: 44px;
+  padding: 11px 15px;
+  font-size: 11px;
+}
+
+body[data-page="home"] .testnet-notice {
+  border-radius: 15px;
+}
+
+body[data-page="marketplace"] main {
+  max-width: 900px;
+  padding-top: 24px;
+  padding-bottom: 100px;
+}
+
+body[data-page="marketplace"] .marketplace-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-page="marketplace"] .header .env[href] {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 10px;
+}
+
+body[data-page="marketplace"] .marketplace-heading {
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+body[data-page="marketplace"] .marketplace-heading h1 {
+  color: var(--ux-ink);
+  font-size: clamp(23px, 5vw, 30px);
+  line-height: 1.15;
+}
+
+body[data-page="marketplace"] .marketplace-heading #registryStatus {
+  max-width: 44%;
+  padding: 7px 10px;
+  border: 1px solid var(--ux-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ux-muted);
+  text-align: center;
+}
+
+body[data-page="marketplace"] .marketplace-heading #registryStatus:not([data-status="empty"]):not([data-status="error"]) {
+  display: none;
+}
+
+body[data-page="marketplace"] .marketplace-intro {
+  margin: 0 0 18px;
+  color: var(--ux-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+body[data-page="marketplace"] .project-grid {
+  gap: 14px;
+}
+
+body[data-page="marketplace"] .project-card {
+  min-height: 100px;
+  border-color: var(--ux-line);
+  border-radius: 16px;
+  box-shadow: 0 7px 20px rgba(15, 72, 42, .06);
+}
+
+body[data-page="marketplace"] .project-card:focus-visible {
+  outline: 3px solid rgba(15, 122, 61, .25);
+  outline-offset: 3px;
+}
+
+body[data-page="marketplace"] .notice {
+  margin-top: 18px;
+  border-radius: 15px;
+}
+
+body[data-page="testnet-login"] main {
+  max-width: 560px;
+  min-height: calc(100vh - 58px);
+  display: flex;
+  align-items: center;
+  padding: 28px 16px 100px;
+}
+
+body[data-page="testnet-login"] .hero {
+  width: 100%;
+  margin: 0;
+  padding: clamp(22px, 6vw, 34px);
+  border: 1px solid var(--ux-line);
+  border-radius: 22px;
+  box-shadow: var(--ux-shadow);
+}
+
+body[data-page="testnet-login"] .hero h1 {
+  font-size: clamp(25px, 6vw, 32px);
+  line-height: 1.15;
+}
+
+body[data-page="testnet-login"] .hero > p:not(.eyebrow) {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+body[data-page="testnet-login"] .testnet-login-button {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 22px;
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid var(--ux-green);
+  border-radius: 13px;
+  background: var(--ux-green);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 122, 61, .18);
+  transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+body[data-page="testnet-login"] .testnet-login-button:hover:not(:disabled) {
+  background: var(--ux-green-dark);
+  box-shadow: 0 10px 22px rgba(15, 122, 61, .22);
+}
+
+body[data-page="testnet-login"] .testnet-login-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+body[data-page="testnet-login"] .testnet-login-button:disabled {
+  opacity: .65;
+  cursor: wait;
+  box-shadow: none;
+}
+
+body[data-page="testnet-login"] .login-status {
+  margin-top: 14px;
+  padding: 11px 13px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body[data-page="testnet-login"] .login-status::before {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+  font-size: 11px;
+}
+
+body[data-page="testnet-login"] #ownerLoginNotice {
+  margin-top: 18px;
+}
+
+body[data-page="testnet-login"] #ownerLoginNotice[hidden] {
+  display: none !important;
+}
+
+body[data-page="home"] a:focus-visible:not(.dock-item),
+body[data-page="marketplace"] a:focus-visible:not(.dock-item),
+body[data-page="testnet-login"] a:focus-visible,
+body[data-page="testnet-login"] button:focus-visible {
+  outline: 3px solid rgba(15, 122, 61, .3);
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  body[data-page="home"] .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-page="home"] .stat-card:first-child {
+    grid-column: 1 / -1;
+  }
+
+  body[data-page="marketplace"] main {
+    padding: 18px 13px 96px;
+  }
+
+  body[data-page="marketplace"] .header .env[href] {
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 10px;
+}
+
+body[data-page="marketplace"] .marketplace-heading {
+    align-items: flex-start;
+  }
+
+  body[data-page="marketplace"] .marketplace-heading #registryStatus {
+    max-width: 48%;
+    font-size: 10px;
+  }
+
+  body[data-page="testnet-login"] main {
+    min-height: calc(100vh - 58px);
+    padding: 18px 13px 90px;
+  }
+
+  body[data-page="testnet-login"] .hero {
+    padding: 22px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="home"] *,
+  body[data-page="marketplace"] *,
+  body[data-page="testnet-login"] * {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
