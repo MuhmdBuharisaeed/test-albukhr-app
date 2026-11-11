@@ -1,0 +1,245 @@
+/* ALBUKHR Testnet Owner Applications Admin — additive UI/UX layer.
+ * Loaded after the existing page stylesheet. Presentation only; no behavior changes.
+ */
+
+.app-admin-header {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.app-admin-header > div,
+.app-admin-header h1,
+.app-admin-header p,
+.app-admin-main,
+.application-card,
+.application-details-body,
+.owner-field {
+  min-width: 0;
+}
+
+.app-admin-header h1 {
+  max-width: 680px;
+  letter-spacing: -.45px;
+}
+
+.app-admin-header a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.app-admin-header a:hover {
+  background: rgba(255, 255, 255, .18);
+}
+
+.app-admin-header a:focus-visible,
+button:focus-visible,
+.application-details-toggle:focus-visible,
+.review-note:focus-visible {
+  outline: 3px solid #d39b24;
+  outline-offset: 3px;
+}
+
+.queue-status {
+  line-height: 1.5;
+  border-left: 4px solid #8a9a90;
+}
+
+.queue-status[data-state="error"] {
+  border-left-color: var(--alb-danger);
+}
+
+.queue-toolbar {
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--alb-border);
+}
+
+.queue-toolbar h2 {
+  line-height: 1.25;
+  letter-spacing: -.2px;
+}
+
+#refreshQueue {
+  min-width: 104px;
+  min-height: 44px;
+}
+
+#refreshQueue:hover:not(:disabled) {
+  background: #dff1e6;
+  box-shadow: 0 3px 10px rgba(7, 95, 53, .10);
+}
+
+.application-queue {
+  gap: 17px;
+}
+
+.application-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(20, 60, 40, .06);
+}
+
+.application-card h3 {
+  font-size: clamp(18px, 2.5vw, 21px);
+  overflow-wrap: anywhere;
+}
+
+.application-meta {
+  line-height: 1.55;
+}
+
+/* Distinguish workflow states: pending/rework is not an approval. */
+.application-status[data-status="submitted"] {
+  color: #765300;
+  background: #fff3cf;
+  border: 1px solid #f0d98f;
+}
+
+.application-status[data-status="resubmitted"] {
+  color: #754b00;
+  background: #ffedc2;
+  border: 1px solid #eacb78;
+}
+
+.application-status[data-status="changes_requested"] {
+  color: #805c06;
+  background: #fff8e7;
+  border: 1px solid #f0dfb4;
+}
+
+.application-status[data-status="approved"] {
+  color: #075f35;
+  background: #e4f5e9;
+  border: 1px solid #bfe2cb;
+}
+
+.application-status[data-status="rejected"] {
+  color: #92252d;
+  background: #fff0f0;
+  border: 1px solid #efcdcf;
+}
+
+.application-details-toggle {
+  line-height: 1.4;
+  text-align: left;
+}
+
+.application-details-toggle:hover {
+  background: #e8f5ed;
+}
+
+.application-details-body {
+  padding: 17px;
+}
+
+.owner-submission {
+  gap: 11px;
+}
+
+.owner-field {
+  overflow-wrap: anywhere;
+}
+
+.owner-field span {
+  display: block;
+  line-height: 1.4;
+}
+
+.owner-field p {
+  line-height: 1.55;
+}
+
+.review-note {
+  min-height: 112px;
+  line-height: 1.55;
+}
+
+.review-actions button {
+  min-height: 46px;
+  padding: 10px 15px;
+}
+
+.review-actions button:hover:not(:disabled) {
+  filter: brightness(.97);
+  box-shadow: 0 3px 9px rgba(20, 60, 40, .09);
+}
+
+.review-actions button:disabled,
+#refreshQueue:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.empty-queue {
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: max(10px, env(safe-area-inset-top)) 11px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .app-admin-header {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .app-admin-header h1 {
+    font-size: clamp(23px, 7vw, 29px);
+  }
+
+  .app-admin-header a {
+    width: 100%;
+    margin-top: 14px;
+  }
+
+  .queue-status {
+    padding: 12px 13px;
+    font-size: 14px;
+  }
+
+  .queue-toolbar {
+    align-items: center;
+    gap: 9px;
+  }
+
+  #refreshQueue {
+    min-width: 92px;
+    padding-inline: 12px;
+  }
+
+  .application-card {
+    padding: 14px;
+  }
+
+  .application-status {
+    margin: 10px 0 12px;
+  }
+
+  .application-details-toggle {
+    min-height: 52px;
+    padding: 13px 45px 13px 12px;
+  }
+
+  .application-details-body {
+    padding: 12px;
+  }
+
+  .owner-field {
+    padding: 11px;
+  }
+
+  .review-actions {
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-admin-header a,
+  #refreshQueue,
+  .review-actions button {
+    transition: none;
+  }
+}
