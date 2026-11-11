@@ -1,0 +1,486 @@
+/*
+ * ALBUKHR TESTNET PROJECT OWNER ADMIN — ADDITIVE UI/UX LAYER
+ * Scope: project-owner-admin.html only.
+ * This file changes presentation and responsive layout only.
+ */
+
+body[data-page="testnet-project-owner-admin"] {
+  color: #24352a;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-header {
+  gap: 12px;
+  padding: 12px clamp(14px, 2.5vw, 24px);
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Keep the environment label visible at every viewport size. */
+body[data-page="testnet-project-owner-admin"] .environment-badge {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 11px;
+  font-size: 10px;
+}
+
+body[data-page="testnet-project-owner-admin"] .back-link {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-main.owner-admin-main {
+  width: min(1180px, 100%);
+  padding: clamp(18px, 3vw, 30px) clamp(12px, 2.2vw, 22px) 64px;
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-hero {
+  gap: 20px;
+  padding: clamp(18px, 2.8vw, 26px);
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-hero h1 {
+  max-width: 790px;
+  font-size: clamp(25px, 3.3vw, 36px);
+  line-height: 1.16;
+  text-wrap: balance;
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-hero p,
+body[data-page="testnet-project-owner-admin"] .security-notice p {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+body[data-page="testnet-project-owner-admin"] .admin-identity {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-hero-badge {
+  min-width: 150px;
+  gap: 4px;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-hero-badge strong {
+  font-size: clamp(15px, 1.6vw, 19px);
+  line-height: 1.3;
+}
+
+body[data-page="testnet-project-owner-admin"] .security-notice {
+  gap: 12px;
+  padding: 15px;
+}
+
+body[data-page="testnet-project-owner-admin"] .security-notice strong {
+  font-size: 13px;
+}
+
+body[data-page="testnet-project-owner-admin"] .security-notice p {
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .summary-grid {
+  gap: 12px;
+  margin: 16px 0;
+}
+
+body[data-page="testnet-project-owner-admin"] .summary-card {
+  min-width: 0;
+  padding: 16px;
+}
+
+body[data-page="testnet-project-owner-admin"] .summary-card span {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-project-owner-admin"] .summary-card strong {
+  font-size: 25px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-page="testnet-project-owner-admin"] .summary-card small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-project-owner-admin"] .panel {
+  min-width: 0;
+  margin-top: 16px;
+  padding: clamp(15px, 2vw, 21px);
+}
+
+body[data-page="testnet-project-owner-admin"] .panel-heading {
+  align-items: center;
+}
+
+body[data-page="testnet-project-owner-admin"] .panel h2 {
+  font-size: clamp(18px, 2vw, 21px);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+body[data-page="testnet-project-owner-admin"] .section-kicker {
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+body[data-page="testnet-project-owner-admin"] .refresh-button {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+body[data-page="testnet-project-owner-admin"] .page-status {
+  min-height: 22px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-project-list {
+  gap: 14px;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-project-card,
+body[data-page="testnet-project-owner-admin"] .identity-link-card {
+  min-width: 0;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-project-title h3,
+body[data-page="testnet-project-owner-admin"] .identity-link-identity h3 {
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-project-title small,
+body[data-page="testnet-project-owner-admin"] .owner-meta,
+body[data-page="testnet-project-owner-admin"] .identity-link-created {
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-status {
+  max-width: 100%;
+  padding: 7px 10px;
+  font-size: 10px;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: center;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-summary-current span,
+body[data-page="testnet-project-owner-admin"] .owner-current span {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-summary-current strong,
+body[data-page="testnet-project-owner-admin"] .owner-current strong {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-expand-label {
+  min-height: 24px;
+  align-items: center;
+  font-size: 12px;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-project-content {
+  padding: clamp(13px, 2vw, 19px);
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-form-grid {
+  gap: 14px;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-field {
+  min-width: 0;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-field input {
+  min-height: 44px;
+  padding: 11px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-field input[readonly] {
+  background: #f0f5f2;
+  border-style: dashed;
+  color: #40584a;
+  cursor: default;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-actions {
+  gap: 10px;
+}
+
+body[data-page="testnet-project-owner-admin"] .owner-action-btn {
+  min-height: 42px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-queue {
+  gap: 12px;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-card {
+  padding: clamp(13px, 2vw, 18px);
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-card-head {
+  align-items: flex-start;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-sandbox-uid {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-pending {
+  font-size: 10px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-target-label {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-target-select {
+  min-height: 46px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-note,
+body[data-page="testnet-project-owner-admin"] .identity-link-no-targets,
+body[data-page="testnet-project-owner-admin"] .identity-link-empty {
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .identity-link-actions {
+  margin-top: 16px;
+}
+
+body[data-page="testnet-project-owner-admin"] .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+body[data-page="testnet-project-owner-admin"] .history-table {
+  min-width: 780px;
+}
+
+body[data-page="testnet-project-owner-admin"] .history-table th {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+body[data-page="testnet-project-owner-admin"] .history-table td {
+  padding: 12px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+body[data-page="testnet-project-owner-admin"] .empty-state {
+  padding: 24px 15px;
+}
+
+body[data-page="testnet-project-owner-admin"] .empty-state strong {
+  font-size: 14px;
+}
+
+body[data-page="testnet-project-owner-admin"] .empty-state p {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+body[data-page="testnet-project-owner-admin"] button:focus-visible,
+body[data-page="testnet-project-owner-admin"] a:focus-visible,
+body[data-page="testnet-project-owner-admin"] input:focus-visible,
+body[data-page="testnet-project-owner-admin"] select:focus-visible,
+body[data-page="testnet-project-owner-admin"] summary:focus-visible {
+  outline: 3px solid rgba(15, 122, 61, .32);
+  outline-offset: 2px;
+}
+
+body[data-page="testnet-project-owner-admin"] button:disabled,
+body[data-page="testnet-project-owner-admin"] select:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  body[data-page="testnet-project-owner-admin"] .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  body[data-page="testnet-project-owner-admin"] .admin-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-hero-badge {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-project-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-action-btn {
+    width: 100%;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .identity-link-card-head {
+    flex-direction: column;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .identity-link-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-page="testnet-project-owner-admin"] .identity-link-actions .owner-action-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  body[data-page="testnet-project-owner-admin"] .admin-header {
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .admin-brand-main {
+    font-size: 17px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .admin-brand-sub {
+    font-size: 8px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .admin-header-actions {
+    gap: 6px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .environment-badge {
+    min-height: 32px;
+    padding: 5px 8px;
+    font-size: 9px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .back-link {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .summary-card {
+    padding: 12px 10px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .summary-card span {
+    font-size: 9px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .summary-card strong {
+    font-size: 22px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .summary-card small {
+    font-size: 10px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .refresh-button {
+    width: 100%;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-project-summary {
+    padding: 13px 46px 13px 12px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-project-summary::after {
+    right: 10px;
+    top: 13px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-project-summary .owner-project-head {
+    gap: 8px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .owner-project-content {
+    padding: 12px;
+  }
+
+  body[data-page="testnet-project-owner-admin"] .history-table {
+    min-width: 780px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="testnet-project-owner-admin"] *,
+  body[data-page="testnet-project-owner-admin"] *::before,
+  body[data-page="testnet-project-owner-admin"] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
