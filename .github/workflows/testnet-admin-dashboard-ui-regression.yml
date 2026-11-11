@@ -1,0 +1,52 @@
+
+name: Testnet Admin Dashboard UI Regression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "admin-dashboard.html"
+      - "css/testnet-admin.css"
+      - "css/testnet-admin-dashboard-ux.css"
+      - "tests/testnet-admin-dashboard-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-admin-dashboard-ui-regression.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "admin-dashboard.html"
+      - "css/testnet-admin.css"
+      - "css/testnet-admin-dashboard-ux.css"
+      - "tests/testnet-admin-dashboard-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-admin-dashboard-ui-regression.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-admin-dashboard-ui-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin-dashboard-ui-regression:
+    name: Admin Dashboard UI Regression
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check regression test syntax
+        run: node --check tests/testnet-admin-dashboard-ui-smoke.test.cjs
+
+      - name: Run Admin Dashboard UI regression tests
+        run: node tests/testnet-admin-dashboard-ui-smoke.test.cjs
