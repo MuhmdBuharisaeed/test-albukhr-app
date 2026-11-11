@@ -383,7 +383,10 @@ async function verifyPayment() {
       });
       el("projectRows").addEventListener("click",handleRowAction);
       el("verifyPaymentButton").addEventListener("click",verifyPayment);
-      el("logoutButton").addEventListener("click",function(){ window.AlbukhrTestnetAdminAuth.logout(); window.location.replace("index.html"); });
+      el("logoutButton").addEventListener("click",function(){
+  window.AlbukhrTestnetAdminAuth.logout();
+  window.location.replace("https://admin.albukhr.com/admin-dashboard.html");
+});  
       await load();
     }catch(error){ console.error("[ALBUKHR TESTNET ADMIN]",error); status("Testnet admin dashboard error: "+(error.message||error),true); }
   }
