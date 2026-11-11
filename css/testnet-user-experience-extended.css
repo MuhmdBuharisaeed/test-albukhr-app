@@ -1,0 +1,276 @@
+/* ALBUKHR TESTNET — additive UX layer for Investor, Project and Project Owner.
+   Presentation only: no API, payment, staking, withdrawal, state or navigation logic.
+   Dock Navigation is intentionally not selected or styled in this file. */
+
+:root {
+  --ux2-green: #0f7a3d;
+  --ux2-green-dark: #075f35;
+  --ux2-ink: #173226;
+  --ux2-muted: #66766d;
+  --ux2-line: #dce9e1;
+  --ux2-soft: #f5faf7;
+  --ux2-shadow: 0 10px 26px rgba(15, 72, 42, .07);
+}
+
+body[data-page="investor"],
+body[data-page="project"],
+body[data-page="project-owner"] {
+  color: var(--ux2-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Investor dashboard */
+body[data-page="investor"] .investor-shell {
+  width: min(760px, calc(100% - 24px));
+  max-width: 760px;
+  margin: 14px auto 24px;
+  padding-bottom: 28px;
+}
+
+body[data-page="investor"] .investor-hero {
+  margin: 12px 0 16px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 20px;
+  box-shadow: var(--ux2-shadow);
+}
+
+body[data-page="investor"] .hero-note,
+body[data-page="investor"] .testnet-notice p,
+body[data-page="investor"] .locked-panel p,
+body[data-page="investor"] .empty-state p {
+  line-height: 1.6;
+}
+
+body[data-page="investor"] .summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+body[data-page="investor"] .summary-card {
+  min-width: 0;
+  border-color: var(--ux2-line);
+  border-radius: 15px;
+  box-shadow: 0 5px 16px rgba(15, 72, 42, .045);
+}
+
+body[data-page="investor"] .summary-card strong {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-page="investor"] .financial-breakdown {
+  margin: 16px 0 22px;
+  border-color: var(--ux2-line);
+  box-shadow: var(--ux2-shadow);
+}
+
+body[data-page="investor"] .quick-actions {
+  gap: 9px;
+}
+
+body[data-page="investor"] .action-item {
+  min-height: 46px;
+}
+
+body[data-page="investor"] .section-head {
+  margin-top: 20px;
+}
+
+body[data-page="investor"] .investment-list {
+  min-width: 0;
+}
+
+body[data-page="investor"] .empty-state,
+body[data-page="investor"] .locked-panel {
+  border-color: var(--ux2-line);
+  border-radius: 16px;
+  line-height: 1.55;
+}
+
+/* Project details */
+body[data-page="project"] .project-page {
+  width: min(920px, calc(100% - 24px));
+  padding: 16px 0 100px;
+}
+
+body[data-page="project"] .project-hero,
+body[data-page="project"] .panel,
+body[data-page="project"] .testnet-notice {
+  border-color: var(--ux2-line);
+  box-shadow: var(--ux2-shadow);
+}
+
+body[data-page="project"] .panel {
+  padding: clamp(15px, 3vw, 20px);
+}
+
+body[data-page="project"] .panel h2 {
+  line-height: 1.25;
+}
+
+body[data-page="project"] .panel > p,
+body[data-page="project"] #controlDescription,
+body[data-page="project"] .history-empty p,
+body[data-page="project"] .testnet-notice p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+body[data-page="project"] .project-meta-grid {
+  gap: 9px;
+}
+
+body[data-page="project"] .action-btn {
+  min-height: 56px;
+  border-radius: 12px;
+}
+
+body[data-page="project"] .action-btn:disabled {
+  cursor: not-allowed;
+  opacity: .82;
+}
+
+body[data-page="project"] .withdrawal-testnet-lock-note {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #f0dfad;
+  border-radius: 12px;
+  background: #fffaf0;
+  color: #765500;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+body[data-page="project"] .refresh-btn,
+body[data-page="project"] .info-button,
+body[data-page="project"] .close-info,
+body[data-page="project"] .info-ok {
+  min-height: 40px;
+}
+
+/* Project Owner page */
+body[data-page="project-owner"] .owner-shell {
+  width: min(900px, calc(100% - 24px));
+  margin: 14px auto 32px;
+}
+
+/* Diagnostics remain available to existing page scripts in the DOM,
+   but are not exposed in the ordinary Project Owner interface. */
+body[data-page="project-owner"] #testnetDebugPanel {
+  display: none !important;
+}
+
+body[data-page="project-owner"] .owner-hero,
+body[data-page="project-owner"] .project-card,
+body[data-page="project-owner"] .panel,
+body[data-page="project-owner"] .notice {
+  border-radius: 16px;
+}
+
+body[data-page="project-owner"] .panel {
+  padding: clamp(15px, 3vw, 20px);
+}
+
+body[data-page="project-owner"] .owner-hero p,
+body[data-page="project-owner"] .muted,
+body[data-page="project-owner"] .security-note,
+body[data-page="project-owner"] .notice p {
+  line-height: 1.6;
+}
+
+body[data-page="project-owner"] .form-grid {
+  gap: 14px;
+}
+
+body[data-page="project-owner"] .field input,
+body[data-page="project-owner"] .field select,
+body[data-page="project-owner"] .field textarea {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+body[data-page="project-owner"] .field textarea {
+  min-height: 104px;
+  padding: 11px 12px;
+}
+
+body[data-page="project-owner"] .button,
+body[data-page="project-owner"] .small-button {
+  min-height: 44px;
+}
+
+body[data-page="project-owner"] .status-text {
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+
+body[data-page="project-owner"] .security-note {
+  padding: 12px 13px;
+  border-radius: 12px;
+}
+
+/* Keyboard focus and motion preferences for the three added pages.
+   Dock Navigation is deliberately excluded from these selectors. */
+body[data-page="investor"] .action-item:focus-visible,
+body[data-page="investor"] .primary-btn:focus-visible,
+body[data-page="project"] a:focus-visible,
+body[data-page="project"] button:focus-visible,
+body[data-page="project-owner"] a:focus-visible,
+body[data-page="project-owner"] button:focus-visible,
+body[data-page="project-owner"] input:focus-visible,
+body[data-page="project-owner"] textarea:focus-visible,
+body[data-page="project-owner"] select:focus-visible {
+  outline: 3px solid rgba(15, 122, 61, .28);
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  body[data-page="investor"] .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-page="investor"] .investor-shell {
+    width: calc(100% - 20px);
+    margin-top: 10px;
+  }
+
+  body[data-page="project"] .project-page {
+    width: calc(100% - 20px);
+    padding-top: 12px;
+    padding-bottom: 92px;
+  }
+
+  body[data-page="project-owner"] .owner-shell {
+    width: calc(100% - 20px);
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  body[data-page="investor"] .summary-grid {
+    gap: 7px;
+  }
+
+  body[data-page="project"] .project-page {
+    width: calc(100% - 16px);
+  }
+
+  body[data-page="project-owner"] .owner-shell {
+    width: calc(100% - 16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="investor"] *,
+  body[data-page="project"] *,
+  body[data-page="project-owner"] * {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
