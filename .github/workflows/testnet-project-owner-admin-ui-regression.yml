@@ -1,0 +1,52 @@
+
+name: Testnet Project Owner Admin UI Regression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "project-owner-admin.html"
+      - "css/testnet-project-owner-admin.css"
+      - "css/testnet-project-owner-admin-ux.css"
+      - "tests/testnet-project-owner-admin-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-project-owner-admin-ui-regression.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "project-owner-admin.html"
+      - "css/testnet-project-owner-admin.css"
+      - "css/testnet-project-owner-admin-ux.css"
+      - "tests/testnet-project-owner-admin-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-project-owner-admin-ui-regression.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-project-owner-admin-ui-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  project-owner-admin-ui-regression:
+    name: Project Owner Admin UI Regression
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check regression test syntax
+        run: node --check tests/testnet-project-owner-admin-ui-smoke.test.cjs
+
+      - name: Run Project Owner Admin UI regression tests
+        run: node tests/testnet-project-owner-admin-ui-smoke.test.cjs
