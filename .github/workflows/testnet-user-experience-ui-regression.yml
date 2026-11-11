@@ -1,0 +1,55 @@
+
+name: Testnet User Experience UI Regression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "marketplace.html"
+      - "login.html"
+      - "css/testnet-user-experience.css"
+      - "tests/testnet-user-experience-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-user-experience-ui-regression.yml"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "marketplace.html"
+      - "login.html"
+      - "css/testnet-user-experience.css"
+      - "tests/testnet-user-experience-ui-smoke.test.cjs"
+      - ".github/workflows/testnet-user-experience-ui-regression.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testnet-user-experience-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-regression:
+    name: Testnet UI/UX Regression Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check regression test syntax
+        run: node --check tests/testnet-user-experience-ui-smoke.test.cjs
+
+      - name: Run Testnet UI/UX regression tests
+        run: node tests/testnet-user-experience-ui-smoke.test.cjs
