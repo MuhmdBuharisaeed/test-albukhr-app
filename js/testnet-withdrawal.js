@@ -159,7 +159,7 @@
         '<p id="albukhrWithdrawDescription"></p>' +
         '<div class="albukhr-withdraw-balance"><span>Available from stake</span><strong id="albukhrWithdrawAvailable">0.00 Pi</strong></div>' +
         '<label class="albukhr-withdraw-label" for="albukhrWithdrawAmount">Amount to receive</label>' +
-        '<div class="albukhr-amount-row"><input id="albukhrWithdrawAmount" inputmode="decimal" type="number" min="0.50" step="0.01" placeholder="0.50"><span>Pi</span></div>' +
+        '<div class="albukhr-amount-row"><input id="albukhrWithdrawAmount" inputmode="decimal" type="number" min="0.05" step="0.01" placeholder="0.05"><span>Pi</span></div>' +
         '<div class="albukhr-withdraw-summary">' +
           '<div><span>Server-assessed fee</span><strong id="albukhrWithdrawFee">Calculated after request</strong></div>' +
           '<div><span>Total outflow</span><strong id="albukhrWithdrawTotal">Shown after server quote</strong></div>' +
