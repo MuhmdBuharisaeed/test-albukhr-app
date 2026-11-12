@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          grep -Fq 'js/testnet-gateway-auth.js?v=20261107-auth-singleflight2' project.html
+          grep -Fq 'js/testnet-gateway-auth.js?v=20261111-direct-testnet1' project.html
 
           grep -Fq 'js/testnet-staking-payment-client.js?v=20261109-manual-reconcile1' project.html
 
