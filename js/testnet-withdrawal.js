@@ -8,7 +8,7 @@
   "use strict";
 
   var NETWORK = "testnet";
-  var MIN_RECEIVE = 0.50;
+  var MIN_RECEIVE = 0.05;
   var WITHDRAWAL_FLOW_ENABLED =
     window.ALBukhrTestnetGlobalTreasuryWithdrawalEnabled === true;
 
