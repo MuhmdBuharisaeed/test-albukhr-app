@@ -331,7 +331,7 @@
   async function prepareWithdrawal() {
     if (!activeStake || !activeType) throw new Error("TESTNET_WITHDRAWAL_CONTEXT_REQUIRED");
     var amount = num(get("albukhrWithdrawAmount").value);
-    if (amount < MIN_RECEIVE) throw new Error("MINIMUM_STAKER_WITHDRAWAL_IS_0.50_PI");
+    if (amount < MIN_RECEIVE) throw new Error("MINIMUM_STAKER_WITHDRAWAL_IS_0.05_PI");
     if (amount > num(activeStake.available) + 1e-9) {
       throw new Error("WITHDRAWAL_AMOUNT_EXCEEDS_AVAILABLE_BALANCE");
     }
